@@ -1,6 +1,6 @@
 # Scoped Authorities API and Wallet Integration
 
-**Status: Operations and the read-only database API are implemented in the development-only build. Signed grant, restricted transfer, revoke, batch, rejection, and expiration flows were demonstrated on an isolated predecessor alternate-chain testnet. The signed flow has not yet been rerun on the consolidated single-HF30 schedule.**
+**Status: Operations and the read-only database API are implemented in the development-only build. Signed grant, restricted transfer, revoke, batch, rejection, expiration, pruning, and replacement-ID flows were demonstrated on a fresh isolated chain with the unified experimental HF30 activated once.**
 
 ## Read API
 
@@ -23,6 +23,8 @@ curl -sS -H 'Content-Type: application/json' \
 ```
 
 The demonstrated development chain uses TESTS/TBD symbols. Grant transaction `72879e657ee571a1dbf411414d7433c1b58cc798` was confirmed at block 48; Bob's 1.000 TBD transfer `b42f592e9fb9510e6f412dc20f98b5b272fee8f3` was confirmed at block 50; revoke `f90b8e4c7654e41fec644c82a6547b4f2197b3b3` was confirmed at block 55. A signed TESTS batch was confirmed at block 63 (`5bec9d138514ffecb02f2648fcd8263fed635719`). After restart the revoked state and counter remained. A short grant expired at `2026-10-17T05:13:09`, and a Bob-signed use was rejected at block 97 by consensus timestamp validation. A mixed batch with Alice and Bob each using an independent scoped HBD grant was confirmed at block 132 (`3e1f6224b227388e49143ee2016e84b6207fe037`); each counter increased by 1.000 TBD and the two intended recipients received the matching funds. An over-limit mixed batch was rejected without balance/counter changes.
+
+Those transaction IDs and block numbers describe the earlier prototype run. The current consolidated-HF30 run confirmed Alice's grant at block 72 (`cbda735790cbcedfb80e863a71c97028db181b6b`), Bob's scoped transfer at block 76 (`1016152cc3639d568f94f8380af679fb8c579655`), a scoped two-input batch at block 80 (`a8d8a3df7731784c2f63ef04cc0b6dc877fcfa6c`), active-authority batch at block 88 (`b4c481a60e87424558e1a9a842f99d9f56819db1`), revocation at block 93 (`194ec03b1d8818c4678cb1ae2743ac9d7ecee23b`), and replacement grant ID 3 after pruning at block 109 (`69afdd59aadef364535f5a181f9d7b8082009135`). The full transaction and block IDs, final counter values, rejection errors, snapshot restore, and genesis replay are recorded in [the final testing report](SCOPED_AUTHORITIES_TESTING.md).
 
 The API plugin must not be required for consensus. Its response is a view of Chainbase state and may be stale until the queried block is applied.
 

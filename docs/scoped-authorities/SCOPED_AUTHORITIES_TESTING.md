@@ -2,6 +2,60 @@
 
 **Status: development-only prototype. Testnet-configured `hived` and `chain_test` build. Do not connect this build to mainnet.**
 
+## Final consolidated HF30 end-to-end validation (2026-10-19)
+
+This section supersedes earlier statements in this file that populated consolidated-chain snapshot/replay, fresh signed RPC lifecycle, or production-configured operation rejection had not yet been performed. The protocol source was not changed during this validation pass; only verification notes were added.
+
+### Fresh development chain and confirmed transactions
+
+A fresh local chain used `build-baseline/programs/hived/hived`, chain ID `18dcf0a285365fc58b71f18b3d3fec954aa0c141c44e4e5cb4cf777b9eab274e`, test symbols `TESTS`/`TBD`, and a single development HF30 activation at block 1. All signed operations below were submitted with local development accounts and confirmed in produced blocks. Block IDs were read from the chain's block log.
+
+| Operation | Transaction ID | Included block | Block ID |
+|---|---|---:|---|
+| Alice creates Bob's initial grant (ID 1) | `cbda735790cbcedfb80e863a71c97028db181b6b` | 72 | `00000048b44e47533d02405506406ea633239820` |
+| Bob scoped transfer, 1 TBD to merchant | `1016152cc3639d568f94f8380af679fb8c579655` | 76 | `0000004cfbdf7fa04d7dc2a6ae07398725fe2a17` |
+| Carol creates Bob's unrestricted grant (ID 1) | `509e921c852329cfd5b395281d1e909d81c3b3a6` | 78 | `0000004e4d5e98baf80e66a959005a5b38645fcb` |
+| Bob scoped batch: 1 TBD each from Alice and Carol to merchant | `a8d8a3df7731784c2f63ef04cc0b6dc877fcfa6c` | 80 | `0000005030a6e39b5834d6fd43f6737829ed814f` |
+| Active-authority batch: 1 TBD each from Alice and Carol | `b4c481a60e87424558e1a9a842f99d9f56819db1` | 88 | `00000058267d0dad89a7a1761d7bb9b44f04f43d` |
+| Alice revokes grant ID 1 | `194ec03b1d8818c4678cb1ae2743ac9d7ecee23b` | 93 | `0000005d72bd443c9b926c24ba9c452d9246a389` |
+| Alice creates short grant ID 2 | `7233301ba45aca68bd988bea5b755de33e3f747b` | 98 | `00000062f214408eb1e96d9f0fb52aa04904ea56` |
+| Alice creates replacement grant ID 3 after pruning IDs 1 and 2 | `69afdd59aadef364535f5a181f9d7b8082009135` | 109 | `0000006d6f228e62f880a08f639371b11ddb41a5` |
+| Alice spends 1 TBD from grant ID 3 | `f937eb4ed3bc319f834081302c02880a071193a8` | 115 | `00000073e0f171b6621695c36f6097ef254c9678` |
+| Carol creates grant ID 2 | `b40888173c510c6a8cab01e231e83749d4c5d385` | 120 | `00000078f4fc96e4baf31318776904fd50addecd` |
+| Carol revokes grant ID 2 | `6f0b814d623b5e03ed0887782bf228f3530dde00` | 121 | `0000007983899934898248d5a836bf783c9ce7ae` |
+| Bob creates replacement grant ID 2 after expiry/pruning of ID 1 | `a6cf2fb8365103ddfcdc022409e3bff517171bde` | 155 | `0000009bf0509d0afb2cf3fba10915e3beb91b39` |
+
+The over-limit scoped transfer returned `Transfer exceeds scoped per-transfer limit`; the unauthorized recipient returned `Recipient is not allowed by scoped authority`; and an attempt after expiration returned `Scoped authority has expired`. These were rejected during pending transaction application and therefore have no included transaction ID. The corresponding RPC error payloads are retained under `/tmp/hf30-e2e-20261019/` (`overlimit-correct-rejection.json`, `recipient-rejection.json`, and `expired-rejection.json`). The expired attempt was evaluated at `2026-10-19T15:40:00`, after grant ID 2's `2026-10-19T15:39:48` expiration. No failed request was accepted into a block.
+
+The final source state at block 170 was `000000aae264e0ff0248dd3cab78bb2a01e0382d`. Confirmed balances were Alice 96 TBD, Bob 100 TBD, Carol 98 TBD, merchant 106 TBD, and HiveDebit 100 TBD. `get_scoped_authorities` reported high-water IDs Alice=3, Bob=2, Carol=2. Retained counters were Alice grant 3: lifetime/period 1 TBD; Bob grant 2: 0 TBD; Carol grant 1: lifetime/period 1 TBD; Carol grant 2 remained revoked with 0 TBD spent. Alice grant 1 (spent 2 TBD) and grant 2 (expired) and Bob grant 1 (expired) had been pruned. Account projections included owner, active, posting, and memo authority fields.
+
+The final RPC operation payloads and signed responses are retained in `/tmp/hf30-e2e-20261019/*.json`. Do not publish `wallet-keys.json`: it contains development private keys and is not required for reviewing the results.
+
+### Populated snapshot and genesis replay
+
+The chain history contained three grantors, two delegated actors, active and revoked grants, grants that expired and were pruned, reuse of capacity with higher grant IDs, partially consumed lifetime/period allowances, an active-authority batch, and a scoped multi-input batch. A supported populated snapshot was produced and restored into an independent node. A separate node replayed the copied chain history from genesis using `--force-replay --exit-before-sync`. The snapshot loader reported successful loading at head 170; replay exited successfully after reindexing.
+
+The API projections saved as `verified-source.json`, `verified-snapshot.json`, and `verified-replay.json` compare byte-for-byte equal. All three report block 170 and ID `000000aae264e0ff0248dd3cab78bb2a01e0382d`. The comparison includes account balances and authorities, retained grant fields and spending counters, effective/revoked status, and per-grantor `last_issued_grant_id`. The local evidence and node logs are under `/tmp/hf30-e2e-20261019/`; these artifacts are machine-local, not committed fixtures.
+
+### Independent node synchronization
+
+Two alternate-chain nodes used separate data directories. Node B was stopped at block 138 while node A advanced through grant expiry/pruning and Bob's replacement grant creation at block 155. B was restarted with A as its only seed and synchronized. Their API projections and head ID matched at block 159: `0000009fae5d2791a746293a50983d9c614c343e`. The matching state included Alice's and Bob's high-water IDs and retained grant sets after pruning. Both nodes subsequently advanced locally; the separately restored snapshot and replay checks above independently matched node A's final block-170 state.
+
+### Production-configured runtime rejection
+
+The production-configured `build-mainnet/programs/hived/hived` was started with local HTTP/P2P endpoints inside a Linux network namespace with an empty route table and no external peers. Its fresh genesis head was 0. RPC broadcast probes reached operation evaluation and each failed with the explicit mainnet build guard:
+
+- create, revoke, and scoped transfer: `Scoped authorities are disabled in mainnet builds` (`hive_evaluator_transfer.cpp`, guard at line 91).
+- compressed batch: `Compressed batch transfers are disabled in mainnet builds` (guard at line 225).
+
+The local `temp` account has threshold-zero authorities in genesis, so the probes did not require signatures or keys; they were runtime evaluator rejection probes, not signed transaction demonstrations. No transaction was included in a block. The exact responses are saved in `/tmp/hf30-e2e-20261019/mainnet-op-rejections.txt`. The network namespace had no route and the node used only local endpoints. Existing upstream comparison evidence for legacy transfer tag/bytes is recorded in the previous section of `FINAL_CODE_REVIEW.md`; no historical operation was modified during this pass.
+
+Operational note: an earlier launch attempt in this validation pass was made before the namespace isolation was in place. The compiled mainnet seed list produced outbound connection attempts that failed; the logs contain no successful peer connection. That process was stopped. All actual operation-rejection probes described above were rerun in the isolated namespace with no route.
+
+### Regression result provenance
+
+No C++ source or test files changed during this end-to-end pass. The latest recorded consolidated-branch regression run remains: `chain_test` 526/527 cases (one opt-in RC benchmark case omitted in the full run), 1,835,538 assertions; focused Scoped Authority/Batch tests 29/29 cases and 754 assertions; configuration 3/3 and 51 assertions; plugin tests 102/102 and 7,134 assertions; standalone RC benchmark 904 assertions. The focused benchmark is run separately. These are recorded results from the current implementation's existing verification, not a new full regression run performed alongside this documentation update.
+
 ## Repository test framework
 
 Consensus tests are Boost.Test unit tests under `tests/unit/tests`, built into `chain_test`; database and block fixtures live in `tests/unit/db_fixture`. Plugin API tests are in `tests/unit/plugin_tests`. Python integration tests and local test tooling are under `tests/python` and `tests/python/hive-local-tools`.

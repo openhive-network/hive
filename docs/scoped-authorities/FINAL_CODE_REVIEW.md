@@ -217,6 +217,34 @@ The statistics in this historical section describe the predecessor branch, not t
 
 Recommendation: suitable for upstream technical discussion as an experimental proposal, not for merge or activation. Before proposing production consensus activation, Hive maintainers should review operation-tag strategy, persisted object/snapshot migration, RC weights and payer economics, grant growth policy, and recipient attribution. Independent security audit, broader production-grade replay/snapshot coverage, an agreed future hardfork plan, and full-chain support for any desired `HIVE_PROTOCOL_SKIP_VOPS` configuration remain prerequisites.
 
+## Final consolidated-HF30 end-to-end verification (2026-10-19)
+
+This addendum is the current verification record and supersedes earlier statements above that fresh consolidated-chain populated snapshot/replay, signed RPC lifecycle, and mainnet runtime rejection were outstanding. No protocol code changed during this pass.
+
+### Populated state, snapshot, and genesis replay
+
+A fresh local alternate chain used a single HF30 activation at block 1, three grantors (Alice, Bob, Carol), two actors (Bob, HiveDebit), active and revoked grants, expired and pruned grants, partially consumed allowances, active-authority batches, and scoped batches. At final head block 170, the block ID was `000000aae264e0ff0248dd3cab78bb2a01e0382d`.
+
+The supported state snapshot was loaded into an independent data directory and reported successful restoration at block 170. Another independent data directory replayed the same block history from genesis and exited successfully. The RPC state projections for source, snapshot restore, and replay are byte-for-byte identical. Compared fields include the head ID, account liquid balances and all owner/active/posting/memo authority fields, retained grant IDs and terms, revoked/effective status, lifetime and period counters, and grantor high-water IDs. Final high-water IDs were Alice 3, Bob 2, Carol 2. Retained counters were Alice grant 3: 1.000 TBD; Bob grant 2: 0; Carol grant 1: 1.000 TBD; Carol grant 2: revoked, 0. Alice IDs 1 and 2 and Bob ID 1 had been pruned after revocation/expiration. The exact projections and node logs are in `/tmp/hf30-e2e-20261019/` and are not committed test fixtures.
+
+### Signed RPC and transaction inclusion
+
+The fresh-chain signed RPC evidence, including operation payloads and responses, is summarized with exact transaction IDs and inclusion block IDs in [the testing record](SCOPED_AUTHORITIES_TESTING.md). It includes Alice's initial grant, Bob's 1.000 TBD scoped transfer, a two-grant scoped batch, a two-signature active batch, Alice's revocation, expiry/pruning, Alice's replacement grant ID 3, and Bob's replacement grant ID 2. The final grants API response reflected those high-water IDs and retained records. Three invalid requests were rejected before block inclusion: 6 TBD above the transfer cap, an unlisted recipient, and a transfer after expiration. RPC diagnostics show the intended evaluator assertions. The grantor's normal account authority fields were preserved through source, restored snapshot, and replay comparisons.
+
+### Two-node synchronization
+
+Two independently stored alternate-chain nodes converged after one node was stopped while the other advanced through grant pruning and replacement grant creation. The restarted node synchronized from its peer and matched at block 159, ID `0000009fae5d2791a746293a50983d9c614c343e`, including grant rows, counters, and high-water metadata. The final source chain was then independently snapshot-restored and replayed to block 170, as described above.
+
+### Isolated production-configured operation rejection
+
+The production-configured `hived` ran with only local endpoints inside a Linux network namespace whose route table was empty. The fresh mainnet-configured genesis state was at block 0. Local RPC broadcast probes using the genesis `temp` account reached evaluator execution and failed with `Scoped authorities are disabled in mainnet builds` for create, revoke, and scoped transfer, and `Compressed batch transfers are disabled in mainnet builds` for batch. The empty signatures were possible because this local genesis account has a zero-threshold authority; no key or public peer was used, and no transaction was included in a block. Full responses are in `/tmp/hf30-e2e-20261019/mainnet-op-rejections.txt`.
+
+### Build and test provenance
+
+No source or test code changed during the end-to-end validation, and no full regression suite was rerun as part of this documentation-only pass. The current branch's latest recorded results remain: alternate-chain `chain_test` 526 of 527 cases (one opt-in benchmark case omitted in the full run) and 1,835,538 assertions; focused Scoped Authority/Batch 29/29 cases and 754 assertions; configuration 3/3 and 51 assertions; `plugin_test` 102/102 and 7,134 assertions; separate RC benchmark 904 assertions. The alternate-chain and production-configured `hived` binaries used for the runtime checks had been built previously. The `HIVE_PROTOCOL_SKIP_VOPS` full-chain configuration remains unsupported in both this branch and upstream; it is not a passing build claim.
+
+The prototype is reproducible enough for upstream technical review of the implementation, but it is not production-ready. Independent protocol/security review, RC economics approval, complete review of operation tags for all supported build variants, and a maintainer-assigned hardfork activation remain prerequisites.
+
 ## Historical lifecycle implementation (pre-consolidation)
 
 This section records the follow-up change after the earlier code review; the current statistics and post-consolidation test results are summarized at the end of this document.

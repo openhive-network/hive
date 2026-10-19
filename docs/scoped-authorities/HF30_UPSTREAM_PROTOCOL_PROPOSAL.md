@@ -44,7 +44,13 @@ The Chainbase grant and grantor-metadata indexes change consensus state layout. 
 
 ## Evidence and known limitations
 
-The prior branch passed consensus, plugin, configuration, RC benchmark, populated two-slot snapshot/replay, signed-RPC, and two-node tests. Those results do not automatically validate a fresh unified-HF30 chain. Full-chain skip-VOPS compilation (the macro removes VOPs required by existing chain call sites) and alternate-variant serialization round-trip remain gaps. Current consolidated-chain results must be entered in [testing notes](SCOPED_AUTHORITIES_TESTING.md) after execution.
+The consolidated HF30 chain has now been exercised with signed local RPC transactions, populated snapshot restore, genesis replay, independent-node synchronization, and isolated production-configured evaluator rejection. Exact results and test-count provenance are in [the testing notes](SCOPED_AUTHORITIES_TESTING.md). These checks are prototype evidence only. Full-chain `HIVE_PROTOCOL_SKIP_VOPS` support remains unavailable because existing code paths construct omitted virtual-operation types; this limitation is not hidden by changing the operation variant. Serialization of a legacy transfer was byte-compared against untouched upstream, but broader historical transaction fixtures and every operation variant still warrant upstream review. No evidence here establishes production readiness.
+
+### Final local end-to-end results (2026-10-19)
+
+A newly initialized alternate chain activated the unified experimental HF30 once at block 1. Signed grant creation, a scoped transfer, active and scoped multi-input batches, revocation, expiry, lazy pruning, and replacement grants were confirmed in blocks. Over-limit, unauthorized-recipient, and expired uses were rejected during pending application. The final state at block 170 (`000000aae264e0ff0248dd3cab78bb2a01e0382d`) had Alice/Bob/Carol high-water IDs 3/2/2 and retained Alice's partially spent grant, Bob's replacement grant, Carol's partially spent grant, and Carol's revoked grant.
+
+A populated snapshot restored in an independent node and a separate replay from genesis both produced API projections byte-identical to the source, including account authorities, balances, retained grants, counters, status, and high-water IDs. A second independent node was stopped while its peer advanced through pruning/replacement creation, then restarted and synchronized to the same block ID and state at block 159. A production-configured node was tested inside an isolated network namespace with no external route; all four experimental operation types reached evaluator execution and returned their explicit mainnet-disabled errors. These checks do not replace a larger multi-witness testnet, replay from a long-lived chain, or independent audit.
 
 ## Suggested review path
 
