@@ -2,7 +2,7 @@
 
 ## Status
 
-This document describes the current implementation on the experimental branch. It is not a deployment proposal. The operation is gated by the same alternate-chain HF30 rule as Scoped Authorities and is rejected by production-configured evaluator builds.
+This document describes the current unified experimental implementation. It is not a deployment proposal. The operation activates at the same single provisional alternate-chain HF30 as Scoped Authorities and grant lifecycle management, and is rejected by production-configured evaluator builds.
 
 ## Operation and wire representation
 
@@ -20,7 +20,7 @@ All grant and balance validations occur before any state change. Balance adjustm
 
 ## Resource accounting
 
-The operation's transaction bytes, signatures and authority checks retain the normal Hive RC accounting. The execution-time estimate additionally charges the configured transfer execution weight for every input and output. Since experimental operation tags follow historical virtual-operation tags, their RC statistics are recorded in the existing `multiop` bucket. This preserves the persistent `rc_stats_object` size and its previous checksum; cost calculation itself is per-entry. The RC vector and end-to-end RC comparison against separate transactions and a multi-transfer transaction remain unmeasured; fewer bytes alone do not establish RC savings.
+The operation's transaction bytes, signatures and authority checks retain the normal Hive RC accounting. The execution-time estimate additionally charges the configured transfer execution weight for every input and output. Since experimental operation tags follow historical virtual-operation tags, their RC statistics are recorded in the existing `multiop` bucket. This preserves the persistent `rc_stats_object` size and its previous checksum; cost calculation itself is per-entry. Confirmed-block RC comparisons against separate transfers and a multi-transfer transaction are recorded in [the benchmark report](COMPRESSED_BATCH_RC_BENCHMARK.md). The fixture measurements are not a production RC guarantee.
 
 ## Limits and limitations
 
@@ -30,5 +30,5 @@ The operation's transaction bytes, signatures and authority checks retain the no
 - Duplicate source/destination entries and source/destination overlap are rejected.
 - This operation does not support savings, vesting, recurrent transfers, conversions, orders or other financial operations.
 - Local signed-RPC demonstrations: Alice-to-two-recipient 1-to-2 TESTS batch transaction `5bec9d138514ffecb02f2648fcd8263fed635719` was confirmed at block 63, distributing 0.500 TESTS each to Bob and merchant. Combined scoped batch transaction `3e1f6224b227388e49143ee2016e84b6207fe037` was confirmed at block 132: Bob's one signature authorized the actor role; Alice's grant 3 debited 1.000 TBD to merchant, and Bob's independent grant 1 debited 1.000 TBD to Pedro. The API showed both separate lifetime counters increase to 1.000 TBD. A follow-up signed batch attempting 1.001 TBD from Alice's grant was rejected, and RPC verified both grants remained at 1.000 TBD and all four balances unchanged. This confirms actor-authenticated multi-grant execution through RPC, including recipient attribution. Broader adversarial attribution tests now cover restricted/unrestricted source mixes, split outputs, independent grants, and reordering constraints; external audit and untested composition combinations remain required.
-- A populated grant, its revoked status and spending counter survived a clean node shutdown/restart. A populated scoped-grant snapshot restore and full replay from genesis were verified for the available one-grant development chain; prior two-node agreement and broader batch shapes are recorded above. Multi-grant populated snapshot/replay coverage remains open.
+- A populated grant, its revoked status and spending counter survived a clean node shutdown/restart. The consolidated branch requires a fresh-chain populated snapshot/replay and two-node verification; earlier results used the superseded two-slot development schedule and are not evidence for this schedule.
 - The operation is experimental consensus code and requires independent security review and a separately approved future hardfork before any production use.

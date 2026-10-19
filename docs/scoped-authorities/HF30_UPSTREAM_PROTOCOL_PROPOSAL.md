@@ -1,10 +1,10 @@
 # Protocol Improvement Proposal: Scoped Authorities and Compressed Batch Transfers
 
-**Status:** experimental proposal for technical review. This document does not assign HF30 as a Hive mainnet hardfork and does not propose activating the implementation without upstream review, an independent security audit, and normal witness/governance approval.
+**Status:** experimental proposal for technical review. The branch uses HF30 as one provisional alternate-chain activation for all described changes. This does not assign HF30 as a Hive mainnet hardfork and does not propose activation without upstream review, an independent security audit, and normal witness/governance approval.
 
 ## Summary
 
-This proposal describes two consensus extensions developed together in an isolated Hive repository branch: immutable, grantor-authorized spending grants, and an atomic single-asset account batch transfer. The prototype appends four signed operations without changing historical operation tags, stores grants in Chainbase, and gates evaluation to the alternate-chain development configuration. It is not production-ready.
+This proposal describes one consensus upgrade containing two related extensions: immutable, grantor-authorized spending grants and atomic single-asset account batch transfers. The unified prototype appends four signed operations without changing historical operation tags, stores grants and issuance metadata in Chainbase, and gates evaluation to the alternate-chain development configuration. Grant pruning and permanent grant-ID non-reuse are active from the first grant at the same activation. The implementation is not production-ready.
 
 ## Problem
 
@@ -12,7 +12,7 @@ Existing owner, active, and posting authorities do not express an independently 
 
 ## Scoped Authorities specification
 
-The four prototype operations are `create_scoped_authority_operation`, `revoke_scoped_authority_operation`, `scoped_transfer_operation`, and `compressed_batch_transfer_operation`. A grant contains grantor, actor, grant ID, one asset's per-transfer, fixed-period, and lifetime ceilings, validity timestamps, an optional canonical recipient allowlist, spent counters, period index, and revoked state. Grant creation and revocation require the grantor's active authority. A scoped transfer requires the actor's ordinary active authority; it does not make the actor an authority of the grantor. Grants are immutable. Under alternate-chain-only HF31, IDs must increase, a per-grantor high-water record prevents reuse after pruning, and revoked/expired rows are lazily pruned on later grant creation under a 100-row bound. HF30 retains its prior validation rules for replay. The supported assets are liquid HIVE and HBD only. Savings, recurrent transfers, vesting, conversions, market operations, and other operation types remain outside the grant.
+The four operations are `create_scoped_authority_operation`, `revoke_scoped_authority_operation`, `scoped_transfer_operation`, and `compressed_batch_transfer_operation`. A grant contains grantor, actor, grant ID, one asset's per-transfer, fixed-period, and lifetime ceilings, validity timestamps, an optional canonical recipient allowlist, spent counters, period index, and revoked state. Grant creation and revocation require the grantor's active authority. A scoped transfer requires the actor's ordinary active authority; it does not make the actor an authority of the grantor. Grants are immutable. From the unified activation, IDs must increase, a per-grantor high-water record prevents reuse after pruning, and revoked/expired rows are lazily pruned on later grant creation under a 100-row bound. Metadata is created with the first grant; no intermediate migration exists. The supported assets are liquid HIVE and HBD only. Savings, recurrent transfers, vesting, conversions, market operations, and other operation types remain outside the grant.
 
 Limits use integer asset units and consensus block time. A period is anchored to `valid_from`; when its index changes, only the period counter resets. Lifetime spending remains cumulative. A transfer at or after expiration fails, as does a transfer after revocation. The owner may still use ordinary account authority to move funds independently of a grant.
 
@@ -38,13 +38,13 @@ Using the CSV's `grant_setup_rc` and one batch's same-pool RC savings, a rough a
 
 ## Compatibility and activation
 
-The experimental source appends the four operation tags after historical virtual-operation tags in the full variant; tests pin historical and new tags and check the new operations are signed/non-virtual. `HIVE_PROTOCOL_SKIP_VOPS` produces the alternate regular-operation tag layout while preserving historical regular tags. This scheme is branch-specific and must be reviewed against all supported build variants before upstream adoption. Mainnet-configured evaluator code rejects application of these operations unconditionally. HF30 enables the operations and HF31 changes grant lifecycle rules only in alternate-chain builds; neither slot is an official mainnet assignment. A future implementation must receive an upstream-assigned hardfork identifier and activation mechanism.
+The experimental source appends the four operation tags after historical virtual-operation tags in the full variant; tests pin historical and new tags and check the new operations are signed/non-virtual. `HIVE_PROTOCOL_SKIP_VOPS` produces the alternate regular-operation tag layout while preserving historical regular tags. This scheme is branch-specific and must be reviewed against all supported build variants before upstream adoption. Mainnet-configured evaluator code rejects application of these operations unconditionally. All features activate together only in alternate-chain builds at the provisional HF30 slot. A future implementation must receive an upstream-assigned hardfork identifier and activation mechanism.
 
-The Chainbase grant and grantor-metadata indexes change consensus state layout. HF31 derives high-water metadata lazily from preexisting retained grants before committing cleanup. Existing state snapshots and nodes still need explicit compatibility validation; a clean replay may be required unless a reviewed migration is implemented. RC statistics object sizing remains unchanged by reusing the multi-operation bucket. Populated multi-grant snapshot and replay compatibility must be demonstrated before upstream acceptance.
+The Chainbase grant and grantor-metadata indexes change consensus state layout. HF30 activation itself performs no migration; metadata is created directly with the first grant. Snapshots and block histories made for the earlier two-slot experiment are not compatible with the consolidated schedule. Fresh genesis replay and populated snapshot restoration must be tested for the unified protocol. RC statistics object sizing remains unchanged by reusing the multi-operation bucket.
 
 ## Evidence and known limitations
 
-The branch has passed consensus, plugin, configuration, and explicit opt-in RC benchmark runs. The pinned Python 3.14 environment is installed in the project-local Poetry virtual environment; the generic node exit/stop smoke tests passed 2/2 when `HIVE_BUILD_ROOT_PATH` pointed at the modified build. These tests do not exercise experimental operations. Multi-grant snapshot/replay, runtime mainnet rejection, full-chain skip-VOPS compilation (the macro removes VOPs required by existing chain call sites), alternate-variant serialization round-trip, and fresh signed-RPC/two-node lifecycle verification remain gaps; current evidence and exact latest test totals are in [testing notes](SCOPED_AUTHORITIES_TESTING.md).
+The prior branch passed consensus, plugin, configuration, RC benchmark, populated two-slot snapshot/replay, signed-RPC, and two-node tests. Those results do not automatically validate a fresh unified-HF30 chain. Full-chain skip-VOPS compilation (the macro removes VOPs required by existing chain call sites) and alternate-variant serialization round-trip remain gaps. Current consolidated-chain results must be entered in [testing notes](SCOPED_AUTHORITIES_TESTING.md) after execution.
 
 ## Suggested review path
 
@@ -53,4 +53,4 @@ The branch has passed consensus, plugin, configuration, and explicit opt-in RC b
 3. Add reproducible populated multi-grant snapshot, replay, and mainnet-runtime rejection tests.
 4. Run a public alternate-chain testnet with independent witnesses/nodes and publish raw benchmark inputs and outputs.
 5. Resolve database migration/replay policy and RC reporting semantics.
-6. Only then prepare a separately numbered hardfork proposal through the normal Hive process. Do not deploy based on the experimental HF30 branch identifier.
+6. Only then prepare a hardfork proposal through the normal Hive process, using the identifier and activation mechanism assigned by Hive maintainers. Do not deploy based on the experimental HF30 branch identifier.

@@ -66,7 +66,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #ifdef IS_TEST_NET
 
-#define HIVE_BLOCKCHAIN_VERSION             ( version(1, 31, 0) )
+#define HIVE_BLOCKCHAIN_VERSION             ( version(1, 30, 0) )
 
 #define OLD_CHAIN_ID                          (fc::sha256::hash("testnet"))
 #define HIVE_CHAIN_ID                         (fc::sha256::hash("testnet"))
@@ -131,7 +131,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #ifdef USE_ALTERNATE_CHAIN_ID
   /// Mirrornet
-  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 31, 0) )
+  #define HIVE_BLOCKCHAIN_VERSION               ( version(1, 30, 0) )
   #define OLD_CHAIN_ID                          fc::sha256()
   #define HIVE_CHAIN_ID                         fc::sha256("4200000000000000000000000000000000000000000000000000000000000000")
 #else

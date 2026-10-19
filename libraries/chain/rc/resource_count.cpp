@@ -541,7 +541,7 @@ struct count_operation_visitor
     state_bytes_count += _w.PERSISTENT_STATE_BYTE *
       ( HIVE_SCOPED_AUTHORITY_RC_FIXED_BYTES + HIVE_MAX_ACCOUNT_NAME_LENGTH * op.allowed_recipients.size() );
     execution_time_count += _e.transfer_time;
-    if( _db != nullptr && _db->has_hardfork( HIVE_HARDFORK_SCOPED_AUTHORITY_LIFECYCLE ) )
+    if( _db != nullptr )
     {
       auto count_itr = _grant_counts.find( op.grantor );
       if( count_itr == _grant_counts.end() )
@@ -564,7 +564,7 @@ struct count_operation_visitor
       const auto& metadata = _db->get_index< scoped_authority_grantor_metadata_index, by_scoped_grantor >();
       if( metadata.find( op.grantor ) == metadata.end() && _metadata_charged.insert( op.grantor ).second )
       {
-        // Only the first grant creates the persistent ID high-water record.
+        // The first grant creates the persistent ID high-water record.
         state_bytes_count += _w.PERSISTENT_STATE_BYTE * HIVE_SCOPED_AUTHORITY_RC_METADATA_BYTES;
       }
     }

@@ -1,24 +1,27 @@
-# Scoped Authorities Hardfork Integration
+# Unified Experimental HF30 Integration
 
-**Status: alternate-chain HF30 enables the experimental operations and HF31 enables grant lifecycle changes. Both are development-only; mainnet remains capped at HF28 and rejects the operations.**
+**Status:** HF30 is a provisional development-only identifier on alternate-chain builds. It is not an assigned Hive mainnet hardfork number. Scoped Authorities, Compressed Batch Transfers, and grant lifecycle rules activate together at this one hardfork.
 
-## Activation strategy
+## Activation
 
-Do not attach the feature to HF29: this source already defines HF29 behavior for alternate-chain builds. Mainnet's configured maximum is HF28. HF30 enables the scoped and batch operations; HF31 changes grant lifecycle behavior while keeping HF30 replay semantics intact. Both use alternate-chain configuration and a far-future fallback schedule. Mainnet builds do not add either hardfork to their active maximum; non-alternate evaluator paths contain unconditional rejection guards. A post-HF31 runtime submission test has not been performed.
+Alternate-chain builds expose hardfork slot 30 after the existing alternate-chain HF29 behavior. Their development schedule defaults to a far-future time unless a local chain specification schedules HF30. Mainnet builds retain HF28 as their configured maximum and compile evaluator guards that reject all four experimental operations. No second experimental activation or intermediate lifecycle state exists in this branch.
 
-Four signed operations are appended after all historic variant tags, leaving every historic numeric tag unchanged. Current full-variant tags are 93–96; the `HIVE_PROTOCOL_SKIP_VOPS` variant is expected to assign 50–53. `is_virtual_operation` returns false for the new operations. Unit tests pin existing and new tags in the ordinary build. HF30 enables the operations on alternate chains; alternate-chain-only HF31 adds grant cleanup and monotonic ID rules while preserving historical HF30 behavior. The skip-VOPS protocol-only target and executable tag check pass; full-chain builds fail at existing virtual-operation call sites, and alternate-variant serialization round-trip plus mainnet runtime rejection remain upstream validation requirements.
+All four signed operations become available together after HF30: `create_scoped_authority_operation`, `revoke_scoped_authority_operation`, `scoped_transfer_operation`, and `compressed_batch_transfer_operation`. HF30 has no state migration. Grantor high-water metadata is created atomically with that grantor's first grant, and all subsequent grant creation uses monotonic IDs and deterministic pruning.
 
-## Upgrade, replay, and snapshots
+The four operation tags remain appended after the historical variant tags; no existing operation is renumbered. The full operation variant uses tags 93–96 in the current build. The `HIVE_PROTOCOL_SKIP_VOPS` protocol variant has its own append layout. Full-chain compilation with that macro fails at an existing virtual-operation construction omitted from the variant in both this branch and upstream develop. Compatibility for each supported build variant must be reviewed before upstream adoption.
 
-The Chainbase grant and grantor-metadata indexes are registered with normal database indexes. The lifecycle implementation lazily derives metadata from up to 100 retained HF30 grants, then cleans obsolete grants transactionally. Existing snapshot/replay evidence predates this new metadata type; populated HF31 snapshot restore and replay must be verified before upstream deployment. The RC statistics object layout remains unchanged.
+## State and replay
 
-## Deployment checklist
+The Chainbase grant and grantor-metadata indexes are registered through the normal database index mechanism. HF30 activation itself changes no grant rows. The first grant creation stores the highest issued ID; later creations prune only revoked or expired rows, with the existing 100-record bound limiting work. The metadata remains after all grant rows are pruned, so identifiers cannot be reused. Failed transactions and block pops restore both metadata and grant records through the normal undo session.
 
-- Assign hardfork slot and version through repository hardfork conventions.
-- Preserve operation serialization IDs and test old transaction/block fixtures.
-- Add new index registration and snapshot/replay tests.
-- Build all supported configurations and run consensus, plugin, and Python integration suites.
-- Test on isolated alternate-chain testnet through preactivation and activation blocks.
-- Verify witness scheduling, RC accounting, rollback/reorg, and deterministic replay across two independent nodes.
-- Obtain external protocol/security review before any upstream or mainnet proposal.
-- Confirm mainnet activation remains solely a future witness/governance decision.
+This branch consolidates previously experimental two-slot development histories. Those chains and snapshots are intentionally not replay-compatible with the unified schedule. Preserve them on the prior branch for reference; use fresh data directories and a fresh genesis specification for consolidated testing. No existing data directory is automatically rewritten or removed.
+
+## Verification and deployment requirements
+
+- Schedule only HF30 in isolated alternate-chain specs and test transactions immediately before and after activation.
+- Verify the four operations are rejected in a production-configured local harness.
+- Preserve historical operation tags and serialization fixtures.
+- Run consensus, plugin, configuration, RC, signed-RPC, snapshot, full replay, and two-node synchronization tests.
+- Review snapshot/state layout and replay requirements with Hive maintainers.
+- Obtain an independent protocol/security audit and normal witness/governance approval before any production proposal.
+- Replace the provisional identifier and schedule through upstream hardfork conventions if maintainers choose to pursue deployment.

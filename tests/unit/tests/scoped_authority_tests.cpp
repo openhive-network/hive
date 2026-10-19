@@ -249,23 +249,35 @@ BOOST_AUTO_TEST_CASE( scoped_grant_id_maximum_is_accepted_once_without_wraparoun
   BOOST_REQUIRE_EQUAL( db->count< scoped_authority_object >(), 1u );
 }
 
-BOOST_AUTO_TEST_CASE( scoped_grant_metadata_migrates_existing_ids_before_pruning )
+BOOST_AUTO_TEST_CASE( scoped_grant_metadata_is_created_with_first_grant )
 {
   ACTORS( DEFAULT_VESTING, (alice)(bob) );
-  const auto valid_from = db->head_block_time() - fc::seconds( 60 );
-  const auto expired_at = db->head_block_time();
-  const std::vector< account_name_type > no_recipients;
-  for( uint32_t id : { 7u, 3u } )
-    db->create< scoped_authority_object >( "alice", "bob", id,
-      HBD_asset( 100 ).to_asset(), HBD_asset( 1000 ).to_asset(), HBD_asset( 10000 ).to_asset(),
-      60, valid_from, expired_at, no_recipients );
-
-  push_transaction( make_hbd_grant( *db, {}, 8, 100, 1000, 10000, 60, 60 ), alice_private_key );
+  issue_funds( "alice", HIVE_asset( 100000000 ) );
+  vest( "alice", HIVE_asset( 100000000 ) );
+  push_transaction( make_hbd_grant( *db, {}, 7, 100, 1000, 10000, 60, 3600 ), alice_private_key );
+  generate_blocks( 1 );
+  BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, 7u );
+  const auto& grants = db->get_index< scoped_authority_index, by_grantor_id >();
+  BOOST_REQUIRE_EQUAL( grants.size(), 1u );
+  BOOST_REQUIRE_EQUAL( grants.begin()->grantor, "alice" );
+  BOOST_REQUIRE( grants.begin()->grant_id == uint32_t( 7 ) );
+  auto grant = make_hbd_grant( *db, {}, 8, 100, 1000, 10000, 60, 3600 );
+  push_transaction( grant, alice_private_key );
+  generate_blocks( 1 );
   BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, 8u );
+  revoke_scoped_authority_operation revoke;
+  revoke.grantor = "alice";
+  revoke.grant_id = 7;
+  push_transaction( revoke, alice_private_key );
+  generate_blocks( 1 );
+  auto replacement = make_hbd_grant( *db, {}, 9, 100, 1000, 10000, 60, 3600 );
+  push_transaction( replacement, alice_private_key );
+  generate_blocks( 1 );
+  BOOST_REQUIRE_EQUAL( find_grant_metadata( *db, "alice" ).last_grant_id, 9u );
   BOOST_REQUIRE(( db->find< scoped_authority_object, by_grantor_id >(
     boost::make_tuple( "alice", 7u ) ) == nullptr ));
   HIVE_REQUIRE_THROW( push_transaction(
-    make_hbd_grant( *db, {}, 3, 100, 1000, 10000, 60, 60 ), alice_private_key ), fc::exception );
+    make_hbd_grant( *db, {}, 7, 100, 1000, 10000, 60, 3600 ), alice_private_key ), fc::exception );
 }
 
 BOOST_AUTO_TEST_CASE( scoped_per_transfer_period_and_lifetime_limits_are_enforced )

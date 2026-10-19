@@ -1,5 +1,12 @@
 # Scoped Authorities Changelog
 
+## Unified experimental activation
+
+- Consolidated the four experimental operations, permanent grant-ID high-water metadata, bounded lazy pruning, and all grant lifecycle behavior into one provisional alternate-chain HF30 activation.
+- Removed the second development hardfork slot and the intermediate migration path. The first grant now creates its grantor metadata directly; grant records without metadata are rejected as inconsistent state.
+- Existing development chains created with the former two-slot schedule are preserved on `backup/hf30-hf31-pre-consolidation` and are not replay-compatible with this branch. New validation uses fresh data directories.
+- HF30 remains a local experimental identifier, not an assigned Hive mainnet hardfork. Mainnet builds continue rejecting the experimental operations.
+
 ## Initial audit and design
 
 - Added a protocol proposal and threat model under `docs/scoped-authorities/`.

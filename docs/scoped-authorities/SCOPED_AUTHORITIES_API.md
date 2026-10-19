@@ -4,7 +4,7 @@
 
 ## Read API
 
-`database_api.get_scoped_authorities` accepts `{ "grantor": "alice" }` and returns retained grants for that grantor in canonical grant ID order, plus `last_issued_grant_id`. Under HF31 clients should choose a nonzero ID greater than this value; IDs may skip, cannot wrap, and cannot be reused after pruning. If this value is `4294967295`, the grantor has exhausted its ID space. A missing or pruned grant is omitted like an unknown grant. The response also includes grantor, actor, all three configured limits, period and lifetime counters, remaining allowances, period duration/index, validity interval, recipient list, and `active`/`revoked` flags. `active` is derived from head time and the revoked flag. There is no pagination or actor-index query in this prototype. The endpoint is read-only and does not expose key material.
+`database_api.get_scoped_authorities` accepts `{ "grantor": "alice" }` and returns retained grants for that grantor in canonical grant ID order, plus `last_issued_grant_id`. Under the unified experimental HF30, clients should choose a nonzero ID greater than this value; IDs may skip, cannot wrap, and cannot be reused after pruning. If this value is `4294967295`, the grantor has exhausted its ID space. A missing or pruned grant is omitted like an unknown grant. The response also includes grantor, actor, all three configured limits, period and lifetime counters, remaining allowances, period duration/index, validity interval, recipient list, and `active`/`revoked` flags. `active` is derived from head time and the revoked flag. There is no pagination or actor-index query in this prototype. The endpoint is read-only and does not expose key material.
 
 Smoke-tested against the modified local testnet binary using:
 

@@ -116,9 +116,6 @@ void database::init_hardforks()
   FC_ASSERT( HIVE_HARDFORK_1_30 == 30, "Invalid hardfork configuration" );
   _hardfork_versions.times[ HIVE_HARDFORK_1_30 ] = fc::time_point_sec( HIVE_HARDFORK_1_30_TIME );
   _hardfork_versions.versions[ HIVE_HARDFORK_1_30 ] = HIVE_HARDFORK_1_30_VERSION;
-  FC_ASSERT( HIVE_HARDFORK_1_31 == 31, "Invalid hardfork configuration" );
-  _hardfork_versions.times[ HIVE_HARDFORK_1_31 ] = fc::time_point_sec( HIVE_HARDFORK_1_31_TIME );
-  _hardfork_versions.versions[ HIVE_HARDFORK_1_31 ] = HIVE_HARDFORK_1_31_VERSION;
 #endif
 }
 
@@ -520,12 +517,7 @@ void database::apply_hardfork( uint32_t hardfork )
     }
     case HIVE_HARDFORK_1_30:
     {
-      // Scoped authority state is created only by post-activation transactions; no migration is needed.
-      break;
-    }
-    case HIVE_HARDFORK_1_31:
-    {
-      // Existing grants are migrated lazily on the first post-HF31 grant creation.
+      // Scoped authorities, batch transfers, and grant lifecycle rules activate together.
       break;
     }
     default:
