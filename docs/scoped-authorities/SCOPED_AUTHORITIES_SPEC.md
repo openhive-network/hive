@@ -34,7 +34,7 @@ The grant record contains the grantor and actor account names, caller-supplied `
   "amount":{"amount":"5000","precision":3,"nai":"@@000000013"},"memo":"invoice"}}
 ```
 
-Revocation identifies `(grantor, grant_id)` and requires grantor active authority. Its static-variant JSON shape is `{"type":"revoke_scoped_authority_operation","value":{"grantor":"alice","grant_id":1}}`. These JSON shapes reflect protocol field names; wallet/RPC signing interoperability remains to be demonstrated.
+Revocation identifies `(grantor, grant_id)` and requires grantor active authority. Its static-variant JSON shape is `{"type":"revoke_scoped_authority_operation","value":{"grantor":"alice","grant_id":1}}`. Generic wallet signing and RPC broadcast were demonstrated on the predecessor development chain; those signed flows have not yet been repeated against a populated chain using the consolidated single-HF30 schedule.
 
 ## Spending and timestamp semantics
 

@@ -1,6 +1,6 @@
 # Scoped Authorities API and Wallet Integration
 
-**Status: Operations and the read-only database API are implemented in the development-only build. Signed grant, restricted transfer, revoke, batch, rejection, and expiration flows have been demonstrated on an isolated alternate-chain testnet.**
+**Status: Operations and the read-only database API are implemented in the development-only build. Signed grant, restricted transfer, revoke, batch, rejection, and expiration flows were demonstrated on an isolated predecessor alternate-chain testnet. The signed flow has not yet been rerun on the consolidated single-HF30 schedule.**
 
 ## Read API
 
