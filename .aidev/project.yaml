@@ -28,7 +28,7 @@ branches:
 # How this project's suites execute (#13892): one kind, stated once.
 environment:
   kind: "container"
-  image: "registry.gitlab.syncad.com/hive/hive/aidev-tests@sha256:94d31d5ceadad40ecea925e17bf957c9b8cb5d6cdbe7eeb45346ed6a55734c03"
+  image: "registry.gitlab.syncad.com/hive/hive/aidev-tests@sha256:11dfc04a5011bb69e0bf202363e53e44989f691f5c994ee83f7ea5e45a76a92a"
   inputs: [".aidev/runtime/Dockerfile"]
 
 issues:
