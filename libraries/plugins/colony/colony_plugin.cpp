@@ -1,4 +1,3 @@
-﻿
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/colony/colony_plugin.hpp>

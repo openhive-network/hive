@@ -24,16 +24,16 @@ package hive.protocol.buffers;
  *
  * A user who votes for the post or the comment may receive the curation reward. It is paid 100% HP. Its share depends on:
  * - voting power
- * - weight of the vote – a user may decide about the weight of the vote
- * - the time when they vote – the sooner you vote, the higher the share in the curation reward (the first 24 h
- *   the weight of the vote is 100% - early voting, next 48 hours the weight is divided by 2, then – till the 7th day - it is divided by 8)
+ * - weight of the vote - a user may decide about the weight of the vote
+ * - the time when they vote - the sooner you vote, the higher the share in the curation reward (the first 24 h
+ *   the weight of the vote is 100% - early voting, next 48 hours the weight is divided by 2, then - till the 7th day - it is divided by 8)
  *
  * When a post or a comment receives a reward, it is divided between the author's reward and the curation reward.
  * The curation reward is shared among curators. 
  *
  * The calculated reward should be more than 0.02 HBD to be paid, if it is less, it is not paid.
  *
- * A downvoting user doesn’t receive the curation reward.
+ * A downvoting user doesn't receive the curation reward.
  * Downvoting may affect the author of the comment's reputation when a user who downvotes has a higher reputation than the author.
  *
  * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/00_vote.md?ref_type=heads

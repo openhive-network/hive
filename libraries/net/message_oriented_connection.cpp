@@ -183,7 +183,7 @@ namespace graphene { namespace net {
           }
           fc::time_point read_last_bytes_time = fc::time_point::now();
           fc::microseconds read_duration = read_last_bytes_time - read_first_bytes_time;
-          dlog("read complete ${type} message from ${peer} in ${read_duration}μs, decoding and passing to node", 
+          dlog("read complete ${type} message from ${peer} in ${read_duration}us, decoding and passing to node", 
                ("type", (core_message_type_enum)m.msg_type)(read_duration)("peer", remote_endpoint));
           m.data.resize(m.size); // truncate off the padding bytes
 

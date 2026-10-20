@@ -116,7 +116,7 @@ namespace hive { namespace chain {
         bool auto_fixing_enabled = true;
 
         // during testing (around block 63M) we found level 15 to be a good balance between ratio
-        // and compression/decompression times of ~3.5ms & 65μs, so we're making level 15 the default, and the
+        // and compression/decompression times of ~3.5ms & 65us, so we're making level 15 the default, and the
         // dictionaries are optimized for level 15
         int zstd_level = 15;
 
@@ -826,7 +826,7 @@ namespace hive { namespace chain {
     const unsigned num_threads = std::max(1u, std::thread::hardware_concurrency());
     std::vector<std::thread> workers;
 
-    // Helper: process a filled batch — compute block_ids in parallel, then deliver to processor
+    // Helper: process a filled batch - compute block_ids in parallel, then deliver to processor
     bool stop_requested = false;
     auto process_batch = [&]()
     {
@@ -855,7 +855,7 @@ namespace hive { namespace chain {
       }
       else
       {
-        // Small batch — compute sequentially
+        // Small batch - compute sequentially
         for (auto& entry : batch)
           compute_block_id(entry);
       }

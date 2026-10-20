@@ -5,8 +5,8 @@ The high-level ``wallet.api.create_account`` always fills ``fee`` with the chain
 current ``account_creation_fee``, so it can never exercise the "wrong fee" path of the
 ``account_create_evaluator``. These tests build a raw ``account_create_operation`` with an
 explicit fee to cover:
-  * the fee assertion (``HIVE_CHAIN_FEE_ASSERT`` -> ``chain/fee``) — wrong fee paid, and
-  * the insufficient-balance path — a valid fee the creator cannot afford.
+  * the fee assertion (``HIVE_CHAIN_FEE_ASSERT`` -> ``chain/fee``) - wrong fee paid, and
+  * the insufficient-balance path - a valid fee the creator cannot afford.
 
 Related to https://gitlab.syncad.com/hive/hive/-/issues/856
 """

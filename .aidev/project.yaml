@@ -51,7 +51,7 @@ sandbox:
   readiness_timeout: 60
 
 # Verification slots. Each binding is what this project genuinely runs for
-# that slot — never one selection repeated under seven names, which makes
+# that slot - never one selection repeated under seven names, which makes
 # seven gates report on the same evidence while claiming to check seven
 # different things.
 #

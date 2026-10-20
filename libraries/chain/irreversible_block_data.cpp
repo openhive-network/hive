@@ -64,7 +64,7 @@ std::string get_irreversible_block_details(chainbase::database& db)
     fc::mutable_variant_object block_data_vo;
     block_data_vo("_compression_attributes", fc::variant(block_data._compression_attributes));
     block_data_vo("_byte_size", block_data._byte_size);
-    // Note: _block_bytes is intentionally omitted — it uses boost::interprocess allocators
+    // Note: _block_bytes is intentionally omitted - it uses boost::interprocess allocators
     // that cannot be serialized with fc::json, and its size is already represented by _byte_size.
     block_data_vo("_block_id", fc::variant(block_data._block_id));
 

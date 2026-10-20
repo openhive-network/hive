@@ -15,7 +15,7 @@
 #   ./test_no_legacy_messages.sh <testnet-image>
 #
 # Exit code 0 = all checks passed; nonzero otherwise.
-# Note: run against a pre-fix image to confirm the red case — check 3 must fail there.
+# Note: run against a pre-fix image to confirm the red case - check 3 must fail there.
 
 set -uo pipefail
 

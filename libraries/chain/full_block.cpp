@@ -118,7 +118,7 @@ full_block_type::~full_block_type()
   full_block->merkle_root = compute_merkle_root(full_transactions);
   //fc::time_point compute_end = fc::time_point::now();
   //full_block->compute_merkle_root_time = compute_end - compute_begin;
-  //fc_ilog(fc::logger::get("worker_thread"), "merkle_root calculation took ${t}μs", ( "t", full_block->compute_merkle_root_time ));
+  //fc_ilog(fc::logger::get("worker_thread"), "merkle_root calculation took ${t}us", ( "t", full_block->compute_merkle_root_time ));
   new_block.transaction_merkle_root = *full_block->merkle_root;
 
   // let's start generating the serialized version of the block:
@@ -209,7 +209,7 @@ const uncompressed_block_data& full_block_type::get_uncompressed_block() const
     decompress_block();
     fc::time_point wait_end = fc::time_point::now();
     fc::microseconds wait_duration = wait_end - wait_begin;
-    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_uncompressed_block()", (wait_duration));
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}us in full_block_type::get_uncompressed_block()", (wait_duration));
   }
   return decoded_block_storage->uncompressed_block;
 }
@@ -276,7 +276,7 @@ const compressed_block_data& full_block_type::get_compressed_block() const
     compress_block();
     fc::time_point wait_end = fc::time_point::now();
     fc::microseconds wait_duration = wait_end - wait_begin;
-    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_compressed_block(), compression took ${compression_time}μs",
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}us in full_block_type::get_compressed_block(), compression took ${compression_time}us",
             (wait_duration)(compression_time));
   }
   return compressed_block;
@@ -297,7 +297,7 @@ const compressed_block_data& full_block_type::get_alternate_compressed_block() c
   alternate_compress_block();
   fc::time_point wait_end = fc::time_point::now();
   fc::microseconds wait_duration = wait_end - wait_begin;
-  fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_alternate_compressed_block(), compression took ${alternate_compression_time}μs",
+  fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}us in full_block_type::get_alternate_compressed_block(), compression took ${alternate_compression_time}us",
           (wait_duration)(alternate_compression_time));
 
   return alternate_compressed_block;
@@ -440,7 +440,7 @@ const signed_block_header& full_block_type::get_block_header() const
     decode_block_header();
     fc::time_point decode_end = fc::time_point::now();
     fc::microseconds decode_duration = decode_end - decode_begin;
-    fc_ilog(fc::logger::get("worker_thread"), "waited ${decode_duration}μs in full_block_type::get_block_header(), header decode took ${decode_block_header_time}μs",
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${decode_duration}us in full_block_type::get_block_header(), header decode took ${decode_block_header_time}us",
             (decode_duration)(decode_block_header_time));
   }
 
@@ -508,7 +508,7 @@ const signed_block& full_block_type::get_block() const
     decode_block();
     fc::time_point decode_end = fc::time_point::now();
     fc::microseconds decode_duration = decode_end - decode_begin;
-    fc_ilog(fc::logger::get("worker_thread"), "waited ${decode_duration}μs in full_block_type::get_block(), actual decode took ${decode_block_time}μs", 
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${decode_duration}us in full_block_type::get_block(), actual decode took ${decode_block_time}us", 
             (decode_duration)(decode_block_time));
   }
 
@@ -523,7 +523,7 @@ const block_id_type& full_block_type::get_block_id() const
     decode_block_header(); // block_id will be generated as part of decoding the header
     fc::time_point decode_end = fc::time_point::now();
     fc::microseconds decode_duration = decode_end - decode_begin;
-    fc_ilog(fc::logger::get("worker_thread"), "waited ${decode_duration}μs in full_block_type::get_block_id(), actual decode took ${decode_block_header_time}μs", 
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${decode_duration}us in full_block_type::get_block_id(), actual decode took ${decode_block_header_time}us", 
             (decode_duration)(decode_block_header_time));
   }
   return block_id;
@@ -569,7 +569,7 @@ const fc::ripemd160& full_block_type::get_legacy_block_message_hash() const
     compute_legacy_block_message_hash();
     fc::time_point wait_end = fc::time_point::now();
     fc::microseconds wait_duration = wait_end - wait_begin;
-    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_legacy_block_message_hash(), computing it took ${compute_legacy_block_message_hash_time}μs", 
+    fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}us in full_block_type::get_legacy_block_message_hash(), computing it took ${compute_legacy_block_message_hash_time}us", 
             (wait_duration)(compute_legacy_block_message_hash_time));
   }
   return legacy_block_message_hash;
@@ -601,7 +601,7 @@ const fc::ecc::public_key& full_block_type::get_signing_key() const
   compute_signing_key();
   fc::time_point wait_end = fc::time_point::now();
   fc::microseconds wait_duration = wait_end - wait_begin;
-  fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_signing_key(), actual calculation took ${compute_block_signing_key_time}μs",
+  fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}us in full_block_type::get_signing_key(), actual calculation took ${compute_block_signing_key_time}us",
           (wait_duration)(compute_block_signing_key_time));
   return *block_signing_key;
 }
@@ -654,7 +654,7 @@ const checksum_type& full_block_type::get_merkle_root() const
   compute_merkle_root();
   fc::time_point wait_end = fc::time_point::now();
   fc::microseconds wait_duration = wait_end - wait_begin;
-  fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}μs in full_block_type::get_merkle_root(), actual calculation took ${compute_merkle_root_time}μs",
+  fc_ilog(fc::logger::get("worker_thread"), "waited ${wait_duration}us in full_block_type::get_merkle_root(), actual calculation took ${compute_merkle_root_time}us",
           (wait_duration)(compute_merkle_root_time));
   return *merkle_root;
 } FC_CAPTURE_AND_RETHROW() }

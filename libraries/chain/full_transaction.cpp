@@ -170,7 +170,7 @@ const flat_set<hive::protocol::public_key_type>& full_transaction_type::get_sign
   else
   {
     cached_get_signature_keys_calls.fetch_add(1, std::memory_order_relaxed);
-    // ilog("get_signature_keys cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", 
+    // ilog("get_signature_keys cache hit.  saved ${saved}us, totals: ${cached} cached, ${not} not cached", 
     //      ("saved", signature_info->computation_time)
     //      ("cached", cached_get_signature_keys_calls.load())
     //      ("not", non_cached_get_signature_keys_calls.load()));
@@ -206,7 +206,7 @@ void full_transaction_type::precompute_validation(std::function<void(const hive:
     }
     validation_computation_time = fc::time_point::now() - computation_start;
     validation_attempted.store(true, std::memory_order_release);
-    // ilog("validate cache miss.  cost ${cost}µs, totals: ${cached} cached, ${not} not cached", 
+    // ilog("validate cache miss.  cost ${cost}us, totals: ${cached} cached, ${not} not cached", 
     //      ("cost", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
     // idump((get_transaction()));
   }
@@ -222,7 +222,7 @@ void full_transaction_type::validate(std::function<void(const hive::protocol::op
   else
   {
     cached_validate_calls.fetch_add(1, std::memory_order_relaxed);
-    // ilog("validate cache hit.  saved ${saved}µs, totals: ${cached} cached, ${not} not cached", 
+    // ilog("validate cache hit.  saved ${saved}us, totals: ${cached} cached, ${not} not cached", 
     //      ("saved", validation_computation_time)("cached", cached_validate_calls.load())("not", non_cached_validate_calls.load()));
   }
   validation_accessed.store(true, std::memory_order_relaxed);
@@ -519,7 +519,7 @@ full_transaction_ptr full_transaction_cache::add_to_cache(const full_transaction
     {
       my->contended_lock_count.fetch_add(1, std::memory_order_relaxed);
       // TODO: disable this warning before release, this is expected right at the transition between sync & live mode
-      dlog("full_transaction_cache lock contention, waited ${duration}µs, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used",
+      dlog("full_transaction_cache lock contention, waited ${duration}us, lock has been in use ${contended_lock_count} of ${total_lock_count} times it was used",
            ("duration", *wait_duration)("contended_lock_count", my->contended_lock_count.load())("total_lock_count", my->total_lock_count.load()));
 
     }

@@ -620,9 +620,9 @@ void chain_plugin_impl::start_write_processing()
           cumulative_time_waiting_for_locks += write_lock_acquisition_time;
 
           if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
-            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms",
+            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}us exceeds warning threshold of 50ms",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
-          fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}μs",
+          fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}us",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f, theApp )
           while (true)
@@ -662,7 +662,7 @@ void chain_plugin_impl::start_write_processing()
               if (write_lock_held_duration > fc::milliseconds(write_lock_hold_time))
               {
                 wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
-                  "held lock for ${write_lock_held_duration}μs, ${i} items left in queue",
+                  "held lock for ${write_lock_held_duration}us, ${i} items left in queue",
                   (write_lock_hold_time)
                   ("write_lock_held_duration", write_lock_held_duration.count())
                   ("i", priority_write_queue.size() + write_queue.size()));
@@ -692,7 +692,7 @@ void chain_plugin_impl::start_write_processing()
               {
                 fc::microseconds write_queue_processed_duration = fc::time_point::now() - write_lock_acquired_time;
                 //if (write_queue_processed_duration > fc::milliseconds(500))
-                  fc_dlog(fc::logger::get("chainlock"), "Emptied write_queue of ${write_queue_items_processed} items after ${write_queue_processed_duration}µs (${per_item}µs/item)",
+                  fc_dlog(fc::logger::get("chainlock"), "Emptied write_queue of ${write_queue_items_processed} items after ${write_queue_processed_duration}us (${per_item}us/item)",
                           (write_queue_items_processed)("write_queue_processed_duration", write_queue_processed_duration.count())
                           ("per_item", write_queue_processed_duration.count() / write_queue_items_processed));
                 break;
@@ -2195,7 +2195,7 @@ bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >
       float microseconds_per_block = (float)duration.count() / 10000.f;
       std::ostringstream microseconds_per_block_stream;
       microseconds_per_block_stream << std::setprecision(2) << std::fixed << microseconds_per_block;
-      ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p} --- ${microseconds_per_block}µs/block, avg. size ${s}, avg. tx count ${c}",
+      ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p} --- ${microseconds_per_block}us/block, avg. size ${s}, avg. tx count ${c}",
            ("t", block.timestamp)("n", block.block_num())("p", block.witness)("microseconds_per_block", microseconds_per_block_stream.str())
            ("s", (my->sync_progress->total_block_size+5000)/10000)("c", (my->sync_progress->total_tx_count+5000)/10000));
     }

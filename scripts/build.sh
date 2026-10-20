@@ -289,7 +289,7 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
         if [[ -f "$_tools_dir_file" ]]; then
             _preinstalled_tools=$(cat "$_tools_dir_file")
             if [[ -n "$_preinstalled_tools" && -n "$(shopt -s nullglob; echo "$_preinstalled_tools/sst_dum"*)" ]]; then
-                # Use cp, not mv — do not modify the preinstalled directory
+                # Use cp, not mv - do not modify the preinstalled directory
                 cp "$_preinstalled_tools/sst_dum"* "$HIVED_INSTALLATION_DIR/"
             fi
         fi

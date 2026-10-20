@@ -1521,7 +1521,7 @@ BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_false_opens_existing_block_lo
 
     BOOST_REQUIRE( fc::exists( log_path ) );
 
-    // Reopen with allow_artifacts_regeneration=false, read_only=true — should succeed
+    // Reopen with allow_artifacts_regeneration=false, read_only=true - should succeed
     // on existing file with valid artifacts.
     {
       block_log log( app );
@@ -1619,7 +1619,7 @@ BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_false_suppresses_artifacts_au
     fc::remove( artifacts_path );
     BOOST_REQUIRE( !fc::exists( artifacts_path ) );
 
-    // Reopen with allow_artifacts_regeneration=false — should throw because artifacts are
+    // Reopen with allow_artifacts_regeneration=false - should throw because artifacts are
     // missing and auto-repair is suppressed.
     {
       block_log log( app );
@@ -1679,7 +1679,7 @@ BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_true_recreates_missing_artifa
     fc::remove( artifacts_path );
     BOOST_REQUIRE( !fc::exists( artifacts_path ) );
 
-    // Reopen with allow_artifacts_regeneration=true — should succeed and recreate artifacts.
+    // Reopen with allow_artifacts_regeneration=true - should succeed and recreate artifacts.
     {
       block_log log( app );
       log.open_and_init( log_path,

@@ -4,7 +4,7 @@
 # project that has not asked for it is exactly the artifact onboarding tries
 # not to push.
 #
-# `authority` is required on every label and has no default — see
+# `authority` is required on every label and has no default - see
 # docs/architecture/issue-taxonomy.md for the three values.
 version: 1
 

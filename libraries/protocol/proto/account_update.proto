@@ -7,7 +7,7 @@ package hive.protocol.buffers;
 /* Operations account_update_operation and account_update2_operation share a limit of allowed updates of the owner authority:
  * two executions per 60 minutes (HIVE_OWNER_UPDATE_LIMIT) (meaning each of them can be executed twice or both can be executed once during that time period).
  * After 30 days (HIVE_OWNER_AUTH_RECOVERY_PERIOD) using the account recovery process to change the owner authority is no longer possible.
- * The operation account_update_operation allows changing authorities, it doesn’t allow changing the posting_json_metadata.
+ * The operation account_update_operation allows changing authorities, it doesn't allow changing the posting_json_metadata.
  *
  * Description https://gitlab.syncad.com/hive/hive/-/blob/develop/doc/devs/operations/10_account_update.md?ref_type=heads
  */

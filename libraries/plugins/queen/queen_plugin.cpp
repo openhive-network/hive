@@ -1,4 +1,4 @@
-﻿
+
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/utilities/signal.hpp>
@@ -234,13 +234,13 @@ void queen_plugin_impl::print_stats()
   ilog( "${p} blocks out of ${a} were produced by QUEEN. Stopped at block #${b}",
     ( "p", blocks_produced )( "a", blocks_observed )( "b", _db.head_block_num() ) );
   auto x = blocks_produced == 0 ? 1u : blocks_produced;
-  ilog( "Blocks produced in average time of ${p}μs, applied in ${a}μs, average full processing time ${f}μs",
+  ilog( "Blocks produced in average time of ${p}us, applied in ${a}us, average full processing time ${f}us",
     ( "p", total_production_time.count() / x )
     ( "a", total_application_time.count() / x )
     ( "f", total_time.count() / x )
   );
   x = blocks_observed <= 1 ? 1u : blocks_observed - 1; // first block is not measured
-  ilog( "Full block cycle: min = ${m}μs at #${mb}, avg = ${a}μs, max = ${x}μs at #${xb}",
+  ilog( "Full block cycle: min = ${m}us at #${mb}, avg = ${a}us, max = ${x}us at #${xb}",
     ( "m", min_full_block_cycle_time )( "mb", min_full_block_cycle_num )
     ( "a", total_full_block_cycle_time.count() / x )
     ( "x", max_full_block_cycle_time )( "xb", max_full_block_cycle_num )
