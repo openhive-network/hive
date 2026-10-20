@@ -103,21 +103,20 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
-    // Below asserts fail exactly where safe<int64_t> additions of delta would overflow (in
+    // Below asserts fail exactly where share_type additions of delta would overflow (in
     // update_account_after_rc_delegation and in delta_total), so they only replace the bare overflow message.
+    // Such delta is way beyond RC of all accounts combined, so the operation would not pass the final check
+    // anyway - it is reported as insufficient RC right away.
     if( delta > 0 )
     {
-      const int64_t to_rc_peak = std::max( { to_account.rc_manabar.current_mana, to_account.get_maximum_rc().value,
-        to_account.get_received_rc().value } );
-      FC_ASSERT( to_rc_peak <= 0 || delta.value <= max_int64 - to_rc_peak,
-        "Account ${a} cannot delegate ${n} RC to ${to}: it exceeds the maximum of ${limit} RC that ${to} can receive "
-        "(${a} has ${h} RC available to delegate)",
-        ( "a", op.from )( "n", op.max_rc )( "to", to )( "limit", op.max_rc - ( delta.value - ( max_int64 - to_rc_peak ) ) )
-        ( "h", from_delegable_rc ) );
+      // delta is added to current_mana, maximum RC and received_rc of delegatee and maximum RC is the largest of them
+      const int64_t to_max_rc = to_account.get_maximum_rc().value;
+      FC_ASSERT( delta.value <= max_int64 - to_max_rc,
+        "Account ${a} has insufficient RC (have ${h}, needs ${n} for ${to})",
+        ( "a", op.from )( "h", from_delegable_rc )( "n", delta.value )( "to", to ) );
       FC_ASSERT( delta_total.value <= max_int64 - delta.value,
-        "Account ${a} cannot delegate ${n} RC to each of ${c} accounts: the total exceeds the maximum of ${max} RC "
-        "(${a} has ${h} RC available to delegate)",
-        ( "a", op.from )( "n", op.max_rc )( "c", op.delegatees.size() )( "max", max_int64 )( "h", from_delegable_rc ) );
+        "Account ${a} has insufficient RC (have ${h}, needs more than ${n} for ${c} accounts)",
+        ( "a", op.from )( "h", from_delegable_rc )( "n", max_int64 )( "c", op.delegatees.size() ) );
     }
     _db.rc().update_account_after_rc_delegation( to_account, now, delta );
     delta_total += delta;

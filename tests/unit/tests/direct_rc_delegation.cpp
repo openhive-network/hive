@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_rc_at_int64_limit )
   try
   {
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation with max_rc near int64 limit" );
-    const char* delegatee_limit_assert = "to_rc_peak <= 0 || delta.value <= max_int64 - to_rc_peak";
+    const char* delegatee_limit_assert = "delta.value <= max_int64 - to_max_rc";
     const char* total_limit_assert = "delta_total.value <= max_int64 - delta.value";
     const char* insufficient_rc_assert = "from_delegable_rc >= delta_total";
     const int64_t max_int64 = std::numeric_limits< int64_t >::max();
@@ -168,19 +168,21 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_rc_at_int64_limit )
           return e.to_string().find( expected_message ) != std::string::npos;
         } );
     };
-    auto delegatee_limit_message = [&]( int64_t max_rc, const std::string& to, int64_t limit, int64_t delegable )
+    // delegatee overflow is reported the same way as the final insufficient RC check, it just also names the delegatee
+    auto insufficient_rc_message = [&]( int64_t delegable, int64_t needed, const std::string& to = "" )
     {
-      return "Account alice cannot delegate " + std::to_string( max_rc ) + " RC to " + to + ": it exceeds the maximum of " +
-        std::to_string( limit ) + " RC that " + to + " can receive (alice has " + std::to_string( delegable ) +
-        " RC available to delegate)";
+      return "Account alice has insufficient RC (have " + std::to_string( delegable ) + ", needs " +
+        std::to_string( needed ) + ( to.empty() ? "" : " for " + to ) + ")";
     };
 
     // new delegation - previously failed with overflow when adding max_rc to RC of delegatee
+    // bob_limit is the largest max_rc that does not overflow RC of bob; it reaching the final check (instead of
+    // throwing overflow) shows maximum RC is the largest of the values of bob that delta is added to
     int64_t bob_limit = max_int64 - bob.get_maximum_rc().value;
-    require_rejected( max_int64, delegatee_limit_assert, delegatee_limit_message( max_int64, "bob", bob_limit, available ) );
-    require_rejected( max_int64 - 1, delegatee_limit_assert, delegatee_limit_message( max_int64 - 1, "bob", bob_limit, available ) );
-    require_rejected( available + 1, insufficient_rc_assert,
-      "Account alice has insufficient RC (have " + std::to_string( available ) + ", needs " + std::to_string( available + 1 ) + ")" );
+    require_rejected( max_int64, delegatee_limit_assert, insufficient_rc_message( available, max_int64, "bob" ) );
+    require_rejected( bob_limit + 1, delegatee_limit_assert, insufficient_rc_message( available, bob_limit + 1, "bob" ) );
+    require_rejected( bob_limit, insufficient_rc_assert, insufficient_rc_message( available, bob_limit ) );
+    require_rejected( available + 1, insufficient_rc_assert, insufficient_rc_message( available, available + 1 ) );
 
     op.max_rc = available;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
@@ -191,17 +193,15 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_rc_at_int64_limit )
 
     // increase of existing delegation - only the difference is added, so the limit includes delegated amount
     bob_limit = available + ( max_int64 - bob.get_maximum_rc().value );
-    require_rejected( max_int64, delegatee_limit_assert, delegatee_limit_message( max_int64, "bob", bob_limit, 0 ) );
-    require_rejected( max_int64 - 1, delegatee_limit_assert, delegatee_limit_message( max_int64 - 1, "bob", bob_limit, 0 ) );
-    require_rejected( available + 1, insufficient_rc_assert,
-      "Account alice has insufficient RC (have 0, needs 1)" );
+    require_rejected( max_int64, delegatee_limit_assert, insufficient_rc_message( 0, max_int64 - available, "bob" ) );
+    require_rejected( bob_limit + 1, delegatee_limit_assert, insufficient_rc_message( 0, bob_limit + 1 - available, "bob" ) );
+    require_rejected( bob_limit, insufficient_rc_assert, insufficient_rc_message( 0, bob_limit - available ) );
+    require_rejected( available + 1, insufficient_rc_assert, insufficient_rc_message( 0, 1 ) );
 
     // sum over delegatees - previously failed with overflow when adding delta to delta_total
     op.delegatees = { "carol", "dave" };
     require_rejected( max_int64 / 2 + 1, total_limit_assert,
-      "Account alice cannot delegate " + std::to_string( max_int64 / 2 + 1 ) +
-      " RC to each of 2 accounts: the total exceeds the maximum of " + std::to_string( max_int64 ) +
-      " RC (alice has 0 RC available to delegate)" );
+      "Account alice has insufficient RC (have 0, needs more than " + std::to_string( max_int64 ) + " for 2 accounts)" );
 
     BOOST_REQUIRE_EQUAL( alice.get_delegated_rc().value, available );
     BOOST_REQUIRE_EQUAL( bob.get_received_rc().value, available );
