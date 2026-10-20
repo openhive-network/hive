@@ -11,8 +11,8 @@ set -xeuo pipefail
 #
 # Test timeline:
 #
-#   0 ──────────── 1.1M ──────────────────── 5.1M ───────> blocks
-#       STEP 1       ↓         STEP 3           ↓
+#   0 ------------ 1.1M -------------------- 5.1M -------> blocks
+#       STEP 1       v         STEP 3           v
 #      (sync)    SNAPSHOT   (load+sync)      STOP
 #                 STEP 2
 #
@@ -34,13 +34,13 @@ set -xeuo pipefail
 #
 # Block log parts after STEP 3 (split=1 keeps only 1 completed part):
 #
-#   Part 0001 [0-1M]      ❌ PRUNED (deleted during sync)
-#   Part 0002 [1M-2M]     ❌ PRUNED (deleted during sync)
-#   Part 0003 [2M-3M]     ❌ PRUNED (deleted during sync)
-#   Part 0004 [3M-4M]     ❌ PRUNED (deleted during sync)
-#   Part 0005 [4M-5M]     ✅ KEPT (oldest_kept_part, split=1)
-#   Part 0006 [5M-6M]     ✅ KEPT (current_part)
-#             ↑
+#   Part 0001 [0-1M]      PRUNED (deleted during sync)
+#   Part 0002 [1M-2M]     PRUNED (deleted during sync)
+#   Part 0003 [2M-3M]     PRUNED (deleted during sync)
+#   Part 0004 [3M-4M]     PRUNED (deleted during sync)
+#   Part 0005 [4M-5M]     KEPT (oldest_kept_part, split=1)
+#   Part 0006 [5M-6M]     KEPT (current_part)
+#             ^
 #         TEST_BLOCK = 4.1M (should be accessible via API)
 #
 # Each step fails when the node stops making progress or at the time the run has
@@ -93,12 +93,12 @@ echo "  Block log split:    $BLOCK_LOG_SPLIT (keep only $BLOCK_LOG_SPLIT complet
 echo "  Test block:         $TEST_BLOCK"
 echo ""
 echo "Expected block log parts after sync:"
-echo "  Part 0001 [0-1M]      ❌ PRUNED"
-echo "  Part 0002 [1M-2M]     ❌ PRUNED"
-echo "  Part 0003 [2M-3M]     ❌ PRUNED"
-echo "  Part 0004 [3M-4M]     ❌ PRUNED"
-echo "  Part $(printf "%04d" $OLDEST_KEPT_PART) [4M-5M]     ✅ KEPT (oldest_kept_part)"
-echo "  Part $(printf "%04d" $CURRENT_PART) [5M-6M]     ✅ KEPT (current_part)"
+echo "  Part 0001 [0-1M]      PRUNED"
+echo "  Part 0002 [1M-2M]     PRUNED"
+echo "  Part 0003 [2M-3M]     PRUNED"
+echo "  Part 0004 [3M-4M]     PRUNED"
+echo "  Part $(printf "%04d" $OLDEST_KEPT_PART) [4M-5M]     KEPT (oldest_kept_part)"
+echo "  Part $(printf "%04d" $CURRENT_PART) [5M-6M]     KEPT (current_part)"
 echo ""
 echo "================================================================================"
 
@@ -157,7 +157,7 @@ run_step sync monitor_container "sync-instance"
   --plugin=app_status_api
 run_step dump-snapshot monitor_container "dump-snapshot-instance"
 
-# STEP 3: Load snapshot + sync 1.1M→5.1M with pruning (split=1 deletes parts 0001-0004, keeps 0005-0006)
+# STEP 3: Load snapshot + sync 1.1M->5.1M with pruning (split=1 deletes parts 0001-0004, keeps 0005-0006)
 echo "Starting load snapshot with pruned block log..."
 "$SCRIPTS_PATH/run_hived_img.sh" \
   "$HIVED_IMAGE_NAME" \
@@ -198,7 +198,7 @@ if [ "$HEAD_BLOCK" -ne "$TARGET_SYNC_BLOCK" ]; then
   stop_instance "load-snapshot-instance"
   exit 1
 fi
-echo "✓ head_block_number is $TARGET_SYNC_BLOCK (synced to stop-at-block limit)"
+echo "[OK] head_block_number is $TARGET_SYNC_BLOCK (synced to stop-at-block limit)"
 
 # Test 2: Verify test block is accessible (within non-pruned range)
 echo "Verifying block $TEST_BLOCK is accessible (within kept part range)..."
@@ -208,7 +208,7 @@ if ! grep -q '"block_id"' <<< "$BLOCK_RESPONSE"; then
   stop_instance "load-snapshot-instance"
   exit 1
 fi
-echo "✓ Block $TEST_BLOCK accessible via API"
+echo "[OK] Block $TEST_BLOCK accessible via API"
 
 echo "All block verification tests passed!"
 
@@ -234,7 +234,7 @@ for ((part=1; part<OLDEST_KEPT_PART; part++)); do
     echo "ERROR: block_log_part.$part_num should be deleted with split=$BLOCK_LOG_SPLIT at block $TARGET_SYNC_BLOCK"
     exit 1
   fi
-  echo "  ✓ block_log_part.$part_num was properly pruned"
+  echo "  [OK] block_log_part.$part_num was properly pruned"
 done
 
 # Verify kept parts (should exist) - from oldest_kept_part to current_part
@@ -245,8 +245,8 @@ for ((part=OLDEST_KEPT_PART; part<=CURRENT_PART; part++)); do
     echo "ERROR: block_log_part.$part_num should exist"
     exit 1
   fi
-  echo "  ✓ block_log_part.$part_num exists"
+  echo "  [OK] block_log_part.$part_num exists"
 done
 
-echo "✓ Pruned block log verified: keeping split=$BLOCK_LOG_SPLIT part(s) from $(printf "%04d" $OLDEST_KEPT_PART) to $(printf "%04d" $CURRENT_PART)"
-echo "✓ All tests passed!"
+echo "[OK] Pruned block log verified: keeping split=$BLOCK_LOG_SPLIT part(s) from $(printf "%04d" $OLDEST_KEPT_PART) to $(printf "%04d" $CURRENT_PART)"
+echo "[OK] All tests passed!"

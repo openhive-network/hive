@@ -5,7 +5,7 @@ from test_tools.exceptions import FailedToStartExecutableError
 
 import test_tools as tt
 # UNSET is a sentinel value used by hiveio_api (msgspec) for optional fields
-# not present in the API response — distinct from None which means "field present, value null".
+# not present in the API response - distinct from None which means "field present, value null".
 from schemas.convert import UNSET
 
 

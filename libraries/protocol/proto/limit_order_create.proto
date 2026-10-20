@@ -8,7 +8,7 @@ package hive.protocol.buffers;
  * It allows to sell Hive and buy HBD or sell HBD and buy Hive.
  * It is a way for a user to declare they want to sell {amount_to_sell} Hive/HBD for at least {min_to_receive} HBD/Hive.
  * The user may be a taker (if a user creates an order and the order matches some order(s))
- * or a maker (if a user creates an order and the order doesn’t match and the order is waiting for a match on the market).
+ * or a maker (if a user creates an order and the order doesn't match and the order is waiting for a match on the market).
  * If there is a partial match, a user may be a taker and maker for the same order. 
  * If a taker creates an order for all orders on the market the order(s) that are the best deal for the taker are matched.
  * If there are two orders with the same price, the older one is matched.

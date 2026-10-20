@@ -136,7 +136,7 @@ if(NOT _use_preinstalled)
     message(STATUS "Cannot read RocksDB submodule commit, building from source")
   endif()
 
-  # Current behavior — build from source
+  # Current behavior - build from source
   # The pinned RocksDB predates the <cstdint> include hygiene that newer
   # libstdc++ headers require (uint64_t etc. no longer provided transitively;
   # hard error with GCC 15 on Ubuntu 26.04). Force-include it for this subtree.

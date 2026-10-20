@@ -206,7 +206,7 @@ Hive uses an appbase plugin architecture. Plugins are in `libraries/plugins/`:
 
 **Data plugins:**
 - `account_history_rocksdb` - Indexes account history in RocksDB
-- `account_by_key` - Public key → account lookup
+- `account_by_key` - Public key -> account lookup
 - `market_history` - Market/trading history
 - `transaction_status` - Transaction status tracking
 
@@ -395,7 +395,7 @@ The CI automatically optimizes pipeline execution based on what files changed. T
 |--------------|------------|-----------|-------|
 | `doc/**`, `*.md` only | Skipped | Skipped | Docs-only changes |
 | `tests/python/**`, `tests/integration/**` only | Skipped | Run | Uses cached binaries via `quick_test_setup` |
-| `tests/unit/**` (any) | Run | Run | C++ sources compiled into `chain_test` — treated as source change |
+| `tests/unit/**` (any) | Run | Run | C++ sources compiled into `chain_test` - treated as source change |
 | `libraries/**`, `programs/**` | Run | Run | Source code changes |
 | `scripts/**`, `.gitlab-ci.yaml` | Run | Run | CI/scripts changes |
 
@@ -408,7 +408,7 @@ The CI automatically optimizes pipeline execution based on what files changed. T
 3. `quick_test_setup` fetches cached binaries when `TESTS_ONLY=true`
 4. Test jobs run using the cached binaries
 
-Note: changes under `tests/unit/**` are deliberately classified as source changes because those `.cpp` files are compiled into the `chain_test` binary — skipping the build would run tests against a stale binary.
+Note: changes under `tests/unit/**` are deliberately classified as source changes because those `.cpp` files are compiled into the `chain_test` binary - skipping the build would run tests against a stale binary.
 
 **Override variables:**
 - `FORCE_FULL_PIPELINE=true` - Run all jobs regardless of changes
@@ -423,6 +423,9 @@ Note: changes under `tests/unit/**` are deliberately classified as source change
 - `scripts/ci-helpers/*.sh` - Build scripts
 
 ## Code Style
+
+**All languages:**
+- Use plain ASCII in comments, string literals and log messages. Avoid typographic characters such as em/en dashes (U+2014, U+2013), arrows (U+2192), curly quotes (U+201C/U+201D, U+2018/U+2019) and ellipsis (U+2026): they often turn into mojibake (garbage like `a-circumflex + euro sign` in place of an em dash) when code is moved between environments. Use `-`, `->`, `"`, `'` and `...` instead.
 
 **C++:**
 - C++17 standard required

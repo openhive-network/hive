@@ -548,12 +548,12 @@ int main(int argc, char** argv)
     ilog("Total bytes if all blocks compressed by compression method:");
     if (enable_zstd)
     {
-      ilog("    zstd: ${total_zstd_size} bytes, total time: ${total_zstd_compression_time}μs, average time per block: ${average_zstd_time}μs", 
+      ilog("    zstd: ${total_zstd_size} bytes, total time: ${total_zstd_compression_time}us, average time per block: ${average_zstd_time}us", 
            ("total_zstd_size", total_zstd_size + size_of_start_positions)
            (total_zstd_compression_time)
            ("average_zstd_time", total_zstd_compression_time.count() / total_blocks_processed));
       if (benchmark_decompression)
-        ilog("          decompression total time: ${total_zstd_decompression_time}μs, average time per block: ${average_zstd_decompression_time}μs", 
+        ilog("          decompression total time: ${total_zstd_decompression_time}us, average time per block: ${average_zstd_decompression_time}us", 
              ("total_zstd_size", total_zstd_size + size_of_start_positions)
              (total_zstd_decompression_time)
              ("average_zstd_decompression_time", total_zstd_decompression_time.count() / total_blocks_processed));

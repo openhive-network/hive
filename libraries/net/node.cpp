@@ -4296,7 +4296,7 @@ namespace graphene { namespace net {
       const uint32_t block_num = full_block->get_block_num();
       const block_id_type& block_id = full_block->get_block_id();
 
-      // TODO: this call to get_legacy_block_message_hash() is forcing the p2p thread to do an expensive (100-200μs) hash computation early
+      // TODO: this call to get_legacy_block_message_hash() is forcing the p2p thread to do an expensive (100-200us) hash computation early
       // in the block processing, before a blockchain worker thread has a chance to offload the work for us. 
       // After the next hf, when we can expect all peers to be on protocol GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION,
       // get rid of this to reduce block processing latency

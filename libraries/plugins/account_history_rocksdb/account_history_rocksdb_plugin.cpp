@@ -193,7 +193,7 @@ public:
     _initialized = false;
   }
 
-  /// Disconnect all signal handlers. Idempotent — safe to call multiple times.
+  /// Disconnect all signal handlers. Idempotent - safe to call multiple times.
   void disconnect_signals()
   {
     hive::utilities::disconnect_signal(_on_pre_apply_operation_con);

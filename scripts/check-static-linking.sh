@@ -133,7 +133,7 @@ check_binary() {
     if ! ldd_output=$(ldd "$binary" 2>&1); then
         # Check if it's a statically linked binary (ldd returns "not a dynamic executable")
         if [[ "$ldd_output" == *"not a dynamic executable"* ]] || [[ "$ldd_output" == *"statically linked"* ]]; then
-            echo -e "${GREEN}✓ $binary: fully statically linked${NC}"
+            echo -e "${GREEN}[OK] $binary: fully statically linked${NC}"
             return 0
         fi
         echo -e "${RED}Error running ldd on $binary: $ldd_output${NC}" >&2
@@ -168,22 +168,22 @@ check_binary() {
         echo -e "${YELLOW}Dependencies for $binary_name:${NC}"
         for lib in "${all_libs[@]}"; do
             if is_expected_lib "$lib"; then
-                echo -e "  ${GREEN}✓ $lib${NC} (expected glibc/kernel)"
+                echo -e "  ${GREEN}[OK] $lib${NC} (expected glibc/kernel)"
             else
-                echo -e "  ${RED}✗ $lib${NC} (UNEXPECTED)"
+                echo -e "  ${RED}[FAIL] $lib${NC} (UNEXPECTED)"
             fi
         done
         echo ""
     fi
 
     if $has_unexpected; then
-        echo -e "${RED}✗ $binary_name: has unexpected dynamic dependencies:${NC}"
+        echo -e "${RED}[FAIL] $binary_name: has unexpected dynamic dependencies:${NC}"
         for lib in "${unexpected_libs[@]}"; do
             echo -e "  ${RED}- $lib${NC}"
         done
         return 1
     else
-        echo -e "${GREEN}✓ $binary_name: correctly linked (${#all_libs[@]} expected dependencies)${NC}"
+        echo -e "${GREEN}[OK] $binary_name: correctly linked (${#all_libs[@]} expected dependencies)${NC}"
         return 0
     fi
 }

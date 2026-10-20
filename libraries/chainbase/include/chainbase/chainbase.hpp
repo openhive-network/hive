@@ -197,7 +197,7 @@ namespace chainbase {
     {
       _target.fetch_sub(1, std::memory_order_relaxed);
       fc::microseconds lock_duration = fc::time_point::now() - _start_locking;
-      fc_dlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release chainbase ${_lock_type} lock (#${_lock_serial_number})", ("held", lock_duration.count())(_lock_type)(_lock_serial_number));
+      fc_dlog(fc::logger::get("chainlock"), "Took ${held}us to get and release chainbase ${_lock_type} lock (#${_lock_serial_number})", ("held", lock_duration.count())(_lock_type)(_lock_serial_number));
     }
     int32_t get() const { return _target; }
 

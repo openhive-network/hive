@@ -88,7 +88,7 @@ def test_stop_at_specified_block_after_restart(relative_stop_offset: int) -> Non
 )
 def test_stop_at_specified_block_after_force_replay(relative_stop_offset: int) -> None:
     """
-    `--force-replay` — delete all node data from node datadir, except block_log, and start replay on fresh data
+    `--force-replay` - delete all node data from node datadir, except block_log, and start replay on fresh data
 
     Case 1 (stop = 35)
         0                30                      30             35
@@ -143,7 +143,7 @@ def test_stop_at_specified_block_after_force_replay(relative_stop_offset: int) -
 )
 def test_stop_at_specified_block_after_replay_blockchain(relative_stop_offset: int) -> None:
     """
-    `--replay-blockchain` — check current state and block_log head, if state is behind block_log,
+    `--replay-blockchain` - check current state and block_log head, if state is behind block_log,
                             the node continues replay from the block_log head position.
 
     Case 1 (stop = 35)
@@ -159,7 +159,7 @@ def test_stop_at_specified_block_after_replay_blockchain(relative_stop_offset: i
       start           restart                         stop
 
     Case 3 (stop = 25) In this case, even though stop_at_block is set to 25,
-           the node will stop at block 30 → at the end of the state, and start API-mode
+           the node will stop at block 30 -> at the end of the state, and start API-mode
 
         0                30                           30
         │-------gen------│──────replay-blockchain─────│
@@ -243,7 +243,7 @@ def test_stop_at_specified_block_after_replay(
 def test_stop_at_specified_block_after_snapshot(snapshot_430_blocks: tt.Snapshot, relative_stop_offset: int) -> None:
     """
     The snapshot contains the blockchain state at block 430. When the node is started with
-    --stop-at-block=<value>, the stop limit cannot force the node to stop before the snapshot’s
+    --stop-at-block=<value>, the stop limit cannot force the node to stop before the snapshot's
     head block. A node must never stop earlier than the block height stored in the snapshot.
 
     If --stop-at-block is set to a value lower than the snapshot head (e.g. --stop-at-block=400),
