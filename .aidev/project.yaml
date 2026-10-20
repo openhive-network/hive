@@ -21,6 +21,9 @@ gitlab:
 branches:
   integration: "aidev/integration"
   handoff: "develop"
+  # develop is fast-forward only and takes a linear history (doc/git-guidelines.md, #897): the hand-off MR
+  # carries a one-commit-per-change copy of integration (aidev#16344); drop this line for integration's own commits
+  handoff_history: "linear"
 
 # How this project's suites execute (#13892): one kind, stated once.
 environment:
