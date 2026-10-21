@@ -203,6 +203,11 @@ add_subdirectory( tests )
 # Keep assertion id verifier below subdirectories containing code it verifies
 add_subdirectory( assertion_id_verifier )
 
+# Description of operations (generated from FC_REFLECT of operations) - input of API client generators,
+# placed in bin/ to be exported together with the binaries (scripts/build.sh)
+include( operations_description_generation )
+operations_description_generation( OUTPUT "${CMAKE_BINARY_DIR}/bin/operations_description.json" )
+
 if (ENABLE_INSTALLER)
 
 set(VERSION_MAJOR 0)
