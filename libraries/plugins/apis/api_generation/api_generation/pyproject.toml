@@ -19,5 +19,9 @@ source = [
 [tool.poetry.dependencies]
 python = ">=3.14,<4"
 jinja2 = "^3.1.6"
-hiveio-beekeepy = "^1.28.6-post.0"  # NOTE: Also update hiveio_api/pyproject.toml when changing this version
-hiveio-api-client-generator = {version = "1.7.1.dev20260715111856+unstable", source = "gitlab-hive"}
+hiveio-schemas = {version = "1.28.2.dev20261029021230", source = "gitlab-hive"}  # NOTE: Also update hiveio_api/pyproject.toml when changing this version
+hiveio-api-client-generator = {version = "1.7.1.dev20261029021255+unstable", source = "gitlab-hive"}
+ruff = "^0.17.2"  # formats and tidies the generated hiveio_api - not a dependency of hiveio-api-client-generator
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.0"
