@@ -9,7 +9,7 @@ from hive_local_tools.functional.python.datagen.recalculation_proposal_vote_test
     wait_for_maintenance_block,
 )
 from hive_local_tools.functional.python.operation import get_virtual_operations
-from schemas.operations.virtual import ProposalPayOperation
+from hiveio_api.operations import ProposalPayOperation
 
 
 def test_recalculation_proposal_votes() -> None:

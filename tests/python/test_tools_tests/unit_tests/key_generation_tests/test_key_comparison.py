@@ -5,9 +5,9 @@ from typing import Callable
 import pytest
 import test_tools as tt
 
-from schemas.fields.basic import PrivateKey, PublicKey
+from schemas.fields.public import PublicKey
 
-PrivateKeyFactory = Callable[[str], PrivateKey]
+PrivateKeyFactory = Callable[[str], str]
 PublicKeyFactory = Callable[[str], PublicKey]
 
 

@@ -3,6 +3,9 @@ from __future__ import annotations
 from datetime import UTC
 from typing import TYPE_CHECKING
 
+from hiveio_api import Asset
+from hiveio_api.operations import FillVestingWithdrawOperation
+
 import test_tools as tt
 from hive_local_tools.constants import VESTING_WITHDRAW_INTERVALS
 from hive_local_tools.functional.python.operation import (
@@ -12,7 +15,6 @@ from hive_local_tools.functional.python.operation import (
     get_vesting_price,
     get_virtual_operations,
 )
-from schemas.operations.virtual import FillVestingWithdrawOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -46,7 +48,7 @@ class PowerDown(Operation):
             else self.__get_tranche_schedule(self._timestamp)
         )
         self._virtual_operation_counter = 0
-        self._weekly_hive_income = tt.Asset.TestT(
+        self._weekly_hive_income = Asset.hive.satoshi(
             amount=int(int(self._weekly_vest_reduction.amount) / get_vesting_price(self._node))
         )
 
@@ -76,7 +78,7 @@ class PowerDown(Operation):
 
     @staticmethod
     def convert_to_vest(node, hive: tt.Asset.TestT) -> tt.Asset.VestT:
-        return tt.Asset.VestT(amount=int(hive.amount) * get_vesting_price(node))
+        return Asset.vests.satoshi(amount=int(hive.amount) * get_vesting_price(node))
 
     @staticmethod
     def __get_tranche_schedule(operation_timestamp: datetime) -> list[datetime]:

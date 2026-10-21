@@ -6,31 +6,27 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
 from beekeepy.exceptions import ErrorInResponseError
+from hiveio_api import Asset
+from hiveio_api.common.voting_manabar import VotingManabar as Manabar
 from hiveio_api.database_api.database_api_description import Account as AccountItemFundament
+from hiveio_api.operations import (
+    AccountCreatedOperation,
+    FillTransferFromSavingsOperation,
+)
+from hiveio_api.operations.binary_filters import virtual_operation_binary_filter
 
 import test_tools as tt
 import wax
 from hive_local_tools.constants import (
     HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS,
 )
-from schemas.fields.compound import Manabar
-from schemas.filter import (
-    build_vop_filter,
-)
-from schemas.operations.virtual.account_created_operation import AccountCreatedOperation
-from schemas.operations.virtual.fill_transfer_from_savings_operation import FillTransferFromSavingsOperation
-from schemas.operations.virtual.transfer_to_vesting_completed_operation import (
-    TransferToVestingCompletedOperation as TransferToVestingCompletedOperation,
-)
 
 if TYPE_CHECKING:
     from hiveio_api.account_history_api.account_history_api_description import EnumVirtualOpsResponse
+    from hiveio_api.operations import Hf26OperationValue as Hf26Operations
+    from hiveio_api.operations import VirtualOperationBase as SchemaVirtualOperation
 
-    from schemas.fields.hive_int import HiveInt
-    from schemas.operations import Hf26Operations
-    from schemas.virtual_operation import (
-        VirtualOperation as SchemaVirtualOperation,
-    )
+    from schemas.fields.public import HiveInt
 
 
 @dataclass
@@ -482,7 +478,7 @@ def get_vesting_price(node: tt.InitNode) -> int:
     return int(total_vesting_shares) // int(total_vesting_fund_hive)
 
 
-def convert_hive_to_vest_range(hive_amount: tt.Asset.TestT, price: float, tolerance: int = 5) -> tt.Asset.Range:
+def convert_hive_to_vest_range(hive_amount: tt.Asset.TestT, price: int, tolerance: int = 5) -> tt.Asset.Range:
     """
      Converts Hive to VEST resources at the current exchange rate provided in the `price` parameter.
     :param hive_amount: The amount of Hive resources to convert.
@@ -490,7 +486,7 @@ def convert_hive_to_vest_range(hive_amount: tt.Asset.TestT, price: float, tolera
     :param tolerance: The tolerance percent for the VEST conversion, defaults its 5%.
     :return: The equivalent amount of VEST resources after the conversion, within the specified tolerance.
     """
-    vests = tt.Asset.VestT(amount=(int(hive_amount.amount) * price))
+    vests = Asset.vests.satoshi(amount=(int(hive_amount.amount) * price))
     return tt.Asset.Range(vests, tolerance=tolerance)
 
 
@@ -502,14 +498,14 @@ def get_virtual_operations(
     end_block: int = 2000,
 ) -> list:
     """
-    :param vop: name of the virtual operation,
+    :param vops: classes of the virtual operations to give,
     :param skip_price_stabilization: by default, removes from the list operations confirming vesting-stabilizing,
     :param start_block: block from which virtual operations will be given,
     :param end_block: block to which virtual operations will be given,
-    :return: a list of virtual operations of the type specified in the `vop` argument.
+    :return: a list of virtual operations of the types specified in the `vops` argument.
     """
     result: EnumVirtualOpsResponse = node.api.account_history.enum_virtual_ops(
-        filter=build_vop_filter(*vops),
+        filter=virtual_operation_binary_filter(*vops).low,
         include_reversible=True,
         block_range_begin=start_block,
         block_range_end=end_block,
@@ -546,7 +542,10 @@ def jump_to_date(node: tt.InitNode, time_control: datetime, wait_for_irreversibl
     node.restart(time_control=tt.StartTimeControl(start_time=time_control))
 
 
+@dataclass(kw_only=True)
 class ExtendedManabar(Manabar):
+    """Manabar with its maximum (`max_rc` of RC accounts)."""
+
     maximum: HiveInt
 
 

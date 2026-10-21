@@ -4,7 +4,7 @@ import pytest
 import test_tools as tt
 from test_tools.__private.exceptions import BroadcastDuringTransactionBuildingError
 
-from wax.helpy import Hf26Asset as Asset
+from test_tools import Asset
 
 
 @pytest.fixture

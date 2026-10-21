@@ -8,6 +8,7 @@ import test_tools as tt
 from hive_local_tools.functional.python.operation import (
     check_if_fill_transfer_from_savings_vop_was_generated,
 )
+from hiveio_api import Asset
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import TransferAccount
@@ -17,9 +18,9 @@ if TYPE_CHECKING:
     ("currency", "check_savings_balance", "check_balance"),
     [
         # transfers from savings in HIVES
-        (tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
+        (Asset.hive.satoshi, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
-        (tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
+        (Asset.hbd.satoshi, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()
@@ -74,9 +75,9 @@ def test_cancel_transfer_from_savings_simplest_scenario(
     ("currency", "check_savings_balance", "check_balance"),
     [
         # transfers from savings in HIVES
-        (tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
+        (Asset.hive.satoshi, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
-        (tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
+        (Asset.hbd.satoshi, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()
@@ -109,9 +110,9 @@ def test_cancel_all_transfers_from_savings(
     ("currency", "check_savings_balance", "check_balance"),
     [
         # transfers from savings in HIVES
-        (tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
+        (Asset.hive.satoshi, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
-        (tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
+        (Asset.hbd.satoshi, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()

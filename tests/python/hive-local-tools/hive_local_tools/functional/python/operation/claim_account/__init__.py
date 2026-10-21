@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from hiveio_api.operations import CreateClaimedAccountOperation
+
 import test_tools as tt
 from hive_local_tools.functional.python import basic_authority
 from hive_local_tools.functional.python.operation import (
@@ -9,12 +11,11 @@ from hive_local_tools.functional.python.operation import (
     create_transaction_with_any_operation,
     get_transaction_timestamp,
 )
-from schemas.operations.create_claimed_account_operation import CreateClaimedAccountOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from schemas.fields.basic import AccountName
+    from schemas.fields.public import AccountName
 
 
 class ClaimAccountToken(Operation):

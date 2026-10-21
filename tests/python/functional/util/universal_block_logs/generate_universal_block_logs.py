@@ -15,15 +15,15 @@ from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from hive_local_tools.functional.python.operation import get_vesting_price
-from schemas.fields.basic import AccountName
-from schemas.fields.compound import Authority
-from schemas.fields.hive_int import HiveInt
-from schemas.operations.account_create_operation import AccountCreateOperation
-from schemas.operations.comment_operation import CommentOperation
-from schemas.operations.delegate_vesting_shares_operation import DelegateVestingSharesOperation
-from schemas.operations.transfer_operation import TransferOperation
-from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
-from schemas.policies import DisableSwapTypesPolicy, set_policies
+from schemas.fields.user_friendly import AccountName, HiveInt
+from hiveio_api.operations import (
+    AccountCreateOperation,
+    Authority,
+    CommentOperation,
+    DelegateVestingSharesOperation,
+    TransferOperation,
+    TransferToVestingOperation,
+)
 from test_tools.__private.wallet.constants import SimpleTransactionLegacy
 from wax import get_tapos_data
 
@@ -48,13 +48,6 @@ ACCOUNT_CREATION_FEE_AFTER_HF_20: Final[tt.Asset.Test] = tt.Asset.Test(3)
 
 ACCOUNTS_PER_CHUNK: Final[int] = 1024
 MAX_WORKERS: Final[int] = os.cpu_count() * 2
-
-
-"""
-Disabling type swapping means that the schemas no longer automatically convert simple types into custom types.
-This makes the schemas module run much faster, but it can only be used in a few specific cases.
-"""
-set_policies(DisableSwapTypesPolicy(disabled=True))
 
 
 def prepare_block_log(
@@ -276,7 +269,7 @@ def generate_authority(
                 )
                 + "\n\n"
             )
-            file.write(json.dumps(auth, default=lambda obj: dict(obj), indent=2))
+            file.write(json.dumps(auth, default=lambda obj: obj.dict(), indent=2))
 
     match authority_type:
         case "open_sign":
@@ -434,9 +427,6 @@ def __generate_and_broadcast_transaction(
         extensions=[],
         signatures=[],
         operations=[],
-        block_num=gdpo.head_block_number,
-        transaction_id="0" * 40,
-        transaction_num=0,
     )
 
     for name in account_names:

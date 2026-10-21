@@ -4,8 +4,6 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import filters_enum_virtual_ops
 from hive_local_tools.functional import connect_nodes
-from schemas.fields.basic import AccountName
-from schemas.operations.virtual.producer_reward_operation import ProducerRewardOperation
 
 
 @run_for("testnet", enable_plugins=["account_history_api"])

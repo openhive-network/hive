@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from hiveio_api.operations import CustomJsonOperation, CustomOperation
+
 from hive_local_tools.functional.python.operation import Operation, create_transaction_with_any_operation
-from schemas.operations.custom_json_operation import CustomJsonOperation
-from schemas.operations.custom_operation import CustomOperation
 
 
 class Custom(Operation):

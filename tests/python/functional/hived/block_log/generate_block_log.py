@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from copy import deepcopy
 from pathlib import Path
 from typing import Final
 
 import test_tools as tt
-from hive_local_tools.constants import TRANSACTION_TEMPLATE
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
-from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
-from schemas.operations.update_proposal_votes_operation import UpdateProposalVotesOperation
-from test_tools.__private.wallet.constants import SimpleTransactionLegacy
+from hiveio_api.operations import TransferToVestingOperation, UpdateProposalVotesOperation
+from test_tools.__private.wallet.constants import SimpleTransaction
 
 AMOUNT_OF_ALL_ACCOUNTS: Final[int] = 20_000
 ACCOUNTS_PER_CHUNK: Final[int] = 300
@@ -66,7 +63,15 @@ def __generate_operations_for_receiver(receiver: str) -> list:
 
 
 def __generate_and_broadcast(wallet: tt.Wallet, account_names: list[str]) -> None:
-    transaction = SimpleTransactionLegacy(**deepcopy(TRANSACTION_TEMPLATE))
+    # tapos and expiration are set by the wallet when signing
+    transaction = SimpleTransaction(
+        ref_block_num=0,
+        ref_block_prefix=0,
+        expiration="1970-01-01T00:00:00",
+        extensions=[],
+        signatures=[],
+        operations=[],
+    )
 
     for name in account_names:
         for operation in __generate_operations_for_receiver(name):
