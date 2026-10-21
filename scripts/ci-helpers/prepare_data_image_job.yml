@@ -1,8 +1,8 @@
 variables:
   # Docker image tags - use "latest" for stable images from common-ci-configuration
   # Don't pin to CI_COMMON_JOB_VERSION as those commit-specific images may not exist
-  BEEKEEPY_INITIALIZATION_TIMEOUT: 60  # for test-tools
-  BEEKEEPY_CLOSE_TIMEOUT: 60  # for test-tools
+  HIVEIO_INITIALIZATION_TIMEOUT: 60  # for test-tools
+  HIVEIO_CLOSE_TIMEOUT: 60  # for test-tools
   # The one common-ci-configuration revision used by this pipeline: every script fetched
   # at runtime (jobs and hived service entrypoints) comes from it. `include: ref` cannot
   # use variables, so the include below and scripts/ci-helpers/common_includes.yml repeat
