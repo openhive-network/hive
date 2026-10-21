@@ -31,6 +31,7 @@
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_authority_getter.hpp>
 #include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/detail/state/block_summary_object.hpp>
 #include <hive/chain/detail/state/comment_object.hpp>
@@ -1993,10 +1994,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   {
     try
     {
-      auto get_active = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-      auto get_owner = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_owner().to_authority(); };
-      auto get_posting = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_posting().to_authority(); };
-      auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+      database_authority_getter authority_getters( *db );
 
       required_authorities_type required_authorities;
       required_authorities.required_active.insert( "initminer" );
@@ -2004,7 +2002,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
       hive::protocol::verify_authority(
         db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
         db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-        required_authorities, valid_key, get_active, get_owner, get_posting, get_witness_key );
+        required_authorities, valid_key, authority_getters );
       ++counter;
     }
     catch( ... )
@@ -2022,10 +2020,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   {
     try
     {
-      auto get_active = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-      auto get_owner = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_owner().to_authority(); };
-      auto get_posting = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_posting().to_authority(); };
-      auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+      database_authority_getter authority_getters( *db );
 
       required_authorities_type required_authorities;
       required_authorities.required_active.insert( "initminer" );
@@ -2033,7 +2028,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
       hive::protocol::verify_authority(
         db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
         db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-        required_authorities, invalid_key, get_active, get_owner, get_posting, get_witness_key );
+        required_authorities, invalid_key, authority_getters );
       counter = 0;
     }
     catch( ... )
@@ -2051,10 +2046,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   {
     try
     {
-      auto get_active = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-      auto get_owner = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_owner().to_authority(); };
-      auto get_posting = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_posting().to_authority(); };
-      auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+      database_authority_getter authority_getters( *db );
 
       required_authorities_type required_authorities;
       required_authorities.required_active.insert( "initminer" );
@@ -2062,7 +2054,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
       hive::protocol::verify_authority(
         db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
         db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-        required_authorities, no_key, get_active, get_owner, get_posting, get_witness_key );
+        required_authorities, no_key, authority_getters );
       counter = 0;
     }
     catch( ... )
@@ -2078,10 +2070,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   counter = 0;
   for( int i = 0; i < ITERATIONS; ++i )
   {
-    auto get_active = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-    auto get_owner = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_owner().to_authority(); };
-    auto get_posting = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_posting().to_authority(); };
-    auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+    database_authority_getter authority_getters( *db );
 
     required_authorities_type required_authorities;
     required_authorities.required_active.insert( "initminer" );
@@ -2089,7 +2078,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
     bool ok = hive::protocol::has_authorization(
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-      required_authorities, valid_key, get_active, get_owner, get_posting, get_witness_key );
+      required_authorities, valid_key, authority_getters );
     if( ok )
       ++counter;
     else
@@ -2103,10 +2092,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   counter = 0;
   for( int i = 0; i < ITERATIONS; ++i )
   {
-    auto get_active = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-    auto get_owner = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_owner().to_authority(); };
-    auto get_posting = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_posting().to_authority(); };
-    auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+    database_authority_getter authority_getters( *db );
 
     required_authorities_type required_authorities;
     required_authorities.required_active.insert( "initminer" );
@@ -2114,7 +2100,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
     bool ok = hive::protocol::has_authorization(
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-      required_authorities, invalid_key, get_active, get_owner, get_posting, get_witness_key );
+      required_authorities, invalid_key, authority_getters );
     if( ok )
       counter = 0;
     else
@@ -2128,10 +2114,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
   counter = 0;
   for( int i = 0; i < ITERATIONS; ++i )
   {
-    auto get_active = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-    auto get_owner = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_owner().to_authority(); };
-    auto get_posting = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_posting().to_authority(); };
-    auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+    database_authority_getter authority_getters( *db );
 
     required_authorities_type required_authorities;
     required_authorities.required_active.insert( "initminer" );
@@ -2139,7 +2122,7 @@ BOOST_AUTO_TEST_CASE( authorization_speed )
     bool ok = hive::protocol::has_authorization(
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
       db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-    required_authorities, no_key, get_active, get_owner, get_posting, get_witness_key );
+    required_authorities, no_key, authority_getters );
     if( ok )
       counter = 0;
     else
@@ -2231,17 +2214,14 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
   // alice has her own keys for each role, but she also redirects to bob for posting,
   // carol for active and dan for owner
 
-  auto get_active = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-  auto get_owner = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_owner().to_authority(); };
-  auto get_posting = [&]( const std::string& name ) { return db->get< account_authority_object, by_account >( name ).get_posting().to_authority(); };
-  auto get_witness_key = [&]( const std::string& name ) { try { return db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+  database_authority_getter authority_getters( *db );
 
   required_authorities_type required_authorities;
 
   auto has_authorization = [&]( const fc::flat_set< public_key_type >& keys, bool expected )
   {
     bool result = hive::protocol::has_authorization( true, false, // enforce no redundancy, since test should have none
-      required_authorities, keys, get_active, get_owner, get_posting, get_witness_key );
+      required_authorities, keys, authority_getters );
     BOOST_CHECK_EQUAL( result, expected );
     return result ? "true" : "false";
   };
@@ -2324,12 +2304,26 @@ BOOST_AUTO_TEST_CASE( authorization_redirections )
     auto signature_set = tx.get_required_signatures( true, false, HIVE_CHAIN_ID,
       { bob_auth.get_posting().key_auths.begin()->first, carol_auth.get_active().key_auths.begin()->first,
       dan_auth.get_active().key_auths.begin()->first },
-      get_active, get_owner, get_posting, get_witness_key,
+      authority_getters,
       HIVE_MAX_SIG_CHECK_DEPTH, HIVE_MAX_AUTHORITY_MEMBERSHIP, HIVE_MAX_SIG_CHECK_ACCOUNTS );
     BOOST_REQUIRE_EQUAL( signature_set.size(), 2 );
     BOOST_REQUIRE( signature_set.find( bob_auth.get_posting().key_auths.begin()->first ) != signature_set.end() );
     BOOST_REQUIRE( signature_set.find( carol_auth.get_active().key_auths.begin()->first ) != signature_set.end() );
   }
+
+  ilog( "" );
+  ilog( "check authorization when unknown account is required" );
+  // account that is not known to authority getters is an error, not just missing authorization
+  required_authorities.required_active.insert( "nobody" );
+  HIVE_REQUIRE_THROW( hive::protocol::has_authorization( true, false, required_authorities,
+    { alice_auth.get_active().key_auths.begin()->first }, authority_getters ), fc::assert_exception );
+  required_authorities.required_active.clear();
+  ilog( "check authorization when unknown witness is required" );
+  // unknown witness means witness authorization is missing
+  required_authorities.required_witness.insert( "alice" );
+  BOOST_REQUIRE( not hive::protocol::has_authorization( true, false, required_authorities,
+    { alice_auth.get_active().key_auths.begin()->first }, authority_getters ) );
+  required_authorities.required_witness.clear();
 
 #undef CREATE_ACCOUNT
 }
