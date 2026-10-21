@@ -16,8 +16,9 @@
 # This template uses hiveio_api_package.sh script which:
 #   1. Determines package version from git state (no generation needed)
 #   2. Checks if the package version already exists in GitLab PyPI registry
-#   3. If exists: creates env file and exits (skips generation/build entirely)
-#   4. If not: generates package, builds wheel, runs tests, and deploys to registry
+#   3. If exists: downloads the wheel and, given OPERATIONS_DESCRIPTION, generates the package, fails when the
+#      wheel differs from it and runs generator tests (no build)
+#   4. If not: generates package, runs generator tests, builds wheel, runs package tests, and deploys to registry
 #
 # Downstream test jobs install hiveio-api from registry using WHEEL_BUILD_VERSION.
 #
@@ -34,6 +35,8 @@
 #   HIVE_PROJECT_ROOT           Root directory of the Hive project (default: "${CI_PROJECT_DIR}")
 #   SKIP_WHEEL_DEPLOY           Set to "true" to skip deployment to GitLab PyPI registry
 #   SKIP_REGISTRY_CHECK         Set to "true" to skip registry check (always build)
+#   OPERATIONS_DESCRIPTION      operations_description.json from the build of hived (exported with binaries), required
+#   SKIP_PACKAGE_TESTS          Set to "true" to skip verifying the built wheel (generator tests always run)
 #   PACKAGE_REGISTRY_PROJECT_ID Project ID for package registry (default: CI_PROJECT_ID)
 #                               Use this when running in a downstream project to publish
 #                               to the upstream (hive) project's registry
@@ -41,6 +44,7 @@
 # Artifacts:
 #   - ${API_GENERATION_DIR}/python_api_package/dist/*.whl Built or downloaded wheel
 #   - build_wheel.env                                     Environment file with WHEEL_BUILD_VERSION (always)
+#   - ${API_GENERATION_DIR}/api_generation/results.xml    JUnit report of the generator tests
 
 .hiveio_api_package_template:
   extends: .build_wheel_template
@@ -48,20 +52,22 @@
     HIVE_PROJECT_ROOT: "${CI_PROJECT_DIR}"
     API_GENERATION_DIR: "${HIVE_PROJECT_ROOT}/libraries/plugins/apis/api_generation"
     PYPROJECT_DIR: "${API_GENERATION_DIR}/api_generation"
-    DEPENDENCY_SOURCE_DIR: "${HIVE_PROJECT_ROOT}/tests/python/hive-local-tools"
     SKIP_WHEEL_DEPLOY: ""
     SKIP_REGISTRY_CHECK: ""
+    SKIP_PACKAGE_TESTS: ""
+    OPERATIONS_DESCRIPTION: ""  # operations_description.json from the build of hived - required
   stage: build
   script:
     - |
       SCRIPT_ARGS=(
         "--hive-project-root=${HIVE_PROJECT_ROOT}"
         "--api-generation-dir=${API_GENERATION_DIR}"
-        "--dependency-source-dir=${DEPENDENCY_SOURCE_DIR}"
         "--package-registry-project-id=${PACKAGE_REGISTRY_PROJECT_ID:-${CI_PROJECT_ID}}"
+        "--operations-description=${OPERATIONS_DESCRIPTION}"
       )
       [[ "${SKIP_WHEEL_DEPLOY}" == "true" ]] && SCRIPT_ARGS+=("--skip-deploy")
       [[ "${SKIP_REGISTRY_CHECK}" == "true" ]] && SCRIPT_ARGS+=("--skip-registry-check")
+      [[ "${SKIP_PACKAGE_TESTS}" == "true" ]] && SCRIPT_ARGS+=("--skip-tests")
       "${HIVE_PROJECT_ROOT}/scripts/ci-helpers/hiveio_api_package.sh" "${SCRIPT_ARGS[@]}"
   # Disable after_script from .build_wheel_template - it would overwrite build_wheel.env
   # created by hiveio_api_package.sh (the base template uses PYPROJECT_DIR=api_generation/
@@ -69,10 +75,12 @@
   after_script: []
   artifacts:
     expire_in: 1 week
+    when: always  # the report of failed generator tests too
     paths:
       - "${API_GENERATION_DIR}/python_api_package/dist"
       - "build_wheel.env"
     reports:
       dotenv: build_wheel.env
+      junit: "${API_GENERATION_DIR}/api_generation/results.xml"
   tags:
     - public-runner-docker
