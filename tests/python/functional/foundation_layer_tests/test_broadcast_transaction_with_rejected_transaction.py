@@ -9,7 +9,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 
 if TYPE_CHECKING:
-    from schemas.transaction import Transaction
+    from hiveio_api.operations import Transaction
 
 ACCOUNT = "alice"
 

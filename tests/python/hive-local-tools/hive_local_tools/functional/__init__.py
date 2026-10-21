@@ -1,47 +1,19 @@
 from __future__ import annotations
 
-import contextlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
 from typing import TYPE_CHECKING
 
+from hiveio_api.operations import OperationBase as Operation
+
 import test_tools as tt
-from schemas.fields.hive_int import HiveInt
-from schemas.jsonrpc import get_response_model
-from schemas.operation import Operation
+from schemas.fields.user_friendly import HiveInt
 from test_tools.__private.wallet.constants import SimpleTransaction, SimpleTransactionLegacy
 from wax import get_tapos_data
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-
-def _warmup_msgspec_decoders() -> None:
-    """
-    Pre-initialize msgspec decoders in the main thread to avoid race conditions.
-
-    msgspec's decoder initialization involves Python's typing module internals
-    (ForwardRef creation) which are not thread-safe. When multiple threads
-    simultaneously create decoders for the first time, a segfault can occur.
-
-    This function triggers decoder initialization for common response types
-    before any threads are spawned, ensuring thread-safe operation.
-    """
-    with contextlib.suppress(Exception):
-        # Import and access API types to trigger annotation resolution
-        # This ensures msgspec decoders are initialized before parallel operations
-        import hiveio_api.database_api  # noqa: F401
-
-        import schemas.apis.app_status_api  # Used by beekeepy.__discover_ports()
-        import schemas.apis.network_node_api
-        import schemas.apis.wallet_bridge_api
-        import schemas.transaction  # noqa: F401
-
-        # Warm up the decoder cache by parsing sample responses
-        get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")
-        get_response_model(dict, '{"jsonrpc":"2.0","id":0,"result":{}}', "hf26")
-        get_response_model(list, '{"jsonrpc":"2.0","id":0,"result":[]}', "hf26")
 
 
 def wait_for_current_hardfork(node: tt.InitNode, current_hardfork_number: int) -> None:
@@ -63,10 +35,8 @@ def simultaneous_node_startup(
     time_control: tt.StartTimeControl = None,
     exit_before_synchronization: bool = False,
 ) -> None:
-    # Warm up msgspec decoders to avoid race conditions
     # Loguru threading issues are now handled by global configuration in conftest.py
     # (enqueue=False set at session scope before tests run)
-    _warmup_msgspec_decoders()
 
     # Start nodes concurrently using ThreadPoolExecutor
     # This is safe now because loguru is configured for synchronous mode globally
@@ -124,9 +94,6 @@ def __generate_and_broadcast_transaction(
     if isinstance(wallet, tt.OldWallet):
         transaction = SimpleTransactionLegacy(
             **default_transaction_data,
-            block_num=gdpo.head_block_number,
-            transaction_id="0" * 40,
-            transaction_num=0,
         )
     else:
         transaction = SimpleTransaction(**default_transaction_data)

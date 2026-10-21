@@ -19,7 +19,7 @@ from test_tools.exceptions import ErrorInResponseError
 import test_tools as tt
 from hive_local_tools.functional.python import basic_authority
 from hive_local_tools.functional.python.operation import create_transaction_with_any_operation
-from schemas.operations.account_create_operation import AccountCreateOperation
+from hiveio_api.operations import AccountCreateOperation
 
 # Value configured by the `prepared_node` fixture (see operation_tests/conftest.py).
 ACCOUNT_CREATION_FEE = tt.Asset.Test(3)

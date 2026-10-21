@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 
-from schemas.fields.compound import Authority
+from hiveio_api.operations import Authority
 
 if TYPE_CHECKING:
     import test_tools as tt
-    from schemas.fields.basic import AccountName, PublicKey
+    from schemas.fields.public import AccountName, PublicKey
 
 
 def get_authority(

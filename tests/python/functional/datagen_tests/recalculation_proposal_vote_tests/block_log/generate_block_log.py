@@ -11,30 +11,23 @@ from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
-from schemas.fields.assets import AssetHbd
-from schemas.fields.assets import AssetHive
-from schemas.fields.basic import AccountName, PublicKey
-from schemas.fields.compound import Authority
-from schemas.operations.account_create_operation import AccountCreateOperation
-from schemas.operations.comment_operation import CommentOperation
-from schemas.operations.create_proposal_operation import CreateProposalOperation
-from schemas.operations.transfer_operation import TransferOperation
-from schemas.operations.transfer_to_vesting_operation import TransferToVestingOperation
-from schemas.operations.update_proposal_votes_operation import UpdateProposalVotesOperation
-from schemas.policies import DisableSwapTypesPolicy, set_policies
+from hiveio_api import Asset
+from schemas.fields.user_friendly import AccountName, PublicKey
+from hiveio_api.operations import (
+    AccountCreateOperation,
+    Authority,
+    CommentOperation,
+    CreateProposalOperation,
+    TransferOperation,
+    TransferToVestingOperation,
+    UpdateProposalVotesOperation,
+)
 
 NUMBER_OF_VOTING_ACCOUNTS: Final[int] = 12_000
 NUMBER_OF_PROPOSALS = 12_000
 ACCOUNTS_PER_CHUNK: Final[int] = 1024
 MAX_WORKERS: Final[int] = os.cpu_count()
 TIME_MULTIPLIER: Final[int] = 4
-
-
-"""
-Disabling type swapping means that the schemas no longer automatically convert simple types into custom types.
-This makes the schemas module run much faster, but it can only be used in a few specific cases.
-"""
-set_policies(DisableSwapTypesPolicy(disabled=True))
 
 
 def prepare_block_log_with_many_vote_for_proposals(output_block_log_directory: Path) -> None:
@@ -321,14 +314,14 @@ def __transfer_account(voter: str) -> TransferToVestingOperation:
     return TransferOperation(
         from_="initminer",
         to=voter,
-        amount=AssetHbd(amount=10000),
+        amount=Asset.hbd.satoshi(10000),
         memo=f"supply_hbd_transfer-{voter}",
     )
 
 
 def __vest_account(voter: str) -> TransferToVestingOperation:
     account_number = int(voter.split("-")[1])
-    return TransferToVestingOperation(from_="initminer", to=voter, amount=AssetHive(amount=(100000 + account_number)))
+    return TransferToVestingOperation(from_="initminer", to=voter, amount=Asset.hive.satoshi(100000 + account_number))
 
 
 if __name__ == "__main__":

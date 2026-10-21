@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 def calculate_asset_percentage(asset, percent_in_hive) -> tt.Asset.Test | tt.Asset.Vest:
     asset_multiplier = percent_in_hive / HIVE_100_PERCENT
 
-    if isinstance(asset, tt.Asset.TestT):
+    if asset.is_hive():
         return tt.Asset.Test(asset.as_float() * asset_multiplier)
-    if isinstance(asset, tt.Asset.VestT):
+    if asset.is_vests():
         return tt.Asset.Vest(asset.as_float() * asset_multiplier)
     return None
 

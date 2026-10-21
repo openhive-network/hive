@@ -19,32 +19,23 @@ from hive_local_tools.functional.python.operation import (
     get_current_median_history_price,
     get_virtual_operations,
 )
-from schemas.fields.compound import Authority, HbdExchangeRate
-from schemas.operations.account_update2_operation import AccountUpdate2Operation
-from schemas.operations.account_update_operation import AccountUpdateOperation
-from schemas.operations.limit_order_create2_operation import (
-    LimitOrderCreate2Operation,
-)
-from schemas.operations.virtual.collateralized_convert_immediate_conversion_operation import (
+from hiveio_api.operations import (
+    AccountUpdate2Operation,
+    AccountUpdateOperation,
+    Authority,
     CollateralizedConvertImmediateConversionOperation,
-)
-from schemas.operations.virtual.fill_collateralized_convert_request_operation import (
     FillCollateralizedConvertRequestOperation,
-)
-from schemas.operations.virtual.fill_convert_request_operation import (
     FillConvertRequestOperation,
-)
-from schemas.operations.witness_block_approve_operation import (
+    LimitOrderCreate2Operation,
+    Price as HbdExchangeRate,
     WitnessBlockApproveOperation,
-)
-from schemas.operations.witness_set_properties_operation import (
     WitnessSetPropertiesOperation,
 )
 
 if TYPE_CHECKING:
-    from schemas.fields.basic import PublicKey
-    from schemas.virtual_operation import (
-        VirtualOperation as SchemaVirtualOperation,
+    from schemas.fields.public import PublicKey
+    from hiveio_api.operations import (
+        VirtualOperationBase as SchemaVirtualOperation,
     )
 
 
@@ -72,8 +63,8 @@ class ConvertAccount(Account):
         requestid = None
 
         for operation in operations_from_transaction:
-            if operation[0] == "collateralized_convert_operation":
-                requestid = operation[1]["requestid"]
+            if operation["type"] == "collateralized_convert_operation":
+                requestid = operation["value"]["requestid"]
 
         assert requestid is not None, "Provided transaction doesn't contain collateralized convert operation."
 
@@ -138,8 +129,8 @@ class ConvertAccount(Account):
 
     def check_if_funds_to_convert_were_subtracted(self, transaction: dict) -> None:
         to_convert = self.extract_amount_from_convert_operation(transaction)
-        get_balance = self.get_hbd_balance if isinstance(to_convert, tt.Asset.TbdT) else self.get_hive_balance
-        funds_before_operation = self.hbd if isinstance(to_convert, tt.Asset.TbdT) else self.hive
+        get_balance = self.get_hbd_balance if to_convert.is_hbd() else self.get_hive_balance
+        funds_before_operation = self.hbd if to_convert.is_hbd() else self.hive
         self.update_account_info()
         funds_after_operation = get_balance()
         assert (
@@ -220,8 +211,8 @@ class ConvertAccount(Account):
         ops_in_transaction = transaction["operations"]
         # get amount to convert from transaction
         for operation in ops_in_transaction:
-            if operation[0] == "convert_operation" or operation[0] == "collateralized_convert_operation":
-                return operation[1]["amount"]
+            if operation["type"] == "convert_operation" or operation["type"] == "collateralized_convert_operation":
+                return operation["value"]["amount"]
         raise AssertionError("Convert or collateralized_convert operation wasn't found in given transaction.")
 
 
@@ -279,9 +270,9 @@ class EscrowAccount(Account):
     def __extract_escrow_values_from_transaction(trx: dict) -> tuple | None:
         ops = trx["operations"]
         for op in ops:
-            if op[0] == "escrow_transfer_operation" or op[0] == "escrow_release_operation":
-                trx_value = op[1]
-                fee = trx_value["fee"] if op[0] == "escrow_transfer_operation" else tt.Asset.Tbd(0)
+            if op["type"] == "escrow_transfer_operation" or op["type"] == "escrow_release_operation":
+                trx_value = op["value"]
+                fee = trx_value["fee"] if op["type"] == "escrow_transfer_operation" else tt.Asset.Tbd(0)
                 hbd_amount = trx_value["hbd_amount"]
                 hive_amount = trx_value["hive_amount"]
                 return fee, hbd_amount, hive_amount
@@ -301,23 +292,23 @@ class LimitOrderAccount(Account):
         super().update_account_info()
         get_balance = self.get_hbd_balance if check_hbd else self.get_hive_balance
         asset = tt.Asset.Tbd if check_hbd else tt.Asset.Test
-        currency = asset(0).get_asset_information()
+        currency = asset.token()
         messages = {
             "cancellation": (
                 f"Something went wrong after cancelling an order. {self._name} should have {amount} "
-                f"{currency.get_symbol()}."
+                f"{currency}."
             ),
-            "creation": f"{currency.get_symbol()} balance of {self._name} wasn't reduced after creating order.",
+            "creation": f"{currency} balance of {self._name} wasn't reduced after creating order.",
             "expiration": (
                 f"Something went wrong after expiration of orders. {self._name} should have"
-                f" {amount} {currency.get_symbol()}."
+                f" {amount} {currency}."
             ),
             "no_match": (
-                f"Something went wrong after order creation - it shouldn't be matched. {currency.get_symbol()} balance"
+                f"Something went wrong after order creation - it shouldn't be matched. {currency} balance"
                 f" of {self._name} should be equal to {amount}."
             ),
             "order_match": (
-                f"Something went wrong in completing a trade. {currency.get_symbol()} balance of {self._name} should be"
+                f"Something went wrong in completing a trade. {currency} balance of {self._name} should be"
                 f" equal to {amount}."
             ),
         }
@@ -329,9 +320,9 @@ class LimitOrderAccount(Account):
         for_sale = query.for_sale
         currency = tt.Asset.Tbd if hbd else tt.Asset.Test
         expected = currency(amount)
-        token = expected.get_asset_information().get_symbol()
+        token = expected.token()
         # Verify currency type matches (for_sale is plain int, currency info is in sell_price.base.nai)
-        expected_nai = expected.nai()
+        expected_nai = expected.nai
         assert query.sell_price.base.nai == expected_nai, (
             f"Currency mismatch for {self._name}'s order: "
             f"expected {expected_nai} but got {query.sell_price.base.nai}"
