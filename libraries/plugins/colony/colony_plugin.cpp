@@ -579,12 +579,15 @@ void transaction_builder::build_transfer( const account_name_type& actor, uint64
 {
   bool has_hbd = false;
   bool has_hive = false;
-  _common._db.with_read_lock( [&]()
-  {
+  // NO! there can be no lock here - it stalls each colony thread that happens to produce transfer,
+  // especially devastating with queen, while not giving anything in return; yes, it will crash when
+  // called during resizing of SHM, but proper node configuration guarantees it will never happen
+  //_common._db.with_read_lock( [&]()
+  //{
     const auto& account = _common._db.get_account( actor );
     has_hbd = account.get_hbd_balance().amount.value != 0;
     has_hive = account.get_hive_balance().amount.value != 0;
-  } );
+  //} );
   bool use_hive = false;
   if( !has_hbd )
   {

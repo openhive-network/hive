@@ -103,17 +103,20 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
-    // Below asserts fail exactly where safe<int64_t> additions of delta would overflow (in
-    // update_account_after_rc_delegation and in delta_total). Such delta is way above all RC in
-    // existence, so it always exceeds delegable RC as well and is reported as insufficient RC.
+    // Below asserts fail exactly where share_type additions of delta would overflow (in
+    // update_account_after_rc_delegation and in delta_total), so they only replace the bare overflow message.
+    // Such delta is way beyond RC of all accounts combined, so the operation would not pass the final check
+    // anyway - it is reported as insufficient RC right away.
     if( delta > 0 )
     {
-      FC_ASSERT( delta.value <= max_int64 - to_account.get_maximum_rc().value,
-        "Account ${a} has insufficient RC (have ${h}, needs ${n})",
-        ( "a", op.from )( "h", from_delegable_rc )( "n", op.max_rc ) );
+      // delta is added to current_mana, maximum RC and received_rc of delegatee and maximum RC is the largest of them
+      const int64_t to_max_rc = to_account.get_maximum_rc().value;
+      FC_ASSERT( delta.value <= max_int64 - to_max_rc,
+        "Account ${a} has insufficient RC (have ${h}, needs ${n} for ${to})",
+        ( "a", op.from )( "h", from_delegable_rc )( "n", delta.value )( "to", to ) );
       FC_ASSERT( delta_total.value <= max_int64 - delta.value,
-        "Account ${a} has insufficient RC (have ${h}, needs ${n})",
-        ( "a", op.from )( "h", from_delegable_rc )( "n", uint64_t( delta_total.value ) + uint64_t( delta.value ) ) );
+        "Account ${a} has insufficient RC (have ${h}, needs more than ${n} for ${c} accounts)",
+        ( "a", op.from )( "h", from_delegable_rc )( "n", max_int64 )( "c", op.delegatees.size() ) );
     }
     _db.rc().update_account_after_rc_delegation( to_account, now, delta );
     delta_total += delta;
