@@ -1760,6 +1760,211 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
   FC_LOG_AND_RETHROW()
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_delta_overflow )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: overflow of accumulated delegated RC in delegate_rc_operation" );
 
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave)(dan)(sam) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    generate_block();
+
+    // 4 * huge == 2^64 - 16, that is -16 after wrap around of int64_t accumulator
+    const int64_t huge = ( int64_t( 1 ) << 62 ) - 4;
+
+    const int64_t alice_max_rc = db->get_account( "alice" ).get_maximum_rc().value;
+
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob", "dave", "dan", "sam" };
+    op.max_rc = huge;
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+    custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+
+    // sum reaches overflow on third delegatee
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "delta_total.value <= max_int64 - delta.value" );
+    generate_block();
+
+    // no RC created out of thin air
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_delegated_rc().value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_maximum_rc().value, alice_max_rc );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_received_rc().value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "dave" ).get_received_rc().value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "dan" ).get_received_rc().value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "sam" ).get_received_rc().value, 0 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_delta_single )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: single delegation of INT64_MAX RC" );
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    generate_block();
+
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob" };
+    op.max_rc = std::numeric_limits< int64_t >::max();
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+    custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "delta.value <= max_int64 - to_max_rc" );
+    generate_block();
+
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_received_rc().value, 0 );
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_brick_delegatee )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: max_rc == INT64_MAX for two delegatees" );
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    generate_block();
+
+    const int64_t bob_max_rc = db->get_account( "bob" ).get_maximum_rc().value;
+
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob", "dave" }; // 2 * INT64_MAX == 2^64 - 2, that is -2 after wrap around
+    op.max_rc = std::numeric_limits< int64_t >::max();
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+    custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+
+    // without the check the delegation is accepted, alice ends up with delegated_rc == -2 and both
+    // delegatees are given INT64_MAX of RC, which makes their get_maximum_rc() throw from that moment on
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "delta.value <= max_int64 - to_max_rc" );
+    generate_block();
+
+    BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_delegated_rc().value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_received_rc().value, 0 );
+    BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_maximum_rc().value, bob_max_rc );
+    vest( "bob", HIVE_asset( 1'000 ) ); // account is still usable
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_brick_witness )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: block producer among delegatees of overflowing delegation" );
+
+    // Without the overflow check the delegation below is accepted (2 * INT64_MAX wraps around to -2)
+    // and the block producer ends up with received_rc == INT64_MAX. From that moment on his
+    // get_maximum_rc() throws (rc_adjustment + received_rc overflows), so paying him the producer
+    // reward in process_funds() -> adjust_account_vesting_balance() throws in the middle of
+    // _apply_block() - the witness is no longer able to produce any block. With all scheduled
+    // witnesses treated that way (single operation can take up to HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP
+    // delegatees) the network stops producing blocks at all.
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    generate_block();
+
+    const int64_t initminer_max_rc = db->get_account( HIVE_INIT_MINER_NAME ).get_maximum_rc().value;
+    const uint32_t block_num = db->head_block_num();
+
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob", HIVE_INIT_MINER_NAME };
+    op.max_rc = std::numeric_limits< int64_t >::max();
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+    custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "delta.value <= max_int64 - to_max_rc" );
+
+    // producer reward is still payable, so blocks are still being produced
+    generate_blocks( 3 );
+    BOOST_REQUIRE_EQUAL( db->head_block_num(), block_num + 3 );
+
+    const account_object& initminer_account = db->get_account( HIVE_INIT_MINER_NAME );
+    BOOST_REQUIRE_EQUAL( initminer_account.get_received_rc().value, 0 );
+    BOOST_REQUIRE_GE( initminer_account.get_maximum_rc().value, initminer_max_rc ); //grew with producer rewards
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_brick_power_down )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: account with active power down among delegatees of overflowing delegation" );
+
+    // Same overflow as above, but the victim does not have to be a witness. Without the check
+    // bob ends up with received_rc == INT64_MAX while powering down, and when his withdrawal
+    // installment is due, process_vesting_withdrawals() -> regenerate_rc_mana() throws inside
+    // _apply_block(). Such a block cannot be produced nor applied by any node, no matter who
+    // produces it, which means the chain stops for good at that point.
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(dave) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    vest( "bob", HIVE_asset( 10'000 ) );
+    generate_block();
+
+    const int64_t bob_vests = get_vesting( "bob" ).amount.value;
+
+    withdraw_vesting_operation wop;
+    wop.account = "bob";
+    wop.vesting_shares = get_vesting( "bob" ).to_asset();
+    push_transaction( wop, bob_private_key );
+    auto next_withdrawal = db->head_block_time() + HIVE_VESTING_WITHDRAW_INTERVAL_SECONDS;
+    generate_block();
+
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob", "dave" };
+    op.max_rc = std::numeric_limits< int64_t >::max();
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+    custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "delta.value <= max_int64 - to_max_rc" );
+    generate_block();
+
+    // withdrawal installment is processed normally
+    generate_blocks( next_withdrawal );
+    BOOST_REQUIRE_LT( get_vesting( "bob" ).amount.value, bob_vests );
+
+    const account_object& bob_account = db->get_account( "bob" );
+    BOOST_REQUIRE_EQUAL( bob_account.get_received_rc().value, 0 );
+    BOOST_REQUIRE_GT( bob_account.get_maximum_rc().value, 0 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 #endif
