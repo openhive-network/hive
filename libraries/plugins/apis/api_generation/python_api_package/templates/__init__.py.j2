@@ -1,11 +1,92 @@
-"""Hive JSON-RPC API client package with lazy-loaded submodules."""
+"""
+Hive JSON-RPC API client package with lazy-loaded submodules.
+
+API calls return plain dataclasses (`HiveModel`) built without any validation. Responses can be validated
+explicitly with `validate_schema(response, "condenser_api.get_accounts")` (or passing the API method itself).
+
+Assets of both JSON forms are `Asset` (`Asset.hive.satoshi(1001)`, `Asset.hbd.tokens(1.001)`, ...), converted to the
+form of the fields of models they are in. Dates are `HiveDateTime` - aware `datetime`s with the JSON form of Hive
+(`2016-03-24T16:05:00`). `HiveModel.to_builtins()` converts a model back to JSON builtins with keys of the API, the
+function `to_builtins` also models nested in lists and dicts; `build(T, data)` builds values of any type of models (e.g.
+unions of operations) from builtins.
+"""
 
 from __future__ import annotations
 
-from hiveio_api._optional import optional_field
+import importlib
+from typing import TYPE_CHECKING, Final
+
+from hiveio_api._errors import HiveioApiBaseError, UnknownEndpointError, UnsupportedTypeError
+from hiveio_api._schema_validation import register_validation_models, validate_json, validate_schema
+from hiveio_api._utilities.smart_lazy_import import smart_lazy_getattr
+
+if TYPE_CHECKING:
+    from schemas.fields.hive_datetime import HiveDateTime
+    from schemas.fields.public import HBD_ASSET, HIVE_ASSET, VESTS_ASSET, Asset, AssetInfo
+    from schemas.validation import SchemaError
+
+    from hiveio_api._base import (
+        HiveModel,
+        InvalidValueWarning,
+        MissingFieldWarning,
+        UnexpectedFieldWarning,
+        build,
+        to_builtins,
+    )
 
 __version__ = "0.0.0"
 
+APIS: Final[tuple[str, ...]] = (
+{% for api in apis %}    "{{ api.snake_case }}",
+{% endfor %})
+"""Names of the API subpackages."""
+
 __all__ = [
+    "APIS",
+    "HBD_ASSET",
+    "HIVE_ASSET",
+    "VESTS_ASSET",
+    "Asset",
+    "AssetInfo",
+    "HiveDateTime",
+    "HiveModel",
+    "HiveioApiBaseError",
+    "InvalidValueWarning",
+    "MissingFieldWarning",
+    "SchemaError",
+    "UnexpectedFieldWarning",
+    "UnknownEndpointError",
+    "UnsupportedTypeError",
+    "build",
+    "register_validation_models",
+    "to_builtins",
+    "validate_json",
+    "validate_schema",
 {% for api in apis %}    "{{ api.snake_case }}",
 {% endfor %}]
+
+
+_LAZY_ATTRIBUTES: Final[dict[str, str]] = {
+    "HBD_ASSET": "schemas.fields.public",
+    "HIVE_ASSET": "schemas.fields.public",
+    "VESTS_ASSET": "schemas.fields.public",
+    "Asset": "schemas.fields.public",
+    "AssetInfo": "schemas.fields.public",
+    "HiveDateTime": "schemas.fields.hive_datetime",
+    "HiveModel": "hiveio_api._base",
+    "InvalidValueWarning": "hiveio_api._base",
+    "MissingFieldWarning": "hiveio_api._base",
+    "SchemaError": "schemas.validation",
+    "UnexpectedFieldWarning": "hiveio_api._base",
+    "build": "hiveio_api._base",
+    "to_builtins": "hiveio_api._base",
+}
+"""Names imported only when used - `import hiveio_api` does not load models (dataclasses) nor the validation machinery."""
+
+
+def __getattr__(name: str) -> object:
+    if name in APIS:  # subpackages of APIs are imported when used (`hiveio_api.database_api`)
+        return importlib.import_module(f"{__name__}.{name}")
+    return smart_lazy_getattr(name, globals(), _LAZY_ATTRIBUTES, {})
+
+
