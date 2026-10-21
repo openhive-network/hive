@@ -86,6 +86,29 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_validate )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( delegated_rc_from_variant_range )
+{
+  try
+  {
+    const char* out_of_range_assert = "!max_rc.is_uint64() || max_rc.as_uint64() <= max_int64";
+    const std::string out_of_range_message = "amount of rc delegated cannot exceed 9223372036854775807";
+    auto require_out_of_range = [&]( const fc::variant& max_rc )
+    {
+      HIVE_REQUIRE_ASSERT( delegated_rc_from_variant( max_rc ), out_of_range_assert );
+      BOOST_CHECK_EXCEPTION( delegated_rc_from_variant( max_rc ), fc::assert_exception,
+        [&]( const fc::assert_exception& e ) { return e.to_string().find( out_of_range_message ) != std::string::npos; } );
+    };
+
+    BOOST_REQUIRE_EQUAL( delegated_rc_from_variant( fc::variant( std::numeric_limits< int64_t >::max() ) ), std::numeric_limits< int64_t >::max() );
+    BOOST_REQUIRE_EQUAL( delegated_rc_from_variant( fc::variant( std::numeric_limits< int64_t >::min() ) ), std::numeric_limits< int64_t >::min() );
+    BOOST_REQUIRE_EQUAL( delegated_rc_from_variant( fc::variant( uint64_t( std::numeric_limits< int64_t >::max() ) ) ), std::numeric_limits< int64_t >::max() );
+    BOOST_REQUIRE_EQUAL( delegated_rc_from_variant( fc::variant( "10" ) ), 10 );
+    require_out_of_range( fc::variant( uint64_t( std::numeric_limits< int64_t >::max() ) + 1 ) );
+    require_out_of_range( fc::variant( std::numeric_limits< uint64_t >::max() ) );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_rc_out_of_int64_range )
 {
   try
