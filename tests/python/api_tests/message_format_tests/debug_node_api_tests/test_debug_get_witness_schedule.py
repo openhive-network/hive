@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from schemas.convert import to_builtins
+from hiveio_api import to_builtins
 
 from hive_local_tools import run_for
 

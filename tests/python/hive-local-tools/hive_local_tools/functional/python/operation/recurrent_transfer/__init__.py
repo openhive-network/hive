@@ -4,6 +4,8 @@ import copy
 from datetime import UTC
 from typing import TYPE_CHECKING
 
+from hiveio_api.operations import FailedRecurrentTransferOperation, FillRecurrentTransferOperation
+
 import test_tools as tt
 from hive_local_tools.functional.python.operation import (
     Account,
@@ -12,7 +14,6 @@ from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp,
     get_virtual_operations,
 )
-from schemas.operations.virtual import FailedRecurrentTransferOperation, FillRecurrentTransferOperation
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -20,11 +21,11 @@ if TYPE_CHECKING:
 
 class RecurrentTransferAccount(Account):
     def assert_balance_is_reduced_by_transfer(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
-        if isinstance(amount, tt.Asset.TestT):
+        if amount.is_hive():
             assert self.hive - amount == get_hive_balance(self._node, self._name), (
                 f"The `{self._name}` account balance has not been reduced."
             )
-        elif isinstance(amount, tt.Asset.TbdT):
+        elif amount.is_hbd():
             assert self.hbd - amount == get_hbd_balance(self._node, self._name), (
                 f"The `{self._name}` account hbd_balance has not been reduced."
             )
@@ -32,11 +33,11 @@ class RecurrentTransferAccount(Account):
             raise TypeError("Invalid argument type.")
 
     def assert_balance_is_increased_by_transfer(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
-        if isinstance(amount, tt.Asset.TestT):
+        if amount.is_hive():
             assert self.hive + amount == get_hive_balance(self._node, self._name), (
                 f"The `{self._name}` account balance has not been increased."
             )
-        elif isinstance(amount, tt.Asset.TbdT):
+        elif amount.is_hbd():
             assert self.hbd + amount == get_hbd_balance(self._node, self._name), (
                 f"The `{self._name}` account hbd_balance has not been increased."
             )
@@ -209,7 +210,7 @@ class RecurrentTransfer:
             self._recurrence = new_recurrence_time
         elif not new_executions_number and not new_recurrence_time and amount:
             amount_clone = copy.deepcopy(amount)
-            amount_clone.amount = 0
+            amount_clone *= 0
             if amount == amount_clone:
                 self._current_schedule = []
             else:
@@ -218,7 +219,7 @@ class RecurrentTransfer:
         self._executions_schedules.append(self._current_schedule)
 
     def cancel(self) -> None:
-        self.update(amount=tt.Asset.Test(0) if isinstance(self._amount, tt.Asset.TestT) else tt.Asset.Tbd(0))
+        self.update(amount=tt.Asset.Test(0) if self._amount.is_hive() else tt.Asset.Tbd(0))
 
 
 class RecurrentTransferDefinition:

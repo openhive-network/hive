@@ -4,6 +4,14 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal
 
 from beekeepy.exceptions import ErrorInResponseError
+from hiveio_api.operations import (
+    AuthorRewardOperation,
+    CommentBenefactorRewardOperation,
+    CommentOptionsOperation,
+    CurationRewardOperation,
+    DeleteCommentOperation,
+    EffectiveCommentVoteOperation,
+)
 
 import test_tools as tt
 import wax
@@ -19,54 +27,11 @@ from hive_local_tools.functional.python.operation import (
 from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp as get_transaction_timestamp,
 )
-from schemas.fields.assets import AssetHive
-from schemas.operations import (
-    CommentOptionsOperation,
-    DeleteCommentOperation,
-)
-from schemas.operations.virtual.author_reward_operation import AuthorRewardOperation
-from schemas.operations.virtual.comment_benefactor_reward_operation import CommentBenefactorRewardOperation
-from schemas.operations.virtual.curation_reward_operation import CurationRewardOperation
-from schemas.operations.virtual.effective_comment_vote_operation import EffectiveCommentVoteOperation
-from schemas.transaction import TransactionLegacy
+from schemas.fields.public import Asset
 
 if TYPE_CHECKING:
-    from schemas.fields.hive_int import HiveInt
-    from schemas.operations.representation_types import (
-        LegacyRepresentationClaimRewardBalanceOperation,
-        LegacyRepresentationCommentOperation,
-        LegacyRepresentationCommentOptionsOperation,
-        LegacyRepresentationDeleteCommentOperation,
-        LegacyRepresentationVoteOperation,
-    )
-
-
-class ClaimRewardBalanceTransaction(TransactionLegacy):
-    operations: list[LegacyRepresentationClaimRewardBalanceOperation]
-    rc_cost: int
-
-
-class CommentTransaction(TransactionLegacy):
-    operations: (
-        tuple[LegacyRepresentationCommentOperation]
-        | tuple[LegacyRepresentationCommentOperation, LegacyRepresentationCommentOptionsOperation]
-    )
-    rc_cost: int = 0
-
-
-class DeleteCommentTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentationDeleteCommentOperation]
-    rc_cost: int
-
-
-class VoteTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentationVoteOperation]
-    rc_cost: int
-
-
-class CommentOptionsTransaction(TransactionLegacy):
-    operations: tuple[LegacyRepresentationCommentOptionsOperation]
-    rc_cost: int = 0
+    from schemas.fields.public import HiveInt
+    from test_tools.__private.wallet.constants import WalletResponse
 
 
 def get_reward_operations(node, mode: Literal["author", "curation", "comment_benefactor"]):
@@ -88,7 +53,9 @@ def convert_hbd_to_hive(node, hbd: tt.Asset.Hbd) -> tt.Asset.Hive:
         wax.hbd(int(hbd_to_hive_feed.base.amount)),
         wax.hive(int(hbd_to_hive_feed.quote.amount)),
     )
-    return AssetHive(amount=calculated_hive.amount, precision=calculated_hive.precision, nai=calculated_hive.nai)
+    return Asset.hive.factory(
+        amount=calculated_hive.amount, precision=calculated_hive.precision, nai=calculated_hive.nai
+    )
 
 
 def convert_vesting_to_hive(node, vesting: tt.Asset.Vest) -> tt.Asset.Hive:
@@ -100,7 +67,7 @@ def convert_vesting_to_hive(node, vesting: tt.Asset.Vest) -> tt.Asset.Hive:
         wax.hive(int(total_vesting_fund_hive.amount)),
         wax.vests(int(total_vesting_shares.amount)),
     )
-    return AssetHive(amount=calculated_hp.amount, precision=calculated_hp.precision, nai=calculated_hp.nai)
+    return Asset.hive.factory(amount=calculated_hp.amount, precision=calculated_hp.precision, nai=calculated_hp.nai)
 
 
 class Comment:
@@ -153,8 +120,8 @@ class Comment:
         self.__parent = parent
         self.__permlink = permlink or f"main-permlink-{self.author}"
         self.__children: list[Comment] = [child] if child is not None else []
-        self.__comment_transaction: CommentTransaction | None = None
-        self.__comment_option_transaction: CommentOptionsTransaction = None
+        self.__comment_transaction: WalletResponse | None = None
+        self.__comment_option_transaction: WalletResponse = None
         self.__deleted: bool = False
         self.__beneficiaries: list[dict] = []
         self.__benefactors: list[str] = []
@@ -182,7 +149,8 @@ class Comment:
         return self.__permlink
 
     @property
-    def comment_trx(self) -> CommentTransaction:
+    def comment_trx(self) -> WalletResponse:
+        """The transaction of the comment, as returned by the wallet."""
         assert self.comment_exists()
         return self.__comment_transaction
 
@@ -343,7 +311,6 @@ class Comment:
         self.__wallet.api.vote(hater.name, self.author, self.permlink, -10)
 
     def assert_is_comment_sent_or_update(self) -> None:
-        # comment_value from wallet is a dict, op.value from hiveio_api is a msgspec struct
         comment_value = self.comment_trx.operations[0].value
         ops_in_block = self.__node.api.account_history.get_ops_in_block(
             block_num=self.comment_trx.block_num, include_reversible=True
@@ -391,7 +358,7 @@ class Comment:
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
 
-    def __options(self, broadcast: bool = True, **comment_options: Any) -> CommentOptionsTransaction:
+    def __options(self, broadcast: bool = True, **comment_options: Any) -> WalletResponse:
         """
         Private function for modifying a comment options.
 
@@ -561,7 +528,7 @@ class Vote:
     def __init__(self, comment_obj: Comment, voter: Literal["random", "same_as_comment"] | CommentAccount) -> None:
         self.__comment_obj = comment_obj
         self.__voter = voter
-        self.__vote_transaction: VoteTransaction | None = None
+        self.__vote_transaction: WalletResponse | None = None
         if isinstance(voter, Account):
             self.__voter_obj = voter
         else:
@@ -590,7 +557,6 @@ class Vote:
             operations = self.__comment_obj.node.api.account_history.get_ops_in_block(
                 block_num=self.__vote_transaction.block_num, include_reversible=True
             ).ops
-            # vote_operation from wallet is a dict, op.op.value from hiveio_api is a msgspec struct
             found = any(
                 op.op.type == "vote_operation"
                 and op.op.value["voter"] == vote_operation["voter"]
@@ -695,7 +661,8 @@ class CommentAccount(Account):
         super().__init__(_name=name, _node=node, _wallet=wallet)
 
     @property
-    def claim_reward_balance_trx(self) -> ClaimRewardBalanceTransaction:
+    def claim_reward_balance_trx(self) -> WalletResponse:
+        """The transaction claiming the reward balance, as returned by the wallet."""
         return self.__claim_reward_transaction
 
     def __get_rewards_from_reward_operation(
@@ -735,10 +702,10 @@ class CommentAccount(Account):
             else [tt.Asset.Tbd(0)]
         )
 
-        sum_of_all_rewards = (
-            sum(account_rewards_from_author_reward_operation)
-            + sum(account_rewards_from_comment_benefactor_reward_operation)
-            + sum(account_rewards_from_curation_reward_operation)
+        sum_of_all_rewards = sum(
+            account_rewards_from_author_reward_operation
+            + account_rewards_from_comment_benefactor_reward_operation
+            + account_rewards_from_curation_reward_operation
         )
 
         sum_of_all_rewards = (

@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from hiveio_api.operations import EscrowApprovedOperation, EscrowRejectedOperation
+
 from hive_local_tools.functional.python.operation import Account, Operation, get_virtual_operations
-from schemas.operations.virtual.escrow_approved_operation import EscrowApprovedOperation
-from schemas.operations.virtual.escrow_rejected_operation import EscrowRejectedOperation
 
 if TYPE_CHECKING:
+    from hiveio_api.operations import Transaction
+
     import test_tools as tt
-    from schemas.transaction import Transaction
 
 
 class EscrowTransfer(Operation):

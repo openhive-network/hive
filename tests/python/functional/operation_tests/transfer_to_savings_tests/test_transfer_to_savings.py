@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 import test_tools as tt
+from hiveio_api import Asset
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import TransferAccount
@@ -14,13 +15,13 @@ if TYPE_CHECKING:
     ("receiver", "currency", "check_savings_balance", "check_balance"),
     [
         # transfer to savings in HIVES, receiver is the same person as sender
-        ("alice", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
+        ("alice", Asset.hive.satoshi, "get_hive_savings_balance", "get_hive_balance"),
         # transfer to savings in HIVES, receiver is other account
-        ("bob", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
+        ("bob", Asset.hive.satoshi, "get_hive_savings_balance", "get_hive_balance"),
         # transfer to savings in HBDS, receiver is the same person as sender
-        ("alice", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("alice", Asset.hbd.satoshi, "get_hbd_savings_balance", "get_hbd_balance"),
         # transfer to savings in HBDS, receiver is other account
-        ("bob", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("bob", Asset.hbd.satoshi, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet
@@ -59,7 +60,7 @@ def test_transfer_to_savings_account(
         group_by_block=False,
     ).ops
 
-    if currency(0).nai() == "@@000000013":  # Now token is available ony from object, not class.
+    if currency.token().nai == "@@000000013":
         assert len(interests) == 1, "interest_operation wasn't generated."
         assert (
             receiver_savings_balance_before_transfer

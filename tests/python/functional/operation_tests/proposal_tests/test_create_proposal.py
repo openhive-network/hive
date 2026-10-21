@@ -7,7 +7,7 @@ from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_number_of_active_proposals, get_virtual_operations
-from schemas.operations.virtual.proposal_fee_operation import ProposalFeeOperation
+from hiveio_api.operations import ProposalFeeOperation
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import ProposalAccount
