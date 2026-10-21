@@ -22,6 +22,9 @@ typedef fc::static_variant<
 
 #define HIVE_RC_CUSTOM_OPERATION_ID "rc"
 
+/// Converts max_rc of delegate_rc_operation to int64; throws when it is an unsigned value above INT64_MAX.
+int64_t delegated_rc_from_variant( const fc::variant& max_rc );
+
 } } // hive::protocol
 
 namespace fc

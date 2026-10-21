@@ -86,6 +86,29 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_validate )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( delegated_rc_from_variant_range )
+{
+  try
+  {
+    const char* out_of_range_assert = "!max_rc.is_uint64() || max_rc.as_uint64() <= max_int64";
+    const std::string out_of_range_message = "amount of rc delegated cannot exceed 9223372036854775807";
+    auto require_out_of_range = [&]( const fc::variant& max_rc )
+    {
+      HIVE_REQUIRE_ASSERT( delegated_rc_from_variant( max_rc ), out_of_range_assert );
+      BOOST_CHECK_EXCEPTION( delegated_rc_from_variant( max_rc ), fc::assert_exception,
+        [&]( const fc::assert_exception& e ) { return e.to_string().find( out_of_range_message ) != std::string::npos; } );
+    };
+
+    BOOST_REQUIRE_EQUAL( delegated_rc_from_variant( fc::variant( std::numeric_limits< int64_t >::max() ) ), std::numeric_limits< int64_t >::max() );
+    BOOST_REQUIRE_EQUAL( delegated_rc_from_variant( fc::variant( std::numeric_limits< int64_t >::min() ) ), std::numeric_limits< int64_t >::min() );
+    BOOST_REQUIRE_EQUAL( delegated_rc_from_variant( fc::variant( uint64_t( std::numeric_limits< int64_t >::max() ) ) ), std::numeric_limits< int64_t >::max() );
+    BOOST_REQUIRE_EQUAL( delegated_rc_from_variant( fc::variant( "10" ) ), 10 );
+    require_out_of_range( fc::variant( uint64_t( std::numeric_limits< int64_t >::max() ) + 1 ) );
+    require_out_of_range( fc::variant( std::numeric_limits< uint64_t >::max() ) );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_rc_out_of_int64_range )
 {
   try
@@ -129,7 +152,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_rc_at_int64_limit )
   try
   {
     BOOST_TEST_MESSAGE( "Testing:  delegate_rc_operation with max_rc near int64 limit" );
-    const char* delegatee_limit_assert = "to_rc_peak <= 0 || delta.value <= max_int64 - to_rc_peak";
+    const char* delegatee_limit_assert = "delta.value <= max_int64 - to_account.get_maximum_rc().value";
     const char* total_limit_assert = "delta_total.value <= max_int64 - delta.value";
     const char* insufficient_rc_assert = "from_delegable_rc >= delta_total";
     const int64_t max_int64 = std::numeric_limits< int64_t >::max();
@@ -168,17 +191,15 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_rc_at_int64_limit )
           return e.to_string().find( expected_message ) != std::string::npos;
         } );
     };
-    auto delegatee_limit_message = [&]( int64_t max_rc, const std::string& to, int64_t limit, int64_t delegable )
+    auto insufficient_rc_message = []( int64_t delegable, uint64_t needed )
     {
-      return "Account alice cannot delegate " + std::to_string( max_rc ) + " RC to " + to + ": it exceeds the maximum of " +
-        std::to_string( limit ) + " RC that " + to + " can receive (alice has " + std::to_string( delegable ) +
-        " RC available to delegate)";
+      return "Account alice has insufficient RC (have " + std::to_string( delegable ) + ", needs " + std::to_string( needed ) + ")";
     };
 
     // new delegation - previously failed with overflow when adding max_rc to RC of delegatee
-    int64_t bob_limit = max_int64 - bob.get_maximum_rc().value;
-    require_rejected( max_int64, delegatee_limit_assert, delegatee_limit_message( max_int64, "bob", bob_limit, available ) );
-    require_rejected( max_int64 - 1, delegatee_limit_assert, delegatee_limit_message( max_int64 - 1, "bob", bob_limit, available ) );
+    BOOST_REQUIRE_GT( bob.get_maximum_rc().value, 1 );
+    require_rejected( max_int64, delegatee_limit_assert, insufficient_rc_message( available, max_int64 ) );
+    require_rejected( max_int64 - 1, delegatee_limit_assert, insufficient_rc_message( available, max_int64 - 1 ) );
     require_rejected( available + 1, insufficient_rc_assert,
       "Account alice has insufficient RC (have " + std::to_string( available ) + ", needs " + std::to_string( available + 1 ) + ")" );
 
@@ -189,19 +210,17 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_max_rc_at_int64_limit )
     BOOST_REQUIRE_EQUAL( alice.get_delegated_rc().value, available );
     BOOST_REQUIRE_EQUAL( bob.get_received_rc().value, available );
 
-    // increase of existing delegation - only the difference is added, so the limit includes delegated amount
-    bob_limit = available + ( max_int64 - bob.get_maximum_rc().value );
-    require_rejected( max_int64, delegatee_limit_assert, delegatee_limit_message( max_int64, "bob", bob_limit, 0 ) );
-    require_rejected( max_int64 - 1, delegatee_limit_assert, delegatee_limit_message( max_int64 - 1, "bob", bob_limit, 0 ) );
+    // increase of existing delegation - only the difference is added to RC of delegatee
+    BOOST_REQUIRE_GT( bob.get_maximum_rc().value, available + 1 );
+    require_rejected( max_int64, delegatee_limit_assert, insufficient_rc_message( 0, max_int64 ) );
+    require_rejected( max_int64 - 1, delegatee_limit_assert, insufficient_rc_message( 0, max_int64 - 1 ) );
     require_rejected( available + 1, insufficient_rc_assert,
       "Account alice has insufficient RC (have 0, needs 1)" );
 
     // sum over delegatees - previously failed with overflow when adding delta to delta_total
     op.delegatees = { "carol", "dave" };
     require_rejected( max_int64 / 2 + 1, total_limit_assert,
-      "Account alice cannot delegate " + std::to_string( max_int64 / 2 + 1 ) +
-      " RC to each of 2 accounts: the total exceeds the maximum of " + std::to_string( max_int64 ) +
-      " RC (alice has 0 RC available to delegate)" );
+      insufficient_rc_message( 0, 2 * uint64_t( max_int64 / 2 + 1 ) ) );
 
     BOOST_REQUIRE_EQUAL( alice.get_delegated_rc().value, available );
     BOOST_REQUIRE_EQUAL( bob.get_received_rc().value, available );
