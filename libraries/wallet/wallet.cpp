@@ -2683,11 +2683,10 @@ wallet_signed_transaction wallet_api::delegate_rc(
   using namespace plugins::rc;
   FC_ASSERT( !is_locked() );
 
-  // conversion through delegate_rc_operation rejects max_rc outside of int64 range instead of wrapping it
-  delegate_rc_operation dro = fc::variant( fc::mutable_variant_object()
-    ( "from", from )
-    ( "delegatees", delegatees )
-    ( "max_rc", std::move( max_rc ) ) ).as< delegate_rc_operation >();
+  delegate_rc_operation dro;
+  dro.from = from;
+  dro.delegatees = delegatees;
+  dro.max_rc = hive::protocol::delegated_rc_from_variant( max_rc );
 
   custom_json_operation op;
   op.json = fc::json::to_string( hive::protocol::rc_custom_operation( dro ) );
