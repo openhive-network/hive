@@ -103,11 +103,8 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         } );
       }
     }
-    // Below asserts fail exactly where share_type (safe<int64_t>) additions of delta would throw
-    // overflow_exception (current_mana + delta and max_rc + delta in update_account_after_rc_delegation,
-    // delta_total += delta below), so they do not change which transactions are valid - they only replace
-    // the bare "Integer Overflow" message. No step of the delegation wraps around: without them 2 * INT64_MAX
-    // is rejected on the first delegatee, it never reaches a -2 delegated_rc.
+    // Below asserts fail exactly where share_type additions of delta would overflow (in
+    // update_account_after_rc_delegation and in delta_total), so they only replace the bare overflow message.
     // Such delta is way beyond RC of all accounts combined, so the operation would not pass the final check
     // anyway - it is reported as insufficient RC right away.
     if( delta > 0 )

@@ -1793,8 +1793,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_delta_overflow )
     vest( "alice", HIVE_asset( 10'000 ) );
     generate_block();
 
-    // 4 * huge == 2^64 - 16 does not fit int64_t; delta_total is safe<int64_t>, so without the check
-    // the accumulation would throw a bare overflow_exception instead of wrapping around to -16
+    // 4 * huge == 2^64 - 16, that is -16 after wrap around of int64_t accumulator
     const int64_t huge = ( int64_t( 1 ) << 62 ) - 4;
 
     const int64_t alice_max_rc = db->get_account( "alice" ).get_maximum_rc().value;
@@ -1869,7 +1868,7 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_brick_delegatee )
 
     delegate_rc_operation op;
     op.from = "alice";
-    op.delegatees = { "bob", "dave" }; // 2 * INT64_MAX == 2^64 - 2 does not fit int64_t
+    op.delegatees = { "bob", "dave" }; // 2 * INT64_MAX == 2^64 - 2, that is -2 after wrap around
     op.max_rc = std::numeric_limits< int64_t >::max();
 
     custom_json_operation custom_op;
@@ -1877,8 +1876,8 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_brick_delegatee )
     custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
 
-    // the check gives a readable message; without it the delegation is still rejected on the first
-    // delegatee, by safe<int64_t> overflow of bob's current_mana + delta in update_account_after_rc_delegation
+    // without the check the delegation is accepted, alice ends up with delegated_rc == -2 and both
+    // delegatees are given INT64_MAX of RC, which makes their get_maximum_rc() throw from that moment on
     HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "delta.value <= max_int64 - to_max_rc" );
     generate_block();
 
@@ -1898,10 +1897,13 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_brick_witness )
   {
     BOOST_TEST_MESSAGE( "Testing: block producer among delegatees of overflowing delegation" );
 
-    // Were the delegation below accepted, the block producer would end up with received_rc == INT64_MAX,
-    // its get_maximum_rc() would throw and so would paying it the producer reward in _apply_block().
-    // It is rejected: the overflow check gives a readable message, and without it the same transaction
-    // is rejected anyway by safe<int64_t> overflow in update_account_after_rc_delegation (nothing wraps).
+    // Without the overflow check the delegation below is accepted (2 * INT64_MAX wraps around to -2)
+    // and the block producer ends up with received_rc == INT64_MAX. From that moment on his
+    // get_maximum_rc() throws (rc_adjustment + received_rc overflows), so paying him the producer
+    // reward in process_funds() -> adjust_account_vesting_balance() throws in the middle of
+    // _apply_block() - the witness is no longer able to produce any block. With all scheduled
+    // witnesses treated that way (single operation can take up to HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP
+    // delegatees) the network stops producing blocks at all.
 
     ACTORS( DEFAULT_VESTING, (alice)(bob) );
     vest( "alice", HIVE_asset( 10'000 ) );
@@ -1941,10 +1943,11 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_brick_power_down )
   {
     BOOST_TEST_MESSAGE( "Testing: account with active power down among delegatees of overflowing delegation" );
 
-    // Same overflow as above, but the delegatee is powering down. Were the delegation accepted, bob's
-    // received_rc == INT64_MAX would make process_vesting_withdrawals() -> regenerate_rc_mana() throw
-    // inside _apply_block() when the installment is due. It is rejected: the overflow check gives a
-    // readable message, and without it safe<int64_t> overflow rejects the same transaction.
+    // Same overflow as above, but the victim does not have to be a witness. Without the check
+    // bob ends up with received_rc == INT64_MAX while powering down, and when his withdrawal
+    // installment is due, process_vesting_withdrawals() -> regenerate_rc_mana() throws inside
+    // _apply_block(). Such a block cannot be produced nor applied by any node, no matter who
+    // produces it, which means the chain stops for good at that point.
 
     ACTORS( DEFAULT_VESTING, (alice)(bob)(dave) );
     vest( "alice", HIVE_asset( 10'000 ) );
