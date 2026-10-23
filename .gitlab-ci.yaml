@@ -1303,6 +1303,30 @@ several_node_restarts_tests:
   tags:
     - public-runner-docker
 
+# Compares the number of objects in every index, dumped every 100k blocks of the 5M replay made by prepare_hived_data
+# (hived --dump-memory-details), with the pattern
+memory_details_mainnet_5m_tests:
+  extends:
+    - .job-defaults
+    - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
+  stage: test
+  image: "$CI_BASE_IMAGE"
+  needs:
+    - job: prepare_hived_data
+      artifacts: true  # replay_benchmark.jsonl
+  variables:
+    GIT_SUBMODULE_STRATEGY: "none"  # only the comparison script and the pattern are needed
+  script:
+    - python3 tests/integration/dump_memory_details/compare_memory_details.py
+      tests/integration/dump_memory_details/mainnet_5m.pat.json replay_benchmark.jsonl
+  artifacts:
+    paths:
+      - replay_benchmark.jsonl
+    when: always
+    expire_in: 1 week
+  tags:
+    - public-runner-docker
+
 artifacts_generation_tests:
   extends:
     - .job-defaults

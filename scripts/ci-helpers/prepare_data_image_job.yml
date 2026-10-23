@@ -294,6 +294,8 @@ include:
         "$CACHE_MANAGER" put hive "$CACHE_KEY" "${DATA_CACHE_DIR}" || echo "Warning: Failed to push to NFS cache"
       fi
     - cp "${DATA_CACHE_DIR}/datadir/docker_entrypoint.log" "${CI_PROJECT_DIR}/docker_entrypoint.log" 2>/dev/null || true
+    # dumped during the replay (see build_data.sh), checked by memory_details_mainnet_5m_tests
+    - cp "${DATA_CACHE_DIR}/datadir/replay_benchmark.jsonl" "${CI_PROJECT_DIR}/replay_benchmark.jsonl" 2>/dev/null || true
     - ls -la "${DATA_CACHE_DIR}/datadir/"
   after_script:
     - rm "${DATA_CACHE_DIR}/replay_running" -f
@@ -304,3 +306,4 @@ include:
         - docker_image_name.env
     paths:
       - docker_entrypoint.log
+      - replay_benchmark.jsonl
