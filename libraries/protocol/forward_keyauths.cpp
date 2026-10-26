@@ -227,7 +227,17 @@ private:
 
   result_type operator()( const witness_set_properties_operation& op )
   {
-    collect_witness_signing(op, op.owner);
+    // "key" is the current signing key that authorizes the operation. When "new_signing_key" is present
+    // the witness switches to it, so that is the key the witness signs blocks with from now on.
+    auto itr = op.props.find( "new_signing_key" );
+    if( itr != op.props.end() )
+    {
+      public_key_type new_signing_key;
+      fc::raw::unpack_from_vector( itr->second, new_signing_key );
+      collect_one(op, authority( 1, new_signing_key, 1 ), hive::app::key_t::WITNESS_SIGNING, op.owner);
+    }
+    else
+      collect_witness_signing(op, op.owner);
   }
 
   result_type operator()( const witness_update_operation& op )
