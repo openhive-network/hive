@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 @pytest.mark.enabled_plugins("witness", "wallet_bridge_api")
 def test_no_api_is_missing(node: tt.InitNode, wallet_bridge_api_command: str) -> None:
     with contextlib.suppress(msgspec.ValidationError):
-        # ValidationError means the API responded — schema may be temporarily out of sync with the node.
+        # ValidationError means the API responded - schema may be temporarily out of sync with the node.
         getattr(node.api.wallet_bridge, wallet_bridge_api_command)()
 
 

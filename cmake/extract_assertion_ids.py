@@ -187,7 +187,7 @@ def main() -> int:
     generated_lines: list[str] = []
     for source_path in _iter_source_paths(list_path):
         # Skip hive_specialised_exceptions.hpp because it only defines assertion macros
-        # (not actual assertion invocations) — scanning it would produce false positives
+        # (not actual assertion invocations) - scanning it would produce false positives
         # from the #define lines.
         if source_path.name == "hive_specialised_exceptions.hpp":
             continue

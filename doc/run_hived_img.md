@@ -24,6 +24,19 @@ Options to specify working directories for the node (the script will pass the ap
 `--data-dir=DIRECTORY_PATH` - specifies the blockchain data directory. See deployment scenarios described below for details on how to prepare this directory<br>
 `--shared-file-dir=DIRECTORY_PATH` - specifies the directory where dockerized hived will store its state file (shared_memory.bin). For best performance results, it should be located on a ram-disk (e.g. a subdirectory created under /dev/shm).
 
+hived in the image runs as user `hived` (UID 1000), so both directories must be writable by that UID. When they are owned by another user, there is no need to `chown 1000` them or make them world-writable: pass that user's UID in `HIVED_UID` and hived runs as it instead, e.g. for directories owned by the user starting the node:
+
+    run_hived_img.sh my-local-image --docker-option="--env HIVED_UID=$(id -u)" --name=hived-instance --data-dir=/home/hived/datadir --shared-file-dir=/dev/shm/hived/consensus_node
+
+(or `-e HIVED_UID=$(id -u)` with a plain `docker run`). `HIVED_UID` must be a non-zero number; anything else stops the container with an error.
+
+What the entrypoint changes and what it leaves alone:
+
+- It changes the UID of the container's `hived` account in `/etc/passwd` to `HIVED_UID` and starts hived as it.
+- It hands over to that UID only the home directory `/home/hived` itself (not its contents) and `/home/hived/.hived` if it exists, without descending into mounts. The rest of the image's files under `/home/hived` (binaries, scripts) stay owned by UID 1000 and remain readable.
+- It never changes the owner of the data directory, the shared file directory or anything else mounted into the container, such as a read-only `config.ini`; no file on the host changes owner.
+- The data directory and the shared file directory must therefore already be writable by `HIVED_UID`. If one is not, the container stops before hived starts with a message naming the directory and its owner. This also applies to the image's own (unmounted) volumes, which are owned by UID 1000: with `HIVED_UID`, mount both directories.
+
 ### Examining the hived log file
 
 The newly created container (and hived process) will create a log file (hived.log) located in the blockchain data directory (e.g. /home/hived/datadir/hived.log).

@@ -1,4 +1,4 @@
-﻿#ifdef IS_TEST_NET
+#ifdef IS_TEST_NET
 #include <boost/test/unit_test.hpp>
 
 #include <hive/chain/hive_fwd.hpp>
@@ -1540,7 +1540,7 @@ BOOST_AUTO_TEST_CASE( empty_undo_benchmark )
     }
 
     fc::microseconds total_time = fc::time_point::now() - start_time;
-    ilog( "Total time for undo session handling: ${t}µs, revision ${r}",
+    ilog( "Total time for undo session handling: ${t}us, revision ${r}",
       ( "t", total_time )( "r", db->revision() ) );
     BOOST_REQUIRE_EQUAL( start_revision + 10, db->revision() );
 
@@ -1624,7 +1624,7 @@ BOOST_AUTO_TEST_CASE( empty_undo_benchmark )
     }
 
     total_time = fc::time_point::now() - start_time;
-    ilog( "Total time for undo session handling with 'keep_alive': ${t}µs, revision ${r}",
+    ilog( "Total time for undo session handling with 'keep_alive': ${t}us, revision ${r}",
       ( "t", total_time )( "r", db->revision() ) );
     BOOST_REQUIRE_EQUAL( start_revision + 10, db->revision() );
   }

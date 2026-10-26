@@ -64,6 +64,8 @@ namespace graphene { namespace net {
       fc::time_point _last_message_sent_time;
 
       bool _send_message_in_progress;
+      /// set once we close the socket ourselves, after which the read loop failing is expected
+      bool _closed_locally;
 #ifndef NDEBUG
       fc::thread* _thread;
 #endif
@@ -99,7 +101,8 @@ namespace graphene { namespace net {
       _delegate(delegate),
       _bytes_received(0),
       _bytes_sent(0),
-      _send_message_in_progress(false)
+      _send_message_in_progress(false),
+      _closed_locally(false)
 #ifndef NDEBUG
       ,_thread(&fc::thread::current())
 #endif
@@ -147,12 +150,15 @@ namespace graphene { namespace net {
       static_assert(BUFFER_SIZE >= sizeof(message_header), "insufficient buffer");
 
       _connected_time = fc::time_point::now();
+      // a message handler may close the socket, after which asking it for the endpoint fails
+      fc::optional<fc::ip::endpoint> remote_endpoint;
 
       fc::oexception exception_to_rethrow;
       bool call_on_connection_closed = false;
 
       try
       {
+        remote_endpoint = get_socket().remote_endpoint();
         message m;
         while( true )
         {
@@ -167,7 +173,7 @@ namespace graphene { namespace net {
           size_t remaining_bytes_with_padding = 16 * ((m.size - LEFTOVER + 15) / 16);
           fc::time_point read_first_bytes_time = fc::time_point::now();
           dlog("begun reading message of type ${type} from ${peer}, with ${remaining_bytes_with_padding} bytes left to read", 
-               ("type", (core_message_type_enum)m.msg_type)("peer", get_socket().remote_endpoint())(remaining_bytes_with_padding));
+               ("type", (core_message_type_enum)m.msg_type)("peer", remote_endpoint)(remaining_bytes_with_padding));
           m.data.resize(LEFTOVER + remaining_bytes_with_padding); //give extra 16 bytes to allow for padding added in send call
           std::copy(buffer + sizeof(message_header), buffer + sizeof(buffer), m.data.begin());
           if (remaining_bytes_with_padding)
@@ -177,8 +183,8 @@ namespace graphene { namespace net {
           }
           fc::time_point read_last_bytes_time = fc::time_point::now();
           fc::microseconds read_duration = read_last_bytes_time - read_first_bytes_time;
-          dlog("read complete ${type} message from ${peer} in ${read_duration}μs, decoding and passing to node", 
-               ("type", (core_message_type_enum)m.msg_type)(read_duration)("peer", get_socket().remote_endpoint()));
+          dlog("read complete ${type} message from ${peer} in ${read_duration}us, decoding and passing to node", 
+               ("type", (core_message_type_enum)m.msg_type)(read_duration)("peer", remote_endpoint));
           m.data.resize(m.size); // truncate off the padding bytes
 
           _last_message_received_time = fc::time_point::now();
@@ -187,7 +193,7 @@ namespace graphene { namespace net {
           {
             // message handling errors are warnings...
             _delegate->on_message(_self, m);
-            dlog("node is done handling message from ${peer}", ("peer", get_socket().remote_endpoint()));
+            dlog("node is done handling message from ${peer}", ("peer", remote_endpoint));
           }
           /// Dedicated catches needed to distinguish from general fc::exception
           catch ( const fc::canceled_exception& e ) { throw e; }
@@ -195,7 +201,8 @@ namespace graphene { namespace net {
           catch ( const fc::exception& e)
           {
             /// Here loop should be continued so exception should be just caught locally.
-            wlog( "message transmission failed ${er}", ("er", e.to_detail_string() ) );
+            if (!_closed_locally)
+              wlog( "message transmission failed ${er}", ("er", e.to_detail_string() ) );
             throw;
           }
         }
@@ -212,9 +219,16 @@ namespace graphene { namespace net {
       }
       catch ( const fc::exception& e )
       {
-        elog( "disconnected ${er}", ("er", e.to_detail_string() ) );
         call_on_connection_closed = true;
-        exception_to_rethrow = fc::unhandled_exception(FC_LOG_MESSAGE(warn, "disconnected: ${e}", ("e", e.to_detail_string())));
+        // reading from a socket we closed ourselves (e.g. after rejecting the peer's hello) fails
+        // with "Bad file descriptor" or "Operation canceled"; that is the normal end of the connection
+        if (_closed_locally)
+          dlog( "read loop for ${peer} ended after the connection was closed locally: ${er}", ("peer", remote_endpoint)("er", e.to_string() ) );
+        else
+        {
+          elog( "disconnected ${er}", ("er", e.to_detail_string() ) );
+          exception_to_rethrow = fc::unhandled_exception(FC_LOG_MESSAGE(warn, "disconnected: ${e}", ("e", e.to_detail_string())));
+        }
       }
       catch ( const std::exception& e )
       {
@@ -288,6 +302,7 @@ namespace graphene { namespace net {
     void message_oriented_connection_impl::close_connection()
     {
       VERIFY_CORRECT_THREAD();
+      _closed_locally = true;
       _sock.close();
     }
 

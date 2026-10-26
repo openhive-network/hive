@@ -10,7 +10,7 @@ package hive.protocol.buffers;
  * In order to update witness properties it is recommended to use witness_set_properties_operation.
  *
  * If a user wants to become a witness, the operation witness_update_operation should be created.
- * If the witness doesn’t want to be a witness any more, the operation witness_update_operation with empty { block_signing_key }
+ * If the witness doesn't want to be a witness any more, the operation witness_update_operation with empty { block_signing_key }
  * should be created.
  */
 message witness_update {

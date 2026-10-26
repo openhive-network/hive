@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Build (and with --push, publish) the test runtime image of .aidev/runtime/Dockerfile
 # and print the digest-pinned reference to put in .aidev/project.yaml's
-# `environment.image`. See .aidev/README.md.
+# `environment.image`, the seed pin (AIDEV builds the image the suites run in on
+# the followed base itself). See .aidev/README.md.
 #
-# The tag is `aidev-<hash>`, the hash of the image input (the Dockerfile; every
-# FROM is digest-pinned); the registry cleanup policy keeps `aidev-*` tags. When
+# The tag is `aidev-<hash>`, the hash of the image inputs (the Dockerfile,
+# hive-local-tools' pyproject.toml and poetry.lock, and the followed base's current
+# digest); the registry cleanup policy keeps `aidev-*` tags. When
 # <repository>:aidev-<hash> is already in the registry nothing is built: the script
 # prints that image's digest.
 #
@@ -17,9 +19,17 @@ cd "$(dirname "$0")/../.."
 
 REPOSITORY="${AIDEV_RUNTIME_REPOSITORY:-registry.gitlab.syncad.com/hive/hive/aidev-tests}"
 
-# The Dockerfile copies nothing from the tree: it is the only input.
+CONTEXT=tests/python/hive-local-tools
+
+# The tag project.yaml's `environment.base` follows, pinned to the digest it names now.
+BASE_TAG="$(grep -o 'base: {image: "[^"]*"' .aidev/project.yaml | cut -d'"' -f2)"
+BASE_DIGEST="$(docker buildx imagetools inspect "$BASE_TAG" --format '{{json .Manifest}}' \
+    | grep -o '"digest": *"sha256:[0-9a-f]*"' | head -1 | grep -o 'sha256:[0-9a-f]*')"
+BASE_IMAGE="${BASE_TAG%:*}@${BASE_DIGEST:?cannot resolve the followed base $BASE_TAG}"
+
 input_hash() {
-    sha256sum .aidev/runtime/Dockerfile | sha256sum | cut -c1-16
+    { sha256sum .aidev/runtime/Dockerfile "$CONTEXT/pyproject.toml" "$CONTEXT/poetry.lock"; echo "$BASE_IMAGE"; } \
+        | sha256sum | cut -c1-16
 }
 TAG="aidev-$(input_hash)"
 
@@ -43,9 +53,9 @@ if [ -n "$digest" ]; then
 fi
 echo "$REPOSITORY:$TAG is not in the registry; building it" >&2
 
-# The Dockerfile copies nothing from the tree, so the context is empty.
-context="$(mktemp -d)"
-trap 'rm -rf "$context"' EXIT
+# Holds buildx's metadata file; the build context is $CONTEXT.
+scratch="$(mktemp -d)"
+trap 'rm -rf "$scratch"' EXIT
 
 # Optionally build through a pull-through registry cache near the build host, so FROM
 # stays canonical and the build doesn't compete for the uplink. Set
@@ -81,15 +91,16 @@ region_builder() {
 }
 builder="$(region_builder)"
 
-# The FROM is digest-pinned, so no --pull. No provenance, so the pushed digest is a
+# BASE_IMAGE is digest-pinned, so no --pull. No provenance, so the pushed digest is a
 # plain image manifest.
-build=(docker buildx build ${builder:+--builder "$builder"} --provenance=false -f .aidev/runtime/Dockerfile -t "$REPOSITORY:$TAG")
+build=(docker buildx build ${builder:+--builder "$builder"} --provenance=false -f .aidev/runtime/Dockerfile
+    --build-arg "BASE_IMAGE=$BASE_IMAGE" -t "$REPOSITORY:$TAG")
 if [ "${1:-}" != "--push" ]; then
-    "${build[@]}" --load "$context" >&2
+    "${build[@]}" --load "$CONTEXT" >&2
     echo "$REPOSITORY:$TAG"
     exit 0
 fi
 
-"${build[@]}" --push --metadata-file "$context/metadata.json" "$context" >&2
-digest="$(grep -o '"containerimage.digest": *"sha256:[0-9a-f]*"' "$context/metadata.json" | grep -o 'sha256:[0-9a-f]*')"
+"${build[@]}" --push --metadata-file "$scratch/metadata.json" "$CONTEXT" >&2
+digest="$(grep -o '"containerimage.digest": *"sha256:[0-9a-f]*"' "$scratch/metadata.json" | grep -o 'sha256:[0-9a-f]*')"
 echo "$REPOSITORY@${digest:?no digest in buildx metadata}"

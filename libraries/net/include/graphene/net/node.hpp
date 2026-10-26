@@ -34,6 +34,8 @@
 #include <hive/protocol/types.hpp>
 
 #include <list>
+#include <memory>
+#include <unordered_set>
 
 namespace appbase {
   class application;
@@ -43,6 +45,9 @@ namespace graphene { namespace net {
 
   using fc::variant_object;
   using hive::protocol::chain_id_type;
+
+  class peer_connection;
+  typedef std::shared_ptr<peer_connection> peer_connection_ptr;
 
   namespace detail
   {
@@ -345,6 +350,54 @@ namespace graphene { namespace net {
 
    typedef std::shared_ptr<node> node_ptr;
    typedef std::shared_ptr<simulated_network> simulated_network_ptr;
+
+  /**
+   * Whether a hello from @p peer_node_id must be rejected as a duplicate when this node, @p my_node_id,
+   * already holds another connection to that node id (or the id is our own).
+   *
+   * Of two nodes that open several connections to each other at once (a dual-stack seed dialed on
+   * both address families, or both nodes dialing each other), only the one with the lower node id
+   * rejects duplicates, keeping whichever connection's hello reached it first.  The other node
+   * accepts every hello from it and lets those rejections close the extra connections, so both
+   * nodes keep the same connection and at least one always survives.
+   */
+  bool rejects_duplicate_hello(const node_id_t& my_node_id, const node_id_t& peer_node_id);
+
+  /**
+   * Whether a connection_rejected_message with @p reason_code means the rejecting peer failed us.
+   * already_connected and connected_to_self do not: the peer is up and answered, the connection
+   * was merely redundant.
+   */
+  bool rejection_is_failure(rejection_reason_code reason_code);
+
+  /**
+   * The connection to @p remote_endpoint that has not finished closing, or null if there is none.
+   * Connections still closing or terminating count as well as active and handshaking ones: until
+   * their socket is gone, a new outbound connection bound to our listening port would need the
+   * same local and remote address/port pair and fail with "Cannot assign requested address".
+   */
+  peer_connection_ptr find_unclosed_connection_to_endpoint(const fc::ip::endpoint& remote_endpoint,
+                                                           const std::unordered_set<peer_connection_ptr>& active_connections,
+                                                           const std::unordered_set<peer_connection_ptr>& handshaking_connections,
+                                                           const std::unordered_set<peer_connection_ptr>& closing_connections,
+                                                           const std::unordered_set<peer_connection_ptr>& terminating_connections);
+
+  /**
+   * Whether the connect loop may dial the peer in @p record now, as far as its connection history
+   * goes: a peer whose last connection failed, was rejected or failed handshaking waits
+   * @p delay_until_retry after the last attempt.  The caller must still skip a peer it is
+   * connected to (find_unclosed_connection_to_endpoint).
+   */
+  bool is_due_for_connection_attempt(const potential_peer_record& record, fc::microseconds delay_until_retry,
+                                     fc::time_point now);
+
+  /**
+   * Whether @p connect_error, thrown by connecting a socket, means the local address/port pair is
+   * still taken for that remote endpoint (EADDRNOTAVAIL): with the socket bound to our listening
+   * port, our own previous connection to the same endpoint still lingers in the kernel (FIN_WAIT,
+   * TIME_WAIT).  That is a condition of this host, not a failure of the remote peer.
+   */
+  bool is_local_endpoint_in_use_error(const fc::exception& connect_error);
 
 } } // graphene::net
 

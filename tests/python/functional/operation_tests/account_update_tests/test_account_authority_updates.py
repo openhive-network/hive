@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_transaction_timestamp
+from test_tools.exceptions import ErrorInResponseError
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import UpdateAccount
@@ -245,9 +245,9 @@ def test_update_all_account_parameters_except_owner_key_using_active_authority(
     real_rc_after = alice.rc_manabar.calculate_current_value(
         get_transaction_timestamp(alice.node, transaction) - tt.Time.seconds(3)
     )
-    assert (
-        real_rc_before == real_rc_after + transaction["rc_cost"]
-    ), "RC wasn't decreased after changing all account details except owner key."
+    assert real_rc_before == real_rc_after + transaction["rc_cost"], (
+        "RC wasn't decreased after changing all account details except owner key."
+    )
     alice.assert_account_details_were_changed(
         new_active=new_active,
         new_posting=new_posting,
@@ -285,7 +285,7 @@ def test_update_owner_authority_two_and_three_times_within_one_hour(
                 alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
             alice.assert_if_rc_current_mana_was_unchanged()
             error_response = str(exception.value)
-            assert "Owner authority can only be updated twice an hour" in error_response
+            assert "Owner authority can only be updated twice per 6 seconds" in error_response
         else:
             transaction = alice.update_account(owner=new_auth, use_account_update2=use_account_update2)
             alice.assert_if_rc_current_mana_was_reduced(transaction)

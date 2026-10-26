@@ -20,12 +20,21 @@ gitlab:
 # never moves develop or master.
 branches:
   integration: "aidev/integration"
+  handoff: "develop"
+  # develop is fast-forward only and takes a linear history (doc/git-guidelines.md, #897): the hand-off MR
+  # carries a one-commit-per-change copy of integration (aidev#16344); drop this line for integration's own commits
+  handoff_history: "linear"
 
 # How this project's suites execute (#13892): one kind, stated once.
 environment:
   kind: "container"
-  image: "registry.gitlab.syncad.com/hive/hive/aidev-tests@sha256:1504e70e4503f16724179bd0aacd7a4d37e8485078e145a1248f5b662aef4190"
-  inputs: [".aidev/runtime/Dockerfile"]
+  # The seed pin (read before a slot resolves); suites run in AIDEV's build of
+  # .aidev/runtime/Dockerfile on the followed base below (.aidev/README.md).
+  image: "registry.gitlab.syncad.com/hive/hive/aidev-tests@sha256:d7b08a2a52a97a8fa4b5e806c9fe2b856cf71db2b56ad1c5846767cb2d8c6c5a"
+  inputs: [".aidev/runtime/Dockerfile", "tests/python/hive-local-tools/pyproject.toml", "tests/python/hive-local-tools/poetry.lock"]
+  build: {dockerfile: ".aidev/runtime/Dockerfile", context: "tests/python/hive-local-tools"}
+  # CI's build image at CI_BASE_IMAGE_TAG (scripts/ci-helpers/ci_image_tag_vars.yml)
+  base: {image: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:pypa_2_28-pg18-5", follow: true}
 
 issues:
   intake_label: todo
@@ -47,13 +56,14 @@ sandbox:
   readiness_timeout: 60
 
 # Verification slots. Each binding is what this project genuinely runs for
-# that slot — never one selection repeated under seven names, which makes
+# that slot - never one selection repeated under seven names, which makes
 # seven gates report on the same evidence while claiming to check seven
 # different things.
 #
 # Unbound for now: `static` (CI's only static check is pre-commit over the
-# Python test tools), `system`, and the Python functional tests (test-tools,
-# the 5M block-log fixtures and the fork/colony jobs stay in GitLab CI).
+# Python test tools), `system`, and the Python functional tests other than the
+# cli_wallet pattern tests (`full`'s `wallet_patterns`): the rest of test-tools,
+# the 5M block-log fixtures and the fork/colony jobs stay in GitLab CI.
 verification:
   quick:
     adapter: command
@@ -70,25 +80,57 @@ verification:
         args: [".aidev/run-checks.sh", "full", "build", "chain-tests,plugin-tests"]
         artifacts: ["test-results/full/"]
         timeout: 1500
-      # The tests/integration scripts the diff selects (.aidev/integration.sh).
-      # Off: the step records one skipped case. Switching it on is `docker: true`
-      # (AIDEV reserves a docker slot for such a suite before it runs, selected
-      # or not) and HIVE_AIDEV_INTEGRATION "1"; see .aidev/README.md. The step
-      # ends itself by HIVE_INTEGRATION_BUDGET, within this suite's timeout,
-      # and by what is left of the activity's 40 min.
+        memory: 40g
+      # The tests/integration scripts the diff selects (.aidev/integration.sh),
+      # beside `default`. Its select skips it, before AIDEV admits it into a
+      # docker slot, when the diff selects no script it can run here; see
+      # .aidev/README.md. The step ends itself by HIVE_INTEGRATION_BUDGET (this
+      # suite's timeout; keep the two equal) and by what is left of the activity's.
+      # The timeout is the most a suite gets: aidev's run_full_tests activity has
+      # 40 min (2400 s, its retry_policy.yaml), and a suite's wall stops 300 s
+      # short of it, so 2100 s. `default` (~10 min, capped at 1500 s) runs beside
+      # this one, not before it, so the slot takes the longer of the two, within
+      # the 2400 s. That fits one image and its scripts (mainnet 650-760 s and the
+      # exchange script's 600 s); when both images and every selected script do
+      # not fit, the plan defers the scripts that do not, by name.
       - name: integration
         adapter: command
         args: [".aidev/run-checks.sh", "full-integration", "integration"]
         artifacts: ["test-results/full-integration/"]
-        env: {HIVE_AIDEV_INTEGRATION: "0", HIVE_INTEGRATION_BUDGET: "1200"}
+        env: {HIVE_AIDEV_INTEGRATION: "1", HIVE_INTEGRATION_BUDGET: "2100"}
+        select: [".aidev/integration-select.sh"]
+        concurrent: true
+        docker: true
         stack: false
-        timeout: 1200
+        timeout: 2100
+        memory: 12g
+      # CI's python_pattern_testnet_tests (the cli_wallet `help`/`gethelp` and output
+      # patterns), after `default`, when the diff changes the wallet's API surface or
+      # the patterns (.aidev/wallet-patterns-select.sh); see .aidev/README.md. A
+      # suite's container keeps no other suite's build, so it builds its own testnet
+      # hived, cli_wallet and get_dev_key from the compiler cache `default`'s build
+      # filled (~4 min, then ~1 min of tests, on steem-5). That cache is reached
+      # through the stack's relay, so the suite cannot be `concurrent` (which takes
+      # `stack: false`), and its 900 s and `default`'s ~10 min (capped at 1500 s)
+      # come out of run_full_tests' 2400 s one after the other. Skipped, not failed,
+      # in an image without the test-tools environment (.aidev/runtime/Dockerfile).
+      - name: wallet_patterns
+        adapter: command
+        args: [".aidev/run-checks.sh", "full-wallet-patterns", "wallet-patterns"]
+        artifacts: ["test-results/full-wallet-patterns/"]
+        select: [".aidev/wallet-patterns-select.sh"]
+        timeout: 900
+        memory: 16g
   baseline:
     # The same suite as `full`, run on the base; this slot's wall is sized from
-    # its phase budget, so it takes no `timeout`.
-    adapter: command
-    args: [".aidev/run-checks.sh", "baseline", "build", "chain-tests,plugin-tests"]
-    artifacts: ["test-results/baseline/"]
+    # its phase budget, so it takes no `timeout`. A list of one suite, under the
+    # single binding's own name, because only a suite entry declares `memory`.
+    suites:
+      - name: default
+        adapter: command
+        args: [".aidev/run-checks.sh", "baseline", "build", "chain-tests,plugin-tests"]
+        artifacts: ["test-results/baseline/"]
+        memory: 40g
   # The promote gate: the merged candidate builds and its quick tests pass;
   # every workflow's `full` already ran all of chain_test and plugin_test.
   canary:

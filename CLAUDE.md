@@ -206,7 +206,7 @@ Hive uses an appbase plugin architecture. Plugins are in `libraries/plugins/`:
 
 **Data plugins:**
 - `account_history_rocksdb` - Indexes account history in RocksDB
-- `account_by_key` - Public key → account lookup
+- `account_by_key` - Public key -> account lookup
 - `market_history` - Market/trading history
 - `transaction_status` - Transaction status tracking
 
@@ -363,9 +363,10 @@ def test_example():
 
 ## CI/CD Pipeline
 
-**CI images and templates** come from `hive/common-ci-configuration`. Key version refs:
-- `CI_COMMON_JOB_VERSION` in `scripts/ci-helpers/prepare_data_image_job.yml` - docker-builder/docker-dind tags
+**CI images and templates** come from `hive/common-ci-configuration` (ccc), included at `ref: develop`. Don't pin ccc, its docker-builder/docker-dind tags or CI/test tool versions here; ccc defines them once. Key refs:
+- `COMMON_CI_REF` in `scripts/ci-helpers/prepare_data_image_job.yml` - `develop`, the same ref as the includes
 - `CI_BASE_IMAGE_TAG` in `scripts/ci-helpers/ci_image_tag_vars.yml` - Python/build environment image
+- ruff for `pre_commit_checks` comes from ccc's `python-test-tools` image (`PYTHON_TEST_TOOLS_IMAGE`)
 
 **GitLab CI stages** (`.gitlab-ci.yaml`):
 1. `static_code_analysis` - Code quality checks
@@ -395,7 +396,7 @@ The CI automatically optimizes pipeline execution based on what files changed. T
 |--------------|------------|-----------|-------|
 | `doc/**`, `*.md` only | Skipped | Skipped | Docs-only changes |
 | `tests/python/**`, `tests/integration/**` only | Skipped | Run | Uses cached binaries via `quick_test_setup` |
-| `tests/unit/**` (any) | Run | Run | C++ sources compiled into `chain_test` — treated as source change |
+| `tests/unit/**` (any) | Run | Run | C++ sources compiled into `chain_test` - treated as source change |
 | `libraries/**`, `programs/**` | Run | Run | Source code changes |
 | `scripts/**`, `.gitlab-ci.yaml` | Run | Run | CI/scripts changes |
 
@@ -408,7 +409,7 @@ The CI automatically optimizes pipeline execution based on what files changed. T
 3. `quick_test_setup` fetches cached binaries when `TESTS_ONLY=true`
 4. Test jobs run using the cached binaries
 
-Note: changes under `tests/unit/**` are deliberately classified as source changes because those `.cpp` files are compiled into the `chain_test` binary — skipping the build would run tests against a stale binary.
+Note: changes under `tests/unit/**` are deliberately classified as source changes because those `.cpp` files are compiled into the `chain_test` binary - skipping the build would run tests against a stale binary.
 
 **Override variables:**
 - `FORCE_FULL_PIPELINE=true` - Run all jobs regardless of changes
@@ -424,6 +425,9 @@ Note: changes under `tests/unit/**` are deliberately classified as source change
 
 ## Code Style
 
+**All languages:**
+- Use plain ASCII in comments, string literals and log messages. Avoid typographic characters such as em/en dashes (U+2014, U+2013), arrows (U+2192), curly quotes (U+201C/U+201D, U+2018/U+2019) and ellipsis (U+2026): they often turn into mojibake (garbage like `a-circumflex + euro sign` in place of an em dash) when code is moved between environments. Use `-`, `->`, `"`, `'` and `...` instead.
+
 **C++:**
 - C++17 standard required
 - Follow existing code conventions
@@ -436,10 +440,10 @@ Note: changes under `tests/unit/**` are deliberately classified as source change
 - Type hints with `mypy` in strict mode
 - All files require: `from __future__ import annotations`
 
-**Before committing Python:**
+**Before committing Python** (ruff is not a hive-local-tools dependency; use the version in ccc's `python-test-tools:develop` image, which CI runs):
 ```bash
 cd tests/python/hive-local-tools
-poetry run ruff format .
+ruff format .
 ```
 
 ## System Requirements
@@ -467,7 +471,7 @@ This repo contains several submodules that require coordination:
 | appbase | `libraries/appbase` | appbase |
 | compression_dictionaries | `libraries/chain/compression_dictionaries` | compression_dictionaries |
 
-When updating CI configuration (e.g., ci-base-image version), ensure `scripts/ci-helpers/common_includes.yml` ref matches the required common-ci-configuration commit.
+Every common-ci-configuration include (`scripts/ci-helpers/common_includes.yml`, `scripts/ci-helpers/prepare_data_image_job.yml`) and `COMMON_CI_REF` use `develop`; keep them equal. When ci-base-image moves, keep `CI_BASE_IMAGE_TAG` and `.aidev/project.yaml`'s `environment.base` tag equal.
 
 ### Test-Tools Dependency
 

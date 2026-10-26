@@ -1,4 +1,3 @@
-﻿
 #include <hive/chain/hive_fwd.hpp>
 
 #include <hive/plugins/colony/colony_plugin.hpp>
@@ -6,6 +5,7 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_authority_getter.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/index.hpp>
@@ -580,12 +580,15 @@ void transaction_builder::build_transfer( const account_name_type& actor, uint64
 {
   bool has_hbd = false;
   bool has_hive = false;
-  _common._db.with_read_lock( [&]()
-  {
+  // NO! there can be no lock here - it stalls each colony thread that happens to produce transfer,
+  // especially devastating with queen, while not giving anything in return; yes, it will crash when
+  // called during resizing of SHM, but proper node configuration guarantees it will never happen
+  //_common._db.with_read_lock( [&]()
+  //{
     const auto& account = _common._db.get_account( actor );
     has_hbd = account.get_hbd_balance().amount.value != 0;
     has_hive = account.get_hive_balance().amount.value != 0;
-  } );
+  //} );
   bool use_hive = false;
   if( !has_hbd )
   {
@@ -711,6 +714,7 @@ void colony_plugin_impl::start( uint32_t block_num )
     if( lib.get() != nullptr )
       lib_ts = lib->get_block_header().timestamp;
   }
+  database_authority_getter authority_getters( _db );
   for( const auto& account : accounts )
   {
     if( account.get_block_creation_time() > lib_ts )
@@ -718,11 +722,6 @@ void colony_plugin_impl::start( uint32_t block_num )
       dlog( "Account ${a} is too fresh to be safely used as colony worker.", ( "a", account.get_name() ) );
       continue;
     }
-
-    auto get_active = [&]( const std::string& name ) { return _db.get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-    auto get_owner = [&]( const std::string& name ) { return _db.get< account_authority_object, by_account >( name ).get_owner().to_authority(); };
-    auto get_posting = [&]( const std::string& name ) { return _db.get< account_authority_object, by_account >( name ).get_posting().to_authority(); };
-    auto get_witness_key = [&]( const std::string& name ) { try { return _db.get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
 
     bool hf28 = _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES );
     required_authorities_type required_authorities;
@@ -732,7 +731,7 @@ void colony_plugin_impl::start( uint32_t block_num )
       required_authorities.required_posting.insert( account.get_name() );
 
     if( hive::protocol::has_authorization( hf28, false, // no signature redundancy allowed
-        required_authorities, common_keys, get_active, get_owner, get_posting, get_witness_key ) )
+        required_authorities, common_keys, authority_getters ) )
     {
       if( i < _max_threads )
         threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );

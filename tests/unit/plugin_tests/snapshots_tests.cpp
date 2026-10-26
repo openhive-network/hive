@@ -433,7 +433,7 @@ BOOST_AUTO_TEST_CASE( snapshot_state_serialization_uses_canonical_names )
       read_state_serialization_from_snapshot( hive::utilities::temp_directory_path() / snapshot_root_dir / "snap" / "snapshot-manifest" );
 
     // nothing specific to Boost version, standard library, demangler or platform
-    for( const std::string& fragment : { "allocator", "segment_manager", "std::less", "unsigned long", "long long", "__cxx11", " const", "long double" } )
+    for( const char* fragment : { "allocator", "segment_manager", "std::less", "unsigned long", "long long", "__cxx11", " const", "long double" } )
       BOOST_CHECK_MESSAGE( state_serialization.find( fragment ) == std::string::npos, "State serialization contains: " << fragment );
     // template value arguments as spelled by a demangler: with literal suffixes (`33ul') or casts (`(char)1')
     const size_t demangler_spelling = find_demangler_spelling( state_serialization );

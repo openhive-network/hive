@@ -23,7 +23,7 @@ namespace hive { namespace chain {
     /// For part 1, opens all parts from part 1 onward. For non-first parts, opens just the single file.
     /// @param allow_artifacts_regeneration - when true and read_only is also true, allows
     ///   auto-regenerating missing/corrupt artifacts instead of throwing. Defaults to false
-    ///   (strict mode) — callers that need auto-repair (e.g. hived startup) must pass true explicitly.
+    ///   (strict mode) - callers that need auto-repair (e.g. hived startup) must pass true explicitly.
     static block_log_wrapper_t create_opened_wrapper( const fc::path& the_path,
       appbase::application& app, blockchain_worker_thread_pool& thread_pool,
       bool read_only, bool allow_artifacts_regeneration = false );
@@ -191,6 +191,8 @@ namespace hive { namespace chain {
     }
 
     void dispose_garbage( bool closing_time );
+    /// Wipes every part file numbered below given one, whether opened by this run or not.
+    void prune_parts_below( uint32_t lowest_kept_part_number );
 
   private:
     appbase::application&             _app;

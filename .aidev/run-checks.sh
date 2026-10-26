@@ -27,12 +27,19 @@
 #   - hived-testnet, hived-mainnet
 #                     hived and the tools its image carries, into <report dir>/bin
 #                     (what `integration` runs in the checks' image to build an image)
+#   - wallet-patterns the cli_wallet Python pattern tests (CI's python_pattern_testnet_tests)
+#                     against a testnet hived and cli_wallet it builds, in the image's
+#                     test-tools environment; skipped when that environment is missing
+#
+# The build's ninja runs as many jobs as the memory left to it allows, 2 GB each
+# (.aidev/build-jobs.sh); HIVE_BUILD_JOBS overrides that.
 #
 # Compiler cache: the build runs from /home/hived/source into /home/hived/build
-# with CI's cmake arguments, because sccache keys include absolute paths, so the
-# checks hit what CI's builds put in its Redis cache (reached through the stack's
-# `sccache` relay, .aidev/sccache-relay.compose.yml). When the relay or Redis is
-# unreachable, sccache uses a local cache and the build is cold.
+# with the cmake arguments of the Dockerfile's build stage, because sccache keys
+# include absolute paths, so the checks hit what CI's builds put in its Redis
+# cache (reached through the stack's `sccache` relay,
+# .aidev/sccache-relay.compose.yml). When the relay or Redis is unreachable,
+# sccache uses a local cache and the build is cold.
 #
 # Reports go to test-results/<suite>/: junit.xml (one case per step) plus each
 # test binary's own junit report, and timings.tsv, each step's wall time.
@@ -119,6 +126,8 @@ if ! { [ -w /home/hived ] && [ ! -e "$src" ] && mirror_source && link_gitdirs; }
     src="$PWD"; bld="$PWD/build"
 fi
 
+# shellcheck source=.aidev/build-jobs.sh
+. .aidev/build-jobs.sh
 # shellcheck source=.aidev/integration.sh
 . .aidev/integration.sh
 
@@ -174,11 +183,15 @@ submodules_checked_out() {
     done
 }
 
-configure() {  # TESTNET (ON|OFF): CI's cmake arguments, so sccache shares CI's cache
+# TESTNET (ON|OFF). The arguments match the build stage of the Dockerfile (keep them in
+# sync), so sccache shares CI's cache; precompiled headers are off there for the reason
+# its comment gives, a stale .gch failing the build with "redefinition of class".
+configure() {
     submodules_checked_out || return 1
     mkdir -p "$bld" && cd "$bld" || return 1
     cmake -DCMAKE_BUILD_TYPE=Release -GNinja \
-        -DBUILD_HIVE_TESTNET="$1" -DHIVE_CONVERTER_BUILD=OFF -DHIVE_LINT=OFF "$src"
+        -DBUILD_HIVE_TESTNET="$1" -DHIVE_CONVERTER_BUILD=OFF -DHIVE_LINT=OFF \
+        -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON "$src"
 }
 
 build() (  # a subshell: the `cd` below must not move the steps that follow
@@ -186,7 +199,7 @@ build() (  # a subshell: the `cd` below must not move the steps that follow
     configure ON || return 1
     local rc=0 started="$bld/.ninja-started"
     touch "$started" || return 1
-    ninja -j "${HIVE_BUILD_JOBS:-$(nproc)}" chain_test plugin_test assertion_id_verifier || rc=$?
+    build_ninja chain_test plugin_test assertion_id_verifier || rc=$?
     sccache --show-stats || true
     [ "$rc" -eq 0 ] || duplicate_assertion_ids "$bld/generated_assert_id" "$started"
     return "$rc"
@@ -213,14 +226,43 @@ duplicate_assertion_ids() {  # GENERATED_ASSERT_ID_DIR SINCE_FILE
 }
 
 # The binaries the Dockerfile's build stage installs that an integration script
-# or the image's entrypoint runs, as the instance stage takes them: <report dir>/bin.
-hived_binaries() (  # TESTNET (ON|OFF)
+# or the image's entrypoint runs, as the instance stage takes them, and any other
+# programs/util tools named: <report dir>/bin.
+hived_binaries() (  # TESTNET (ON|OFF) [UTIL...]
+    local utils=(shared_memory_file_util "${@:2}")
     sccache_backend
     configure "$1" || return 1
-    ninja -j "${HIVE_BUILD_JOBS:-$(nproc)}" hived cli_wallet shared_memory_file_util || return 1
+    build_ninja hived cli_wallet "${utils[@]}" || return 1
     sccache --show-stats || true
     mkdir -p "$out/bin" && cp programs/hived/hived programs/cli_wallet/cli_wallet \
-        programs/util/shared_memory_file_util "$out/bin/"
+        "${utils[@]/#/programs/util/}" "$out/bin/"
+)
+
+# CI's python_pattern_testnet_tests over cli_wallet_tests, with its per-test and
+# overall timeouts. The tests run from a copy of what pytest reads of tests/python
+# (its pytest.ini and conftest.py), since test-tools writes each module's nodes and
+# wallets beside it, and importing it writes ./generated; the copy stays in the
+# report directory. The test-tools environment is the image's
+# (.aidev/runtime/Dockerfile), HIVE_TEST_TOOLS_VENV overriding it.
+wallet_patterns() (  # a subshell, as build's: it moves into the copy
+    local py="${HIVE_TEST_TOOLS_VENV:-/opt/test-tools-venv}/bin/python3" missing jobs
+    local dir=tests/python/api_tests/python_patterns_tests work="$out/wallet-patterns" tools="$PWD/tests/python/hive-local-tools"
+    export PYTHONDONTWRITEBYTECODE=1
+    mkdir -p "$work" && cp -r --parents tests/python/__init__.py tests/python/conftest.py tests/python/pytest.ini \
+        tests/python/api_tests/__init__.py "$dir" "$work/" || return 1
+    if ! missing="$(cd "$work/$dir" && "$py" -c 'import test_tools, pytest, xdist, pytest_timeout' 2>&1)"; then
+        echo "$missing"
+        echo "test_tools_unavailable: $py cannot import test-tools and its pytest plugins (.aidev/runtime/Dockerfile)"
+        return "$step_skipped"
+    fi
+    hived_binaries ON get_dev_key || return 1
+    jobs="$test_slots"; [ -f "$jobs" ] && jobs="$(cat "$jobs")"
+    cd "$work/$dir" || return 1
+    HIVED_PATH="$out/bin/hived" CLI_WALLET_PATH="$out/bin/cli_wallet" GET_DEV_KEY_PATH="$out/bin/get_dev_key" \
+        TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT=60 \
+        PYTHONPATH="$tools:$tools/tests_api${PYTHONPATH:+:$PYTHONPATH}" \
+        timeout 720 "$py" -m pytest --timeout=600 -n "$jobs" --junitxml="$out/wallet-patterns.xml" \
+        -m "not testnet and not mainnet_5m and not live_mainnet" cli_wallet_tests
 )
 
 bin() {  # NAME: the built test binary
@@ -278,6 +320,7 @@ run() {  # STEP
         integration) integration ;;
         hived-testnet) step hived-testnet hived_binaries ON ;;
         hived-mainnet) step hived-mainnet hived_binaries OFF ;;
+        wallet-patterns) step wallet-patterns wallet_patterns ;;
     esac
 }
 
@@ -292,13 +335,14 @@ share_slots() {  # DIR STEP...: $test_jobs split between the steps, one file eac
     done
 }
 
+# Returns step_skipped when every step was skipped, else 1 when one failed.
 # Polls rather than `wait -n`: bash 4.4's `wait -n` waits only for a job that
 # ends after it is called, so a step that ended just before would keep its share.
 # Each step runs in a session of its own, so a fresh bash given this script's
 # functions and settings; a background job of a script leads no process group,
 # so setsid makes the job itself the session leader, without forking.
 concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when it ends
-    local s pid rc=0 running ended
+    local s pid rc=0 ran=0 step_rc running ended
     step_of=()
     slots="$(mktemp -d)" || return 1
     share_slots "$slots" "$@"
@@ -312,7 +356,9 @@ concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when i
         running=" $(jobs -pr | tr '\n' ' ') " ended=0
         for pid in "${!step_of[@]}"; do
             [[ "$running" == *" $pid "* ]] && continue
-            wait "$pid" || rc=1
+            wait "$pid"; step_rc=$?
+            [ "$step_rc" -eq "$step_skipped" ] || ran=1
+            [ "$step_rc" -eq 0 ] || [ "$step_rc" -eq "$step_skipped" ] || rc=1
             unset "step_of[$pid]"; ended=1
         done
         [ "$ended" -eq 1 ] && [ "${#step_of[@]}" -gt 0 ] || continue
@@ -320,6 +366,7 @@ concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when i
         for s in "${step_of[@]}"; do echo "== $s: now $(cat "$slots/$s") test processes" >&2; done
     done
     rm -rf "$slots"; slots=""
+    [ "$ran" -eq 1 ] || return "$step_skipped"
     return "$rc"
 }
 
@@ -327,18 +374,27 @@ for group in "$@"; do
     IFS=, read -ra group_steps <<< "$group"
     for s in "${group_steps[@]}"; do
         case "$s" in
-            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet) ;;
+            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet|wallet-patterns) ;;
             *) echo "unknown step: $s" >&2; exit 2 ;;
         esac
     done
 done
 
+# A suite whose steps were all skipped ran nothing: it exits step_skipped, its
+# last line `skipped: ` and the skipped cases' reasons, rather than passing.
+ran=0
 for group in "$@"; do
     IFS=, read -ra group_steps <<< "$group"
-    concurrently "${group_steps[@]}" || status=1
+    concurrently "${group_steps[@]}"; rc=$?
+    [ "$rc" -eq "$step_skipped" ] || ran=1
+    [ "$rc" -eq 0 ] || [ "$rc" -eq "$step_skipped" ] || status=1
 done
+[ "$ran" -eq 1 ] || status="$step_skipped"
 printf 'total\t%s\t%s\n' "$SECONDS" "$status" >> "$timings"
 echo "== wall time per step (seconds):" >&2
 cat "$timings" >&2
+skipped="$(awk -F'\t' '$1 == "case" && $3 == "skip" { printf "%s%s: %s", sep, $2, $5; sep = "; " }' "$cases")"
+[ -z "$skipped" ] || { echo "== skipped:"; awk -F'\t' '$1 == "case" && $3 == "skip" { print "  " $2 ": " $5 }' "$cases"; } >&2
 python3 .aidev/junit_cases.py "$out/junit.xml" "$suite" "$cases"
+[ "$status" -ne "$step_skipped" ] || echo "skipped: $skipped"
 exit "$status"

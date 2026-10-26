@@ -22,10 +22,7 @@ void verify_authority(bool allow_strict_and_mixed_authorities,
                       bool allow_redundant_signatures,
                       const required_authorities_type& required_authorities,
                       const flat_set<public_key_type>& sigs,
-                      const authority_getter& get_active,
-                      const authority_getter& get_owner,
-                      const authority_getter& get_posting,
-                      const witness_public_key_getter& get_witness_key,
+                      const authority_getter_i& authority_getters,
                       uint32_t max_recursion_depth = HIVE_MAX_SIG_CHECK_DEPTH,
                       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
                       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
@@ -38,20 +35,14 @@ bool has_authorization( bool allow_strict_and_mixed_authorities,
                         bool allow_redundant_signatures,
                         const required_authorities_type& required_authorities,
                         const flat_set<public_key_type>& sigs,
-                        const authority_getter& get_active,
-                        const authority_getter& get_owner,
-                        const authority_getter& get_posting,
-                        const witness_public_key_getter& get_witness_key );
+                        const authority_getter_i& authority_getters );
 
 template< typename AuthContainerType >
 void verify_authority(bool allow_strict_and_mixed_authorities,
                       bool allow_redundant_signatures,
                       const vector<AuthContainerType>& auth_containers, 
                       const flat_set<public_key_type>& sigs,
-                      const authority_getter& get_active,
-                      const authority_getter& get_owner,
-                      const authority_getter& get_posting,
-                      const witness_public_key_getter& get_witness_key,
+                      const authority_getter_i& authority_getters,
                       uint32_t max_recursion_depth = HIVE_MAX_SIG_CHECK_DEPTH,
                       uint32_t max_membership = HIVE_MAX_AUTHORITY_MEMBERSHIP,
                       uint32_t max_account_auths = HIVE_MAX_SIG_CHECK_ACCOUNTS,
@@ -64,10 +55,7 @@ void verify_authority(bool allow_strict_and_mixed_authorities,
                    allow_redundant_signatures,
                    get_required_authorities(auth_containers),
                    sigs,
-                   get_active,
-                   get_owner,
-                   get_posting,
-                   get_witness_key,
+                   authority_getters,
                    max_recursion_depth,
                    max_membership,
                    max_account_auths,
@@ -76,14 +64,6 @@ void verify_authority(bool allow_strict_and_mixed_authorities,
                    owner_approvals,
                    posting_approvals);
 }
-
-class authority_getter_i {
-  public:
-  virtual std::optional<authority> get_active(const string&) const = 0;
-  virtual std::optional<authority> get_owner(const string&) const = 0;
-  virtual std::optional<authority> get_posting(const string&) const = 0;
-  virtual std::optional<public_key_type> get_witness_key(const string&) const = 0;
-};
 
 authority_verification_trace verify_authority_with_tracing(
   bool allow_strict_and_mixed_authorities,

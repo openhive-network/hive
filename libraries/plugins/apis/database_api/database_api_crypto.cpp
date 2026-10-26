@@ -1,8 +1,50 @@
 #include <hive/plugins/database_api/database_api_impl.hpp>
 
+#include <hive/chain/database_authority_getter.hpp>
+
 #include <hive/protocol/transaction_util.hpp>
 
 namespace hive { namespace plugins { namespace database_api {
+
+namespace {
+
+/**
+ * Provides authorities from state like its base, but also collects all keys of authorities it was asked for.
+ */
+class potential_signatures_collector : public chain::database_authority_getter
+{
+public:
+  potential_signatures_collector( const chain::database& db, std::set< public_key_type >& keys )
+    : chain::database_authority_getter( db ), _keys( keys ) {}
+
+  virtual std::optional<authority> get_active( const std::string& account_name ) const override
+  {
+    return collect_keys( chain::database_authority_getter::get_active( account_name ) );
+  }
+  virtual std::optional<authority> get_owner( const std::string& account_name ) const override
+  {
+    return collect_keys( chain::database_authority_getter::get_owner( account_name ) );
+  }
+  virtual std::optional<authority> get_posting( const std::string& account_name ) const override
+  {
+    return collect_keys( chain::database_authority_getter::get_posting( account_name ) );
+  }
+
+private:
+  std::optional<authority> collect_keys( std::optional<authority>&& auth ) const
+  {
+    if( auth )
+    {
+      for( const auto& k : auth->key_auths )
+        _keys.insert( k.first );
+    }
+    return std::move( auth );
+  }
+
+  std::set< public_key_type >& _keys;
+};
+
+} // namespace
 
 //////////////////////////////////////////////////////////////////////
 //                                                                  //
@@ -23,10 +65,7 @@ DEFINE_API_IMPL( database_api_impl, get_required_signatures )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     _db.get_chain_id(),
     args.available_keys,
-    [&]( string account_name ){ return _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_active().to_authority(); },
-    [&]( string account_name ){ return _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_owner().to_authority(); },
-    [&]( string account_name ){ return _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_posting().to_authority(); },
-    [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
+    chain::database_authority_getter( _db ),
     HIVE_MAX_SIG_CHECK_DEPTH );
 
   return result;
@@ -40,31 +79,7 @@ DEFINE_API_IMPL( database_api_impl, get_potential_signatures )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     _db.get_chain_id(),
     flat_set< public_key_type >(),
-    [&]( account_name_type account_name )
-    {
-      const auto& auth = _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_active();
-      for( const auto& k : auth.get_keys() )
-        result.keys.insert( k );
-      return auth.to_authority();
-    },
-    [&]( account_name_type account_name )
-    {
-      const auto& auth = _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_owner();
-      for( const auto& k : auth.get_keys() )
-        result.keys.insert( k );
-      return auth.to_authority();
-    },
-    [&]( account_name_type account_name )
-    {
-      const auto& auth = _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_posting();
-      for( const auto& k : auth.get_keys() )
-        result.keys.insert( k );
-      return auth.to_authority();
-    },
-    [&]( account_name_type witness_name )
-    {
-      return _db.get_witness(witness_name).signing_key;
-    },
+    potential_signatures_collector( _db, result.keys ),
     HIVE_MAX_SIG_CHECK_DEPTH
   );
 
@@ -77,10 +92,7 @@ DEFINE_API_IMPL( database_api_impl, verify_authority )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     _db.get_chain_id(),
-    [&]( string account_name ){ return _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_active().to_authority(); },
-    [&]( string account_name ){ return _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_owner().to_authority(); },
-    [&]( string account_name ){ return _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_posting().to_authority(); },
-    [&]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
+    chain::database_authority_getter( _db ),
     args.pack,
     HIVE_MAX_SIG_CHECK_DEPTH,
     HIVE_MAX_AUTHORITY_MEMBERSHIP,
@@ -112,10 +124,7 @@ DEFINE_API_IMPL( database_api_impl, verify_account_authority )
     _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
     required_authorities,
     args.signers,
-    [&]( string account_name ) { return _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_active().to_authority(); },
-    [&]( string account_name ) { return _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_owner().to_authority(); },
-    [&]( string account_name ) { return _db.get< chain::account_authority_object, chain::by_account >( account_name ).get_posting().to_authority(); },
-    [&]( string witness_name ) { return _db.get_witness( witness_name ).signing_key; } );
+    chain::database_authority_getter( _db ) );
 
   return verify_account_authority_return( { ok } );
 }
@@ -143,10 +152,7 @@ DEFINE_API_IMPL( database_api_impl, verify_signatures )
       _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
       { args },
       sig_keys,
-      [this]( const string& name ) { return _db.get< chain::account_authority_object, chain::by_account >( name ).get_active().to_authority(); },
-      [this]( const string& name ) { return _db.get< chain::account_authority_object, chain::by_account >( name ).get_owner().to_authority(); },
-      [this]( const string& name ) { return _db.get< chain::account_authority_object, chain::by_account >( name ).get_posting().to_authority(); },
-      [this]( string witness_name ){ return _db.get_witness(witness_name).signing_key; }, // note: reflect any changes here in database::apply_transaction
+      chain::database_authority_getter( _db ),
       HIVE_MAX_SIG_CHECK_DEPTH );
   }
   catch( fc::exception& ) { result.valid = false; }

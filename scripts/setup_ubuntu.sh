@@ -184,7 +184,7 @@ create_hived_account() {
       usermod -o -u 1000 "$hived_unix_account" 2>/dev/null || true
       mkdir -p "/home/$hived_unix_account"
       chown -R "$hived_unix_account":users "/home/$hived_unix_account"
-      # Always ensure NOPASSWD sudo (idempotent — sed removes old entry first)
+      # Always ensure NOPASSWD sudo (idempotent - sed removes old entry first)
       sed -i "/^$hived_unix_account /d" /etc/sudoers 2>/dev/null || true
       echo "$hived_unix_account ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
   else

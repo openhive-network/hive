@@ -16,7 +16,7 @@
                wallet_signed_transaction create_proposal(const account_name_type & creator, const account_name_type & receiver, time_point_sec start_date, time_point_sec end_date, const wallet_serializer_wrapper<hive::protocol::asset> & daily_pay, string subject, string permlink, bool broadcast)
                wallet_signed_transaction decline_voting_rights(const string & account, bool decline, bool broadcast)
                                   string decrypt_memo(string memo)
-               wallet_signed_transaction delegate_rc(const account_name_type & from, const flat_set<account_name_type> & delegatees, int64_t max_rc, bool broadcast)
+               wallet_signed_transaction delegate_rc(const account_name_type & from, const flat_set<account_name_type> & delegatees, fc::variant max_rc, bool broadcast)
                wallet_signed_transaction delegate_vesting_shares(const string & delegator, const string & delegatee, const wallet_serializer_wrapper<hive::protocol::asset> & vesting_shares, bool broadcast)
                wallet_signed_transaction delegate_vesting_shares_and_transfer(const string & delegator, const string & delegatee, const wallet_serializer_wrapper<hive::protocol::asset> & vesting_shares, const wallet_serializer_wrapper<hive::protocol::asset> & transfer_amount, optional<string> transfer_memo, bool broadcast)
                wallet_signed_transaction delegate_vesting_shares_and_transfer_nonblocking(const string & delegator, const string & delegatee, const wallet_serializer_wrapper<hive::protocol::asset> & vesting_shares, const wallet_serializer_wrapper<hive::protocol::asset> & transfer_amount, optional<string> transfer_memo, bool broadcast)

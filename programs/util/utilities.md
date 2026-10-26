@@ -55,3 +55,17 @@ of cpus available to avoid long compression times.
 
 This tool also replaces the previous `truncate_block_log` utility. To truncate
 a blocklog, see the third example above using the -n option.
+
+## memory_details_to_csv.sh: converts memory details dumped by hived to CSV
+hived run with `--dump-memory-details` writes `replay_benchmark.jsonl` into its data dir, one json record per line:
+a regular measurement every `--set-benchmark-interval` blocks and a summary (marked with `summary` field: `initial`,
+`replay`, `sync` or `live`) at the end of each phase of work. Each record holds times, memory usage, comment archive
+stats and the number of objects and memory used by every index (in natural order of indexes).
+
+The script converts the records into CSV (requires `jq`), e.g. to import into a spreadsheet:
+```
+memory_details_to_csv.sh records replay_benchmark.jsonl > records.csv
+memory_details_to_csv.sh indexes --field=index_size replay_benchmark.jsonl > objects.csv
+memory_details_to_csv.sh record --select=replay --sort=total_index_mem_usage replay_benchmark.jsonl
+```
+Run it with `--help` for the description of commands and options.

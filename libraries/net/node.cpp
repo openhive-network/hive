@@ -51,6 +51,7 @@
 #include <boost/range/algorithm/find.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/scope_exit.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
@@ -63,6 +64,11 @@
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
+
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <cerrno>
+#include <cstring>
 
 #include <fc/thread/thread.hpp>
 #include <fc/thread/future.hpp>
@@ -646,6 +652,9 @@ namespace graphene { namespace net {
       void save_node_configuration();
 
       bool can_route_to(const fc::ip::address& addr);
+      void remember_own_endpoint(const fc::ip::endpoint& own_endpoint);
+      void remember_own_listen_endpoints();
+      void remember_own_endpoint_of_connection(peer_connection* peer);
       void p2p_network_connect_loop();
       void trigger_p2p_network_connect_loop();
 
@@ -1085,6 +1094,79 @@ namespace graphene { namespace net {
       return routable;
     }
 
+    static bool is_wildcard_address(const fc::ip::address& addr)
+    {
+      static const fc::ip::address ipv4_any;                       // 0.0.0.0
+      static const fc::ip::address ipv6_any{ fc::string("::") };   // ::
+      return addr == ipv4_any || addr == ipv6_any;
+    }
+
+    static std::vector<fc::ip::address> get_interface_addresses()
+    {
+      std::vector<fc::ip::address> addresses;
+      ifaddrs* interfaces = nullptr;
+      if (getifaddrs(&interfaces) != 0)
+      {
+        wlog("unable to list this host's network interface addresses: ${error}", ("error", std::strerror(errno)));
+        return addresses;
+      }
+      for (const ifaddrs* iface = interfaces; iface; iface = iface->ifa_next)
+      {
+        if (!iface->ifa_addr)
+          continue;
+        if (iface->ifa_addr->sa_family == AF_INET)
+        {
+          const sockaddr_in* ipv4 = reinterpret_cast<const sockaddr_in*>(iface->ifa_addr);
+          addresses.emplace_back(ntohl(ipv4->sin_addr.s_addr));
+        }
+        else if (iface->ifa_addr->sa_family == AF_INET6)
+        {
+          const sockaddr_in6* ipv6 = reinterpret_cast<const sockaddr_in6*>(iface->ifa_addr);
+          std::array<uint8_t, 16> bytes;
+          std::memcpy(bytes.data(), ipv6->sin6_addr.s6_addr, bytes.size());
+          addresses.emplace_back(fc::ip::ipv6_address(bytes));
+        }
+      }
+      freeifaddrs(interfaces);
+      return addresses;
+    }
+
+    // Peers pass our own address around in their address messages like any other, so without
+    // remembering it we would store it and redial ourselves after each connected_to_self rejection
+    void node_impl::remember_own_endpoint(const fc::ip::endpoint& own_endpoint)
+    {
+      VERIFY_CORRECT_THREAD();
+      if (_potential_peer_db.add_own_endpoint(own_endpoint))
+        ilog("${endpoint} is an address of this node, it will not be dialed or stored in the peer database",
+             ("endpoint", own_endpoint));
+    }
+
+    void node_impl::remember_own_listen_endpoints()
+    {
+      VERIFY_CORRECT_THREAD();
+      if (_actual_listening_endpoint.port() == 0)
+        return;
+      if (!is_wildcard_address(_actual_listening_endpoint.get_address()))
+      {
+        remember_own_endpoint(_actual_listening_endpoint);
+        return;
+      }
+      // a wildcard listener (which is dual-stack, see listen_to_p2p_network) accepts connections on
+      // every interface address; addresses that appear later are learned from connections instead
+      for (const fc::ip::address& interface_address : get_interface_addresses())
+        remember_own_endpoint(fc::ip::endpoint(interface_address, _actual_listening_endpoint.port()));
+    }
+
+    void node_impl::remember_own_endpoint_of_connection(peer_connection* peer)
+    {
+      VERIFY_CORRECT_THREAD();
+      // the local address of a connection in either direction is one of ours: for an inbound one it
+      // is exactly the address the peer dialed, and so the one it will advertise for us
+      if (_actual_listening_endpoint.port() != 0)
+        remember_own_endpoint(fc::ip::endpoint(peer->get_socket().local_endpoint().get_address(),
+                                               _actual_listening_endpoint.port()));
+    }
+
     void node_impl::p2p_network_connect_loop()
     {
       while (!_p2p_network_connect_loop_done.canceled() && !node_is_shutting_down())
@@ -1153,10 +1235,7 @@ namespace graphene { namespace net {
                 }
 
                 if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
-                    ((iter->last_connection_disposition != last_connection_failed &&
-                      iter->last_connection_disposition != last_connection_rejected &&
-                      iter->last_connection_disposition != last_connection_handshaking_failed) ||
-                     (fc::time_point::now() - iter->last_connection_attempt_time) > delay_until_retry))
+                    is_due_for_connection_attempt(*iter, delay_until_retry, fc::time_point::now()))
                 {
                   connect_to_endpoint(iter->endpoint);
                   initiated_connection_this_pass = true;
@@ -1674,6 +1753,7 @@ namespace graphene { namespace net {
                                                                                      ("status", handshaking_peer->negotiation_status)
                                                                                      ("sent", handshaking_peer->get_total_bytes_sent())
                                                                                      ("received", handshaking_peer->get_total_bytes_received())));
+            handshaking_peer->connection_closed_by_failure = true;
             peers_to_disconnect_forcibly.push_back(handshaking_peer);
           }
 
@@ -1715,6 +1795,7 @@ namespace graphene { namespace net {
 
               active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they haven't made any progress on my remaining ${count} sync item requests", 
                                                                                   ("count", active_peer->sync_items_requested_from_peer.size())));
+              active_peer->connection_closed_by_failure = true;
               disconnect_due_to_request_timeout = true;
             }
             if (!disconnect_due_to_request_timeout &&
@@ -1728,6 +1809,7 @@ namespace graphene { namespace net {
                       ("peer", active_peer->get_remote_endpoint())
                       ("synopsis", active_peer->item_ids_requested_from_peer->get<0>()));
                 active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for sync item ids after my synopsis"));
+                active_peer->connection_closed_by_failure = true;
                 disconnect_due_to_request_timeout = true;
               }
             if (!disconnect_due_to_request_timeout)
@@ -1739,6 +1821,7 @@ namespace graphene { namespace net {
                   wlog("Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
                         ("peer", active_peer->get_remote_endpoint())("id", item_and_time.first.item_hash));
                   active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for item ${id}", ("id", item_and_time.first.item_hash)));
+                  active_peer->connection_closed_by_failure = true;
                   disconnect_due_to_request_timeout = true;
                   break;
                 }
@@ -2066,7 +2149,8 @@ namespace graphene { namespace net {
       bool new_information_received = false;
       for (const address_info& address : addresses)
       {
-        if (address.firewalled == graphene::net::firewalled_state::not_firewalled)
+        if (address.firewalled == graphene::net::firewalled_state::not_firewalled &&
+            !_potential_peer_db.is_own_endpoint(address.remote_endpoint))
         {
           potential_peer_record updated_peer_record = _potential_peer_db.lookup_or_create_entry_for_endpoint(address.remote_endpoint);
           if (address.last_seen_time > updated_peer_record.last_seen_time)
@@ -2347,7 +2431,15 @@ namespace graphene { namespace net {
       {
         // either it's not there or it's not a valid session id.  either way, ignore.
       }
+      remember_own_endpoint_of_connection(originating_peer);
+
       bool already_connected_to_this_peer = is_already_connected_to_id(peer_node_id);
+      if (already_connected_to_this_peer && !rejects_duplicate_hello(_node_id, peer_node_id))
+      {
+        dlog("already connected to node ${id}, but its node id is lower, so it chooses which connection survives",
+             ("id", peer_node_id));
+        already_connected_to_this_peer = false;
+      }
 
       // validate the node id
       fc::sha256::encoder shared_secret_encoder;
@@ -2617,12 +2709,35 @@ namespace graphene { namespace net {
         ilog("Received a rejection from ${peer} in response to my \"hello\", reason: \"${reason}\"",
              ("peer", originating_peer->get_remote_endpoint())
              ("reason", connection_rejected_message_received.reason_string));
+        originating_peer->record_connection_closed_error(fc::exception(FC_LOG_MESSAGE(info, "Peer rejected our connection, reason: ${reason} (${code})",
+                                                                                      ("reason", connection_rejected_message_received.reason_string)
+                                                                                      ("code", connection_rejected_message_received.reason_code))),
+                                                         rejection_is_failure(connection_rejected_message_received.reason_code));
+
+        // the rejecting peer reports the endpoint it sees us connecting from; outbound connections
+        // are bound to our listening port, so when the port matches that is an address peers know us by
+        const fc::ip::endpoint& endpoint_seen_by_peer = connection_rejected_message_received.remote_endpoint;
+        if (_actual_listening_endpoint.port() != 0 &&
+            endpoint_seen_by_peer.port() == _actual_listening_endpoint.port() &&
+            !is_wildcard_address(endpoint_seen_by_peer.get_address()))
+          remember_own_endpoint(endpoint_seen_by_peer);
 
         if (connection_rejected_message_received.reason_code == rejection_reason_code::connected_to_self)
         {
-          _potential_peer_db.erase(originating_peer->get_socket().remote_endpoint());
+          remember_own_endpoint(originating_peer->get_socket().remote_endpoint());
           move_peer_to_closing_list(originating_peer->shared_from_this());
           originating_peer->close_connection();
+        }
+        else if (connection_rejected_message_received.reason_code == rejection_reason_code::already_connected)
+        {
+          // the peer is up and we already hold a connection to it through another address, so this
+          // says nothing about the dialed address and must not grow its retry backoff.  A seed whose
+          // host name resolves to both an IPv4 and an IPv6 address has one database entry per
+          // address and both are dialed, so one such rejection per startup is expected; recording it
+          // as a failure would push the losing family further back on every restart.  The entry
+          // keeps the handshaking disposition connect_to_task gave it, i.e. a flat retry delay
+          dlog("not counting the already_connected rejection from ${peer} against its retry backoff",
+               ("peer", originating_peer->get_remote_endpoint()));
         }
         else
         {
@@ -3558,12 +3673,16 @@ namespace graphene { namespace net {
                                                     ( "error", closing_connection_message_received.error ) ));
         _delegate->error_encountered( message.str(),
                                       detailed_error );
+        originating_peer->record_connection_closed_error( detailed_error, true );
       }
       else
       {
         wlog( "Peer ${peer} is disconnecting us because: ${msg}",
              ( "peer", originating_peer->get_remote_endpoint() )
              ( "msg", closing_connection_message_received.reason_for_closing ) );
+        originating_peer->record_connection_closed_error( fc::exception( FC_LOG_MESSAGE( info, "Peer disconnected us: ${msg}",
+                                                                                           ( "msg", closing_connection_message_received.reason_for_closing ) ) ),
+                                                          false );
       }
       if( originating_peer->we_have_requested_close )
         originating_peer->close_connection();
@@ -3585,13 +3704,7 @@ namespace graphene { namespace net {
         fc::optional<potential_peer_record> updated_peer_record = _potential_peer_db.lookup_entry_for_endpoint(*endpoint_for_db);
         if (updated_peer_record)
         {
-          // if we closed the connection (due to timeout or handshake failure), we should have recorded an
-          // error message to store in the peer database when we closed the connection
-          if (originating_peer->connection_closed_error)
-            updated_peer_record->last_error = *originating_peer->connection_closed_error;
-          else //we didn't close the connection
-            updated_peer_record->last_error = fc::exception(FC_LOG_MESSAGE(info, "lost connection to peer"));
-          updated_peer_record->last_failed_time = fc::time_point::now();
+          originating_peer->record_connection_closed_in(*updated_peer_record);
           _potential_peer_db.update_entry(*updated_peer_record);
         }
       }
@@ -4181,7 +4294,7 @@ namespace graphene { namespace net {
       const uint32_t block_num = full_block->get_block_num();
       const block_id_type& block_id = full_block->get_block_id();
 
-      // TODO: this call to get_legacy_block_message_hash() is forcing the p2p thread to do an expensive (100-200μs) hash computation early
+      // TODO: this call to get_legacy_block_message_hash() is forcing the p2p thread to do an expensive (100-200us) hash computation early
       // in the block processing, before a blockchain worker thread has a chance to offload the work for us. 
       // After the next hf, when we can expect all peers to be on protocol GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION,
       // get rid of this to reduce block processing latency
@@ -4764,6 +4877,7 @@ namespace graphene { namespace net {
         {
           _is_firewalled = firewalled_state::not_firewalled;
           _publicly_visible_listening_endpoint = check_firewall_reply_message_received.endpoint_checked;
+          remember_own_endpoint(*_publicly_visible_listening_endpoint);
         }
         else if (check_firewall_reply_message_received.result == firewall_check_result::unable_to_connect)
         {
@@ -5352,6 +5466,7 @@ namespace graphene { namespace net {
       }
 
       fc::oexception connect_failed_exception;
+      fc::optional<fc::ip::endpoint> local_endpoint;
 
       try
       {
@@ -5363,7 +5478,6 @@ namespace graphene { namespace net {
         // wildcard address, substitute the wildcard of the remote's family while keeping
         // the port; when we listen on a specific address, only bind it if the families
         // match, otherwise let the OS choose the local endpoint.
-        fc::optional<fc::ip::endpoint> local_endpoint;
         if (_actual_listening_endpoint.port() != 0)
         {
           static const fc::ip::address ipv4_any;                       // 0.0.0.0
@@ -5395,7 +5509,16 @@ namespace graphene { namespace net {
         connect_failed_exception = except;
       }
 
-      if (connect_failed_exception && !new_peer->performing_firewall_check())
+      if (connect_failed_exception && !new_peer->performing_firewall_check() &&
+          local_endpoint && is_local_endpoint_in_use_error(*connect_failed_exception))
+      {
+        // our previous connection to this endpoint still holds the address/port pair in the kernel
+        // (e.g. TIME_WAIT after we closed it); the peer did nothing wrong, so its record keeps its
+        // failure history and the connect loop simply tries again on a later pass
+        ilog("could not connect to ${peer} from ${local}: our previous connection to it still holds that address pair, will retry",
+             ("peer", remote_endpoint)("local", *local_endpoint));
+      }
+      else if (connect_failed_exception && !new_peer->performing_firewall_check())
       {
         // connection failed.  record that in our database
         potential_peer_record updated_peer_record = _potential_peer_db.lookup_or_create_entry_for_endpoint(remote_endpoint);
@@ -5654,6 +5777,7 @@ namespace graphene { namespace net {
           _tcp_server.listen(listen_endpoint.port());
         _actual_listening_endpoint = _tcp_server.get_local_endpoint();
         ilog("listening for connections on endpoint ${_actual_listening_endpoint} (our first choice)", (_actual_listening_endpoint));
+        remember_own_listen_endpoints();
       }
       catch (fc::exception& e)
       {
@@ -5742,6 +5866,12 @@ namespace graphene { namespace net {
         FC_THROW_EXCEPTION(already_connected_to_requested_peer, "already connected to requested endpoint ${endpoint}",
                            ("endpoint", remote_endpoint));
 
+      if (_potential_peer_db.is_own_endpoint(remote_endpoint))
+      {
+        dlog("not connecting to ${endpoint}, it is an address of this node", ("endpoint", remote_endpoint));
+        return;
+      }
+
       dlog("node_impl::connect_to_endpoint(${endpoint})", ("endpoint", remote_endpoint));
       peer_connection_ptr new_peer(peer_connection::make_shared(this));
       new_peer->set_remote_endpoint(remote_endpoint);
@@ -5751,19 +5881,8 @@ namespace graphene { namespace net {
     peer_connection_ptr node_impl::get_connection_to_endpoint( const fc::ip::endpoint& remote_endpoint )
     {
       VERIFY_CORRECT_THREAD();
-      for( const peer_connection_ptr& active_peer : _active_connections )
-      {
-        fc::optional<fc::ip::endpoint> endpoint_for_this_peer( active_peer->get_remote_endpoint() );
-        if( endpoint_for_this_peer && *endpoint_for_this_peer == remote_endpoint )
-          return active_peer;
-      }
-      for( const peer_connection_ptr& handshaking_peer : _handshaking_connections )
-      {
-        fc::optional<fc::ip::endpoint> endpoint_for_this_peer( handshaking_peer->get_remote_endpoint() );
-        if( endpoint_for_this_peer && *endpoint_for_this_peer == remote_endpoint )
-          return handshaking_peer;
-      }
-      return peer_connection_ptr();
+      return find_unclosed_connection_to_endpoint( remote_endpoint, _active_connections, _handshaking_connections,
+                                                   _closing_connections, _terminating_connections );
     }
 
     bool node_impl::is_connection_to_endpoint_in_progress( const fc::ip::endpoint& remote_endpoint )
@@ -6060,6 +6179,9 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       move_peer_to_closing_list(peer_to_disconnect->shared_from_this());
 
+      const fc::exception disconnect_reason = error ? *error : fc::exception(FC_LOG_MESSAGE(info, reason_for_disconnect.c_str()));
+      peer_to_disconnect->record_connection_closed_error(disconnect_reason, caused_by_error);
+
       if (peer_to_disconnect->they_have_requested_close)
       {
         // the peer has already told us that it's ready to close the connection, so just close the connection
@@ -6075,10 +6197,7 @@ namespace graphene { namespace net {
           if (updated_peer_record)
           {
             updated_peer_record->last_seen_time = fc::time_point::now();
-            if (error)
-              updated_peer_record->last_error = error;
-            else
-              updated_peer_record->last_error = fc::exception(FC_LOG_MESSAGE(info, reason_for_disconnect.c_str()));
+            updated_peer_record->last_error = disconnect_reason;
             if (caused_by_error)
               updated_peer_record->last_failed_time = fc::time_point::now();
             _potential_peer_db.update_entry(*updated_peer_record);
@@ -6873,5 +6992,62 @@ namespace graphene { namespace net {
 #undef INVOKE_AND_COLLECT_STATISTICS
 
   } // end namespace detail
+
+  bool rejects_duplicate_hello(const node_id_t& my_node_id, const node_id_t& peer_node_id)
+  {
+    return !(peer_node_id < my_node_id);
+  }
+
+  bool rejection_is_failure(rejection_reason_code reason_code)
+  {
+    return reason_code != rejection_reason_code::already_connected &&
+           reason_code != rejection_reason_code::connected_to_self;
+  }
+
+  peer_connection_ptr find_unclosed_connection_to_endpoint(const fc::ip::endpoint& remote_endpoint,
+                                                           const std::unordered_set<peer_connection_ptr>& active_connections,
+                                                           const std::unordered_set<peer_connection_ptr>& handshaking_connections,
+                                                           const std::unordered_set<peer_connection_ptr>& closing_connections,
+                                                           const std::unordered_set<peer_connection_ptr>& terminating_connections)
+  {
+    for (const std::unordered_set<peer_connection_ptr>* connections :
+         { &active_connections, &handshaking_connections, &closing_connections, &terminating_connections })
+      for (const peer_connection_ptr& peer : *connections)
+      {
+        fc::optional<fc::ip::endpoint> endpoint_for_this_peer(peer->get_remote_endpoint());
+        if (endpoint_for_this_peer && *endpoint_for_this_peer == remote_endpoint)
+          return peer;
+      }
+    return peer_connection_ptr();
+  }
+
+  bool is_due_for_connection_attempt(const potential_peer_record& record, fc::microseconds delay_until_retry,
+                                     fc::time_point now)
+  {
+    return (record.last_connection_disposition != last_connection_failed &&
+            record.last_connection_disposition != last_connection_rejected &&
+            record.last_connection_disposition != last_connection_handshaking_failed) ||
+           (now - record.last_connection_attempt_time) > delay_until_retry;
+  }
+
+  bool is_local_endpoint_in_use_error(const fc::exception& connect_error)
+  {
+    // fc::asio reports a failed connect as the text of boost::system::system_error, e.g.
+    // "Cannot assign requested address [system:99 at .../reactive_socket_connect_op.hpp:...]";
+    // the error code itself does not survive, so recognize its message and "[category:value"
+    const boost::system::error_code in_use(EADDRNOTAVAIL, boost::system::system_category());
+    const std::string expected = in_use.message() + " [" + in_use.to_string();
+    for (const fc::log_message& message : connect_error.get_log())
+    {
+      const fc::variant_object& data = message.get_data();
+      if (!data.contains("message") || !data["message"].is_string())
+        continue;
+      const std::string& text = data["message"].get_string();
+      if (text.compare(0, expected.size(), expected) == 0 &&
+          (text.size() == expected.size() || text[expected.size()] == ']' || text[expected.size()] == ' '))
+        return true;
+    }
+    return false;
+  }
 
 } } // end namespace graphene::net

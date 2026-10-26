@@ -26,7 +26,7 @@ def prepare_environment(request: pytest.FixtureRequest) -> tuple[tt.InitNode, tt
             tt.HardforkSchedule(hardfork=hardfork_number + 1, block_num=2000),
         ]
     else:
-        # Pin the "current" hardfork to HF28 — the latest the saved block_log can replay
+        # Pin the "current" hardfork to HF28 - the latest the saved block_log can replay
         # under, since its witness extensions were signed at HIVE_BLOCKCHAIN_VERSION 1.28.
         # Reading blockchain_version from the binary breaks once that constant is bumped
         # past 1.28 (e.g. for HF29): the schedule jumps to HF29 at block 1 and the chain

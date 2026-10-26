@@ -3,6 +3,16 @@
 set -euo pipefail 
 
 exec > >(tee -i "${LOG_FILE}") 2>&1
+LOG_TEE_PID=$!
+
+# The tee must flush the last lines before the script exits: a container's PID 1
+# exiting takes the tee down with it. A script that sets its own EXIT trap has to
+# call this from it.
+wait_for_log_tee() {
+  exec >&- 2>&-
+  wait "$LOG_TEE_PID" || true
+}
+trap wait_for_log_tee EXIT
 
 log_exec_params() {
   echo

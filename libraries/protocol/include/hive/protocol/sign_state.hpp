@@ -16,12 +16,23 @@ struct sign_limits
   uint32_t account_auths = ~0;
 };
 
+/**
+ * Unpacks value returned by authority_getter_i, throws when given account was not found.
+ */
+template< typename T >
+const T& force_found( const std::optional<T>& value, const string& id )
+{
+  FC_ASSERT( value.has_value(), "Account ${id} not found", ( id ) );
+  return *value;
+}
+
 template <bool IS_TRACED=false>
 class sign_state
 {
     size_t account_auth_count       = 0;
 
-    authority_getter                get_current_authority;
+    const authority_getter_i&       getters;
+    authority_getter_method         get_current_authority;
 
     const sign_limits               limits;
     flat_set<string>                approved_by;
@@ -31,14 +42,16 @@ class sign_state
   public:
 
     /**
-     * @param getter std::runtime_error thrown when id can't be found will be caught when IS_TRACED
+     * @param getters source of authorities; unknown accounts are reported to tracer when IS_TRACED, otherwise exception is thrown
+     * @param current_authority selects role of authorities used by check_authority( id ) and for account entries
      * @param the_tracer mandatory when IS_TRACED, ignored otherwise
      */
     sign_state( const flat_set<public_key_type>& sigs,
-      const authority_getter& getter,
+      const authority_getter_i& getters,
+      authority_getter_method current_authority,
       const sign_limits& limits,
       authority_verification_tracer* the_tracer = nullptr )
-      : get_current_authority( getter ), limits( limits ), tracer(the_tracer)
+      : getters( getters ), get_current_authority( current_authority ), limits( limits ), tracer(the_tracer)
     {
       extend_provided_signatures( sigs );
     }
@@ -58,28 +71,29 @@ class sign_state
 
     bool check_authority( const string& id )
     {
-      authority initial_auth;
-      if constexpr (IS_TRACED) {
-        FC_ASSERT(tracer && "check_authority 1", "check_authority: tracer is null", ("id", id));
-        try
-        {
-          initial_auth = get_current_authority( id );
-        } catch( const std::runtime_error& e )
+      std::optional<authority> initial_auth = ( getters.*get_current_authority )( id );
+      if constexpr (IS_TRACED)
+      {
+        FC_ASSERT( tracer && "check_authority 1", "check_authority: tracer is null", ( "id", id ) );
+        if( !initial_auth )
         {
           tracer->on_unknown_account_entry( id, 0, 0, 0 );
           return false;
-        }           
+        }
 
-        tracer->on_root_authority_start(id, initial_auth.weight_threshold, 0);
+        tracer->on_root_authority_start( id, initial_auth->weight_threshold, 0 );
       }
       else
-        initial_auth = get_current_authority( id );
+      {
+        force_found( initial_auth, id );
+      }
 
       if( approved_by.find(id) != approved_by.end() )
       {
-        if constexpr (IS_TRACED) {
-          FC_ASSERT(tracer && "check_authority 2", "check_authority: tracer is null", ("id", id));
-          tracer->on_approved_authority( id, initial_auth.weight_threshold );
+        if constexpr (IS_TRACED)
+        {
+          FC_ASSERT( tracer && "check_authority 2", "check_authority: tracer is null", ( "id", id ) );
+          tracer->on_approved_authority( id, initial_auth->weight_threshold );
         }
 
         return true;
@@ -90,12 +104,13 @@ class sign_state
       else
         account_auth_count = 1;
 
-      bool success = check_authority_impl( initial_auth, 0 );
+      bool success = check_authority_impl( *initial_auth, 0 );
 
-      if constexpr (IS_TRACED) {
-          FC_ASSERT(tracer && "check_authority 3", "check_authority: tracer is null", ("id", id));
-          // TODO: Provide appropriate set of flags.
-          tracer->on_root_authority_finish(success, 0);
+      if constexpr (IS_TRACED)
+      {
+        FC_ASSERT( tracer && "check_authority 3", "check_authority: tracer is null", ( "id", id ) );
+        // TODO: Provide appropriate set of flags.
+        tracer->on_root_authority_finish( success, 0 );
       }
 
       return success;
@@ -107,10 +122,11 @@ class sign_state
       */
     bool check_authority( const authority& auth, const string& id, const string& role )
     {
-      if constexpr (IS_TRACED) {
-          FC_ASSERT(tracer && "check_authority 4", "check_authority: tracer is null", ("id", id));
-          tracer->set_role(role);
-          tracer->on_root_authority_start(id, auth.weight_threshold, 0);
+      if constexpr (IS_TRACED)
+      {
+        FC_ASSERT( tracer && "check_authority 4", "check_authority: tracer is null", ( "id", id ) );
+        tracer->set_role( role );
+        tracer->on_root_authority_start( id, auth.weight_threshold, 0 );
       }
 
       if( !limits.allow_strict_and_mixed_authorities )
@@ -118,23 +134,34 @@ class sign_state
 
       bool success = check_authority_impl( auth, 0 );
 
-      if constexpr (IS_TRACED) {
-          FC_ASSERT(tracer && "check_authority 5", "check_authority: tracer is null", ("id", id));
-          // TODO: Provide appropriate set of flags.
-          tracer->on_root_authority_finish(success, 0);
+      if constexpr (IS_TRACED)
+      {
+        FC_ASSERT( tracer && "check_authority 5", "check_authority: tracer is null", ( "id", id ) );
+        // TODO: Provide appropriate set of flags.
+        tracer->on_root_authority_finish( success, 0 );
       }
 
       return success;
+    }
+
+    /**
+      *  Checks authority of given account in the role selected by getter (regardless of current authority role).
+      *  Throws when the account is not known.
+      */
+    bool check_authority( authority_getter_method getter, const string& id, const string& role )
+    {
+      return check_authority( force_found( ( getters.*getter )( id ), id ), id, role );
     }
 
     bool remove_unused_signatures()
     {
       vector<public_key_type> remove_sigs;
       for( const auto& sig : provided_signatures )
-        if( !sig.second ) remove_sigs.push_back( sig.first );
+        if( !sig.second )
+          remove_sigs.push_back( sig.first );
 
       for( auto& sig : remove_sigs )
-        provided_signatures.erase(sig);
+        provided_signatures.erase( sig );
 
       return remove_sigs.size() != 0;
     }
@@ -155,9 +182,9 @@ class sign_state
         provided_signatures[ key ] = false;
     }
 
-    const flat_map<public_key_type,bool>&  get_provided_signatures() const { return provided_signatures; }
+    const flat_map< public_key_type, bool >& get_provided_signatures() const { return provided_signatures; }
 
-    void change_current_authority( const authority_getter& a )
+    void change_current_authority( authority_getter_method a )
     {
       get_current_authority = a;
     }
@@ -170,8 +197,9 @@ class sign_state
 
       size_t membership = 0;
 
-      if constexpr (IS_TRACED) {
-        FC_ASSERT(tracer && "check_authority 6");
+      if constexpr (IS_TRACED)
+      {
+        FC_ASSERT( tracer && "check_authority 6" );
         if( auth.key_auths.empty() && auth.account_auths.empty() )
           tracer->on_empty_auth();
       }
@@ -190,10 +218,11 @@ class sign_state
         {
           total_weight += k.second;
 
-          if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer && "check_authority 7");
-            tracer->on_matching_key(k.first, k.second, auth.weight_threshold, depth, 
-                                    total_weight >= auth.weight_threshold);
+          if constexpr (IS_TRACED)
+          {
+            FC_ASSERT( tracer && "check_authority 7" );
+            tracer->on_matching_key( k.first, k.second, auth.weight_threshold, depth,
+                                     total_weight >= auth.weight_threshold );
           }
 
           if( total_weight >= auth.weight_threshold )
@@ -204,8 +233,9 @@ class sign_state
           return false;
       }
 
-      if constexpr (IS_TRACED) {
-        FC_ASSERT(tracer && "check_authority 8");
+      if constexpr (IS_TRACED)
+      {
+        FC_ASSERT( tracer && "check_authority 8" );
         tracer->on_missing_matching_key();
       }
 
@@ -215,8 +245,9 @@ class sign_state
         {
           if( depth == limits.recursion )
           {
-            if constexpr (IS_TRACED) {
-              FC_ASSERT(tracer && "check_authority 9");
+            if constexpr (IS_TRACED)
+            {
+              FC_ASSERT( tracer && "check_authority 9" );
               tracer->on_recursion_depth_limit_exceeded();
             }
 
@@ -225,8 +256,9 @@ class sign_state
 
           if( limits.account_auths > 0 && account_auth_count >= limits.account_auths )
           {
-            if constexpr (IS_TRACED) {
-              FC_ASSERT(tracer && "check_authority 10");
+            if constexpr (IS_TRACED)
+            {
+              FC_ASSERT( tracer && "check_authority 10" );
               tracer->on_account_processing_limit_exceeded();
             }
 
@@ -235,55 +267,55 @@ class sign_state
 
           ++account_auth_count;
 
-          authority account_auth;
-          if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer && "check_authority 11");
-            try
-            {
-              account_auth = get_current_authority( a.first );
-            } catch( const std::runtime_error& e )
+          std::optional< authority > account_auth = ( getters.*get_current_authority )( a.first );
+          if constexpr (IS_TRACED)
+          {
+            FC_ASSERT( tracer && "check_authority 11" );
+            if( !account_auth )
             {
               tracer->on_unknown_account_entry( a.first, a.second, 0 /*unknown too*/, depth );
               continue;
-            }           
+            }
 
-            tracer->on_entering_account_entry( a.first, a.second, account_auth.weight_threshold, depth );
+            tracer->on_entering_account_entry( a.first, a.second, account_auth->weight_threshold, depth );
           }
           else
-            account_auth = get_current_authority( a.first );
+          {
+            force_found( account_auth, a.first );
+          }
 
-          bool success = check_authority_impl( account_auth, depth + 1 );
+          bool success = check_authority_impl( *account_auth, depth + 1 );
           if( success )
           {
             approved_by.insert( a.first );
             total_weight += a.second;
             if( total_weight >= auth.weight_threshold )
             {
-              if constexpr (IS_TRACED) {
-                FC_ASSERT(tracer && "check_authority 12");
+              if constexpr (IS_TRACED)
+              {
+                FC_ASSERT( tracer && "check_authority 12" );
                 tracer->on_leaving_account_entry( a.second, true /*parent_threshold_reached*/ );
               }
               return true;
             }
           }
-          if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer && "check_authority 13");
+          if constexpr (IS_TRACED)
+          {
+            FC_ASSERT( tracer && "check_authority 13" );
             tracer->on_leaving_account_entry( success ? a.second : 0, false /*parent_threshold_reached*/ );
           }
         }
         else
         {
-          if constexpr (IS_TRACED) {
-            FC_ASSERT(tracer && "check_authority 14");
+          if constexpr (IS_TRACED)
+          {
+            FC_ASSERT( tracer && "check_authority 14" );
             tracer->on_approved_authority( a.first, a.second );
           }
 
           total_weight += a.second;
           if( total_weight >= auth.weight_threshold )
-          {
-
             return true;
-          }
         }
 
         if( !_increase_membership() )

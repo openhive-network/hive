@@ -143,7 +143,7 @@ namespace hive { namespace chain {
           {
             --_target;
             fc::microseconds fork_lock_duration = fc::time_point::now() - _start_locking;
-            fc_dlog(fc::logger::get("chainlock"), "Took ${held}µs to get and release fork_lock", ("held", fork_lock_duration.count()));
+            fc_dlog(fc::logger::get("chainlock"), "Took ${held}us to get and release fork_lock", ("held", fork_lock_duration.count()));
           }
           int32_t get()const { return _target; }
 

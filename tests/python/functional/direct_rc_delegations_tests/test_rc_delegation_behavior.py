@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
+from test_tools.exceptions import ErrorInResponseError
 
 # RC amounts have to clear the chain's min_delegation - (account_creation_fee / 3) * vesting_share_price, see
 # libraries/chain/rc/rc_utility.cpp - which is around 3600 RC on a default testnet. They are kept well above
@@ -64,10 +64,7 @@ def test_rc_delegation_to_same_receiver(wallet: tt.Wallet) -> None:
         wallet.api.delegate_rc(accounts[0], [accounts[2]], 5 * DELEGATION)
         wallet.api.delegate_rc(accounts[1], [accounts[2]], DELEGATION)
 
-    assert (
-        int(get_rc_account_info(accounts[2], wallet)["max_rc"])
-        == receiver_base_max_rc + 6 * DELEGATION
-    )
+    assert int(get_rc_account_info(accounts[2], wallet)["max_rc"]) == receiver_base_max_rc + 6 * DELEGATION
 
 
 def test_same_rc_delegation_rejection(wallet: tt.Wallet) -> None:
@@ -119,8 +116,9 @@ def test_out_of_int64_rc_delegation(wallet: tt.Wallet) -> None:
 
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(2000))
 
-    with pytest.raises(ErrorInResponseError):
+    with pytest.raises(ErrorInResponseError) as exception:
         wallet.api.delegate_rc(accounts[0], [accounts[1]], 9223372036854775808)
+    assert "amount of rc delegated cannot exceed 9223372036854775807" in str(exception.value)
 
 
 def test_reject_of_delegation_of_delegated_rc(wallet: tt.Wallet) -> None:

@@ -2,11 +2,77 @@
 
 set -euo pipefail
 
-# Optional UID override: if HIVED_UID is set, remap the hived user to that UID.
-# This is only needed when bind-mounting volumes owned by a non-1000 UID.
-if [[ -n "${HIVED_UID:-}" ]] && [[ "${HIVED_UID}" =~ ^[0-9]+$ ]] && [[ "${HIVED_UID}" -ne 0 ]] && [[ "${HIVED_UID}" -ne "$(id -u)" ]]; then
-  echo "Remapping hived UID to ${HIVED_UID}"
-  sudo -n usermod -o -u "${HIVED_UID}" hived
+# Optional UID override: if HIVED_UID is set, the hived account is remapped to that
+# UID and the entrypoint runs again as it, so hived can use bind-mounted volumes owned
+# by that UID. Remapping the account does not change the UID of a running process,
+# and sudo refuses a process whose UID the account no longer has, so the entrypoint
+# first runs itself again as root, remaps the account and drops to it. sudo resets
+# the environment, so it is passed on explicitly. On a restart the container already
+# starts as the new UID.
+# The passwd entry is edited directly: usermod -u would also chown everything under
+# the home directory owned by the old UID, which fails on read-only mounts there and
+# re-owns the operator's files in bind-mounted data directories. Only the home
+# directory itself and ~/.hived (without crossing into mounts) change owner; the
+# data directories are left alone and must already be writable by HIVED_UID.
+remap_hived_uid() {
+  local new_uid="$1" old_uid home
+  old_uid=$(id -u hived)
+  home=$(getent passwd hived | cut -d: -f6)
+  local passwd
+  passwd=$(awk -F: -v OFS=: -v uid="$new_uid" '$1 == "hived" { $3 = uid } { print }' /etc/passwd)
+  printf '%s\n' "$passwd" > /etc/passwd
+  if ! mountpoint -q "$home" && [[ "$(stat -c %u "$home")" == "$old_uid" ]]; then
+    chown -h "$new_uid" "$home"
+  fi
+  if [[ -d "$home/.hived" ]] && ! mountpoint -q "$home/.hived"; then
+    find "$home/.hived" -xdev -user "$old_uid" -exec chown -h "$new_uid" {} +
+  fi
+}
+
+# Refuses to start when a data directory is not writable by the UID hived runs as,
+# instead of changing its owner.
+require_writable_dir() {
+  local name="$1" dir="$2"
+  [[ -d "$dir" ]] || return 0
+  if [[ ! -w "$dir" || ! -x "$dir" ]]; then
+    echo "${name} ${dir} is not writable by HIVED_UID $(id -u): it is owned by UID $(stat -c %u "$dir") with mode $(stat -c %a "$dir"). Make it writable by UID $(id -u) or set HIVED_UID to its owner. Exiting."
+    exit 1
+  fi
+}
+
+if [[ -n "${HIVED_UID:-}" ]]; then
+  if [[ ! "${HIVED_UID}" =~ ^[0-9]+$ ]] || (( 10#${HIVED_UID} == 0 )); then
+    echo "HIVED_UID must be a non-zero numeric UID, not '${HIVED_UID}'. Exiting."
+    exit 1
+  fi
+  hived_uid=$(( 10#${HIVED_UID} ))
+  if (( hived_uid != $(id -u) )); then
+    if (( $(id -u) != 0 )); then
+      mapfile -d '' -t environment < <(env -0)
+      # sudo runs its command as a child and reaps only that, so it is not exec'd: as
+      # PID 1 it would leave every orphan in the container a zombie. This shell stays
+      # PID 1 (bash reaps any child) and passes the stop signals on to sudo, which
+      # relays them to the entrypoint. Job control is on because without it bash starts
+      # a background command with SIGINT ignored, and the entrypoint could not trap it.
+      set -m
+      sudo -n -- /usr/bin/env -i "${environment[@]}" "$0" "$@" &
+      sudo_pid=$!
+      trap 'kill -INT "$sudo_pid" 2>/dev/null || true' INT
+      trap 'kill -TERM "$sudo_pid" 2>/dev/null || true' TERM
+      while :; do
+        status=0
+        wait "$sudo_pid" || status=$?
+        # A trapped signal ends wait early with a status above 128.
+        (( status > 128 )) && kill -0 "$sudo_pid" 2>/dev/null || break
+      done
+      exit "$status"
+    fi
+    echo "Remapping hived UID to ${hived_uid}"
+    remap_hived_uid "$hived_uid"
+    exec setpriv --reuid=hived --regid=users --init-groups -- "$0" "$@"
+  fi
+  require_writable_dir DATADIR "$DATADIR"
+  require_writable_dir SHM_DIR "$SHM_DIR"
 fi
 
 SCRIPTDIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
@@ -293,7 +359,7 @@ fi
 
 run_instance() {
 trap cleanup INT TERM
-trap cleanup EXIT
+trap 'cleanup; wait_for_log_tee' EXIT
 
 echo "Attempting to execute hived using additional command line arguments: ${HIVED_ARGS[*]}"
 

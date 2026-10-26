@@ -32,7 +32,7 @@ function flattenSchema(schema) {
     );
     const nonNullOptions = schema.anyOf.filter((_, i) => i !== nullIdx);
     if (nullIdx !== -1 && nonNullOptions.length === 1) {
-      // Nullable pattern: anyOf [null, X] — keep as anyOf so generator handles it
+      // Nullable pattern: anyOf [null, X] - keep as anyOf so generator handles it
       schema.anyOf = [{ type: "null" }, flattenSchema(nonNullOptions[0])];
     } else {
       // Non-nullable anyOf: flatten to first option (original behavior)

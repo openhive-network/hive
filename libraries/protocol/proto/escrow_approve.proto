@@ -5,7 +5,7 @@ package hive.protocol.buffers;
 /* The operation escrow_approve_operation is used to approve the escrow.
  * The approval should be done by { to } and by the { agent }.
  * The escrow approval is irreversible.
- * If { agent } or { to } haven’t approved the escrow before the { ratification_deadline} or either
+ * If { agent } or { to } haven't approved the escrow before the { ratification_deadline} or either
  * of them explicitly rejected the escrow, the escrow is rejected.
  * If {agent} and {to} have approved the escrow, the {fee} is transferred from temporary balance to {agent} account.
  *

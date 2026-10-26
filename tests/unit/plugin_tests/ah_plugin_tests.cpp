@@ -14,6 +14,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdlib>
+#include <limits>
 #include <thread>
 
 using namespace hive::chain;
@@ -55,6 +56,32 @@ BOOST_AUTO_TEST_CASE( get_ops_in_block_zero_bug )
     //time)
     
     BOOST_TEST_MESSAGE( "If you are here it means the test works" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( get_ops_in_block_max_block_num_bug )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing get_ops_in_block with maximum 32-bit block number" );
+
+    generate_block();
+
+    //range end used to be computed as block_num + 1, which wrapped to 0 and failed the range assertion
+    for( bool include_reversible : { true, false } )
+    {
+      ah_plugin->find_operations_by_block( std::numeric_limits<uint32_t>::max(), include_reversible,
+        []( const rocksdb_operation_object& op )
+      {
+        BOOST_REQUIRE( false && "List of operations should be empty" );
+      } );
+    }
+
+    size_t ops_in_last_block = 0;
+    ah_plugin->find_operations_by_block( db->head_block_num(), true,
+      [&]( const rocksdb_operation_object& op ) { ++ops_in_last_block; } );
+    BOOST_REQUIRE_GT( ops_in_last_block, 0u );
   }
   FC_LOG_AND_RETHROW()
 }

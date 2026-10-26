@@ -1036,7 +1036,7 @@ BOOST_AUTO_TEST_CASE( block_conflict_test )
           // the block production failure
           fc::usleep( fc::milliseconds( 500 ) );
           ilog( "Adding slow transaction to pending" );
-          db_plugin->debug_update( [&]( database& db )
+          schedule_debug_update( [&]( database& db )
           {
             ilog( "Slow transaction start - tx status is ${s}", ( "s", (int)db.get_tx_status() ) );
             fc::usleep( fc::seconds( 1 ) );
@@ -1143,7 +1143,7 @@ BOOST_AUTO_TEST_CASE( block_lock_test )
           ilog( "Adding slow transaction to pending" );
           // generate marker transaction that takes 1.5s to process
           // it will be waiting as pending for next block to pick it up
-          db_plugin->debug_update( [&]( database& db )
+          schedule_debug_update( [&]( database& db )
           {
             ilog( "Slow transaction start - tx status is ${s}", ( "s", (int)db.get_tx_status() ) );
             fc::usleep( fc::milliseconds( 1500 ) );
@@ -1266,7 +1266,7 @@ BOOST_AUTO_TEST_CASE( block_lag_test )
           ilog( "Adding marker transaction to pending" );
           // generate marker transaction that takes 10s to process during block reapplication;
           // it will be waiting as pending for next block to pick it up
-          db_plugin->debug_update( [&]( database& db )
+          schedule_debug_update( [&]( database& db )
           {
             if( db.get_tx_status() == database::TX_STATUS_P2P_BLOCK )
             {

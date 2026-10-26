@@ -189,6 +189,9 @@ namespace graphene { namespace net
 
       connection_negotiation_status negotiation_status = connection_negotiation_status::disconnected;
       fc::oexception connection_closed_error;
+      /** whether the close described by connection_closed_error is a failure; an unrecorded reason
+          means the connection dropped unexpectedly, which is one */
+      bool connection_closed_by_failure = true;
 
       fc::time_point get_connection_time()const { return _message_connection.get_connection_time(); }
       fc::time_point get_connection_terminated_time()const { return connection_terminated_time; }
@@ -315,6 +318,15 @@ namespace graphene { namespace net
       void send_item(const item_id& item_to_send);
       void close_connection();
       void destroy_connection(const char* caller);
+      /// Records why the connection is closing, and whether that is a failure of the peer, unless a
+      /// reason is already recorded; the first reason (a rejection, or whichever side asked to close
+      /// first) is the one worth keeping
+      void record_connection_closed_error(const fc::exception& reason, bool is_failure);
+      /// The recorded closing reason, or "lost connection to peer" when neither side gave one
+      fc::exception get_connection_closed_reason() const;
+      /// Stores the closing reason in the peer's database record, and marks the record failed only
+      /// when the close was a failure rather than a deliberate or graceful disconnect
+      void record_connection_closed_in(potential_peer_record& record) const;
 
       uint64_t get_total_bytes_sent() const;
       uint64_t get_total_bytes_received() const;

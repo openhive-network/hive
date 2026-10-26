@@ -267,7 +267,7 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
   }
   // fc::time_point end = fc::time_point::now();
   // fc::microseconds duration = end - start;
-  // ilog("perform_work on the block took ${duration}μs", (duration));
+  // ilog("perform_work on the block took ${duration}us", (duration));
 }
 
 void blockchain_worker_thread_pool::impl::perform_work(const work_request_type::transaction_work_request_type& transaction_work_request, data_source_type data_source)

@@ -113,11 +113,11 @@ class EscrowTransfer(Operation):
         raise ValueError("Escrow wasn't found.")
 
     def assert_escrow_approved_operation_was_generated(self, expected_amount: int) -> None:
-        assert (
-            len(get_virtual_operations(self._node, EscrowApprovedOperation)) == expected_amount
-        ), "escrow_approved virtual operation wasn't generated"
+        assert len(get_virtual_operations(self._node, EscrowApprovedOperation)) == expected_amount, (
+            "escrow_approved virtual operation wasn't generated"
+        )
 
     def assert_escrow_rejected_operation_was_generated(self, expected_amount: int) -> None:
-        assert (
-            len(get_virtual_operations(self._node, EscrowRejectedOperation)) == expected_amount
-        ), "escrow_rejected virtual operation wasn't generated"
+        assert len(get_virtual_operations(self._node, EscrowRejectedOperation)) == expected_amount, (
+            "escrow_rejected virtual operation wasn't generated"
+        )

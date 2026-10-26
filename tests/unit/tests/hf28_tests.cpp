@@ -15,6 +15,7 @@
 #include <hive/chain/detail/state/recurrent_transfer_object.hpp>
 #include <hive/chain/detail/state/dhf_objects.hpp>
 #include <hive/chain/detail/state/account_object.hpp>
+#include <hive/chain/database_authority_getter.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/detail/state/comment_object.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
@@ -46,6 +47,49 @@
 
 using namespace hive::chain;
 using namespace hive::chain::util;
+
+/**
+ * Provides authorities for authority verification tests. Every account has the same (default) authority
+ * in given role, unless its authority in that role is set explicitly.
+ */
+class test_authority_getter : public authority_getter_i
+{
+public:
+  test_authority_getter( const authority& _default_active, const authority& _default_owner, const authority& _default_posting )
+    : default_active( _default_active ), default_owner( _default_owner ), default_posting( _default_posting ) {}
+
+  virtual std::optional<authority> get_active( const std::string& name ) const override
+  {
+    return find_authority( active, default_active, name );
+  }
+  virtual std::optional<authority> get_owner( const std::string& name ) const override
+  {
+    return find_authority( owner, default_owner, name );
+  }
+  virtual std::optional<authority> get_posting( const std::string& name ) const override
+  {
+    return find_authority( posting, default_posting, name );
+  }
+  virtual std::optional<public_key_type> get_witness_key( const std::string& ) const override
+  {
+    return public_key_type();
+  }
+
+  authority default_active;
+  authority default_owner;
+  authority default_posting;
+  std::map<std::string, authority> active;
+  std::map<std::string, authority> owner;
+  std::map<std::string, authority> posting;
+
+private:
+  static const authority& find_authority( const std::map<std::string, authority>& auths,
+    const authority& default_auth, const std::string& name )
+  {
+    auto it = auths.find( name );
+    return it == auths.end() ? default_auth : it->second;
+  }
+};
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests, cluster_database_fixture )
 
@@ -1033,10 +1077,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         uint32_t _hive_max_authority_membership  = 3;
         uint32_t _hive_max_sig_check_accounts    = 4;
 
-        auto _get_active = [&]( const std::string& name ) { return _empty_auth; };
-        auto _get_owner = [&]( const std::string& name ) { return _empty_auth; };
-        auto _get_posting = [&]( const std::string& name ) { return _empty_auth; };
-        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+        test_authority_getter _getters( _empty_auth, _empty_auth, _empty_auth );
 
         required_authorities_type _required_authorities;
         _required_authorities.required_posting.insert( "xyz" );
@@ -1049,7 +1090,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         HIVE_REQUIRE_THROW( hive::protocol::verify_authority
         ( _allow_strict_and_mixed_authorities, _allow_redundant_signatures,
           _required_authorities, _signatures,
-          _get_active, _get_owner, _get_posting, _get_witness_key,
+          _getters,
           _hive_max_sig_check_depth, _hive_max_authority_membership, _hive_max_sig_check_accounts
         ), tx_missing_posting_auth );
       }
@@ -1064,10 +1105,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         for( size_t i = 0; i < _hive_max_authority_membership - 1; ++i )
           _posting_auth.add_authority( _keys[i], 1 );
 
-        auto _get_active = [&]( const std::string& name ) { return _empty_auth; };
-        auto _get_owner = [&]( const std::string& name ) { return _empty_auth; };
-        auto _get_posting = [&]( const std::string& name ) { return _posting_auth; };
-        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+        test_authority_getter _getters( _empty_auth, _empty_auth, _posting_auth );
 
         required_authorities_type _required_authorities;
         _required_authorities.required_posting.insert( "xyz" );
@@ -1082,7 +1120,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         (
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _required_authorities, _signatures, _getters,
           _hive_max_sig_check_depth,
           _hive_max_authority_membership,
           _hive_max_sig_check_accounts
@@ -1090,12 +1128,13 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
 
         BOOST_TEST_MESSAGE( "Success. Posting authority: required 3 signatures and 3 keys are given." );
         _posting_auth.add_authority( _keys[ _hive_max_authority_membership - 1 ], 1 );
+        _getters.default_posting = _posting_auth;
 
         hive::protocol::verify_authority
         (
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _required_authorities, _signatures, _getters,
           _hive_max_sig_check_depth,
           _hive_max_authority_membership,
           _hive_max_sig_check_accounts
@@ -1108,7 +1147,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         (
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _required_authorities, _signatures, _getters,
           _hive_max_sig_check_depth,
           _hive_max_authority_membership,
           _hive_max_sig_check_accounts
@@ -1140,10 +1179,8 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         accs_auths["00"] = _posting_auth_00;
         accs_auths["01"] = _posting_auth_01;
 
-        auto _get_active = [&]( const std::string& name ) { return _empty_auth; };
-        auto _get_owner = [&]( const std::string& name ) { return _empty_auth; };
-        auto _get_posting = [&]( const std::string& name ) { return accs_auths[ name ]; };
-        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+        test_authority_getter _getters( _empty_auth, _empty_auth, authority() );
+        _getters.posting = accs_auths;
 
         required_authorities_type _required_authorities;
         _required_authorities.required_posting.insert( "start" );
@@ -1158,7 +1195,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         (
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _required_authorities, _signatures, _getters,
           _hive_max_sig_check_depth,
           _hive_max_authority_membership,
           _hive_max_sig_check_accounts
@@ -1170,7 +1207,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         (
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _required_authorities, _signatures, _getters,
           _hive_max_sig_check_depth,
           _hive_max_authority_membership,
           _hive_max_sig_check_accounts
@@ -1183,7 +1220,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         (
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _required_authorities, _signatures, _getters,
           _hive_max_sig_check_depth,
           _hive_max_authority_membership,
           _hive_max_sig_check_accounts
@@ -1223,10 +1260,9 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         _accs_auths_owner["start"]  = _owner_auth;
         _accs_auths_owner["01"]     = _owner_auth_01;
 
-        auto _get_active = [&]( const std::string& name ) { return _accs_auths_active[ name ]; };
-        auto _get_owner = [&]( const std::string& name ) { return _accs_auths_owner[ name ]; };
-        auto _get_posting = [&]( const std::string& name ) { return _empty_auth; };
-        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+        test_authority_getter _getters( authority(), authority(), _empty_auth );
+        _getters.active = _accs_auths_active;
+        _getters.owner = _accs_auths_owner;
 
         required_authorities_type _required_authorities;
         _required_authorities.required_active.insert( "start" );
@@ -1241,7 +1277,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         (
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _required_authorities, _signatures, _getters,
           _hive_max_sig_check_depth,
           _hive_max_authority_membership,
           _hive_max_sig_check_accounts
@@ -1258,7 +1294,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
           (
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-            _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+            _required_authorities, _signatures, _getters,
             _hive_max_sig_check_depth,
             _hive_max_authority_membership,
             _hive_max_sig_check_accounts
@@ -1271,7 +1307,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
           (
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
             executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-            _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+            _required_authorities, _signatures, _getters,
             _hive_max_sig_check_depth,
             _hive_max_authority_membership,
             _hive_max_sig_check_accounts
@@ -1295,10 +1331,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         _owner_auth.add_authority( _keys[9], 1 );
         _owner_auth.add_authority( _keys[_keys_iter++], 1 );
 
-        auto _get_active = [&]( const std::string& name ) { return _active_auth; };
-        auto _get_owner = [&]( const std::string& name ) { return _owner_auth; };
-        auto _get_posting = [&]( const std::string& name ) { return _empty_auth; };
-        auto _get_witness_key = [&]( const std::string& name ) { return public_key_type(); };
+        test_authority_getter _getters( _active_auth, _owner_auth, _empty_auth );
 
         required_authorities_type _required_authorities;
         _required_authorities.required_active.insert( "start" );
@@ -1313,7 +1346,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits )
         (
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES ),
           executor->db->has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
-          _required_authorities, _signatures, _get_active, _get_owner, _get_posting, _get_witness_key,
+          _required_authorities, _signatures, _getters,
           _hive_max_sig_check_depth,
           _hive_max_authority_membership,
           _hive_max_sig_check_accounts
@@ -1357,10 +1390,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits_for_temp_account )
         uint32_t _hive_max_authority_membership  = 3;
         uint32_t _hive_max_sig_check_accounts    = 4;
 
-        auto _get_active = [&]( const std::string& name ) { return executor->db->get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-        auto _get_owner = [&]( const std::string& name ) { return executor->db->get< account_authority_object, by_account >( name ).get_owner().to_authority(); };
-        auto _get_posting = [&]( const std::string& name ) { return executor->db->get< account_authority_object, by_account >( name ).get_posting().to_authority(); };
-        auto _get_witness_key = [&]( const std::string& name ) { try { return executor->db->get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW( ( name ) ) };
+        database_authority_getter _getters( *executor->db );
 
         {
           required_authorities_type _required_authorities;
@@ -1372,8 +1402,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits_for_temp_account )
 
           hive::protocol::verify_authority
           ( _allow_strict_and_mixed_authorities, _allow_redundant_signatures,
-            _required_authorities, _signatures,
-            _get_active, _get_owner, _get_posting, _get_witness_key,
+            _required_authorities, _signatures, _getters,
             _hive_max_sig_check_depth, _hive_max_authority_membership, _hive_max_sig_check_accounts
           );
         }
@@ -1387,8 +1416,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits_for_temp_account )
 
           hive::protocol::verify_authority
           ( _allow_strict_and_mixed_authorities, _allow_redundant_signatures,
-            _required_authorities, _signatures,
-            _get_active, _get_owner, _get_posting, _get_witness_key,
+            _required_authorities, _signatures, _getters,
             _hive_max_sig_check_depth, _hive_max_authority_membership, _hive_max_sig_check_accounts
           );
         }
@@ -1402,8 +1430,7 @@ BOOST_AUTO_TEST_CASE( verify_authority_limits_for_temp_account )
 
           hive::protocol::verify_authority
           ( _allow_strict_and_mixed_authorities, _allow_redundant_signatures,
-            _required_authorities, _signatures,
-            _get_active, _get_owner, _get_posting, _get_witness_key,
+            _required_authorities, _signatures, _getters,
             _hive_max_sig_check_depth, _hive_max_authority_membership, _hive_max_sig_check_accounts
           );
         }

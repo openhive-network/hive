@@ -475,7 +475,7 @@ main() {
     log_info "HIVE_PROJECT_ROOT: ${HIVE_PROJECT_ROOT}"
     log_info "API_GENERATION_DIR: ${API_GENERATION_DIR}"
 
-    # Step 1: Get version (before generation — only needs git state + pyproject.toml)
+    # Step 1: Get version (before generation - only needs git state + pyproject.toml)
     local version
     version=$(get_package_version)
     log_info "Package version: ${version}"
@@ -489,7 +489,7 @@ main() {
         return
     fi
 
-    # Step 3: Package not in registry — generate, build, test, deploy
+    # Step 3: Package not in registry - generate, build, test, deploy
     generate_package
     build_test_and_deploy
 

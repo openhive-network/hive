@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Tests of .aidev/integration.sh's decisions that need no docker: host path
 # translation over mountinfo fixtures, the time budget, the build plan, the
-# Dockerfile-stage check and the diff base. Run from anywhere:
+# Dockerfile-stage check and the diff base; and, where a docker daemon and the
+# checks' image are at hand, that the image build's output in the checkout is
+# this user's however its container ends. Run from anywhere:
 #
 #   .aidev/tests/integration_test.sh
 set -uo pipefail
@@ -76,6 +78,27 @@ EOF
 expect "escaped spaces" "/home/dan/my hive/x" \
     "$(host_path "/work dir/x" "$worker_space" "$host_split_home")"
 
+# --- host_daemon_mountinfo ----------------------------------------------------
+fake_proc() {  # NAME PID:COMM:PPID...: a /proc with those processes
+    local root="$scratch/$1" e pid comm ppid
+    shift
+    for e; do
+        IFS=: read -r pid comm ppid <<< "$e"
+        mkdir -p "$root/$pid"
+        echo "$comm" > "$root/$pid/comm"
+        echo "$pid ($comm) S $ppid $pid $pid 0 -1" > "$root/$pid/stat"
+    done
+    echo "$root"
+}
+proc="$(fake_proc proc-nested 1:systemd:0 1616537:dockerd:1616500 1616500:containerd-shim:1 339358:dockerd:1)"
+expect "a nested dockerd listed first: the one init started" "$proc/339358/mountinfo" "$(host_daemon_mountinfo "$proc")"
+proc="$(fake_proc proc-single 1:systemd:0 4242:dockerd:4200 4200:sh:1)"
+expect "one dockerd, not started by init: that one" "$proc/4242/mountinfo" "$(host_daemon_mountinfo "$proc")"
+proc="$(fake_proc proc-ambiguous 1:systemd:0 500:dockerd:400 600:dockerd:450)"
+expect "several dockerds, none started by init: init's table" "$proc/1/mountinfo" "$(host_daemon_mountinfo "$proc")"
+proc="$(fake_proc proc-none 1:systemd:0 77:bash:1)"
+expect "no dockerd: init's table" "$proc/1/mountinfo" "$(host_daemon_mountinfo "$proc")"
+
 # --- integration_deadline ----------------------------------------------------
 HIVE_INTEGRATION_BUDGET=1200 HIVE_INTEGRATION_ACTIVITY_SECONDS=2400 HIVE_INTEGRATION_MARGIN=300
 expect "no slot start: the step's own budget" $((10000 + 1200 - 300)) "$(integration_deadline 10000 10000 "")"
@@ -89,17 +112,112 @@ expect "a slot start in the future is ignored" $((10000 + 1200 - 300)) \
     "$(integration_deadline 10000 10000 20000)"
 
 # --- integration_plan --------------------------------------------------------
-HIVE_INTEGRATION_WARM_BUILD_SECONDS=300 HIVE_INTEGRATION_COLD_BUILD_SECONDS=2700
-integration_plan 900 1 warm 300 > /dev/null
-expect "a warm build and a script fit" 0 "$?"
-reason="$(integration_plan 900 2 cold 300)"
-expect "no cache and too little time: skipped, naming sccache" sccache_unreachable "${reason%%:*}"
-reason="$(integration_plan 700 2 warm 300)"
-expect "warm, but too little time: out of time" out_of_time "${reason%%:*}"
-integration_plan 6000 2 cold 300 > /dev/null
-expect "no cache, but time for a cold build" 0 "$?"
+exchange=test_exchange_node_block_log_pruning.sh snapshot=test_snapshot_bootstrap.sh uid=test_hived_uid.sh
+expect "the plan names its inputs" \
+    "plan: testnet image 500s, mainnet image unmeasured, $uid at least 120s, $exchange at least 600s, as measured on this host with the compiler cache warm: 900s left of the 1200s budget" \
+    "$(integration_plan 900 1200 warm "$uid $exchange" testnet=500 mainnet= | head -1)"
+expect "the exchange script alone fits the suite's budget after a warm mainnet build" "run: $exchange|0" \
+    "$(out="$(integration_plan 1800 2100 warm "$exchange" mainnet=758)"; echo "${out##*$'\n'}|$?")"
+expect "the exchange script alone does not fit 900 s after a warm mainnet build" \
+    "out_of_time: 900s left of the 1200s budget (HIVE_INTEGRATION_BUDGET), the cheapest script, $exchange, and its mainnet image's build need 1253s|1" \
+    "$(out="$(integration_plan 900 1200 warm "$exchange" mainnet=653)"; echo "${out##*$'\n'}|$?")"
+plan="$(integration_plan 1800 2100 warm "$exchange $snapshot $uid" testnet=849 mainnet=758)"
+expect "both images do not fit: the testnet scripts run, uid first" "run: $uid $snapshot" "${plan##*$'\n'}"
+expect "both images do not fit: the exchange script deferred, named, with its need" \
+    "deferred: $exchange: out_of_time: it needs 2207s after the builds planned ahead of it, 1800s left of the 2100s budget (HIVE_INTEGRATION_BUDGET)" \
+    "$(grep '^deferred: ' <<< "$plan")"
+expect "a script on a planned image before one adding a build" "run: $uid $snapshot $exchange" \
+    "$(integration_plan 1300 2100 warm "$exchange $snapshot $uid" testnet=500 mainnet=100 | tail -1)"
+plan="$(integration_plan 900 1200 warm "$snapshot $exchange" testnet=500 mainnet=100)"
+expect "a build that would starve the planned script defers its script" "run: $exchange" "${plan##*$'\n'}"
+expect "a build that would starve the planned script: the reason" \
+    "deferred: $snapshot: out_of_time: its testnet image's build (500s) would leave 300s, less than the 600s a planned script needs, 900s left of the 1200s budget (HIVE_INTEGRATION_BUDGET)" \
+    "$(grep '^deferred: ' <<< "$plan")"
+expect "no cache and too little time for the cold build measured here: skipped, naming sccache" \
+    "sccache_unreachable: no compiler cache answers, and 900s left of the 1200s budget cannot fit the cheapest script, $uid, after its cold testnet image's build (920s)" \
+    "$(integration_plan 900 1200 cold "$exchange $uid" testnet=800 mainnet=700 | tail -1)"
+expect "builds not measured here are tried, however cold" "run: $uid $snapshot $exchange" \
+    "$(integration_plan 900 1200 cold "$exchange $snapshot $uid" testnet= mainnet= | tail -1)"
+expect "too little time for the script alone: out of time, not sccache" \
+    "out_of_time: 100s left of the 400s budget (HIVE_INTEGRATION_BUDGET), the cheapest script, $uid, and its testnet image's build need 120s" \
+    "$(integration_plan 100 400 cold "$uid" testnet= | tail -1)"
+integration_plan 900 1200 warm "$uid" testnet='>600' > /dev/null
+expect "a build cut off here after less than the time left is tried again" 0 "$?"
+integration_plan 900 1200 warm "$uid" testnet='>800' > /dev/null
+expect "a build cut off here after more than the time left is not" 1 "$?"
 redis_answers redis://127.0.0.1:1
 expect "nothing listening is no cache" 1 "$?"
+expect "nothing listening is a cold cache" cold "$(HIVE_SCCACHE_REDIS=redis://127.0.0.1:1 compiler_cache)"
+
+# --- build_seconds, record_build_seconds and integration_preconditions --------
+# Against a docker stub: `info` exits STUB_DOCKER_INFO, `volume ls` lists
+# STUB_BUILD_VOLUME, and every other call is logged to STUB_LOG.
+mkdir -p "$scratch/stub" "$scratch/dockercfg/cli-plugins"
+cat > "$scratch/stub/docker" <<'STUB'
+#!/usr/bin/env bash
+case "$1 ${2:-}" in
+    "info "*) exit "${STUB_DOCKER_INFO:-0}" ;;
+    "volume ls") [ -z "${STUB_BUILD_VOLUME:-}" ] || echo "$STUB_BUILD_VOLUME" ;;
+    *) echo "$*" >> "$STUB_LOG" ;;
+esac
+STUB
+printf '#!/bin/sh\n' > "$scratch/dockercfg/cli-plugins/docker-compose"
+chmod +x "$scratch/stub/docker" "$scratch/dockercfg/cli-plugins/docker-compose"
+export STUB_LOG="$scratch/stub.log"
+stub_path="$scratch/stub:$PATH"
+measured() {  # VOLUME: what build_seconds reads from it
+    STUB_BUILD_VOLUME="$1" PATH="$stub_path" build_seconds testnet warm
+}
+expect "a measured build" 412 "$(measured hive-integration-build-testnet-warm-412)"
+expect "a build cut off" ">600" "$(measured hive-integration-build-testnet-warm-gt600)"
+expect "none measured" "" "$(measured "")"
+expect "a volume not naming seconds" "" "$(measured hive-integration-build-testnet-warm-x)"
+recorded() {  # PREVIOUS_VOLUME RC SECONDS: the volume record_build_seconds creates
+    : > "$STUB_LOG"
+    STUB_BUILD_VOLUME="$1" PATH="$stub_path" step_skipped=77 record_build_seconds testnet warm "$2" "$3"
+    sed -n 's/^volume create .* //p' "$STUB_LOG"
+}
+expect "a build recorded" hive-integration-build-testnet-warm-412 "$(recorded hive-integration-build-testnet-warm-900 0 412)"
+expect "a cut-off build recorded as taking longer" hive-integration-build-testnet-warm-gt600 \
+    "$(recorded hive-integration-build-testnet-warm-400 77 600)"
+expect "a cut-off build shorter than one measured is not recorded" "" \
+    "$(recorded hive-integration-build-testnet-warm-700 77 600)"
+expect "a build skipped before it started is not recorded" "" "$(recorded "" 77 0)"
+expect "a failed build is not recorded" "" "$(recorded "" 1 300)"
+preconditions() {  # PRELUDE ENV...: "LAST LINE|EXIT" of integration_preconditions, 900 s left, cold
+    local prelude="$1"; shift
+    env PATH="$stub_path" DOCKER_CONFIG="$scratch/dockercfg" HIVE_INTEGRATION_BUDGET=1200 "$@" bash -c \
+        '. "$1/integration.sh"; eval "$2"; out="$(integration_preconditions 900 cold test_hived_uid.sh)"; echo "${out##*$'"'\n'"'}|$?"' \
+        _ "$here" "$prelude"
+}
+expect "preconditions: docker unreachable" "docker_capability_unavailable: no docker daemon reachable here|1" \
+    "$(preconditions : STUB_DOCKER_INFO=1)"
+expect "preconditions: no compose plugin" "docker_compose_unavailable: no docker compose plugin here|1" \
+    "$(preconditions 'compose_plugin() { return 1; }')"
+expect "preconditions: they hold, the plan last" \
+    "run: test_hived_uid.sh|0" \
+    "$(preconditions :)"
+expect "preconditions: the time measured here" \
+    "sccache_unreachable: no compiler cache answers, and 900s left of the 1200s budget cannot fit the cheapest script, test_hived_uid.sh, after its cold testnet image's build (1120s)|1" \
+    "$(preconditions : STUB_BUILD_VOLUME=hive-integration-build-testnet-cold-1000)"
+
+# --- docker-shim/docker, ahead of a docker that prints its arguments ----------
+mkdir -p "$scratch/cli"
+printf '#!/usr/bin/env bash\nprintf "[%%s]" "$@"\n' > "$scratch/cli/docker"
+chmod +x "$scratch/cli/docker"
+shim() {  # OWNER ARGS...: what the docker behind the shim is called with
+    local owner="$1"; shift
+    env AIDEV_ENV_CONTAINER_OWNER="$owner" PATH="$here/docker-shim:$scratch/cli:$PATH" docker "$@"
+}
+expect "shim: run, owned" "[run][--label][aidev.env-container.owner=w 1][--oom-score-adj][900][--rm][img][a b]" \
+    "$(shim "w 1" run --rm img "a b")"
+expect "shim: create, owned" "[create][--label][aidev.env-container.owner=w][--oom-score-adj][900][img]" \
+    "$(shim w create img)"
+expect "shim: build, owned" "[build][--label][aidev.env-container.owner=w][-q][-t][t][.]" "$(shim w build -q -t t .)"
+expect "shim: other commands, owned" "[ps][-aq][--filter][name=run]" "$(shim w ps -aq --filter name=run)"
+expect "shim: run, no owner" "[run][--rm][img]" "$(shim "" run --rm img)"
+expect "shim: build, no owner" "[build][-q][.]" "$(shim "" build -q .)"
+expect "shim: no docker behind it" 127 "$(PATH="$here/docker-shim:/nonexistent" "$here/docker-shim/docker" ps 2> /dev/null; echo $?)"
 
 # --- instance_base_changed and diff_base, in a scratch repository -------------
 repo="$scratch/repo"
@@ -135,5 +253,170 @@ expect "diff base from the workflow" "AIDEV_IMPLEMENT_BASE_SHA=$base" \
     "$(AIDEV_BASE_REF= AIDEV_IMPLEMENT_BASE_SHA=$base diff_base)"
 AIDEV_BASE_REF=nonexistent AIDEV_IMPLEMENT_BASE_SHA= diff_base > /dev/null
 expect "no base resolves" 1 "$?"
+
+# --- integration-select.sh, run from the scratch repository -------------------
+cp "$here/integration.sh" "$here/integration-select.sh" .aidev/
+mkdir -p libraries/chain docker tests/integration
+echo evaluator > libraries/chain/evaluator.cpp
+git add -A && git commit -qm select-base
+select_base="$(git rev-parse HEAD)"
+# The host as the docker stub has it: a daemon, the compose plugin, no compiler
+# cache, no build measured, and the suite's budget.
+run_select() {  # SELECT_ENV...: "EXIT|LAST LINE"
+    local output rc
+    output="$(env AIDEV_BASE_REF="$select_base" AIDEV_IMPLEMENT_BASE_SHA= HIVE_AIDEV_INTEGRATION=1 \
+        PATH="$stub_path" DOCKER_CONFIG="$scratch/dockercfg" HIVE_SCCACHE_REDIS=redis://127.0.0.1:1 \
+        HIVE_INTEGRATION_BUDGET=1200 "$@" .aidev/integration-select.sh 2>&1)"; rc=$?
+    echo "$rc|${output##*$'\n'}"
+}
+result="$(run_select HIVE_AIDEV_INTEGRATION=0)"
+expect "select: off" "77|off" "${result%%:*}"
+result="$(run_select AIDEV_BASE_REF=nonexistent)"
+expect "select: no diff base" "77|no diff base" "${result%%:*}"
+echo changed >> libraries/chain/evaluator.cpp
+result="$(run_select)"
+expect "select: an evaluator change selects nothing" \
+    "77|the diff from AIDEV_BASE_REF=$select_base selects no tests/integration script" "$result"
+git checkout -q libraries
+echo ci-only > tests/integration/test_ci_only.sh
+result="$(run_select)"
+expect "select: only a script needing CI's fixtures" \
+    "77|the diff from AIDEV_BASE_REF=$select_base selects only scripts needing fixtures only CI has: test_ci_only.sh" \
+    "$result"
+echo image > docker/x.sh
+result="$(run_select)"
+expect "select: docker/ selects the image's scripts" \
+    "0|selected: test_hived_uid.sh test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh" "$result"
+rm docker/x.sh
+echo "# instance" >> Dockerfile
+result="$(run_select)"
+expect "select: Dockerfile selects the image's scripts" \
+    "0|selected: test_hived_uid.sh test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh" "$result"
+git checkout -q Dockerfile
+echo more >> scripts/setup_ubuntu.sh
+result="$(run_select)"
+expect "select: setup_ubuntu.sh selects the image's scripts" \
+    "0|selected: test_hived_uid.sh test_snapshot_bootstrap.sh test_exchange_node_block_log_pruning.sh" "$result"
+git checkout -q scripts
+echo "# exchange" > tests/integration/conftest.sh
+result="$(run_select HIVE_INTEGRATION_BUDGET=2100 STUB_BUILD_VOLUME=hive-integration-build-mainnet-cold-758)"
+expect "select: the exchange script after a measured mainnet build, in the suite's budget" \
+    "0|selected: test_exchange_node_block_log_pruning.sh" "$result"
+echo image > docker/x.sh
+output="$(env AIDEV_BASE_REF="$select_base" AIDEV_IMPLEMENT_BASE_SHA= HIVE_AIDEV_INTEGRATION=1 PATH="$stub_path" \
+    DOCKER_CONFIG="$scratch/dockercfg" HIVE_SCCACHE_REDIS=redis://127.0.0.1:1 HIVE_INTEGRATION_BUDGET=2100 \
+    STUB_BUILD_VOLUME=hive-integration-build-testnet-cold-800 .aidev/integration-select.sh 2>&1)"
+expect "select: the scripts that fit, when not all do" \
+    "0|selected: test_hived_uid.sh test_snapshot_bootstrap.sh" "$?|${output##*$'\n'}"
+expect "select: the deferred script named" \
+    "deferred: test_exchange_node_block_log_pruning.sh: out_of_time: it needs 2200s after the builds planned ahead of it, 1800s left of the 2100s budget (HIVE_INTEGRATION_BUDGET)" \
+    "$(grep '^deferred: ' <<< "$output")"
+rm docker/x.sh tests/integration/conftest.sh
+echo uid >> tests/integration/test_hived_uid.sh
+result="$(run_select STUB_DOCKER_INFO=1)"
+expect "select: no docker daemon" \
+    "77|skipped: docker_capability_unavailable: no docker daemon reachable here (selected: test_hived_uid.sh)" "$result"
+result="$(run_select HIVE_INTEGRATION_BUDGET=400)"
+expect "select: a budget too small for the script" \
+    "77|skipped: out_of_time: 100s left of the 400s budget (HIVE_INTEGRATION_BUDGET), the cheapest script, test_hived_uid.sh, and its testnet image's build need 120s (selected: test_hived_uid.sh)" \
+    "$result"
+result="$(run_select STUB_BUILD_VOLUME=hive-integration-build-testnet-cold-1000)"
+expect "select: a cold build measured here longer than the budget" \
+    "77|skipped: sccache_unreachable: no compiler cache answers, and 900s left of the 1200s budget cannot fit the cheapest script, test_hived_uid.sh, after its cold testnet image's build (1120s) (selected: test_hived_uid.sh)" \
+    "$result"
+result="$(run_select)"
+expect "select: test_hived_uid.sh, on a host that can run it" "0|selected: test_hived_uid.sh" "$result"
+rm tests/integration/test_hived_uid.sh
+expect "select: writes no test results" "" "$(git status --porcelain --ignored -- test-results)"
+
+# --- the suite's verdict when it runs no script: run-checks.sh in the scratch repository
+# run-checks.sh mirrors the checkout into /home/hived/source when it can; not this one.
+if [ -w /home/hived ] && [ ! -e /home/hived/source ]; then
+    echo "skip the suite's verdict: run-checks.sh would mirror this scratch checkout into /home/hived/source"
+else
+    cp "$here/run-checks.sh" "$here/build-jobs.sh" "$here/junit_cases.py" .aidev/
+    echo uid >> tests/integration/test_hived_uid.sh
+    run_suite() {  # ENV...: "EXIT|LAST LINE" of the suite as the `integration` suite runs it, its output in $scratch/suite.log
+        local rc
+        env AIDEV_BASE_REF="$select_base" AIDEV_IMPLEMENT_BASE_SHA= HIVE_AIDEV_INTEGRATION=1 \
+            PATH="$stub_path" DOCKER_CONFIG="$scratch/dockercfg" HIVE_SCCACHE_REDIS=redis://127.0.0.1:1 "$@" \
+            .aidev/run-checks.sh full-integration integration > "$scratch/suite.log" 2>&1; rc=$?
+        echo "$rc|$(tail -1 "$scratch/suite.log")"
+    }
+    expect "suite: no docker daemon at run time: skipped, not passed" \
+        "77|skipped: integration-test_ci_only: needs fixtures only CI has; run in GitLab CI; integration: docker_capability_unavailable: no docker daemon reachable here (selected: test_ci_only.sh test_hived_uid.sh)" \
+        "$(run_suite STUB_DOCKER_INFO=1)"
+    expect "suite: each skipped script's reason in its summary" 1 \
+        "$(grep -cx '  integration-test_ci_only: needs fixtures only CI has; run in GitLab CI' "$scratch/suite.log")"
+    expect "suite: the junit report has them skipped" 2 "$(grep -c '<skipped ' test-results/full-integration/junit.xml)"
+    expect "suite: off: skipped" \
+        "77|skipped: integration: off: HIVE_AIDEV_INTEGRATION is not 1 (.aidev/README.md, Integration scripts)" \
+        "$(run_suite HIVE_AIDEV_INTEGRATION=0)"
+    rm -rf tests/integration/test_hived_uid.sh test-results
+fi
+
+# --- hived_image's ownership hand-back, against a stub run-checks.sh -----------
+# The scratch checkout lives in the real one's test-results/, which the daemon
+# sees (host_path); a temporary directory may be this container's own.
+runtime="$(grep -o 'registry[^"]*aidev-tests@sha256:[0-9a-f]*' "$here/project.yaml")"
+if ! docker info > /dev/null 2>&1 || ! docker image inspect "$runtime" > /dev/null 2>&1; then
+    echo "skip hived_image ownership: no docker daemon, or no $runtime here"
+else
+    mkdir -p "$here/../test-results"
+    checkout="$(mktemp -d "$here/../test-results/integration-test-XXXXXX")"
+    checkout_on_host=""
+    trap 'rm -rf "$scratch"; rm -rf "$checkout" 2> /dev/null || { [ -n "$checkout_on_host" ] && docker run --rm --user 0 \
+        -v "$checkout_on_host:/c" --entrypoint bash "$runtime" -c "rm -rf /c/* /c/.[!.]*"; rm -rf "$checkout"; }' EXIT
+    cd "$checkout" && git init -q . || exit 1
+    mkdir -p .aidev
+    cat > .aidev/run-checks.sh <<'STUB'
+#!/usr/bin/env bash
+# What the build leaves, then the way the stub was told to end: .aidev/stub-end.
+mkdir -p "test-results/$1/bin" && echo hived > "test-results/$1/bin/hived"
+case "$(cat .aidev/stub-end)" in
+    fail) echo "[609/609] failed" > "test-results/$1/$2.log"; exit 1 ;;
+    grow) while :; do echo "[607/609]" >> "test-results/$1/$2.log"; sleep 0.2; done ;;
+    oom) echo "[607/609]" > "test-results/$1/$2.log"; x="$(head -c 1000000000 /dev/zero | tr '\0' x)" ;;
+esac
+STUB
+    chmod +x .aidev/run-checks.sh
+    touch .gitlab-ci.yaml
+    out="$PWD/test-results/full-integration" step_skipped=77 integration_prefix="hive-integration-test-$$"
+    mkdir -p "$out"
+    if ! read_host_mountinfo "$runtime" || ! host_sees "$PWD" .aidev/run-checks.sh "$runtime"; then
+        echo "skip hived_image ownership: the checkout's path on the docker daemon's host does not resolve"
+    else
+        checkout_on_host="$(on_host "$PWD")"
+        built="$PWD/test-results/full-integration-hived-testnet"
+        not_mine() { find "$PWD/test-results" ! -uid "$(id -u)" | head -3 | tr '\n' ' '; }
+        build_ending() {  # END DEADLINE_SECONDS: hived_image's exit, the build container ended by END
+            echo "$1" > .aidev/stub-end
+            rm -rf "$built"
+            integration_deadline_at=$(( $(date +%s) + $2 ))
+            hived_image testnet "$runtime" unused-tag 0 > "$scratch/hived_image.log" 2>&1
+        }
+
+        build_ending fail 600; rc=$?
+        expect "a failed build: its exit" 1 "$rc"
+        expect "a failed build: its output kept" "bin/hived hived-testnet.log" \
+            "$(cd "$built" && find . -type f | sed 's|^\./||' | sort | tr '\n' ' ' | sed 's/ $//')"
+        expect "a failed build: nothing left to another user" "" "$(not_mine)"
+
+        build_ending grow 600 & pid=$!
+        for _ in $(seq 100); do [ "$(wc -l 2> /dev/null < "$built/hived-testnet.log" || echo 0)" -ge 3 ] && break; sleep 0.5; done
+        docker kill "$integration_prefix-build-testnet" > /dev/null
+        wait "$pid"; rc=$?
+        expect "a build killed mid-build: its exit" 137 "$rc"
+        expect "a build killed mid-build: nothing left to another user" "" "$(not_mine)"
+
+        build_ending grow 5; rc=$?
+        expect "a build cut off by its timeout: skipped" 77 "$rc"
+        expect "a build cut off by its timeout: nothing left to another user" "" "$(not_mine)"
+
+        AIDEV_ENV_CONTAINER_MEMORY_BYTES=$(( 128 * 1024 * 1024 )) build_ending oom 600; rc=$?
+        expect "a build OOM-killed at its cap: its exit" 137 "$rc"
+        expect "a build OOM-killed at its cap: nothing left to another user" "" "$(not_mine)"
+    fi
+fi
 
 [ "$failures" -eq 0 ] && echo "all passed" || { echo "$failures failed"; exit 1; }

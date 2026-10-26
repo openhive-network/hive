@@ -51,7 +51,7 @@
 
 namespace hive { namespace plugins { namespace chain {
 
-#define BENCHMARK_FILE_NAME "replay_benchmark.json"
+#define BENCHMARK_FILE_NAME "replay_benchmark.jsonl"
 
 using namespace hive;
 
@@ -61,6 +61,7 @@ using hive::chain::block_id_type;
 using index_memory_details_cntr_t = hive::utilities::benchmark_dumper::index_memory_details_cntr_t;
 using comment_archive_details_t = hive::utilities::benchmark_dumper::comment_archive_details_t;
 using get_stat_details_t = hive::utilities::benchmark_dumper::get_stat_details_t;
+using summary_type = hive::utilities::benchmark_dumper::summary_type;
 
 #define NUM_THREADS 1
 
@@ -129,6 +130,7 @@ class chain_plugin_impl
 
     void write_default_database_config( bfs::path& p );
     void setup_benchmark_dumper();
+    void dump_benchmark_summary( summary_type summary );
 
     void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip );
     bool push_block( const block_flow_control& block_ctrl, uint32_t skip );
@@ -480,7 +482,10 @@ void chain_plugin_impl::start_write_processing()
         {
           if( this_->last_pushed_block_was_before_checkpoint )
           {
-            wlog( "main writer loop interrupted before last checkpoint was crossed and normal validation restored" );
+            if( this_->db.head_block_num() >= this_->checkpoints.rbegin()->first )
+              ilog( "Final checkpoint reached, normal block validation restored on exit." );
+            else
+              wlog( "main writer loop interrupted before last checkpoint was crossed and normal validation restored" );
             this_->last_pushed_block_was_before_checkpoint = false;
             this_->db.set_revision( this_->db.head_block_num() );
           }
@@ -506,6 +511,8 @@ void chain_plugin_impl::start_write_processing()
       theApp.notify_status( "syncing" );
       ilog( "Write processing thread started." );
       bool is_syncing = is_p2p_enabled;
+      // phase of work in progress, its summary is dumped when it ends
+      std::optional< summary_type > benchmark_phase = is_syncing ? summary_type::sync : summary_type::live;
       if( !is_syncing )
       {
         // Under the write lock: unit-test fixtures also call notify_end_of_syncing() right after
@@ -617,9 +624,9 @@ void chain_plugin_impl::start_write_processing()
           cumulative_time_waiting_for_locks += write_lock_acquisition_time;
 
           if( write_lock_acquisition_time > fc::milliseconds( 50 ) )
-            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}μs exceeds warning threshold of 50ms",
+            wlog("write_lock_acquisition_time = ${write_lock_aquisition_time}us exceeds warning threshold of 50ms",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
-          fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}μs",
+          fc_dlog(fc::logger::get("chainlock"), "write_lock_acquisition_time = ${write_lock_aquisition_time}us",
                  ("write_lock_aquisition_time", write_lock_acquisition_time.count()));
           STATSD_START_TIMER( "chain", "lock_time", "write_lock", 1.0f, theApp )
           while (true)
@@ -639,6 +646,8 @@ void chain_plugin_impl::start_write_processing()
                 if( is_syncing )
                 {
                   is_syncing = false;
+                  dump_benchmark_summary( summary_type::sync );
+                  benchmark_phase.reset(); // writer stops after reaching stop-at-block, so no other phase follows
                   db.notify_end_of_syncing();
                 }
                 theApp.notify_status( "entering API mode" );
@@ -659,7 +668,7 @@ void chain_plugin_impl::start_write_processing()
               if (write_lock_held_duration > fc::milliseconds(write_lock_hold_time))
               {
                 wlog("Stopped processing write_queue before empty because we exceeded ${write_lock_hold_time}ms, "
-                  "held lock for ${write_lock_held_duration}μs, ${i} items left in queue",
+                  "held lock for ${write_lock_held_duration}us, ${i} items left in queue",
                   (write_lock_hold_time)
                   ("write_lock_held_duration", write_lock_held_duration.count())
                   ("i", priority_write_queue.size() + write_queue.size()));
@@ -689,7 +698,7 @@ void chain_plugin_impl::start_write_processing()
               {
                 fc::microseconds write_queue_processed_duration = fc::time_point::now() - write_lock_acquired_time;
                 //if (write_queue_processed_duration > fc::milliseconds(500))
-                  fc_dlog(fc::logger::get("chainlock"), "Emptied write_queue of ${write_queue_items_processed} items after ${write_queue_processed_duration}µs (${per_item}µs/item)",
+                  fc_dlog(fc::logger::get("chainlock"), "Emptied write_queue of ${write_queue_items_processed} items after ${write_queue_processed_duration}us (${per_item}us/item)",
                           (write_queue_items_processed)("write_queue_processed_duration", write_queue_processed_duration.count())
                           ("per_item", write_queue_processed_duration.count() / write_queue_items_processed));
                 break;
@@ -714,6 +723,8 @@ void chain_plugin_impl::start_write_processing()
         if (is_syncing && get_time_gap_to_live_sync( head_block_time ).count() < 0) //we're syncing, see if we are close enough to move to live sync
         {
           is_syncing = false;
+          dump_benchmark_summary( summary_type::sync );
+          benchmark_phase = summary_type::live;
           db.notify_end_of_syncing();
           default_block_writer->set_is_at_live_sync();
           theApp.notify_status("entering live mode");
@@ -747,6 +758,8 @@ void chain_plugin_impl::start_write_processing()
           cumulative_times_last_reported_time = fc::time_point::now();
         }
       } // while running
+      if( benchmark_phase )
+        dump_benchmark_summary( *benchmark_phase );
       ilog("Write processing thread finished.");
       if( exit_at_block > 0 && exit_at_block == last_block_number )
       {
@@ -1022,6 +1035,8 @@ void chain_plugin_impl::open()
 
   try
   {
+    setup_benchmark_dumper();
+
     if( load_snapshot )
     {
       FC_ASSERT( snapshot_provider != nullptr, "Snapshot loading requested, but no snapshot provider is registered" );
@@ -1086,10 +1101,6 @@ void chain_plugin_impl::open()
         refuse_unopenable_state();
       throw;
     }
-
-    setup_benchmark_dumper();
-    if( dump_memory_details )
-      dumper.dump( true, db.head_block_num(), get_stat_details );
   } FC_LOG_AND_RETHROW()
 
   was_error = false;
@@ -1476,17 +1487,7 @@ bool chain_plugin_impl::replay_blockchain( const block_read_i& block_reader, hiv
     uint32_t last_block_number = 0;
     last_block_number = reindex( db_open_args, block_reader, thread_pool );
 
-    if( benchmark_interval > 0 )
-    {
-      const hive::utilities::benchmark_dumper::measurement& total_data = dumper.dump( dump_memory_details, db.head_block_num(), get_stat_details );
-      ilog( "Performance report (total). Blocks: ${b}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes. Free space in SHM: ${sf} kilobytes.",
-          ("b", total_data.block_number)
-          ("rt", total_data.real_ms)
-          ("ct", total_data.cpu_ms)
-          ("cm", total_data.current_mem)
-          ("pm", total_data.peak_mem)
-          ("sf", total_data.shm_free) );
-    }
+    dump_benchmark_summary( summary_type::replay );
 
     if( stop_replay_at > 0 && stop_replay_at == last_block_number )
     {
@@ -1618,8 +1619,33 @@ void chain_plugin_impl::setup_benchmark_dumper()
 {
   if( not dumper.is_initialized() )
   {
-    dumper.initialize( dump_memory_details ? BENCHMARK_FILE_NAME : "" );
+    if( dump_memory_details )
+    {
+      const bfs::path benchmark_file = theApp.data_dir() / BENCHMARK_FILE_NAME;
+      ilog( "Database objects memory usage info will be dumped to ${f}", ( "f", benchmark_file.string() ) );
+      dumper.initialize( benchmark_file.string() );
+    }
+    else
+    {
+      dumper.initialize();
+    }
   }
+}
+
+void chain_plugin_impl::dump_benchmark_summary( summary_type summary )
+{
+  if( benchmark_interval == 0 && !dump_memory_details )
+    return;
+
+  const hive::utilities::benchmark_dumper::measurement& data = dumper.dump( summary, db.head_block_num(), get_stat_details );
+  ilog( "Performance report (${s} summary). Blocks: ${b}. Elapsed time: ${rt} ms (real), ${ct} ms (cpu). Memory usage: ${cm} (current), ${pm} (peak) kilobytes. Free space in SHM: ${sf} kilobytes.",
+    ("s", summary)
+    ("b", data.block_number)
+    ("rt", data.real_ms)
+    ("ct", data.cpu_ms)
+    ("cm", data.current_mem)
+    ("pm", data.peak_mem)
+    ("sf", data.shm_free) );
 }
 
 void chain_plugin_impl_deleter::operator()( chain_plugin_impl* impl ) const
@@ -1713,7 +1739,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("validate-during-replay", bpo::bool_switch()->default_value(false), "Runs all validations that are normally turned off during replay")
       ("advanced-benchmark", "Make profiling for every plugin.")
       ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
-      ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info. Use set-benchmark-interval to set dump interval.")
+      ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info to " BENCHMARK_FILE_NAME " in data dir, one json record per line: every set-benchmark-interval blocks and summary at the end of each phase (initial, replay, sync, live).")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
       ("validate-database-invariants", bpo::bool_switch()->default_value(false), "Validate all supply invariants check out" )
       ("comments-rocksdb-path", bpo::value<bfs::path>()->default_value("comments-rocksdb-storage"), "the location of the comments data files" )
@@ -2078,6 +2104,9 @@ void chain_plugin::plugin_startup()
       force_replay_after_snapshot_loading = true; //Replaying is forced, because after snapshot loading, node should work in synchronization mode.
   }
 
+  // state is opened (and possibly loaded from snapshot), but no block was applied to it yet
+  my->dump_benchmark_summary( summary_type::initial );
+
   if( !my->checkpoints.empty() )
   {
     // log something to let the node operator know that checkpoints are in force
@@ -2192,7 +2221,7 @@ bool chain_plugin::accept_block( const std::shared_ptr< p2p_block_flow_control >
       float microseconds_per_block = (float)duration.count() / 10000.f;
       std::ostringstream microseconds_per_block_stream;
       microseconds_per_block_stream << std::setprecision(2) << std::fixed << microseconds_per_block;
-      ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p} --- ${microseconds_per_block}µs/block, avg. size ${s}, avg. tx count ${c}",
+      ilog("Syncing Blockchain --- Got block: #${n} time: ${t} producer: ${p} --- ${microseconds_per_block}us/block, avg. size ${s}, avg. tx count ${c}",
            ("t", block.timestamp)("n", block.block_num())("p", block.witness)("microseconds_per_block", microseconds_per_block_stream.str())
            ("s", (my->sync_progress->total_block_size+5000)/10000)("c", (my->sync_progress->total_tx_count+5000)/10000));
     }

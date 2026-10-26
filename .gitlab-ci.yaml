@@ -9,12 +9,6 @@ stages:
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
 
-  # Docker image tags from common-ci-configuration. These images are tagged with the commit
-  # they were built from and rebuilt only when their Dockerfiles change: use the newest build
-  # whose Dockerfiles match COMMON_CI_REF (see prepare_data_image_job.yml).
-  DOCKER_BUILDER_TAG: "89e7817b463ec2c48c4bb76da2df63d9749d7b2a"
-  DOCKER_DIND_TAG: "89e7817b463ec2c48c4bb76da2df63d9749d7b2a"
-
   # Fetch strategy reuses workspace between jobs, reducing GitLab server load.
   # Full clone (depth 0) enables efficient incremental fetches - shallow clones
   # don't reduce server CPU and make fetch less effective.
@@ -623,13 +617,20 @@ static_linking_check:
   tags:
     - public-runner-docker
 
+# The ruff hooks are `language: system`: they run python-test-tools' ruff, so only
+# the static-analysis group (pre-commit) is installed next to it.
 pre_commit_checks:
   stage: static_code_analysis
-  variables:
-    POETRY_INSTALL_ARGS: --only pre-commit
+  image: "${PYTHON_TEST_TOOLS_IMAGE}"
   extends:
     - .pre_commit_checks_template
     - .python_static_analysis_configuration
+  before_script:
+    - !reference [.configuration_template, before_script]
+    - !reference [.update_deps_for_static_analysis, script]
+    - poetry -C "${PYPROJECT_DIR}" install --only static-analysis --no-root
+    - ruff --version
+    - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
   artifacts:
     paths:
       - tests/python/hive-local-tools/poetry.lock
@@ -752,8 +753,9 @@ quick_test_setup:
     - cd beem
     - python3 -m pip install .[tests]
     - python3 -m pip install .
-    # Reinstall pytest 8.3.5 for Python 3.14 compatibility (beem installs pytest 7.2.2)
-    - pip3 install pytest==8.3.5
+    # beem[tests] installs pytest 7.2.2, which does not run on Python 3.14: put back
+    # the versions hive-local-tools' lock installed
+    - poetry -C "${PYPROJECT_DIR}" install
     - cd ..
     - mkdir -p build/tests/hive-node-data
     - cd tests/python/functional/beem_tests
@@ -1303,6 +1305,30 @@ several_node_restarts_tests:
   tags:
     - public-runner-docker
 
+# Compares the number of objects in every index, dumped every 100k blocks of the 5M replay made by prepare_hived_data
+# (hived --dump-memory-details), with the pattern
+memory_details_mainnet_5m_tests:
+  extends:
+    - .job-defaults
+    - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
+  stage: test
+  image: "$CI_BASE_IMAGE"
+  needs:
+    - job: prepare_hived_data
+      artifacts: true  # replay_benchmark.jsonl
+  variables:
+    GIT_SUBMODULE_STRATEGY: "none"  # only the comparison script and the pattern are needed
+  script:
+    - python3 tests/integration/dump_memory_details/compare_memory_details.py
+      tests/integration/dump_memory_details/mainnet_5m.pat.json replay_benchmark.jsonl
+  artifacts:
+    paths:
+      - replay_benchmark.jsonl
+    when: always
+    expire_in: 1 week
+  tags:
+    - public-runner-docker
+
 artifacts_generation_tests:
   extends:
     - .job-defaults
@@ -1405,6 +1431,8 @@ comment_cashout_tests:
 
 test-wax-spec-package:
   extends: .node_based_job_base
+  # TypeScript (tsc) comes with node-test-tools, not with the emsdk image
+  image: "${NODE_TEST_TOOLS_IMAGE}"
   stage: test
   rules:
     # Run in QUICK_TEST mode if requested in QUICK_TEST_JOBS
@@ -1452,7 +1480,8 @@ test-wax-spec-package:
       }
       if (lastError) throw lastError;
       EOT
-    - tsc -t esnext -m esnext --moduleResolution bundler index.ts # Test if it compiles
+    # Not strict, the default before TypeScript 6: @hiveio/wax's declarations import the untyped 'events' package
+    - tsc -t esnext -m esnext --moduleResolution bundler --strict false index.ts # Test if it compiles
     - node index.js # Test if it runs without errors
   needs:
     - job: generate-wax-spec
