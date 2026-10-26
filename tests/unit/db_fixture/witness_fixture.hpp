@@ -198,6 +198,17 @@ struct witness_fixture : public hived_fixture
     schedule_blocks( 1 );
   }
 
+  // debug_update() pushes a transaction and changes state, so when called from a thread other
+  // than the writer it has to hold the write lock (like debug_node_api does), otherwise it races
+  // with transaction and block processing done by chain_plugin
+  template< typename Lambda >
+  void schedule_debug_update( Lambda&& callback ) const
+  {
+    if( theApp.is_interrupt_request() )
+      return;
+    db->with_write_lock( [&]() { db_plugin->debug_update( std::forward< Lambda >( callback ) ); } );
+  }
+
   void schedule_account_create( const account_name_type& name ) const
   {
     account_create_operation create;
