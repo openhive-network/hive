@@ -146,7 +146,7 @@ class Comment:
         author: CommentAccount | None = None,
         child: Comment | None = None,
         parent: Comment | None = None,
-    ):
+    ) -> None:
         self.__node = node
         self.__wallet = wallet
         self.__author = author
@@ -263,12 +263,12 @@ class Comment:
             if self.__author is None:
                 self.__author = self.__create_comment_account()
 
-        def reply_to_parent_as_same_account():
+        def reply_to_parent_as_same_account() -> None:
             assert self.parent is not None
             self.__author = self.parent.author_obj
             self.__permlink = f"self-response-{self.parent.permlink}"
 
-        def reply_to_parent_as_other_account():
+        def reply_to_parent_as_other_account() -> None:
             assert self.parent is not None
             if self.__author is None:
                 self.__author = self.__create_comment_account()
@@ -527,7 +527,7 @@ class Comment:
         hbd_percentage: int,
         vesting_percentage: int,
         benefactor: str | None = None,
-    ):
+    ) -> None:
         if reward_type == "author":
             assert benefactor is None, "You have not to provide benefactor."
 
@@ -546,7 +546,7 @@ class Comment:
             f" VESTING_reward_as_hive = {vesting_payout_as_hive}"
         )
 
-    def verify_balances(self):
+    def verify_balances(self) -> None:
         self.__author.assert_reward_balance(self.node, "hbd")
         self.__author.assert_reward_balance(self.node, "vesting")
         if self.__benefactors:
@@ -558,7 +558,7 @@ class Comment:
 class Vote:
     account_counter = 0
 
-    def __init__(self, comment_obj: Comment, voter: Literal["random", "same_as_comment"] | CommentAccount):
+    def __init__(self, comment_obj: Comment, voter: Literal["random", "same_as_comment"] | CommentAccount) -> None:
         self.__comment_obj = comment_obj
         self.__voter = voter
         self.__vote_transaction: VoteTransaction | None = None

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 class PowerDown(Operation):
     _update_timestamp: datetime = None
 
-    def __init__(self, node, wallet, account_name, vesting_shares, update: bool = False):
+    def __init__(self, node, wallet, account_name, vesting_shares, update: bool = False) -> None:
         super().__init__(node, wallet)
         self._name = account_name
         self._total_power_down_vesting_shares = vesting_shares
@@ -88,7 +88,7 @@ class PowerDown(Operation):
         self._wallet.api.withdraw_vesting(self._name, tt.Asset.Vest(0))
         self._node.wait_for_irreversible_block()
 
-    def update(self, vesting_shares: tt.Asset.VestT):
+    def update(self, vesting_shares: tt.Asset.VestT) -> None:
         self.__init__(self._node, self._wallet, self._name, vesting_shares, update=True)
 
     def execute_next_withdraw(self) -> None:

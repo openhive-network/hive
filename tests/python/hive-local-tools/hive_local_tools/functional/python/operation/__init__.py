@@ -83,7 +83,7 @@ class Account:
     _acc_info: ApiAccountItem = field(init=False)
     _rc_manabar: _RcManabar = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self._name:
             self._rc_manabar = _RcManabar(self._node, self._name)
             self._vote_manabar = _VoteManabar(self._node, self._wallet, self._name)
@@ -236,7 +236,7 @@ class Account:
 
 
 class _BaseManabar(ABC):
-    def __init__(self, node: tt.InitNode, name: str):
+    def __init__(self, node: tt.InitNode, name: str) -> None:
         self._node = node
         self._name = name
         self.__manabar: ExtendedManabar | None = None
@@ -267,7 +267,7 @@ class _BaseManabar(ABC):
     def _get_specific_current_mana(self) -> int:
         """This method should return current state of derived current mana."""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"max_mana: {self.max_mana}, current_mana: {self.current_mana}, last_update_time:"
             f" {datetime.fromtimestamp(self.last_update_time)}"
@@ -288,7 +288,7 @@ class _BaseManabar(ABC):
 
 
 class _RcManabar(_BaseManabar):
-    def __init__(self, node, name):
+    def __init__(self, node, name) -> None:
         super().__init__(node, name)
 
     def _get_specific_manabar(self) -> ExtendedManabar:
@@ -327,7 +327,7 @@ class _RcManabar(_BaseManabar):
 
 
 class _VoteManabarBase(_BaseManabar):
-    def __init__(self, node, wallet: tt.Wallet, name, manabar_type: str):
+    def __init__(self, node, wallet: tt.Wallet, name, manabar_type: str) -> None:
         self._wallet = wallet
         self.__manabar_type = manabar_type
         super().__init__(node, name)
@@ -355,12 +355,12 @@ class _VoteManabarBase(_BaseManabar):
 
 
 class _VoteManabar(_VoteManabarBase):
-    def __init__(self, node, wallet, name):
+    def __init__(self, node, wallet, name) -> None:
         super().__init__(node, wallet, name, "voting_manabar")
 
 
 class _DownvoteManabar(_VoteManabarBase):
-    def __init__(self, node, wallet, name):
+    def __init__(self, node, wallet, name) -> None:
         super().__init__(node, wallet, name, "downvote_manabar")
 
 
@@ -608,7 +608,7 @@ class Proposal:
         self.total_votes = tt.Asset.Vest(int(self._proposal_info.total_votes) / 1_000_000)
         self.status = self._proposal_info.status
 
-    def update_proposal_info(self):
+    def update_proposal_info(self) -> None:
         self.__init__(self._node, self.proposal_id)
 
 

@@ -43,7 +43,7 @@ class RecurrentTransferAccount(Account):
         else:
             raise TypeError("Invalid argument type.")
 
-    def assert_hives_and_hbds_are_not_changed(self):
+    def assert_hives_and_hbds_are_not_changed(self) -> None:
         assert self.hive == get_hive_balance(self._node, self._name), (
             f"The {self._name}` account balance has been changed."
         )
@@ -63,7 +63,7 @@ class RecurrentTransfer:
         recurrence: int,
         executions: int,
         pair_id: int | None = None,
-    ):
+    ) -> None:
         self._wallet = wallet
         self._node = node
         self._from_ = from_
@@ -126,7 +126,7 @@ class RecurrentTransfer:
             for execution_number in range(self._executions)
         ]
 
-    def move_after_last_transfer(self):
+    def move_after_last_transfer(self) -> None:
         """
         Move forward by {recurrence} time from the last scheduled recurring transfer.
         """
@@ -134,7 +134,7 @@ class RecurrentTransfer:
             time_control=tt.StartTimeControl(start_time=self._current_schedule[-1] + tt.Time.hours(self._recurrence))
         )
 
-    def execute_future_transfer(self, execution_date=None):
+    def execute_future_transfer(self, execution_date=None) -> None:
         actual_head_block_time = self._node.get_head_block_time().replace(tzinfo=UTC)
         if not execution_date:
             for num, t in enumerate(self._current_schedule):
@@ -147,7 +147,7 @@ class RecurrentTransfer:
         else:
             self._node.restart(time_control=tt.StartTimeControl(start_time=execution_date))
 
-    def execute_last_transfer(self):
+    def execute_last_transfer(self) -> None:
         self._node.restart(time_control=tt.StartTimeControl(start_time=self._current_schedule[-1]))
         self._node.wait_number_of_blocks(1)
         assert self._node.get_head_block_time().replace(tzinfo=UTC) > self._current_schedule[-1]
@@ -158,15 +158,15 @@ class RecurrentTransfer:
             date for date in self._current_schedule if self._node.get_head_block_time().replace(tzinfo=UTC) < date
         )
 
-    def assert_fill_recurrent_transfer_operation_was_generated(self, expected_vop: int):
+    def assert_fill_recurrent_transfer_operation_was_generated(self, expected_vop: int) -> None:
         err = "virtual operation - `fill_recurrent_transfer_operation` hasn't been generated."
         assert len(get_virtual_operations(self._node, FillRecurrentTransferOperation)) == expected_vop, err
 
-    def assert_failed_recurrent_transfer_operation_was_generated(self, expected_vop: int):
+    def assert_failed_recurrent_transfer_operation_was_generated(self, expected_vop: int) -> None:
         err = "virtual operation - `failed_recurrent_transfer_operation` hasn't been generated."
         assert len(get_virtual_operations(self._node, FailedRecurrentTransferOperation)) == expected_vop, err
 
-    def __assert_minimal_operation_rc_cost(self):
+    def __assert_minimal_operation_rc_cost(self) -> None:
         assert self._rc_cost > 0, "RC cost is less than or equal to zero."
 
     def update(
@@ -174,7 +174,7 @@ class RecurrentTransfer:
         amount: tt.Asset.AnyT = None,
         new_executions_number: int | None = None,
         new_recurrence_time: int | None = None,
-    ):
+    ) -> None:
         self._transaction = getattr(self._wallet.api, self._operation_name)(
             from_=self._from_,
             to=self._to,
