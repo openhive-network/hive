@@ -424,7 +424,8 @@ class Comment:
 
     def assert_options_are_applied(self) -> None:
         comment_content = (
-            self.__node.api.database.get_comment_pending_payouts(comments=[[self.author, self.__permlink]])
+            self.__node.api.database
+            .get_comment_pending_payouts(comments=[[self.author, self.__permlink]])
             .cashout_infos[0]
             .cashout_info
         )
@@ -486,20 +487,18 @@ class Comment:
             ]
             if mode == "generated":
                 assert (
-                    (
-                        beneficiary["account"],
-                        self.permlink,
-                    )
-                    in benefactor_and_permlink
-                ), "Comment_benefactor_reward_operation not generated, but it should have been"
+                    beneficiary["account"],
+                    self.permlink,
+                ) in benefactor_and_permlink, (
+                    "Comment_benefactor_reward_operation not generated, but it should have been"
+                )
             elif mode == "not_generated":
                 assert (
-                    (
-                        beneficiary["account"],
-                        self.permlink,
-                    )
-                    not in benefactor_and_permlink
-                ), "Comment_benefactor_reward_operation generated, but it should have not been"
+                    beneficiary["account"],
+                    self.permlink,
+                ) not in benefactor_and_permlink, (
+                    "Comment_benefactor_reward_operation generated, but it should have not been"
+                )
             else:
                 raise ValueError(f"Unexpected value for 'mode': '{mode}'")
 
@@ -638,12 +637,11 @@ class Vote:
             ) in voter_and_comment_permlink, "Effective_comment_vote_operation not generated, but it should have been"
         elif mode == "not_generated":
             assert (
-                (
-                    self.__voter_obj.name,
-                    self.__comment_obj.permlink,
-                )
-                not in voter_and_comment_permlink
-            ), "Effective_comment_vote_operation generated, but it should have not been"
+                self.__voter_obj.name,
+                self.__comment_obj.permlink,
+            ) not in voter_and_comment_permlink, (
+                "Effective_comment_vote_operation generated, but it should have not been"
+            )
         else:
             raise ValueError(f"Unexpected value for 'mode': '{mode}'")
 
@@ -809,9 +807,9 @@ class CommentAccount(Account):
     def assert_balance_after_claiming_available_rewards(self) -> None:
         for asset, reward_asset in ("hbd", "reward_hbd"), ("hive", "reward_hive"), ("vest", "reward_vests"):
             reward_asset = getattr(self.__claim_reward_transaction.operations[0].value, reward_asset)
-            assert getattr(self, asset) + reward_asset.as_nai() == self._get_balance(
-                asset
-            ), f"{asset} balance have incorrect value after claim balance"
+            assert getattr(self, asset) + reward_asset.as_nai() == self._get_balance(asset), (
+                f"{asset} balance have incorrect value after claim balance"
+            )
 
     def assert_reward_balance_after_claiming_available_rewards(self) -> None:
         for asset, reward_asset in (
@@ -820,11 +818,11 @@ class CommentAccount(Account):
             ("reward_vests", "reward_vests"),
         ):
             reward_asset = getattr(self.__claim_reward_transaction.operations[0].value, reward_asset)
-            assert (
-                getattr(self, asset) == self.get_reward_balance(asset) + reward_asset.as_nai()
-            ), f"{asset} balance have incorrect value after claim balance"
+            assert getattr(self, asset) == self.get_reward_balance(asset) + reward_asset.as_nai(), (
+                f"{asset} balance have incorrect value after claim balance"
+            )
 
     def assert_governance_vote_power_increase_after_claiming_available_rewards(self) -> None:
-        assert self.get_governance_vote_power() < self.get_governance_vote_power(
-            current=True
-        ), "Governance vote power not increase after claim balance"
+        assert self.get_governance_vote_power() < self.get_governance_vote_power(current=True), (
+            "Governance vote power not increase after claim balance"
+        )

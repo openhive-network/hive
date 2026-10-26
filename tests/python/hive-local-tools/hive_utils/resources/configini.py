@@ -58,9 +58,9 @@ class config:  # noqa: N801
                     file.write(f"{key.replace('_', '-')} = {value}\n")
 
     def load(self, path_to_file: str):
-        _keys = list(self.__dict__.keys())
+        attribute_names = list(self.__dict__.keys())
         keys = []
-        for key in _keys:
+        for key in attribute_names:
             setattr(self, key, None)
             keys.append(key.replace("_", "-"))
 

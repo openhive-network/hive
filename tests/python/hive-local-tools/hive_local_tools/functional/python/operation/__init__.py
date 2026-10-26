@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
 from beekeepy.exceptions import ErrorInResponseError
@@ -213,8 +213,9 @@ class Account:
             return
 
         last_unlock_date = max([  # noqa: C419
-            tt.Time.parse(delay_vote.time, time_zone=timezone.utc)
-            for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
+            tt.Time.parse(delay_vote.time, time_zone=UTC)
+            for delay_vote in self._node.api.database
+            .find_accounts(accounts=[self._acc_info.name])
             .accounts[0]
             .delayed_votes
         ])
@@ -320,9 +321,9 @@ class _RcManabar(_BaseManabar):
                 assert actual_max_rc_mana > self.max_mana, error_message
 
     def assert_current_mana_is_unchanged(self) -> None:
-        assert (
-            get_rc_current_mana(self._node, self._name) == self.current_mana
-        ), f"The {self._name} account rc_current_mana has been changed."
+        assert get_rc_current_mana(self._node, self._name) == self.current_mana, (
+            f"The {self._name} account rc_current_mana has been changed."
+        )
 
 
 class _VoteManabarBase(_BaseManabar):
@@ -348,9 +349,9 @@ class _VoteManabarBase(_BaseManabar):
             assert vote_current_mana < self.current_mana, err
 
     def assert_current_mana_is_unchanged(self) -> None:
-        assert (
-            get_vote_current_mana(self._wallet, self._name, self.__manabar_type) == self.current_mana
-        ), f"The {self._name} account {self.__manabar_type} has been changed."
+        assert get_vote_current_mana(self._wallet, self._name, self.__manabar_type) == self.current_mana, (
+            f"The {self._name} account {self.__manabar_type} has been changed."
+        )
 
 
 class _VoteManabar(_VoteManabarBase):
@@ -529,14 +530,14 @@ def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
 
 def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
     timestamp = node.api.block.get_block(block_num=transaction["block_num"]).block.timestamp
-    return tt.Time.parse(timestamp, time_zone=timezone.utc)
+    return tt.Time.parse(timestamp, time_zone=UTC)
 
 
 def get_previous_block_timestamp(node: tt.InitNode, block_num: int) -> datetime:
     """Get timestamp of the block immediately before the given block number."""
     prev_block = node.api.block.get_block(block_num=block_num - 1)
     timestamp = prev_block.block.timestamp
-    return tt.Time.parse(timestamp, time_zone=timezone.utc)
+    return tt.Time.parse(timestamp, time_zone=UTC)
 
 
 def jump_to_date(node: tt.InitNode, time_control: datetime, wait_for_irreversible: bool = False) -> None:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from datetime import timezone
+from datetime import UTC
 from typing import TYPE_CHECKING
 
 import test_tools as tt
@@ -21,35 +21,35 @@ if TYPE_CHECKING:
 class RecurrentTransferAccount(Account):
     def assert_balance_is_reduced_by_transfer(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
         if isinstance(amount, tt.Asset.TestT):
-            assert self.hive - amount == get_hive_balance(
-                self._node, self._name
-            ), f"The `{self._name}` account balance has not been reduced."
+            assert self.hive - amount == get_hive_balance(self._node, self._name), (
+                f"The `{self._name}` account balance has not been reduced."
+            )
         elif isinstance(amount, tt.Asset.TbdT):
-            assert self.hbd - amount == get_hbd_balance(
-                self._node, self._name
-            ), f"The `{self._name}` account hbd_balance has not been reduced."
+            assert self.hbd - amount == get_hbd_balance(self._node, self._name), (
+                f"The `{self._name}` account hbd_balance has not been reduced."
+            )
         else:
             raise TypeError("Invalid argument type.")
 
     def assert_balance_is_increased_by_transfer(self, amount: tt.Asset.TestT | tt.Asset.TbdT) -> None:
         if isinstance(amount, tt.Asset.TestT):
-            assert self.hive + amount == get_hive_balance(
-                self._node, self._name
-            ), f"The `{self._name}` account balance has not been increased."
+            assert self.hive + amount == get_hive_balance(self._node, self._name), (
+                f"The `{self._name}` account balance has not been increased."
+            )
         elif isinstance(amount, tt.Asset.TbdT):
-            assert self.hbd + amount == get_hbd_balance(
-                self._node, self._name
-            ), f"The `{self._name}` account hbd_balance has not been increased."
+            assert self.hbd + amount == get_hbd_balance(self._node, self._name), (
+                f"The `{self._name}` account hbd_balance has not been increased."
+            )
         else:
             raise TypeError("Invalid argument type.")
 
     def assert_hives_and_hbds_are_not_changed(self):
-        assert self.hive == get_hive_balance(
-            self._node, self._name
-        ), f"The {self._name}` account balance has been changed."
-        assert self.hbd == get_hbd_balance(
-            self._node, self._name
-        ), f"The {self._name}` account hbd_balance has been changed."
+        assert self.hive == get_hive_balance(self._node, self._name), (
+            f"The {self._name}` account balance has been changed."
+        )
+        assert self.hbd == get_hbd_balance(self._node, self._name), (
+            f"The {self._name}` account hbd_balance has been changed."
+        )
 
 
 class RecurrentTransfer:
@@ -135,12 +135,12 @@ class RecurrentTransfer:
         )
 
     def execute_future_transfer(self, execution_date=None):
-        actual_head_block_time = self._node.get_head_block_time().replace(tzinfo=timezone.utc)
+        actual_head_block_time = self._node.get_head_block_time().replace(tzinfo=UTC)
         if not execution_date:
             for num, t in enumerate(self._current_schedule):
                 if t > actual_head_block_time:
                     self._node.restart(time_control=tt.StartTimeControl(start_time=self._current_schedule[num]))
-                    time_after_restart = self._node.get_head_block_time().replace(tzinfo=timezone.utc)
+                    time_after_restart = self._node.get_head_block_time().replace(tzinfo=UTC)
                     self._last_execution_time = self._current_schedule[num]
                     assert time_after_restart >= self._current_schedule[num]
                     break
@@ -150,14 +150,12 @@ class RecurrentTransfer:
     def execute_last_transfer(self):
         self._node.restart(time_control=tt.StartTimeControl(start_time=self._current_schedule[-1]))
         self._node.wait_number_of_blocks(1)
-        assert self._node.get_head_block_time().replace(tzinfo=timezone.utc) > self._current_schedule[-1]
+        assert self._node.get_head_block_time().replace(tzinfo=UTC) > self._current_schedule[-1]
         self._last_execution_time = self._current_schedule[-1]
 
     def get_next_execution_date(self):
         return next(
-            date
-            for date in self._current_schedule
-            if self._node.get_head_block_time().replace(tzinfo=timezone.utc) < date
+            date for date in self._current_schedule if self._node.get_head_block_time().replace(tzinfo=UTC) < date
         )
 
     def assert_fill_recurrent_transfer_operation_was_generated(self, expected_vop: int):

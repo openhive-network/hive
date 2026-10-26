@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import test_tools as tt
 from test_tools import complex_networks as ttcn
@@ -103,4 +103,4 @@ def prepare_environment_with_2_sub_networks(
 
 
 def calculate_epoch_time(date: str) -> int:
-    return int(parse_datetime(date).replace(tzinfo=timezone.utc).timestamp())
+    return int(parse_datetime(date).replace(tzinfo=UTC).timestamp())
