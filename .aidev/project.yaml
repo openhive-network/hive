@@ -28,8 +28,13 @@ branches:
 # How this project's suites execute (#13892): one kind, stated once.
 environment:
   kind: "container"
-  image: "registry.gitlab.syncad.com/hive/hive/aidev-tests@sha256:11dfc04a5011bb69e0bf202363e53e44989f691f5c994ee83f7ea5e45a76a92a"
-  inputs: [".aidev/runtime/Dockerfile"]
+  # The seed pin (read before a slot resolves); suites run in AIDEV's build of
+  # .aidev/runtime/Dockerfile on the followed base below (.aidev/README.md).
+  image: "registry.gitlab.syncad.com/hive/hive/aidev-tests@sha256:d7b08a2a52a97a8fa4b5e806c9fe2b856cf71db2b56ad1c5846767cb2d8c6c5a"
+  inputs: [".aidev/runtime/Dockerfile", "tests/python/hive-local-tools/pyproject.toml", "tests/python/hive-local-tools/poetry.lock"]
+  build: {dockerfile: ".aidev/runtime/Dockerfile", context: "tests/python/hive-local-tools"}
+  # CI's build image at CI_BASE_IMAGE_TAG (scripts/ci-helpers/ci_image_tag_vars.yml)
+  base: {image: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:pypa_2_28-pg18-5", follow: true}
 
 issues:
   intake_label: todo

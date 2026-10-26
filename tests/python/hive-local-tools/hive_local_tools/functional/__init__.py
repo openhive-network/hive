@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import importlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
@@ -31,12 +32,14 @@ def _warmup_msgspec_decoders() -> None:
     with contextlib.suppress(Exception):
         # Import and access API types to trigger annotation resolution
         # This ensures msgspec decoders are initialized before parallel operations
-        import hiveio_api.database_api  # noqa: F401
-
-        import schemas.apis.app_status_api  # Used by beekeepy.__discover_ports()
-        import schemas.apis.network_node_api
-        import schemas.apis.wallet_bridge_api
-        import schemas.transaction  # noqa: F401
+        for module in (
+            "hiveio_api.database_api",
+            "schemas.apis.app_status_api",  # Used by beekeepy.__discover_ports()
+            "schemas.apis.network_node_api",
+            "schemas.apis.wallet_bridge_api",
+            "schemas.transaction",
+        ):
+            importlib.import_module(module)
 
         # Warm up the decoder cache by parsing sample responses
         get_response_model(str, '{"jsonrpc":"2.0","id":0,"result":"warmup"}', "hf26")

@@ -9,12 +9,6 @@ stages:
 variables:
   PYTEST_NUMBER_OF_PROCESSES: 8
 
-  # Docker image tags from common-ci-configuration. These images are tagged with the commit
-  # they were built from and rebuilt only when their Dockerfiles change: use the newest build
-  # whose Dockerfiles match COMMON_CI_REF (see prepare_data_image_job.yml).
-  DOCKER_BUILDER_TAG: "89e7817b463ec2c48c4bb76da2df63d9749d7b2a"
-  DOCKER_DIND_TAG: "89e7817b463ec2c48c4bb76da2df63d9749d7b2a"
-
   # Fetch strategy reuses workspace between jobs, reducing GitLab server load.
   # Full clone (depth 0) enables efficient incremental fetches - shallow clones
   # don't reduce server CPU and make fetch less effective.
@@ -623,13 +617,20 @@ static_linking_check:
   tags:
     - public-runner-docker
 
+# The ruff hooks are `language: system`: they run python-test-tools' ruff, so only
+# the static-analysis group (pre-commit) is installed next to it.
 pre_commit_checks:
   stage: static_code_analysis
-  variables:
-    POETRY_INSTALL_ARGS: --only pre-commit
+  image: "${PYTHON_TEST_TOOLS_IMAGE}"
   extends:
     - .pre_commit_checks_template
     - .python_static_analysis_configuration
+  before_script:
+    - !reference [.configuration_template, before_script]
+    - !reference [.update_deps_for_static_analysis, script]
+    - poetry -C "${PYPROJECT_DIR}" install --only static-analysis --no-root
+    - ruff --version
+    - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
   artifacts:
     paths:
       - tests/python/hive-local-tools/poetry.lock
@@ -752,8 +753,9 @@ quick_test_setup:
     - cd beem
     - python3 -m pip install .[tests]
     - python3 -m pip install .
-    # Reinstall pytest 8.3.5 for Python 3.14 compatibility (beem installs pytest 7.2.2)
-    - pip3 install pytest==8.3.5
+    # beem[tests] installs pytest 7.2.2, which does not run on Python 3.14: put back
+    # the versions hive-local-tools' lock installed
+    - poetry -C "${PYPROJECT_DIR}" install
     - cd ..
     - mkdir -p build/tests/hive-node-data
     - cd tests/python/functional/beem_tests
