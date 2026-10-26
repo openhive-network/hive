@@ -1431,6 +1431,8 @@ comment_cashout_tests:
 
 test-wax-spec-package:
   extends: .node_based_job_base
+  # TypeScript (tsc) comes with node-test-tools, not with the emsdk image
+  image: "${NODE_TEST_TOOLS_IMAGE}"
   stage: test
   rules:
     # Run in QUICK_TEST mode if requested in QUICK_TEST_JOBS
@@ -1478,7 +1480,8 @@ test-wax-spec-package:
       }
       if (lastError) throw lastError;
       EOT
-    - tsc -t esnext -m esnext --moduleResolution bundler index.ts # Test if it compiles
+    # Not strict, the default before TypeScript 6: @hiveio/wax's declarations import the untyped 'events' package
+    - tsc -t esnext -m esnext --moduleResolution bundler --strict false index.ts # Test if it compiles
     - node index.js # Test if it runs without errors
   needs:
     - job: generate-wax-spec

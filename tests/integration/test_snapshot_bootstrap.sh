@@ -34,6 +34,8 @@ set -euo pipefail
 # The snapshot is served by a container on a network of its own, so the test also
 # runs against a Docker daemon on another host (docker-in-docker in CI); the work
 # dir must then be on a path that daemon shares, such as the CI project directory.
+# The served archives are packed inside that container, from the snapshot the daemon
+# sees, so nothing this host writes into the work dir has to reach the server.
 #
 # Usage: test_snapshot_bootstrap.sh <testnet hived image> <work dir>
 #   PYTHON_IMAGE: an image with python3, to serve the snapshot and check JSON
@@ -70,7 +72,7 @@ COMPOSE_IMAGE=snapshot-bootstrap-compose
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
 rm -rf "$WORK_DIR"
-mkdir -p "$WORK_DIR/www"
+mkdir -p "$WORK_DIR"
 
 compose() {
   docker compose --project-name "$COMPOSE_PROJECT" --project-directory "$COMPOSE_DIR" \
@@ -175,14 +177,20 @@ new_datadir source "plugin = witness" "witness = \"initminer\"" "private-key = $
 CASE=produce; run "$CASE" source -- --exit-at-block="$SNAPSHOT_BLOCK"; expect_rc 0
 CASE=dump; run "$CASE" source -- --dump-snapshot="$SNAPSHOT_NAME" --exit-before-sync; expect_rc 0
 CASE=produce-more; run "$CASE" source -- --exit-at-block="$BLOCK_LOG_HEAD"; expect_rc 0
-tar --create --gzip --file="$WORK_DIR/www/${SNAPSHOT_NAME}.tgz" --directory="$WORK_DIR/source/snapshot" "$SNAPSHOT_NAME"
-chmod -R a+rX "$WORK_DIR/www"
-docker run -d --name "$HTTP_SERVER" --network "$NETWORK" --volume "$WORK_DIR/www:/www:ro" "$PYTHON_IMAGE" \
-  python3 -m http.server --directory /www 8000 > /dev/null
+# broken.tgz: a snapshot directory with no snapshot in it, which hived refuses to load.
+docker run -d --name "$HTTP_SERVER" --network "$NETWORK" --volume "$WORK_DIR/source/snapshot:/snapshot:ro" \
+  "$PYTHON_IMAGE" sh -ec "
+    mkdir -p /tmp/www /tmp/broken/broken
+    tar -czf /tmp/www/${SNAPSHOT_NAME}.tgz -C /snapshot ${SNAPSHOT_NAME}
+    echo 'not a snapshot' > /tmp/broken/broken/README
+    tar -czf /tmp/www/broken.tgz -C /tmp/broken broken
+    exec python3 -m http.server --directory /tmp/www 8000" > /dev/null
 for _ in $(seq 30); do
   docker run --rm --network "$NETWORK" --entrypoint wget "$IMAGE" -q --spider "$SNAPSHOT_URL" 2> /dev/null && break
   sleep 1
 done
+docker run --rm --network "$NETWORK" --entrypoint wget "$IMAGE" -q --spider "$SNAPSHOT_URL" \
+  || fail "the snapshot is not served: $(docker logs "$HTTP_SERVER" 2>&1 | tail -20)"
 
 SNAPSHOT_ENV=(--env "SNAPSHOT_URL=$SNAPSHOT_URL")
 
@@ -400,11 +408,6 @@ services:
     ports: !reset []${service_options}
 COMPOSE
 docker tag "$IMAGE" "$COMPOSE_IMAGE:test"
-# A snapshot directory with no snapshot in it: hived refuses to load it.
-mkdir -p "$WORK_DIR/www-broken/broken"
-echo "not a snapshot" > "$WORK_DIR/www-broken/broken/README"
-tar --create --gzip --file="$WORK_DIR/www/broken.tgz" --directory="$WORK_DIR/www-broken" broken
-chmod -R a+rX "$WORK_DIR/www"
 
 # compose_up CASE SNAPSHOT_URL: `docker compose up -d` on fresh volumes; its output and the bootstrap's log go to
 # $WORK_DIR/CASE.log and its exit code to $RC.
