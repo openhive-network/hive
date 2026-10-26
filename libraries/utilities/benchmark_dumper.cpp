@@ -1,7 +1,5 @@
 
-#include <algorithm>
 #include <hive/utilities/benchmark_dumper.hpp>
-#include <algorithm>
 
 namespace hive { namespace utilities {
 
@@ -22,89 +20,79 @@ void operator -= ( benchmark_dumper::comment_archive_details_t& current, const b
   current.comment_lib_processing -= previous.comment_lib_processing;
 }
 
-const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_number, get_stat_details_t get_stat_details )
+void benchmark_dumper::initialize( const fc::string& file_name )
 {
-  validate_is_initialized();
+  _file_name = file_name;
+  _last_summary_point.sys_time = fc::time_point::now();
+  _last_summary_point.cpu_time = clock();
+  _last_measurement_point = _last_summary_point;
+  _pid = getpid();
+
+  if( !_file_name.empty() )
+  {
+    _file.open( _file_name, std::ios::out | std::ios::trunc );
+    if( !_file.is_open() )
+      elog( "cannot open benchmark data file ${filename}", ( "filename", _file_name ) );
+  }
+}
+
+void benchmark_dumper::write_to_file( const measurement& data )
+{
+  if( !_file.is_open() )
+    return;
+
+  _file << fc::json::to_string( data ) << '\n';
+  _file.flush();
+  if( !_file )
+    elog( "error writing benchmark data to file ${filename}", ( "filename", _file_name ) );
+}
+
+benchmark_dumper::starting_point_t benchmark_dumper::collect( measurement& data, uint32_t block_number,
+  const get_stat_details_t& get_stat_details, const starting_point_t& since )
+{
   uint64_t current_virtual = 0;
   uint64_t peak_virtual = 0;
   read_mem( _pid, &current_virtual, &peak_virtual );
 
-  fc::time_point current_sys_time = fc::time_point::now();
-  clock_t current_cpu_time = clock();
+  starting_point_t now;
+  now.sys_time = fc::time_point::now();
+  now.cpu_time = clock();
 
-  measurement data;
   uint64_t shm_free = 0;
   get_stat_details( data.index_memory_details_cntr, data.comment_archive_stats, shm_free );
   shm_free /= 1024; // typically db.get_free_memory() so the value is in bytes - recalculate to match other values
   data.set( block_number,
-    ( current_sys_time - _last_sys_time ).count() / 1000, // real_ms
-    int( ( current_cpu_time - _last_cpu_time ) * 1000 / CLOCKS_PER_SEC ), // cpu_ms
+    ( now.sys_time - since.sys_time ).count() / 1000, // real_ms
+    int( ( now.cpu_time - since.cpu_time ) * 1000 / CLOCKS_PER_SEC ), // cpu_ms
     current_virtual,
     peak_virtual,
     shm_free );
-  auto current_comment_archive_stats = data.comment_archive_stats;
-  data.comment_archive_stats -= _all_data.total_measurement.comment_archive_stats;
-
-  _last_sys_time = current_sys_time;
-  _last_cpu_time = current_cpu_time;
-  _total_blocks = block_number;
-
-  _all_data.total_measurement.set( _total_blocks,
-    ( _last_sys_time - _init_sys_time ).count() / 1000,
-    int( ( _last_cpu_time - _init_cpu_time ) * 1000 / CLOCKS_PER_SEC ),
-    current_virtual,
-    peak_virtual,
-    shm_free );
-  _all_data.total_measurement.comment_archive_stats = current_comment_archive_stats;
-
-  // no sense to store data that will not be dumped to file
-  if( _all_data.measurements.empty() || is_file_available() )
-    _all_data.measurements.push_back( data );
-  else
-    _all_data.measurements[ 0 ] = data;
-
-  return _all_data.measurements.back();
+  now.comment_archive_stats = data.comment_archive_stats;
+  data.comment_archive_stats -= since.comment_archive_stats;
+  return now;
 }
 
-const benchmark_dumper::measurement& benchmark_dumper::dump( bool finalMeasure, uint32_t block_number, get_stat_details_t get_stat_details )
+const benchmark_dumper::measurement& benchmark_dumper::measure( uint32_t block_number, get_stat_details_t get_stat_details )
 {
   validate_is_initialized();
-  if( finalMeasure )
-  {
-    /// Collect index data including dynamic container sizes, what can be time consuming
-    auto& idxData = _all_data.total_measurement.index_memory_details_cntr;
-    auto& caData = _all_data.total_measurement.comment_archive_stats;
+  measurement data;
+  _last_measurement_point = collect( data, block_number, get_stat_details, _last_measurement_point );
 
-    idxData.clear();
-    uint64_t shm_free = 0;
+  _last_measurement = std::move( data );
+  write_to_file( _last_measurement );
+  return _last_measurement;
+}
 
-    get_stat_details( idxData, caData, shm_free );
-    _all_data.total_measurement.shm_free = shm_free / 1024;
-    _all_data.total_measurement.block_number = block_number;
+const benchmark_dumper::measurement& benchmark_dumper::dump( summary_type summary, uint32_t block_number, get_stat_details_t get_stat_details )
+{
+  validate_is_initialized();
+  measurement data;
+  data.summary = summary;
+  _last_summary_point = _last_measurement_point = collect( data, block_number, get_stat_details, _last_summary_point );
 
-    std::sort( idxData.begin(), idxData.end(),
-      []( const index_memory_details_t& info1, const index_memory_details_t& info2 ) -> bool
-    {
-      return info1.total_index_mem_usage > info2.total_index_mem_usage;
-    }
-    );
-  }
-
-  if( is_file_available() )
-  {
-    const fc::path path( _file_name );
-    try
-    {
-      fc::json::save_to_file( _all_data, path );
-    }
-    catch( const fc::exception& except )
-    {
-      elog( "error writing benchmark data to file ${filename}: ${error}",
-        ( "filename", path )( "error", except.to_detail_string() ) );
-    }
-  }
-
-  return _all_data.total_measurement;
+  _last_summary = std::move( data );
+  write_to_file( _last_summary );
+  return _last_summary;
 }
 
 typedef std::function<void(const char* key)> TScanErrorCallback;

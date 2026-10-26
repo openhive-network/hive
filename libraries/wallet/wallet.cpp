@@ -621,14 +621,7 @@ public:
         _allow_strict_and_mixed_authorities,
         _hive_chain_id,
         available_keys,
-        [&]( const string& account_name ) { return collector.get_account( account_name ).active; },
-        [&]( const string& account_name ) { return collector.get_account( account_name ).owner; },
-        [&]( const string& account_name ) { return collector.get_account( account_name ).posting; },
-        [&]( const string& witness_name ) -> public_key_type
-        {
-          auto maybe_witness = get_witness(witness_name);
-          return maybe_witness ? maybe_witness->signing_key : public_key_type();
-        },
+        collected_authority_getter( *this, collector ),
         HIVE_MAX_SIG_CHECK_DEPTH,
         HIVE_MAX_AUTHORITY_MEMBERSHIP,
         HIVE_MAX_SIG_CHECK_ACCOUNTS
@@ -772,6 +765,38 @@ public:
   private:
     wallet_api_impl& self;
     flat_map< account_name_type, database_api::api_account_object > approving_account_lut;
+  };
+
+  // provides authorities of accounts collected by signing_keys_collector and signing keys of witnesses from node
+  class collected_authority_getter : public hive::protocol::authority_getter_i
+  {
+  public:
+    collected_authority_getter( wallet_api_impl& _self, const signing_keys_collector& _collector )
+      : self( _self ), collector( _collector ) {}
+
+    virtual std::optional<authority> get_active( const string& account_name ) const override
+    {
+      return collector.get_active( account_name );
+    }
+    virtual std::optional<authority> get_owner( const string& account_name ) const override
+    {
+      return collector.get_owner( account_name );
+    }
+    virtual std::optional<authority> get_posting( const string& account_name ) const override
+    {
+      return collector.get_posting( account_name );
+    }
+    virtual std::optional<public_key_type> get_witness_key( const string& witness_name ) const override
+    {
+      auto maybe_witness = self.get_witness( witness_name );
+      if( !maybe_witness )
+        return {};
+      return maybe_witness->signing_key;
+    }
+
+  private:
+    wallet_api_impl& self;
+    const signing_keys_collector& collector;
   };
 
   string                                                    _wallet_filename;

@@ -18,6 +18,7 @@
 #include <hive/chain/block_write_interface.hpp>
 #include <hive/chain/compound.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_authority_getter.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/db_with.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
@@ -2615,10 +2616,7 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
   if (!(skip & (skip_transaction_signatures | skip_authority_check)))
   {
-    auto get_active  =    [&]( const string& name ) { return get< account_authority_object, by_account >( name ).get_active().to_authority(); };
-    auto get_owner   =    [&]( const string& name ) { return get< account_authority_object, by_account >( name ).get_owner().to_authority();  };
-    auto get_posting =    [&]( const string& name ) { return get< account_authority_object, by_account >( name ).get_posting().to_authority();  };
-    auto get_witness_key = [&]( const string& name ) { try { return get_witness( name ).signing_key; } FC_CAPTURE_AND_RETHROW((name)) };
+    database_authority_getter authority_getters( *this );
 
     try
     {
@@ -2632,10 +2630,7 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
                                        has_hardfork( HIVE_HARDFORK_1_28_ALLOW_REDUNDANT_SIGNATURES ),
                                        required_authorities,
                                        signature_keys,
-                                       get_active,
-                                       get_owner,
-                                       get_posting,
-                                       get_witness_key,
+                                       authority_getters,
                                        HIVE_MAX_SIG_CHECK_DEPTH,
                                        has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_AUTHORITY_MEMBERSHIP : 0,
                                        has_hardfork(HIVE_HARDFORK_0_20) ? HIVE_MAX_SIG_CHECK_ACCOUNTS : 0,
