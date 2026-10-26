@@ -5,7 +5,7 @@ import contextlib
 
 
 class config:  # noqa: N801
-    def __init__(self, check_is_arg_exists: bool = True, **kwargs):
+    def __init__(self, check_is_arg_exists: bool = True, **kwargs) -> None:
         self.log_appender = (
             '{"appender":"stderr","stream":"std_error"}'
             ' {"appender":"p2p","file":"logs/p2p/p2p.log","time_format":"iso_8601_milliseconds"}'
@@ -50,17 +50,17 @@ class config:  # noqa: N801
             assert (not check_is_arg_exists) or key in self.__dict__, f"key `{key}` not found"
             setattr(self, key, value)
 
-    def generate(self, path_to_file: str):
+    def generate(self, path_to_file: str) -> None:
         conf = self.__dict__
         with open(path_to_file, "w") as file:
             for key, value in conf.items():
                 if value is not None:
                     file.write(f"{key.replace('_', '-')} = {value}\n")
 
-    def load(self, path_to_file: str):
-        _keys = list(self.__dict__.keys())
+    def load(self, path_to_file: str) -> None:
+        attribute_names = list(self.__dict__.keys())
         keys = []
-        for key in _keys:
+        for key in attribute_names:
             setattr(self, key, None)
             keys.append(key.replace("_", "-"))
 
@@ -68,7 +68,7 @@ class config:  # noqa: N801
             values = line.split("=")
             return values[0].strip("\n\r "), values[1].strip("\n\r ")
 
-        def match_property(line: str):
+        def match_property(line: str) -> None:
             line = line.strip(" \n\r")
             if line.startswith("#") or len(line) == 0:
                 return
@@ -80,12 +80,12 @@ class config:  # noqa: N801
             for line in file:
                 match_property(line)
 
-    def update_plugins(self, required_plugins: list):
+    def update_plugins(self, required_plugins: list) -> None:
         plugins = self.plugin.split(" ")
         plugins.extend(x for x in required_plugins if x not in plugins)
         self.plugin = " ".join(plugins)
 
-    def exclude_plugins(self, plugins_to_exclude: list):
+    def exclude_plugins(self, plugins_to_exclude: list) -> None:
         current_plugins = self.plugin.split(" ")
         for plugin in plugins_to_exclude:
             with contextlib.suppress(ValueError):

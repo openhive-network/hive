@@ -36,9 +36,9 @@ hiveio-wax = {version = "1.28.8rc2.post20261002091953", source = "gitlab-hive"}
 hiveio-beekeepy = "^1.28.6.post20260317125034"
 tests_api = { path = "tests_api", develop = true }
 
+# ruff comes from common-ci-configuration's python-test-tools image, not from this group
 [tool.poetry.group.static-analysis.dependencies]
-pre-commit = "^4.0.0"
-ruff = "^0.6.5"
+pre-commit = "*"
 
 [tool.ruff]
 preview = true
@@ -89,10 +89,11 @@ select = [  # https://docs.astral.sh/ruff/rules/
 ignore = [
     "E203", # whitespace before punctuation, handled by ruff format
     "E501", # line too long, handled by ruff format
-    "PT004", # fixture does not return anything, add leading underscore;  issue: pytest seems to ignore (not launch) auto-use fixtures with leading underscode
     "TRY003", # too restrictive
     "TRY400", # TODO: Consider fixing
     "PERF401", # too restrictive
+    "RUF067", # too restrictive, packages re-export and define helpers in __init__.py
+    "RUF105", # too restrictive, noqa comments are kept for tools other than ruff
 ]
 
 [tool.ruff.lint.per-file-ignores]

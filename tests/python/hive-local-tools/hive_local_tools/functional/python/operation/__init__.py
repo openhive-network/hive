@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
 
 from beekeepy.exceptions import ErrorInResponseError
@@ -83,7 +83,7 @@ class Account:
     _acc_info: ApiAccountItem = field(init=False)
     _rc_manabar: _RcManabar = field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self._name:
             self._rc_manabar = _RcManabar(self._node, self._name)
             self._vote_manabar = _VoteManabar(self._node, self._wallet, self._name)
@@ -213,8 +213,9 @@ class Account:
             return
 
         last_unlock_date = max([  # noqa: C419
-            tt.Time.parse(delay_vote.time, time_zone=timezone.utc)
-            for delay_vote in self._node.api.database.find_accounts(accounts=[self._acc_info.name])
+            tt.Time.parse(delay_vote.time, time_zone=UTC)
+            for delay_vote in self._node.api.database
+            .find_accounts(accounts=[self._acc_info.name])
             .accounts[0]
             .delayed_votes
         ])
@@ -235,7 +236,7 @@ class Account:
 
 
 class _BaseManabar(ABC):
-    def __init__(self, node: tt.InitNode, name: str):
+    def __init__(self, node: tt.InitNode, name: str) -> None:
         self._node = node
         self._name = name
         self.__manabar: ExtendedManabar | None = None
@@ -266,7 +267,7 @@ class _BaseManabar(ABC):
     def _get_specific_current_mana(self) -> int:
         """This method should return current state of derived current mana."""
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"max_mana: {self.max_mana}, current_mana: {self.current_mana}, last_update_time:"
             f" {datetime.fromtimestamp(self.last_update_time)}"
@@ -287,7 +288,7 @@ class _BaseManabar(ABC):
 
 
 class _RcManabar(_BaseManabar):
-    def __init__(self, node, name):
+    def __init__(self, node, name) -> None:
         super().__init__(node, name)
 
     def _get_specific_manabar(self) -> ExtendedManabar:
@@ -320,13 +321,13 @@ class _RcManabar(_BaseManabar):
                 assert actual_max_rc_mana > self.max_mana, error_message
 
     def assert_current_mana_is_unchanged(self) -> None:
-        assert (
-            get_rc_current_mana(self._node, self._name) == self.current_mana
-        ), f"The {self._name} account rc_current_mana has been changed."
+        assert get_rc_current_mana(self._node, self._name) == self.current_mana, (
+            f"The {self._name} account rc_current_mana has been changed."
+        )
 
 
 class _VoteManabarBase(_BaseManabar):
-    def __init__(self, node, wallet: tt.Wallet, name, manabar_type: str):
+    def __init__(self, node, wallet: tt.Wallet, name, manabar_type: str) -> None:
         self._wallet = wallet
         self.__manabar_type = manabar_type
         super().__init__(node, name)
@@ -348,18 +349,18 @@ class _VoteManabarBase(_BaseManabar):
             assert vote_current_mana < self.current_mana, err
 
     def assert_current_mana_is_unchanged(self) -> None:
-        assert (
-            get_vote_current_mana(self._wallet, self._name, self.__manabar_type) == self.current_mana
-        ), f"The {self._name} account {self.__manabar_type} has been changed."
+        assert get_vote_current_mana(self._wallet, self._name, self.__manabar_type) == self.current_mana, (
+            f"The {self._name} account {self.__manabar_type} has been changed."
+        )
 
 
 class _VoteManabar(_VoteManabarBase):
-    def __init__(self, node, wallet, name):
+    def __init__(self, node, wallet, name) -> None:
         super().__init__(node, wallet, name, "voting_manabar")
 
 
 class _DownvoteManabar(_VoteManabarBase):
-    def __init__(self, node, wallet, name):
+    def __init__(self, node, wallet, name) -> None:
         super().__init__(node, wallet, name, "downvote_manabar")
 
 
@@ -529,14 +530,14 @@ def get_rc_max_mana(node: tt.InitNode, account_name: str) -> int:
 
 def get_transaction_timestamp(node: tt.InitNode, transaction) -> datetime:
     timestamp = node.api.block.get_block(block_num=transaction["block_num"]).block.timestamp
-    return tt.Time.parse(timestamp, time_zone=timezone.utc)
+    return tt.Time.parse(timestamp, time_zone=UTC)
 
 
 def get_previous_block_timestamp(node: tt.InitNode, block_num: int) -> datetime:
     """Get timestamp of the block immediately before the given block number."""
     prev_block = node.api.block.get_block(block_num=block_num - 1)
     timestamp = prev_block.block.timestamp
-    return tt.Time.parse(timestamp, time_zone=timezone.utc)
+    return tt.Time.parse(timestamp, time_zone=UTC)
 
 
 def jump_to_date(node: tt.InitNode, time_control: datetime, wait_for_irreversible: bool = False) -> None:
@@ -607,7 +608,7 @@ class Proposal:
         self.total_votes = tt.Asset.Vest(int(self._proposal_info.total_votes) / 1_000_000)
         self.status = self._proposal_info.status
 
-    def update_proposal_info(self):
+    def update_proposal_info(self) -> None:
         self.__init__(self._node, self.proposal_id)
 
 

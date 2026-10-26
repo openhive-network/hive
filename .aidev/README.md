@@ -84,13 +84,12 @@ worker per `HIVE_TEST_JOBS`, junit in
   cache, so it runs after `default` rather than `concurrent`ly; its 900 s timeout
   and `default`'s 1500 s share `run_full_tests`' 2400 s.
 - **The test-tools environment is the image's.** The suite has no network, so
-  `.aidev/runtime/Dockerfile` installs, into `/opt/test-tools-venv`, the packages
-  `tests/python/hive-local-tools/poetry.lock` pins for this run (test-tools, wax,
-  beekeepy, hiveio-api, pytest and its plugins); `hive_local_tools` and `tests_api`
-  come from the checkout through `PYTHONPATH`. Bump those pins with the lock
-  (`poetry.lock` is not an image input, so a lock move rebuilds nothing by
-  itself). CI also installs the `hiveio-api` wheel built from the commit; the
-  image has the lock's. Where `$HIVE_TEST_TOOLS_VENV/bin/python3`
+  `.aidev/runtime/Dockerfile` installs, into `/opt/test-tools-venv`, the main group
+  of `tests/python/hive-local-tools/poetry.lock` (test-tools, wax, beekeepy,
+  hiveio-api, pytest and its plugins), as CI's test jobs do; `hive_local_tools`
+  and `tests_api` come from the checkout through `PYTHONPATH`. The lock is an
+  image input, so a lock move rebuilds the image. CI also installs the
+  `hiveio-api` wheel built from the commit; the image has the lock's. Where `$HIVE_TEST_TOOLS_VENV/bin/python3`
   (`/opt/test-tools-venv` by default) cannot import test-tools, pytest-xdist and
   pytest-timeout, the step builds nothing and is skipped as
   `test_tools_unavailable`, its log the import error, and the suite exits 77.
@@ -329,9 +328,17 @@ docker run --rm --network hive-checks --user "$(id -u):$(id -g)" -v "$PWD:/work"
 
 ## The test runtime image (`runtime/`)
 
-CI's build image, `ci-base-image`, pinned by digest, with its entrypoint cleared.
-When `CI_BASE_IMAGE_TAG` (`scripts/ci-helpers/ci_image_tag_vars.yml`) moves,
-re-pin the `FROM` to the new tag's digest, rebuild and re-pin **in the same commit**:
+CI's build image, `ci-base-image`, with its entrypoint cleared and the main group
+of `tests/python/hive-local-tools/poetry.lock` installed in `/opt/test-tools-venv`.
+`project.yaml`'s `environment.base` follows the `ci-base-image` tag CI uses
+(`CI_BASE_IMAGE_TAG` in `scripts/ci-helpers/ci_image_tag_vars.yml`; keep the two
+equal): before each run AIDEV resolves that tag to its digest and builds the
+Dockerfile on it (context `tests/python/hive-local-tools`), rebuilding when the tag
+moves or the Dockerfile, `pyproject.toml` or `poetry.lock` changes, so none of
+them needs a re-pin commit. `environment.image` is only the seed pin AIDEV reads
+before a slot resolves (and the image the snippet above and `integration.sh`
+name); it does not have to move. `build.sh` builds and pushes a seed when one is
+needed:
 
 ```bash
 .aidev/runtime/build.sh --push   # registry digest if aidev-<input hash> exists, else build + push

@@ -3,15 +3,15 @@ variables:
   # Don't pin to CI_COMMON_JOB_VERSION as those commit-specific images may not exist
   BEEKEEPY_INITIALIZATION_TIMEOUT: 60  # for test-tools
   BEEKEEPY_CLOSE_TIMEOUT: 60  # for test-tools
-  # The one common-ci-configuration revision used by this pipeline: every script fetched
+  # The one common-ci-configuration ref used by this pipeline: every script fetched
   # at runtime (jobs and hived service entrypoints) comes from it. `include: ref` cannot
   # use variables, so the include below and scripts/ci-helpers/common_includes.yml repeat
-  # the same hash - keep all three in sync.
-  COMMON_CI_REF: "7dffa23eb3612b0e2f049e98260028c0134c0156"
+  # the same ref - keep all three in sync.
+  COMMON_CI_REF: "develop"
 
 include:
   - project: 'hive/common-ci-configuration'
-    ref: 7dffa23eb3612b0e2f049e98260028c0134c0156  # must match COMMON_CI_REF above
+    ref: develop  # must match COMMON_CI_REF above
     file:
       - '/templates/base.gitlab-ci.yml'
       - '/templates/npm_projects.gitlab-ci.yml'

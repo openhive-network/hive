@@ -363,9 +363,10 @@ def test_example():
 
 ## CI/CD Pipeline
 
-**CI images and templates** come from `hive/common-ci-configuration`. Key version refs:
-- `CI_COMMON_JOB_VERSION` in `scripts/ci-helpers/prepare_data_image_job.yml` - docker-builder/docker-dind tags
+**CI images and templates** come from `hive/common-ci-configuration` (ccc), included at `ref: develop`. Don't pin ccc, its docker-builder/docker-dind tags or CI/test tool versions here; ccc defines them once. Key refs:
+- `COMMON_CI_REF` in `scripts/ci-helpers/prepare_data_image_job.yml` - `develop`, the same ref as the includes
 - `CI_BASE_IMAGE_TAG` in `scripts/ci-helpers/ci_image_tag_vars.yml` - Python/build environment image
+- ruff for `pre_commit_checks` comes from ccc's `python-test-tools` image (`PYTHON_TEST_TOOLS_IMAGE`)
 
 **GitLab CI stages** (`.gitlab-ci.yaml`):
 1. `static_code_analysis` - Code quality checks
@@ -439,10 +440,10 @@ Note: changes under `tests/unit/**` are deliberately classified as source change
 - Type hints with `mypy` in strict mode
 - All files require: `from __future__ import annotations`
 
-**Before committing Python:**
+**Before committing Python** (ruff is not a hive-local-tools dependency; use the version in ccc's `python-test-tools:develop` image, which CI runs):
 ```bash
 cd tests/python/hive-local-tools
-poetry run ruff format .
+ruff format .
 ```
 
 ## System Requirements
@@ -470,7 +471,7 @@ This repo contains several submodules that require coordination:
 | appbase | `libraries/appbase` | appbase |
 | compression_dictionaries | `libraries/chain/compression_dictionaries` | compression_dictionaries |
 
-When updating CI configuration (e.g., ci-base-image version), ensure `scripts/ci-helpers/common_includes.yml` ref matches the required common-ci-configuration commit.
+Every common-ci-configuration include (`scripts/ci-helpers/common_includes.yml`, `scripts/ci-helpers/prepare_data_image_job.yml`) and `COMMON_CI_REF` use `develop`; keep them equal. When ci-base-image moves, keep `CI_BASE_IMAGE_TAG` and `.aidev/project.yaml`'s `environment.base` tag equal.
 
 ### Test-Tools Dependency
 
