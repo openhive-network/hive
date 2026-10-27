@@ -88,7 +88,8 @@ namespace {
     HIVE_CHAIN_HARDFORK_ASSERT( db.has_hardfork( HIVE_HARDFORK_SCOPED_AUTHORITIES ),
       "Scoped authorities are not enabled until the development hardfork" );
 #else
-    HIVE_CHAIN_HARDFORK_ASSERT( false, "Scoped authorities are disabled in mainnet builds" );
+    HIVE_CHAIN_HARDFORK_ASSERT( false && "Scoped authority operations are disabled in mainnet builds",
+      "Scoped authorities are disabled in mainnet builds" );
 #endif
   }
 }
@@ -153,7 +154,8 @@ void revoke_scoped_authority_evaluator::do_apply( const revoke_scoped_authority_
   assert_scoped_authorities_enabled( _db );
   const auto& grant = _db.get< scoped_authority_object, by_grantor_id >(
     boost::make_tuple( o.grantor, o.grant_id ) );
-  HIVE_CHAIN_STATE_ASSERT( !grant.revoked, o.grant_id, "Scoped authority is already revoked" );
+  HIVE_CHAIN_STATE_ASSERT( !grant.revoked && "Scoped authority revocation requires an active grant",
+    o.grant_id, "Scoped authority is already revoked" );
   _db.modify( grant, []( scoped_authority_object& mutable_grant ) { mutable_grant.revoked = true; } );
 }
 
@@ -195,7 +197,8 @@ void scoped_transfer_evaluator::do_apply( const scoped_transfer_operation& o )
 
   // Preserve the existing restriction on direct HIVE transfers to the treasury.
   if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
-    HIVE_CHAIN_TREASURY_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), o.to,
+    HIVE_CHAIN_TREASURY_ASSERT( ( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ) )
+        && "Scoped transfer treasury restriction", o.to,
       "Cannot scoped-transfer HIVE to the treasury" );
 
   temp_balance transfer( o.amount.symbol );
@@ -219,7 +222,8 @@ void compressed_batch_transfer_evaluator::do_apply( const compressed_batch_trans
   HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_SCOPED_AUTHORITIES ),
     "Compressed batch transfers are not enabled until the development hardfork" );
 #else
-  HIVE_CHAIN_HARDFORK_ASSERT( false, "Compressed batch transfers are disabled in mainnet builds" );
+  HIVE_CHAIN_HARDFORK_ASSERT( false && "Compressed batch transfer is disabled in mainnet builds",
+    "Compressed batch transfers are disabled in mainnet builds" );
 #endif
   std::vector< const account_object* > sources;
   std::vector< const account_object* > recipients;
@@ -246,28 +250,35 @@ void compressed_batch_transfer_evaluator::do_apply( const compressed_batch_trans
       uses_scoped_grant = true;
       const auto& grant = _db.get< scoped_authority_object, by_grantor_id >(
         boost::make_tuple( input.from, input.grant_id ) );
-      HIVE_CHAIN_PERMISSION_ASSERT( !grant.revoked, input.grant_id, "Scoped batch input grant has been revoked" );
-      HIVE_CHAIN_PERMISSION_ASSERT( grant.actor == o.actor, o.actor, "Actor does not match scoped batch input grant" );
+      HIVE_CHAIN_PERMISSION_ASSERT( !grant.revoked && "Compressed batch grant must not be revoked",
+        input.grant_id, "Scoped batch input grant has been revoked" );
+      HIVE_CHAIN_PERMISSION_ASSERT( grant.actor == o.actor && "Compressed batch actor must match grant",
+        o.actor, "Actor does not match scoped batch input grant" );
       HIVE_CHAIN_PERMISSION_ASSERT( grant.max_per_transfer.symbol == o.symbol,
         o.symbol, "Batch asset is not permitted by scoped authority" );
-      HIVE_CHAIN_TIME_ASSERT( now >= grant.valid_from, now, "Scoped batch grant is not valid yet" );
-      HIVE_CHAIN_TIME_ASSERT( now < grant.expires_at, now, "Scoped batch grant has expired" );
+      HIVE_CHAIN_TIME_ASSERT( now >= grant.valid_from && "Compressed batch grant has started",
+        now, "Scoped batch grant is not valid yet" );
+      HIVE_CHAIN_TIME_ASSERT( now < grant.expires_at && "Compressed batch grant has not expired",
+        now, "Scoped batch grant has expired" );
       HIVE_CHAIN_ASSET_ASSERT( input.amount <= grant.max_per_transfer.amount.value,
         input.amount, "Scoped batch input exceeds per-transfer limit" );
       const uint64_t elapsed = uint64_t( now.sec_since_epoch() ) - grant.valid_from.sec_since_epoch();
       const uint64_t period_index = elapsed / grant.period_seconds;
       const int64_t period_spent = period_index == grant.current_period_index ? grant.period_spent.amount.value : 0;
-      HIVE_CHAIN_STATE_ASSERT( grant.lifetime_spent.amount.value >= 0 &&
-        grant.lifetime_spent.amount.value <= grant.max_lifetime.amount.value,
+      HIVE_CHAIN_STATE_ASSERT( ( grant.lifetime_spent.amount.value >= 0 &&
+        grant.lifetime_spent.amount.value <= grant.max_lifetime.amount.value )
+        && "Compressed batch lifetime counter is valid",
         grant.lifetime_spent, "Invalid scoped batch lifetime counter" );
       HIVE_CHAIN_ASSET_ASSERT( input.amount <= grant.max_lifetime.amount.value - grant.lifetime_spent.amount.value,
         input.amount, "Scoped batch input exceeds lifetime limit" );
-      HIVE_CHAIN_STATE_ASSERT( period_spent >= 0 && period_spent <= grant.max_per_period.amount.value,
+      HIVE_CHAIN_STATE_ASSERT( ( period_spent >= 0 && period_spent <= grant.max_per_period.amount.value )
+        && "Compressed batch period counter is valid",
         grant.period_spent, "Invalid scoped batch period counter" );
       HIVE_CHAIN_ASSET_ASSERT( input.amount <= grant.max_per_period.amount.value - period_spent,
         input.amount, "Scoped batch input exceeds period limit" );
       const asset requested( input.amount, o.symbol );
-      HIVE_CHAIN_ASSET_ASSERT( _db.get_balance( source, o.symbol ).amount >= requested.amount,
+      HIVE_CHAIN_ASSET_ASSERT( ( _db.get_balance( source, o.symbol ).amount >= requested.amount )
+        && "Compressed batch grantor balance is sufficient",
         requested, "Insufficient grantor balance for scoped batch input" );
       grants[i] = &grant;
       period_indices[i] = period_index;

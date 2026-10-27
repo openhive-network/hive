@@ -288,7 +288,8 @@ namespace hive { namespace protocol {
   void revoke_scoped_authority_operation::validate() const
   {
     validate_account_name( grantor );
-    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0, "Scoped authority grant id must be nonzero" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0 && "Revoke grant ID must be nonzero",
+      "Scoped authority grant id must be nonzero" );
   }
 
   void scoped_transfer_operation::validate() const
@@ -296,7 +297,8 @@ namespace hive { namespace protocol {
     validate_account_name( grantor );
     validate_account_name( actor );
     validate_account_name( to );
-    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0, "Scoped authority grant id must be nonzero" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0 && "Scoped transfer grant ID must be nonzero",
+      "Scoped authority grant id must be nonzero" );
     HIVE_PROTOCOL_ASSET_ASSERT( amount.symbol == HIVE_SYMBOL || amount.symbol == HBD_SYMBOL,
       "Scoped transfers support only HIVE and HBD" );
     validate_asset_greater_than_zero( amount, "Scoped transfer amount must be positive" );
@@ -353,7 +355,7 @@ namespace hive { namespace protocol {
     while( input_index < inputs.size() && output_index < outputs.size() )
     {
       if( inputs[input_index].from == outputs[output_index].to )
-        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( false,
+        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( false && "Compressed batch source cannot be a destination",
           "Compressed batch source cannot also be a destination" );
       if( inputs[input_index].from < outputs[output_index].to ) ++input_index;
       else ++output_index;
