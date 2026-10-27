@@ -601,6 +601,27 @@ struct api_recurrent_transfer_object
   uint8_t           pair_id = 0;
 };
 
+struct api_scoped_authority_object
+{
+  account_name_type grantor;
+  account_name_type actor;
+  uint32_t grant_id = 0;
+  asset max_per_transfer;
+  asset max_per_period;
+  asset max_lifetime;
+  asset period_spent;
+  asset lifetime_spent;
+  asset remaining_period;
+  asset remaining_lifetime;
+  uint32_t period_seconds = 0;
+  uint64_t current_period_index = 0;
+  time_point_sec valid_from;
+  time_point_sec expires_at;
+  vector< account_name_type > allowed_recipients;
+  bool revoked = false;
+  bool active = false;
+};
+
 
 struct order
 {
@@ -869,3 +890,7 @@ FC_REFLECT( hive::plugins::database_api::order, (order_price)(real_price)(hive)(
 
 FC_REFLECT( hive::plugins::database_api::order_book, (asks)(bids) );
 FC_REFLECT(hive::plugins::database_api::api_recurrent_transfer_object, (id)(trigger_date)(from)(to)(amount)(memo)(recurrence)(consecutive_failures)(remaining_executions)(pair_id))
+FC_REFLECT(hive::plugins::database_api::api_scoped_authority_object,
+  (grantor)(actor)(grant_id)(max_per_transfer)(max_per_period)(max_lifetime)(period_spent)(lifetime_spent)
+  (remaining_period)(remaining_lifetime)(period_seconds)(current_period_index)(valid_from)(expires_at)
+  (allowed_recipients)(revoked)(active))

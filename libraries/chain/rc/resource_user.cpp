@@ -29,6 +29,18 @@ struct get_resource_user_visitor
     return op.witness;
   }
 
+  account_name_type operator()( const compressed_batch_transfer_operation& op )const
+  {
+    // A scoped batch is submitted by its delegated actor; grantors must not
+    // pay the actor's RC merely because their names sort first in the required
+    // authority set. Pure active-authority batches retain the first input as
+    // their deterministic RC payer.
+    for( const auto& input : op.inputs )
+      if( input.grant_id != 0 )
+        return op.actor;
+    return op.inputs.empty() ? account_name_type() : op.inputs.front().from;
+  }
+
   template< typename Op >
   account_name_type operator()( const Op& op )const
   {

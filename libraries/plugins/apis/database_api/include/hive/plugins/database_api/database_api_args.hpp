@@ -509,6 +509,17 @@ struct find_recurrent_transfers_return
   vector< api_recurrent_transfer_object > recurrent_transfers;
 };
 
+struct get_scoped_authorities_args
+{
+  account_name_type grantor;
+};
+
+struct get_scoped_authorities_return
+{
+  vector< api_scoped_authority_object > grants;
+  uint32_t last_issued_grant_id = 0;
+};
+
 
 /* Transactions */
 
@@ -812,6 +823,8 @@ FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_return,
 
 FC_REFLECT( hive::plugins::database_api::find_recurrent_transfers_args,
   (from) )
+FC_REFLECT( hive::plugins::database_api::get_scoped_authorities_args, (grantor) )
+FC_REFLECT( hive::plugins::database_api::get_scoped_authorities_return, (grants)(last_issued_grant_id) )
 
 FC_REFLECT( hive::plugins::database_api::get_transaction_hex_args,
   (trx) )

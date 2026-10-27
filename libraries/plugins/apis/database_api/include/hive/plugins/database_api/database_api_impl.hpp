@@ -75,6 +75,7 @@ class database_api_impl
       (find_proposals)
       (list_proposal_votes)
       (find_recurrent_transfers)
+      (get_scoped_authorities)
       (get_transaction_hex)
       (get_required_signatures)
       (get_potential_signatures)

@@ -9,7 +9,14 @@
 
 namespace hive { namespace chain {
 
-constexpr auto HIVE_RC_NUM_OPERATIONS = hive::protocol::operation::tag< hive::protocol::fill_convert_request_operation >::value;
+// Map appended signed operation tags to the stable multiop slot so the
+// persistent statistics array keeps its existing size.
+constexpr auto HIVE_RC_NUM_OPERATIONS =
+#ifdef HIVE_PROTOCOL_SKIP_VOPS
+  hive::protocol::operation::tag< hive::protocol::create_scoped_authority_operation >::value;
+#else
+  hive::protocol::operation::tag< hive::protocol::fill_convert_request_operation >::value;
+#endif
 constexpr auto HIVE_RC_NUM_PAYER_RANKS = 8;
 
 // statistics for transaction with single operation (or multiop transaction)

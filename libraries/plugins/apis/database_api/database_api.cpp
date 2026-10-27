@@ -222,6 +222,7 @@ DEFINE_READ_APIS( database_api,
   (list_proposal_votes)
   (get_order_book)
   (find_recurrent_transfers)
+  (get_scoped_authorities)
   (get_transaction_hex)
   (get_required_signatures)
   (get_potential_signatures)

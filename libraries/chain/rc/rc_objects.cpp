@@ -33,7 +33,12 @@ void rc_stats_object::add_stats( const rc_transaction_info& tx_info )
 
   int _op_idx = op_stats.size() - 1; //multiop transaction by default
   if( tx_info.op.valid() )
-    _op_idx = tx_info.op.value();
+  {
+    const int op_tag = tx_info.op.value();
+    // New signed operation tags follow the historical range. Keep them in the
+    // multiop slot so they do not change the persistent statistics array size.
+    _op_idx = op_tag < HIVE_RC_NUM_OPERATIONS ? op_tag : HIVE_RC_NUM_OPERATIONS;
+  }
   rc_op_stats& _op_stats = op_stats[ _op_idx ];
 
   _op_stats.count += 1;

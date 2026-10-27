@@ -110,6 +110,41 @@ struct get_impacted_account_visitor
       _owner_impacted->insert( op.from );
   }
 
+  void operator()( const create_scoped_authority_operation& op )
+  {
+    _impacted.insert( op.grantor );
+    _impacted.insert( op.actor );
+    if( _owner_impacted )
+      _owner_impacted->insert( op.grantor );
+  }
+
+  void operator()( const revoke_scoped_authority_operation& op )
+  {
+    _impacted.insert( op.grantor );
+    if( _owner_impacted )
+      _owner_impacted->insert( op.grantor );
+  }
+
+  void operator()( const scoped_transfer_operation& op )
+  {
+    _impacted.insert( op.grantor );
+    _impacted.insert( op.actor );
+    _impacted.insert( op.to );
+    if( _owner_impacted )
+      _owner_impacted->insert( op.grantor );
+  }
+
+  void operator()( const compressed_batch_transfer_operation& op )
+  {
+    if( op.actor != account_name_type() ) _impacted.insert( op.actor );
+    for( const auto& input : op.inputs )
+    {
+      _impacted.insert( input.from );
+      if( _owner_impacted ) _owner_impacted->insert( input.from );
+    }
+    for( const auto& output : op.outputs ) _impacted.insert( output.to );
+  }
+
   void operator()( const escrow_transfer_operation& op )
   {
     _impacted.insert( op.from );
@@ -908,6 +943,20 @@ struct impacted_balance_collector
   {
     emplace_back(o.from, -o.amount);
     emplace_back(o.to, o.amount);
+  }
+
+  void operator()(const scoped_transfer_operation& o)
+  {
+    emplace_back(o.grantor, -o.amount);
+    emplace_back(o.to, o.amount);
+  }
+
+  void operator()(const compressed_batch_transfer_operation& o)
+  {
+    for( const auto& input : o.inputs )
+      emplace_back( input.from, -asset( input.amount, o.symbol ) );
+    for( const auto& output : o.outputs )
+      emplace_back( output.to, asset( output.amount, o.symbol ) );
   }
 
   void operator()(const transfer_to_vesting_operation& o)

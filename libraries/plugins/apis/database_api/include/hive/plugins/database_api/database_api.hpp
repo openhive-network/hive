@@ -110,6 +110,7 @@ class database_api
       // Recurrent payments //
       ////////////////////////
       (find_recurrent_transfers)
+      (get_scoped_authorities)
 
       ////////////////////////////
       // Authority / validation //

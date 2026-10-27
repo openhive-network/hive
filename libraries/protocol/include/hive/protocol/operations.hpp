@@ -122,6 +122,12 @@ namespace hive { namespace protocol {
         declined_voting_rights_operation //last_regular + 43
 
 #endif // HIVE_PROTOCOL_SKIP_VOPS
+        ,
+        // Append after historical tags; these signed operations are not virtual operations.
+        create_scoped_authority_operation,
+        revoke_scoped_authority_operation,
+        scoped_transfer_operation,
+        compressed_batch_transfer_operation
       > operation;
 
   /*void operation_get_required_authorities( const operation& op,

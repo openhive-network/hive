@@ -11,6 +11,7 @@
 
 #include <chrono>
 #include <locale>
+#include <algorithm>
 
 namespace hive { namespace protocol {
   namespace
@@ -246,6 +247,119 @@ namespace hive { namespace protocol {
     validate_asset_greater_than_zero(amount, "Cannot transfer a negative amount (aka: stealing)");
     validate_string_max_size(memo, HIVE_MAX_MEMO_SIZE - 1, "Transfer memo is too large");
     validate_is_utf8(memo, "Transfer memo is not UTF8");
+  } FC_CAPTURE_AND_RETHROW( (*this) ) }
+
+  void create_scoped_authority_operation::validate() const
+  { try {
+    validate_account_name( grantor );
+    validate_account_name( actor );
+    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0, "Scoped authority grant id must be nonzero" );
+    HIVE_PROTOCOL_ASSET_ASSERT( max_per_transfer.symbol == HIVE_SYMBOL || max_per_transfer.symbol == HBD_SYMBOL,
+      "Scoped authorities support only HIVE and HBD" );
+    validate_asset_type( max_per_period, max_per_transfer.symbol, "Scoped period limit symbol mismatch" );
+    validate_asset_type( max_lifetime, max_per_transfer.symbol, "Scoped lifetime limit symbol mismatch" );
+    validate_asset_greater_than_zero( max_per_transfer, "Scoped per-transfer limit must be positive" );
+    validate_asset_greater_than_zero( max_per_period, "Scoped period limit must be positive" );
+    validate_asset_greater_than_zero( max_lifetime, "Scoped lifetime limit must be positive" );
+    HIVE_PROTOCOL_ASSET_ASSERT( max_per_transfer.amount <= max_per_period.amount &&
+      max_per_transfer.amount <= max_lifetime.amount && max_per_period.amount <= max_lifetime.amount,
+      "Scoped limits must satisfy transfer <= period <= lifetime" );
+    HIVE_PROTOCOL_ASSET_ASSERT( max_lifetime.amount.value <= HIVE_MAX_SHARE_SUPPLY,
+      "Scoped lifetime limit exceeds the maximum share supply" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( period_seconds > 0 && period_seconds <= HIVE_MAX_SCOPED_AUTHORITY_PERIOD_SECONDS,
+      "Scoped period duration is out of range" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( expires_at > valid_from, "Scoped expiration must be after valid_from" );
+    const uint32_t duration = expires_at.sec_since_epoch() - valid_from.sec_since_epoch();
+    HIVE_PROTOCOL_NUMBER_ASSERT( duration <= HIVE_MAX_SCOPED_AUTHORITY_DURATION_SECONDS,
+      "Scoped authority duration exceeds one year" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( period_seconds <= duration,
+      "Scoped period duration must not exceed grant lifetime" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( allowed_recipients.size() <= HIVE_MAX_SCOPED_AUTHORITY_RECIPIENTS,
+      "Scoped recipient allowlist exceeds limit" );
+    for( size_t i = 0; i < allowed_recipients.size(); ++i )
+    {
+      validate_account_name( allowed_recipients[i] );
+      if( i > 0 )
+        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( allowed_recipients[i - 1] < allowed_recipients[i],
+          "Scoped recipient allowlist must be strictly sorted and contain no duplicates" );
+    }
+  } FC_CAPTURE_AND_RETHROW( (*this) ) }
+
+  void revoke_scoped_authority_operation::validate() const
+  {
+    validate_account_name( grantor );
+    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0, "Scoped authority grant id must be nonzero" );
+  }
+
+  void scoped_transfer_operation::validate() const
+  { try {
+    validate_account_name( grantor );
+    validate_account_name( actor );
+    validate_account_name( to );
+    HIVE_PROTOCOL_NUMBER_ASSERT( grant_id != 0, "Scoped authority grant id must be nonzero" );
+    HIVE_PROTOCOL_ASSET_ASSERT( amount.symbol == HIVE_SYMBOL || amount.symbol == HBD_SYMBOL,
+      "Scoped transfers support only HIVE and HBD" );
+    validate_asset_greater_than_zero( amount, "Scoped transfer amount must be positive" );
+    validate_string_max_size( memo, HIVE_MAX_MEMO_SIZE - 1, "Scoped transfer memo is too large" );
+    validate_is_utf8( memo, "Scoped transfer memo is not UTF8" );
+  } FC_CAPTURE_AND_RETHROW( (*this) ) }
+
+  void compressed_batch_transfer_operation::validate() const
+  { try {
+    HIVE_PROTOCOL_ASSET_ASSERT( symbol == HIVE_SYMBOL || symbol == HBD_SYMBOL,
+      "Compressed batch transfers support only HIVE and HBD" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( !inputs.empty() && inputs.size() <= HIVE_MAX_COMPRESSED_BATCH_TRANSFER_INPUTS,
+      "Compressed batch input count is out of range" );
+    HIVE_PROTOCOL_NUMBER_ASSERT( !outputs.empty() && outputs.size() <= HIVE_MAX_COMPRESSED_BATCH_TRANSFER_OUTPUTS,
+      "Compressed batch output count is out of range" );
+    int64_t input_sum = 0;
+    bool uses_scoped_grant = false;
+    for( size_t i = 0; i < inputs.size(); ++i )
+    {
+      validate_account_name( inputs[i].from );
+      uses_scoped_grant = uses_scoped_grant || inputs[i].grant_id != 0;
+      HIVE_PROTOCOL_NUMBER_ASSERT( inputs[i].amount > 0 && inputs[i].amount <= HIVE_MAX_SHARE_SUPPLY,
+        "Compressed batch input amount must be positive and in range" );
+      HIVE_PROTOCOL_NUMBER_ASSERT( inputs[i].amount <= HIVE_MAX_SHARE_SUPPLY - input_sum,
+        "Compressed batch input total exceeds maximum share supply" );
+      input_sum += inputs[i].amount;
+      if( i > 0 )
+        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( inputs[i - 1].from < inputs[i].from,
+          "Compressed batch inputs must be strictly sorted and unique" );
+    }
+    int64_t output_sum = 0;
+    for( size_t i = 0; i < outputs.size(); ++i )
+    {
+      validate_account_name( outputs[i].to );
+      HIVE_PROTOCOL_NUMBER_ASSERT( outputs[i].amount > 0 && outputs[i].amount <= HIVE_MAX_SHARE_SUPPLY,
+        "Compressed batch output amount must be positive and in range" );
+      HIVE_PROTOCOL_NUMBER_ASSERT( outputs[i].amount <= HIVE_MAX_SHARE_SUPPLY - output_sum,
+        "Compressed batch output total exceeds maximum share supply" );
+      output_sum += outputs[i].amount;
+      if( i > 0 )
+        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( outputs[i - 1].to < outputs[i].to,
+          "Compressed batch outputs must be strictly sorted and unique" );
+    }
+    HIVE_PROTOCOL_ASSET_ASSERT( input_sum == output_sum,
+      "Compressed batch inputs and outputs must balance exactly" );
+    if( uses_scoped_grant ) validate_account_name( actor );
+    else HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( actor == account_name_type(),
+      "Batch actor must be omitted when no scoped grant is used" );
+    // Both sides are strictly sorted, so reject source/destination overlap in
+    // linear time rather than comparing every pair (which would do 10,000
+    // string comparisons for the maximum-size operation).
+    size_t input_index = 0;
+    size_t output_index = 0;
+    while( input_index < inputs.size() && output_index < outputs.size() )
+    {
+      if( inputs[input_index].from == outputs[output_index].to )
+        HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT( false,
+          "Compressed batch source cannot also be a destination" );
+      if( inputs[input_index].from < outputs[output_index].to ) ++input_index;
+      else ++output_index;
+    }
+    validate_string_max_size( memo, HIVE_MAX_MEMO_SIZE - 1, "Compressed batch memo is too large" );
+    validate_is_utf8( memo, "Compressed batch memo is not UTF8" );
   } FC_CAPTURE_AND_RETHROW( (*this) ) }
 
   void transfer_to_vesting_operation::validate() const
