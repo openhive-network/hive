@@ -13,6 +13,7 @@
 
 #include <boost/preprocessor/repetition.hpp>
 #include <boost/preprocessor/arithmetic/add.hpp>
+#include <boost/preprocessor/arithmetic/sub.hpp>
 #include <boost/preprocessor/control/if.hpp>
 #include <boost/preprocessor/comparison/equal.hpp>
 #include <boost/preprocessor/logical/and.hpp>
@@ -291,7 +292,12 @@ namespace hive { namespace converter {
 
 // Range of the hive blockchain hardforks
 #define HIVE_BC_HF_CHAIN_1_START BOOST_PP_ADD(1, HIVE_BC_HF_CHAIN_0_STOP)
+#ifdef USE_ALTERNATE_CHAIN_ID
+// HF30 is experimental and has no original-chain activation block.
+#define HIVE_BC_HF_CHAIN_1_STOP  BOOST_PP_SUB(HIVE_NUM_HARDFORKS, 1)
+#else
 #define HIVE_BC_HF_CHAIN_1_STOP  HIVE_NUM_HARDFORKS
+#endif
 
 // Hard fork applier implementation - lambda that returns true if block with given number already has requested hardfork
 #define HIVE_BC_HF_FORK_APPLIER_GENERATOR_IMPL(_z, minor, major) \
@@ -308,6 +314,9 @@ namespace hive { namespace converter {
 
   const std::array< uint32_t, HIVE_NUM_HARDFORKS + 1 > blockchain_converter::hardfork_blocks = {
     BOOST_PP_REPEAT(HIVE_BC_HF_CHAINS_NUMBER, HIVE_BC_HF_FORK_APPLIER_GENERATOR, 0) /*, */
+#ifdef USE_ALTERNATE_CHAIN_ID
+    static_cast< uint32_t >(-1), // Unscheduled experimental HF30
+#endif
     static_cast< uint32_t >(-1) // Default value for future hardforks (maximum block number - should never evaluate to `true` in #has_hardfork)
   };
 
