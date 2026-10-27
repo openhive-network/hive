@@ -1,34 +1,40 @@
-# Compressed Batch Transfers (experimental HF30)
+# Compressed batch transfers
 
-## Status
+`compressed_batch_transfer_operation` is an experimental HF30 operation for one HIVE or HBD asset. It debits 1 to 100 accounts and credits 1 to 100 accounts in one atomic operation. HF30 is a development placeholder, not a mainnet activation.
 
-This document describes the current unified experimental implementation. It is not a deployment proposal. The operation activates at the same single provisional alternate-chain HF30 as Scoped Authorities and grant lifecycle management, and is rejected by production-configured evaluator builds.
+## Operation data
 
-## Operation and wire representation
+The operation contains one asset symbol, one memo, a vector of inputs, and a vector of outputs. Each input has a source account, an integer amount in the asset's smallest unit, and a grant ID. Grant ID 0 means the source uses its normal active authority. A nonzero ID selects a scoped grant belonging to that source. Each output has a destination and an integer amount.
 
-`compressed_batch_transfer_operation` moves one HIVE or HBD asset from 1–100 source accounts to 1–100 destination accounts. The operation stores one shared asset symbol and memo. Each source and destination appears once; both vectors must be strictly sorted by account name, which also rejects duplicates. Amounts are positive signed 64-bit canonical asset units and both totals must be equal and no greater than the chain's maximum share supply. Inputs and outputs cannot overlap.
+Both vectors must be strictly sorted by account name, which also rejects duplicates. Amounts must be positive. Sources and destinations cannot overlap. The input total must equal the output total and fit the protocol's share supply bound.
 
-The FC binary representation uses the existing Hive serializer: a shared symbol, bounded vectors of account names and integer amounts, and one memo. This avoids repeated full `asset` objects and per-transfer memos. Account names are serialized directly; the implementation does not rely on local Chainbase IDs or a custom varint codec. An earlier signed-transaction size check recorded 3,878 bytes for 100 standard transfer operations and 1,809 bytes for an equivalent one-input batch. The later controlled four-mode RC benchmark records 5,678 versus 2,115 bytes for the 1→100 standard multi-transfer versus compressed-active rows, and 12,313 versus 10,926 bytes for 100→100; its raw CSV is the current comparison source. The different fixtures and comparison modes mean the earlier 53.35% figure should not be substituted for the later benchmark results. The follow-up signed-RPC RC benchmark covers 1-to-3, 1-to-10, 1-to-100, 3-to-2, 10-to-10, and 100-to-100 shapes with separate transactions, multiple standard transfers in one transaction, active batches, and scoped batches. The measured byte and RC tables, raw CSV, methodology, and limitations are in [COMPRESSED_BATCH_RC_BENCHMARK.md](COMPRESSED_BATCH_RC_BENCHMARK.md). No custom varint/delta codec was added because the existing serializer already provides substantial savings without a custom consensus decoder.
+The binary format uses Hive's existing FC serializer. Account names are serialized directly. The symbol and memo are shared by the operation instead of repeated for every transfer. There is no custom varint, delta codec, or compression layer.
 
-## Authorization
+Example payload for two scoped sources paying one merchant:
 
-An input with `grant_id == 0` requires that source account's normal active authority. Every direct source is included in the operation's required-active set. A scoped input names its grantor in `from`, its grant ID in the input, and the common actor in the operation. Every scoped grant must independently match the actor and asset and pass status, timestamp, per-transfer, period, lifetime, balance, and recipient checks. Scoped inputs require the actor's existing active authority. The actor receives no grantor active authority.
+```json
+{
+  "actor": "bob",
+  "symbol": {"nai": "@@000000013", "decimals": 3},
+  "inputs": [
+    {"from": "alice", "amount": 1000, "grant_id": 1},
+    {"from": "carol", "amount": 1000, "grant_id": 1}
+  ],
+  "outputs": [{"to": "merchant", "amount": 2000}],
+  "memo": "invoice batch"
+}
+```
 
-The deterministic attribution rule processes sorted sources and sorted destinations in order: each source amount fills the remaining amount of the first destination, then subsequent destinations. A scoped grant's allowlist is checked for every destination receiving any portion attributed to that source. This is consensus-defined and prevents pooled funds from obscuring which grant funds a restricted recipient.
+## Authorization and settlement
 
-All grant and balance validations occur before any state change. Balance adjustments and grant-counter writes use the enclosing transaction's normal Chainbase undo session. Rejection rolls back the whole transaction; block pop restores prior balances and counters.
+Every ordinary input requires that source's active authority. A scoped input requires the operation actor's active authority and a matching unexpired, unrevoked grant for the source and asset. If one grant is referenced by multiple inputs, validation aggregates its spend before checking limits.
 
-## Resource accounting
+For recipient checks, the evaluator attributes amounts deterministically. It walks sources in sorted order and consumes destinations in sorted order. If an input pays more than the remaining amount of one destination, the rest goes to the next destination. A restricted grant must allow every destination receiving any part of its input.
 
-The operation's transaction bytes, signatures and authority checks retain the normal Hive RC accounting. The execution-time estimate additionally charges the configured transfer execution weight for every input and output. Since experimental operation tags follow historical virtual-operation tags, their RC statistics are recorded in the existing `multiop` bucket. This preserves the persistent `rc_stats_object` size and its previous checksum; cost calculation itself is per-entry. Confirmed-block RC comparisons against separate transfers and a multi-transfer transaction are recorded in [the benchmark report](COMPRESSED_BATCH_RC_BENCHMARK.md). The fixture measurements are not a production RC guarantee.
+The evaluator validates authorities, grants, recipients, balances, limits, and conservation before applying any balance or counter change. Normal transaction undo rolls the operation back on failure and restores its state on block pop.
 
-## Limits and limitations
+## RC and limits
 
-- Maximum 100 inputs and 100 outputs; all entries are bounded before evaluator work.
-- One asset per operation; only HIVE and HBD.
-- One shared memo.
-- Duplicate source/destination entries and source/destination overlap are rejected.
-- This operation does not support savings, vesting, recurrent transfers, conversions, orders or other financial operations.
-- Local signed-RPC demonstrations: Alice-to-two-recipient 1-to-2 TESTS batch transaction `5bec9d138514ffecb02f2648fcd8263fed635719` was confirmed at block 63, distributing 0.500 TESTS each to Bob and merchant. Combined scoped batch transaction `3e1f6224b227388e49143ee2016e84b6207fe037` was confirmed at block 132: Bob's one signature authorized the actor role; Alice's grant 3 debited 1.000 TBD to merchant, and Bob's independent grant 1 debited 1.000 TBD to Pedro. The API showed both separate lifetime counters increase to 1.000 TBD. A follow-up signed batch attempting 1.001 TBD from Alice's grant was rejected, and RPC verified both grants remained at 1.000 TBD and all four balances unchanged. This confirms actor-authenticated multi-grant execution through RPC, including recipient attribution. Broader adversarial attribution tests now cover restricted/unrestricted source mixes, split outputs, independent grants, and reordering constraints; external audit and untested composition combinations remain required.
-- A populated grant, its revoked status and spending counter survived a clean node shutdown/restart. The consolidated branch requires a fresh-chain populated snapshot/replay and two-node verification; earlier results used the superseded two-slot development schedule and are not evidence for this schedule.
-- The operation is experimental consensus code and requires independent security review and a separately approved future hardfork before any production use.
+RC accounts for transaction bytes and signatures as usual. The feature also adds execution cost per input and output, plus grant-state work for each scoped input. A scoped batch charges its actor. An active-only batch charges its first sorted source. Detailed confirmed-block measurements are in [the RC benchmark](COMPRESSED_BATCH_RC_BENCHMARK.md).
+
+The operation is limited to 100 inputs and 100 outputs, HIVE or HBD, and one shared memo. It cannot move savings, vesting, recurrent transfers, conversions, or market assets. Tests cover conservation, authorization, allowlist attribution, overlap, multiple grants, rollback, and size/RC accounting. The feature still needs independent security and economics review.

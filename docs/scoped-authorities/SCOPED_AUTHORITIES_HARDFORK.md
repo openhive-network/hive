@@ -1,27 +1,26 @@
-# Unified Experimental HF30 Integration
+# Experimental HF30
 
-**Status:** HF30 is a provisional development-only identifier on alternate-chain builds. It is not an assigned Hive mainnet hardfork number. Scoped Authorities, Compressed Batch Transfers, and grant lifecycle rules activate together at this one hardfork.
+HF30 is a provisional development identifier used only by alternate-chain builds. It is not an assigned Hive mainnet hardfork number. Hive maintainers must choose the production activation point and identifier.
 
 ## Activation
 
-Alternate-chain builds expose hardfork slot 30 after the existing alternate-chain HF29 behavior. Their development schedule defaults to a far-future time unless a local chain specification schedules HF30. Mainnet builds retain HF28 as their configured maximum and compile evaluator guards that reject all four experimental operations. No second experimental activation or intermediate lifecycle state exists in this branch.
+One activation enables all four operations and lifecycle rules together:
 
-All four signed operations become available together after HF30: `create_scoped_authority_operation`, `revoke_scoped_authority_operation`, `scoped_transfer_operation`, and `compressed_batch_transfer_operation`. HF30 has no state migration. Grantor high-water metadata is created atomically with that grantor's first grant, and all subsequent grant creation uses monotonic IDs and deterministic pruning.
+- `create_scoped_authority_operation`
+- `revoke_scoped_authority_operation`
+- `scoped_transfer_operation`
+- `compressed_batch_transfer_operation`
 
-The four operation tags remain appended after the historical variant tags; no existing operation is renumbered. The full operation variant uses tags 93–96 in the current build. The `HIVE_PROTOCOL_SKIP_VOPS` protocol variant has its own append layout. Full-chain compilation with that macro fails at an existing virtual-operation construction omitted from the variant in both this branch and upstream develop. Compatibility for each supported build variant must be reviewed before upstream adoption.
+There is no HF31 path, intermediate migration, or dependency on a second hardfork. Production-configured evaluator builds reject all four operations. The alternate-chain test schedule used for the local demonstration activated HF30 at block 1.
 
-## State and replay
+## State and compatibility
 
-The Chainbase grant and grantor-metadata indexes are registered through the normal database index mechanism. HF30 activation itself changes no grant rows. The first grant creation stores the highest issued ID; later creations prune only revoked or expired rows, with the existing 100-record bound limiting work. The metadata remains after all grant rows are pruned, so identifiers cannot be reused. Failed transactions and block pops restore both metadata and grant records through the normal undo session.
+Grant records and per-grantor high-water IDs are Chainbase objects. Metadata is created with a grant. There is no activation-time migration. Revoked and expired grants are pruned on later grant creation; the high-water ID remains so deleted IDs cannot return.
 
-This branch consolidates previously experimental two-slot development histories. Those chains and snapshots are intentionally not replay-compatible with the unified schedule. Preserve them on the prior branch for reference; use fresh data directories and a fresh genesis specification for consolidated testing. No existing data directory is automatically rewritten or removed.
+Nodes that run this protocol must use the modified binary to validate blocks containing these operations and maintain grant state. The local populated-chain test restored a snapshot and replayed from genesis with matching state. Those results do not establish compatibility with a future mainnet snapshot format or older node binaries.
 
-## Verification and deployment requirements
+The four signed operation tags are appended after historical virtual-operation tags so existing tags do not move. The operations remain regular signed operations. The new tags use the existing RC `multiop` statistics bucket to preserve the persistent RC stats layout. These choices need review across every supported build configuration before an upstream hardfork is proposed.
 
-- Schedule only HF30 in isolated alternate-chain specs and test transactions immediately before and after activation.
-- Verify the four operations are rejected in a production-configured local harness.
-- Preserve historical operation tags and serialization fixtures.
-- Run consensus, plugin, configuration, RC, signed-RPC, snapshot, full replay, and two-node synchronization tests.
-- Review snapshot/state layout and replay requirements with Hive maintainers.
-- Obtain an independent protocol/security audit and normal witness/governance approval before any production proposal.
-- Replace the provisional identifier and schedule through upstream hardfork conventions if maintainers choose to pursue deployment.
+## Before any production proposal
+
+Hive maintainers and witnesses would need to agree on the assigned hardfork, activation schedule, upgrade window, replay requirements, snapshot compatibility, and any migration policy. The implementation also needs independent security and RC economics review. HF30 must not be enabled on mainnet as it appears in this experimental branch.

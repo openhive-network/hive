@@ -1038,7 +1038,6 @@ namespace hive { namespace protocol {
       uint8_t get_pair_id( bool* explicitValue = nullptr ) const;
   };
 
-  /** Immutable grant for one actor to make direct liquid transfers. */
   struct create_scoped_authority_operation : public base_operation
   {
     account_name_type grantor;
@@ -1078,10 +1077,6 @@ namespace hive { namespace protocol {
     void get_required_active_authorities( flat_set<account_name_type>& a ) const { a.insert( actor ); }
   };
 
-  /** Atomic single-asset account batch transfer. Input and output vectors are
-   * strictly sorted by account name; every input account supplies active
-   * authority. Amounts are raw canonical asset units and the symbol is shared.
-   */
   struct compressed_batch_transfer_input
   {
     account_name_type from;

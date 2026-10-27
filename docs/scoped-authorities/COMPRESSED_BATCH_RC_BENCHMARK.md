@@ -1,68 +1,86 @@
-# Compressed Batch Transfer RC benchmark
+# Batch transfer benchmark
 
-## Result scope
+These measurements come from the consolidated HF30 C++ fixture. The fixture confirmed each transaction in a block, then checked balances and RC charged. It is not a public-network benchmark.
 
-These are measurements from the consolidated experimental HF30 C++ chain fixture, not from a public Hive network. Every row's transactions were submitted to the fixture, included in a produced block, and checked against confirmed balances. The benchmark also verifies that each confirmed transaction's RC cost is the same value recorded at submission and that scoped lifetime counters equal their inputs. It uses HBD, matching memo bytes within each shape, identical source/output flows, and the fixture's active RC parameters and pools.
+The test compares four ways to send the same HBD amounts:
 
-`compressed_batch_rc_benchmark.csv` is the raw result. It includes all five RC usage-vector dimensions, submitted transaction RC costs, same-pool normalized costs, scoped grant setup costs, signatures, elapsed push time, process peak RSS, and balance-adjustment call counts.
+- A: separate standard transfer transactions.
+- B: standard transfers in one transaction.
+- C: one compressed batch using source active authorities.
+- D: one compressed batch using scoped grants and the delegated actor's authority.
 
-## Comparison summary
+Each entry below lists A, B, C, D in that order. Byte counts include transaction overhead and signatures. RC savings are relative to A, then B, using the same captured pool parameters for each shape. The displayed RC totals are confirmed charges; percentages use the normalized `same_pool_rc_cost`. The exact resource vectors and raw observations are in `compressed_batch_rc_benchmark.csv`.
 
-A = independent standard transfer transactions. B = one signed transaction with multiple standard transfers. C = one compressed batch with active-authority inputs. D = one scoped batch with delegated-actor authorization. Bytes and signatures are summed across A's transactions; B/C/D are one transaction each. RC percentages use the `same_pool_rc_cost` column so each mode in a shape is priced against the same captured RC pool. Confirmed `rc_charged` values closely match those normalized costs.
+## Results
 
-| Inputs → outputs | A/B/C/D bytes | A/B/C/D signatures | C byte savings vs A / B | D byte savings vs A / B | A/B/C/D confirmed RC | C RC savings vs A / B | D RC savings vs A / B |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| 1 → 3 | 396 / 240 / 175 / 185 | 3 / 1 / 1 / 1 | 55.81% / 27.08% | 53.28% / 22.92% | 17,633,292 / 10,290,824 / 7,688,842 / 8,117,435 | 56.40% / 25.28% | 53.97% / 21.12% |
-| 1 → 10 | 1,330 / 628 / 315 / 325 | 10 / 1 / 1 / 1 | 76.32% / 49.84% | 75.56% / 48.25% | 63,095,400 / 27,966,102 / 14,438,850 / 14,896,740 | 77.12% / 48.37% | 76.39% / 46.73% |
-| 1 → 100 | 13,400 / 5,678 / 2,115 / 2,125 | 100 / 1 / 1 / 1 | 84.22% / 62.75% | 84.14% / 62.57% | 738,792,000 / 292,175,279 / 110,815,281 / 111,350,145 | 85.00% / 62.07% | 84.93% / 61.89% |
-| 3 → 2 | 396 / 370 / 333 / 213 | 3 / 3 / 3 / 1 | 15.91% / 10.00% | 46.21% / 42.43% | 48,956,640 / 45,594,342 / 41,277,264 / 26,140,254 | 15.69% / 9.47% | 46.61% / 42.67% |
-| 10 → 10 | 1,340 / 1,223 / 1,116 / 541 | 10 / 10 / 10 / 1 | 16.72% / 8.75% | 59.63% / 55.76% | 169,698,870 / 154,210,880 / 141,546,906 / 67,361,866 | 16.59% / 8.21% | 60.31% / 56.32% |
-| 100 → 100 | 13,600 / 12,313 / 10,926 / 4,501 | 100 / 100 / 100 / 1 | 19.66% / 11.26% | 66.90% / 63.45% | 1,851,013,800 / 1,668,494,261 / 1,490,607,397 / 599,733,022 | 19.47% / 10.66% | 67.60% / 64.06% |
+**1 input, 3 outputs**
 
-Compressed payloads retain the required signatures: active batches need one authority signature per source; scoped batches need the actor signature. The reduction is largest when one input funds many outputs and when a scoped batch replaces many source signatures. For small fan-in/fan-out, B's standard transaction can already share transaction overhead, so the extra compression yields smaller savings.
+- Bytes: 396, 240, 175, 185. C saves 55.81% / 27.08%; D saves 53.28% / 22.92%.
+- Signatures: 3, 1, 1, 1.
+- Confirmed RC: 17,633,292; 10,290,824; 7,688,842; 8,117,435.
+- C saves 56.40% / 25.28% RC; D saves 53.97% / 21.12%.
 
-## Scoped-grant setup cost
+**1 input, 10 outputs**
 
-The CSV's `grant_setup_rc` field measures confirmed creation of the grants used by D and excludes those setup operations from the D transfer-only RC cost. Setup is substantial: the recorded setup totals range from 18.84 billion RC for one grant in 1→3 to 1.843 trillion RC for 100 independent grants in 100→100. A one-use grant is therefore not RC-efficient end to end. Grant creation is a separate authorization/setup event and can be amortized only if the grant is reused; it must not be hidden when comparing a one-off payment.
+- Bytes: 1,330, 628, 315, 325. C saves 76.32% / 49.84%; D saves 75.56% / 48.25%.
+- Signatures: 10, 1, 1, 1.
+- Confirmed RC: 63,095,400; 27,966,102; 14,438,850; 14,896,740.
+- C saves 77.12% / 48.37% RC; D saves 76.39% / 46.73%.
 
-The benchmark gives source accounts high development-only vesting so they can fund the transfer and grant-creation costs. This changes absolute RC regeneration versus a normal account mix but does not change the matched per-shape comparison: the same pool parameters and weights price all modes in each shape.
+**1 input, 100 outputs**
 
-### Approximate RC break-even for grant setup
+- Bytes: 13,400, 5,678, 2,115, 2,125. C saves 84.22% / 62.75%; D saves 84.14% / 62.57%.
+- Signatures: 100, 1, 1, 1.
+- Confirmed RC: 738,792,000; 292,175,279; 110,815,281; 111,350,145.
+- C saves 85.00% / 62.07% RC; D saves 84.93% / 61.89%.
 
-For each shape, `ceil(grant_setup_rc / (baseline_rc - scoped_batch_rc))` estimates how many same-shaped scoped batches would repay the grant creation RC. The result is shown in batches, not individual outputs. It assumes the same pool pricing for every use and ignores expiry, periodic allowance limits, and changes to account RC regeneration.
+**3 inputs, 2 outputs**
 
-| Inputs → outputs | Batches vs separate transactions | Batches vs standard multi-transfer transaction |
-|---|---:|---:|
-| 1 → 3 | 1,981 | 8,671 |
-| 1 → 10 | 391 | 1,441 |
-| 1 → 100 | 30 | 104 |
-| 3 → 2 | 2,431 | 2,852 |
-| 10 → 10 | 1,806 | 2,128 |
-| 100 → 100 | 1,473 | 1,725 |
+- Bytes: 396, 370, 333, 213. C saves 15.91% / 10.00%; D saves 46.21% / 42.43%.
+- Signatures: 3, 3, 3, 1.
+- Confirmed RC: 48,956,640; 45,594,342; 41,277,264; 26,140,254.
+- C saves 15.69% / 9.47% RC; D saves 46.61% / 42.67%.
 
-The large 100-input setup amount includes 100 separately created grants. In a real deployment the number and duration of grants, the cadence of use, and each actor/source RC pool determine whether the setup cost can be amortized. This estimate does not assert that 100 transfers have the cost of one transfer; each batch is priced for all its inputs and outputs.
+**10 inputs, 10 outputs**
 
-## RC accounting changes covered
+- Bytes: 1,340, 1,223, 1,116, 541. C saves 16.72% / 8.75%; D saves 59.63% / 55.76%.
+- Signatures: 10, 10, 10, 1.
+- Confirmed RC: 169,698,870; 154,210,880; 141,546,906; 67,361,866.
+- C saves 16.59% / 8.21% RC; D saves 60.31% / 56.32%.
 
-Ordinary `transfer_operation` pays market-byte RC. Scoped direct transfers and compressed batches now do the same. Compressed batches charge execution weight for each input and output; every scoped input adds another transfer execution weight for reading and updating its persistent grant counter. A scoped batch selects its delegated actor as RC payer, including when active-authority inputs are mixed in. Pure active batches deterministically select the first sorted source as payer.
+**100 inputs, 100 outputs**
 
-The unified HF30 grant-creation evaluator charges execution for retained grant rows scanned, including earlier creations in the same transaction, and charges the 64-byte high-water metadata estimate once per grantor when that object is first created. This prices the bounded scan without charging an empty account for work it does not cause. The benchmark's grantors begin with no retained rows. Use the consolidated run's `same_pool_rc_cost` for within-run comparisons; recorded confirmed RC values vary slightly with pool conditions. The earlier separately scheduled experiment's raw CSV is retained as `compressed_batch_rc_benchmark_preconsolidation.csv` for reference and is not a unified-chain result.
+- Bytes: 13,600, 12,313, 10,926, 4,501. C saves 19.66% / 11.26%; D saves 66.90% / 63.45%.
+- Signatures: 100, 100, 100, 1.
+- Confirmed RC: 1,851,013,800; 1,668,494,261; 1,490,607,397; 599,733,022.
+- C saves 19.47% / 10.66% RC; D saves 67.60% / 64.06%.
 
-New operation tags remain outside the historical regular-operation range and are mapped to the existing `multiop` RC statistics bucket. This bucket is aggregate reporting only: the per-transaction RC calculation uses each operation's own resource vector and is not replaced by the bucket average. Keeping the bucket avoids changing the persistent `rc_stats_object` size/checksum. The tradeoff is that the RC stats API does not expose a distinct average for each experimental operation.
+Batching shares the transaction envelope and the operation's asset symbol and memo. That explains some savings in B and C. C still needs each source's active authorization. D uses the actor's signature for the scoped inputs, but each grant is looked up, checked, and updated. The byte and RC differences therefore include batching, the operation encoding, and signature count; they are not just compression gains.
 
-## Measurement details and limits
+## Grant setup cost
 
-- `serialized_bytes` is the signed transaction's protocol binary size, including signatures and transaction overhead, not JSON size.
-- A/B/C/D use identical memo contents for corresponding transfers within a shape; memo strings are unique across shapes to avoid duplicate transaction IDs.
-- `same_pool_rc_cost` applies Hive's RC pricing curve to the measured resource vector using the pool/weight/regen parameters captured at the start of that shape. The `rc_charged` column is read back after block inclusion.
-- `execution_us` is wall-clock time around transaction push/signature validation in this fixture, not an isolated evaluator microbenchmark. It is a single run, not a statistically controlled latency benchmark.
-- `max_rss_kb` is the process high-water RSS at the row, not attributable per-transaction memory. The latest consolidated rerun ranged from 79,992 to 81,572 KiB (about 78.1 to 79.7 MiB); earlier runs had higher process baselines. This is whole-process high-water memory, not per-operation allocation.
-- `balance_writes` counts evaluator balance-adjustment calls: two per ordinary transfer, or one per input and output for a batch. It is not a count of physical disk writes.
-- Grant creation is confirmed with each shape's transfer rows; all transfer variants for a shape are included together in a block so their RC values share that block's pre-update pool conditions.
+The D transfer numbers exclude the grant creation transactions. The CSV's `grant_setup_rc` records that cost separately. It ranges from 18.84 billion RC for the single grant in the 1-to-3 shape to 1.843 trillion RC for 100 grants in the 100-to-100 shape. A one-off scoped payment does not repay this cost.
 
-## Reproduction
+Using `ceil(grant_setup_rc / (baseline_rc - scoped_batch_rc))`, the approximate number of same-shaped batches needed to repay grant setup is:
 
-From the repository root:
+- 1 to 3: 1,981 batches versus separate transfers; 8,671 versus standard transfers in one transaction.
+- 1 to 10: 391; 1,441.
+- 1 to 100: 30; 104.
+- 3 to 2: 2,431; 2,852.
+- 10 to 10: 1,806; 2,128.
+- 100 to 100: 1,473; 1,725.
+
+This estimate assumes each batch has the same shape and pool price. It ignores expiry, changes in available RC, and different use frequency. The 100-input setup includes 100 grants. One hundred transfers are priced as one hundred balance movements, even when submitted in one batch.
+
+## What the fixture measures
+
+Hive's normal RC accounting charges serialized transaction bytes. The feature adds execution weights for every input and output, plus grant-state work for scoped inputs. Grant creation is charged for the bounded retained rows scanned and for the high-water metadata record on its first creation. Scoped batches charge the actor. Active-only batches use the first sorted source as payer.
+
+`execution_us` measures wall time around transaction submission and signature validation. It is one fixture run, not an isolated evaluator benchmark. `max_rss_kb` is process high-water memory, not memory allocated by one operation. `balance_writes` counts calls to adjust balances, not disk writes. The current run measured process RSS from 79,992 to 81,572 KiB.
+
+The new operations use the existing `multiop` RC statistics bucket to keep the persistent RC statistics object layout unchanged. RC cost is computed from each operation's resource vector; the bucket only combines reporting. The cost model is an estimate for review, not a claim that execution work is free.
+
+## Reproduce
 
 ```sh
 ninja -C build-baseline -j4 chain_test
@@ -74,4 +92,4 @@ build-baseline/tests/unit/chain_test \
   --report_level=detailed
 ```
 
-The fixture is isolated from production networks and uses deterministic development keys. Results are specific to this build, RC parameter set, operation serialization mode, and test-chain state. They are not a promise of production RC savings or performance.
+The fixture uses development keys and does not connect to a public network. Results depend on this build's RC parameters and serialization mode. The pre-consolidation CSV is retained for history; use `compressed_batch_rc_benchmark.csv` for the unified HF30 results.

@@ -7,7 +7,6 @@ namespace hive { namespace chain {
 
 using hive::protocol::asset;
 
-/** Persistent consensus record for one immutable scoped transfer grant. */
 class scoped_authority_object : public object< scoped_authority_object_type, scoped_authority_object, std::true_type >
 {
   CHAINBASE_OBJECT( scoped_authority_object );

@@ -1,46 +1,18 @@
-# Scoped Authorities Changelog
+# Change log
 
-## Unified experimental activation
+This records the current experimental branch. It is not a release history for Hive mainnet.
 
-- Consolidated the four experimental operations, permanent grant-ID high-water metadata, bounded lazy pruning, and all grant lifecycle behavior into one provisional alternate-chain HF30 activation.
-- Removed the second development hardfork slot and the intermediate migration path. The first grant now creates its grantor metadata directly; grant records without metadata are rejected as inconsistent state.
-- Existing development chains created with the former two-slot schedule are preserved on `backup/hf30-hf31-pre-consolidation` and are not replay-compatible with this branch. New validation uses fresh data directories.
-- HF30 remains a local experimental identifier, not an assigned Hive mainnet hardfork. Mainnet builds continue rejecting the experimental operations.
+## Unified HF30 prototype
 
-## Initial audit and design
+- Added grant creation, revocation, restricted transfer, and compressed batch transfer operations.
+- Added persistent grant records and per-grantor high-water IDs. Revoked and expired records are pruned during later grant creation, while IDs remain permanently unavailable.
+- Added consensus evaluators, HIVE/HBD limits, fixed-window counters, expiration, recipient allowlists, and transaction rollback coverage.
+- Added read-only grant inspection, account-history handling, and RC resource accounting.
+- Appended the new operation tags after the historical virtual-operation range and kept them out of virtual-operation classification.
+- Kept all four operations behind one alternate-chain HF30 gate. There is no HF31 activation or migration.
+- Added bounded multi-input/multi-output transfers with normal active authorization or scoped grants, deterministic source-to-recipient attribution, and atomic settlement.
+- Added focused consensus, lifecycle, serialization, authorization, attribution, and RC tests.
 
-- Added a protocol proposal and threat model under `docs/scoped-authorities/`.
-- No C++ consensus changes, operation definitions, database objects, API endpoints, scripts, or tests are implemented in this changeset yet.
-- Repository baseline observed: branch `feature/scoped-authorities`, commit `9d6007615`, describe `1.28.8-rc3-87-g9d6007615`.
-- Mainnet hardfork maximum in this source is HF28; alternate-chain configuration includes HF29. The feature requires a separately assigned future activation and is not wired to an existing hardfork.
+## Recorded verification
 
-## Development implementation and regression verification
-
-- Added `create_scoped_authority_operation`, `revoke_scoped_authority_operation`, and `scoped_transfer_operation`; the three tags are appended after historic virtual-operation tags and retain non-virtual classification. Regression assertions pin transfer tag 2, recurrent transfer tag 49, first and last historical virtual tags 50 and 92, and new tags 93 through 95.
-- Added a persistent Chainbase scoped-authority object and grantor/grant-ID and actor/grantor/grant-ID indexes, evaluators, HF30 alternate-chain gating, canonical HIVE/HBD limits, fixed-period and lifetime counters, recipient checks, expiration, revocation, and RC operation costs.
-- Added `database_api.get_scoped_authorities` and account-history filters for the three new regular operations.
-- Added ten consensus tests, including actual block confirmation, 100-block revocation persistence, exact expiration timestamp enforcement, wrong-asset/forged-ID/authority-change rejection, isolated grants and multiple transfers in one block, failed multi-operation transaction rollback, and revoke block-pop rollback. The most recent complete chain run passed all 508 cases and 1,834,977 assertions. The latest focused run passed 10 cases and 180 assertions.
-- Kept appended experimental operation tags out of the persistent `rc_stats_object` array. Such operations report through its existing multiop bucket so their high numeric tags do not enlarge the Chainbase object or invalidate its existing layout.
-- Local RPC smoke test returned an empty grant list before and after restarting the development node. A populated grant restart, signed RPC transfer demo, snapshot restore, full replay determinism, Python integration suite, and external audit remain outstanding. The Python tools package is pinned to a private Hive package registry and could not be resolved in this environment.
-- The verified implementation is committed locally; no remote push has been made.
-
-## Compressed batch transfer and integration follow-up
-
-- Added `compressed_batch_transfer_operation` as tag 96 in the regular full operation variant and tag 53 when `HIVE_PROTOCOL_SKIP_VOPS` is defined. Existing operation tags remain fixed. The skip-VOPS `hive_protocol` target and an executable tag check passed. A full-chain build under that macro fails in pre-existing code that constructs omitted virtual-operation types, so it is not a supported whole-node configuration.
-- Batch transfers are single-asset HIVE/HBD operations with bounded 1–100 sorted unique input/output vectors, explicit canonical source-to-output attribution, direct active-authority inputs or independently validated scoped grants, recipient allowlist checks, all-input validation before settlement, and normal database undo behavior.
-- Added operation-level RC weights for every source and destination. New operation tags are bucketed into the existing persistent `multiop` stats slot so the pre-existing RC stats object dimensions/checksum remain stable. The signed wire-size test measured 3,878 bytes for 100 standard transfer operations and 1,809 bytes for the equivalent one-input/100-output batch, both with one signature. Confirmed-block RC comparisons are recorded in `COMPRESSED_BATCH_RC_BENCHMARK.md` and the raw CSV artifacts; they compare independent transactions, standard multi-operation transactions, active-authority batches, and scoped-authority batches.
-- Added consensus regression tests for multi-source, multi-output, mixed scoped/direct transfers, independent grant counters, recipient attribution, failed-batch rollback, block pop, wire size, operation tag classification, and limits. Latest full chain suite: 517/517 cases and 1,835,155/1,835,155 assertions. After the linear-time overlap-check optimization, the focused scoped/batch suite passed 19/19 cases and 1,068/1,068 assertions. Config suite: 3/3 and 51/51. The existing snapshot plugin suite passed 12/12 cases and 963/963 assertions; it does not include populated scoped-authority records.
-- A live alternate-chain RPC demo confirmed signed grant creation, actor-signed scoped transfer, failed over-limit transfer, revocation and failed post-revoke use; populated grant/counter/revocation state survived node restart. A short-lived grant was unusable after its consensus expiry. A standard batch and a two-grant scoped batch were signed and included; a failed over-limit scoped batch left balances and both counters unchanged.
-- A fresh two-node testnet using full block logs synchronized from genesis. Both nodes processed the same signed grant, scoped transfer, and revoke transactions and returned identical head IDs, balances, and grant counters/status. An earlier sync attempt used `--block-log-split=0`, which keeps only the head block; it could not serve history and was discarded without modifying the demo state.
-- Built `hived` in both alternate/testnet and separate `BUILD_HIVE_TESTNET=OFF` mainnet configurations. The production-configured evaluator path is unconditionally disabled for these operations. The skip-VOPS protocol-only target and executable tag check passed; a whole-chain build is unsupported because of existing virtual-operation construction sites.
-- Populated scoped-authority snapshot round-trip, full replay from genesis of a populated feature chain, broad RC vectors/timing benchmarks, complete Python integration tests, and external security review remain open. The Python suite depends on a pinned private `hiveio-beekeepy` release not available from the configured public index. An attempted scoped snapshot fixture was discarded after it failed to establish a confirmed grant in the test chain; its failure is not counted as a snapshot pass or a protocol defect.
-
-
-## Final verification and RC benchmark follow-up
-
-- Added RC byte-resource counting for scoped direct and compressed batch transfers. The batch execution weight charges each input/output and adds a transfer weight per scoped grant lookup/counter mutation. Scoped batch transactions select the actor as RC payer, including mixed active/scoped inputs; active-only batches use the first canonical source. New operation tags continue using the existing `multiop` statistics bucket, so persistent RC stats dimensions and object checksums remain unchanged.
-- Added adversarial tests for cross-attribution between restricted and unrestricted sources, independently restricted allowlists, output splitting, mixed active/scoped inputs, multiple grants from one grantor, isolated counters, and delegated actor RC payment. The opt-in confirmed-block benchmark covers six input/output shapes and four transaction forms. Results and raw resource vectors are in `COMPRESSED_BATCH_RC_BENCHMARK.md` and `compressed_batch_rc_benchmark.csv`; the 100-to-100 scoped batch used 4,501 bytes versus 13,600 bytes for separate transfers and reduced transfer-only RC by 67.60%. Grant-creation RC is separately recorded and is substantial.
-- Final `chain_test`: 521 passed, 1 opt-in benchmark case skipped, 1,835,228 assertions passed. Focused scoped/batch suite: 24 cases and 443 assertions. Opt-in benchmark: 904 assertions. Full `plugin_test`: 102 cases and 7,134 assertions; config tests: 3 cases and 51 assertions. Mainnet and alternate-chain `hived` builds completed.
-- Updated the deterministic HF30 PoW fixtures in account-history and operations-in-block plugin tests after the full plugin run exposed expected block-ID-dependent output differences; all plugin tests pass with those current fixture values.
-- Captured and restored a state snapshot containing one revoked, partially spent scoped grant. An independent restore and a clean genesis replay both matched the original head block #157 (`0000009d4ad4b25bcb3e9e24ee60a90a7f3c09e2`) and grant counters/status. The broader multi-grant snapshot/replay matrix remains open.
-- Python functional tests remain blocked by the checkout's Python >=3.14 and Hive package-index requirements; this machine provides Python 3.12.3 and public PyPI does not publish the pinned post-release package set. A runtime submission/rejection test using the separate mainnet-configured executable has not been performed. The prototype still requires external security review and a formally approved upstream hardfork before production deployment.
+The testing notes contain exact build and test counts, signed transaction IDs, block IDs, snapshot/replay comparisons, two-node synchronization, and production-configured rejection responses. The latest full test run was recorded before the most recent documentation-only edits. Do not treat the testnet prototype as production-ready.

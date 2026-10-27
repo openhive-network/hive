@@ -1,62 +1,52 @@
-# Scoped Authorities Protocol Specification
+# Scoped Authorities
 
-**Status: the alternate-chain prototype activates Scoped Authorities, Compressed Batch Transfers, and grant lifecycle rules together at one provisional development-only HF30. The identifier is not an official mainnet hardfork assignment. Deployment remains subject to upstream review and independent security validation.**
+This describes the current experimental implementation. Scoped Authorities and compressed batches activate together under one provisional alternate-chain HF30. HF30 is not an assigned mainnet hardfork.
 
-## Goals and non-goals
+## Purpose and limits
 
-Scoped Authorities let an account delegate a narrowly defined ability to make direct liquid HIVE or HBD transfers. Consensus state, signed transactions, block time, and normal balance checks are the sole enforcement inputs. Existing owner, active, and posting authorities remain unchanged. A scoped grant does not authorize legacy `transfer_operation` or any operation other than the dedicated scoped transfer.
+A grant lets one account authorize another account to make direct liquid HIVE or HBD transfers within fixed limits. It does not add the actor to the grantor's active authority and cannot authorize legacy transfers or unrelated operations.
 
-Version one excludes savings, recurrent transfers, escrow, vesting, conversions, orders, proposals, account/recovery changes, and every other operation. It uses no price conversion and no floating point.
+The implementation does not cover savings, vesting, recurrent transfers, escrow, conversions, orders, proposals, account updates, or recovery operations. It uses integer asset units and consensus block time. There is no price conversion or floating-point accounting.
 
-## Protocol design
+## Operations
 
-Four regular operations are implemented: `create_scoped_authority_operation`, `revoke_scoped_authority_operation`, `scoped_transfer_operation`, and `compressed_batch_transfer_operation`. No update operation is provided. Changing limits requires revoking the old grant and creating a new grant with a higher grant identifier; each grant has independent counters.
+The protocol adds four signed operations:
 
-Creation and revocation require the grantor's **active** authority. This matches the authority used for liquid transfers and allows recovery through normal owner-to-active authority upgrade semantics. Owner authorization can satisfy an active requirement under current transaction verification rules; the owner key is not separately required. Scoped transfer requires the actor's normal active account authority, never the grantor's authority. It has no `account_auths` mechanism and is not added to authority recursion or signature verification shortcuts.
+- `create_scoped_authority_operation`
+- `revoke_scoped_authority_operation`
+- `scoped_transfer_operation`
+- `compressed_batch_transfer_operation`
 
-The grant record contains the grantor and actor account names, caller-supplied `uint32_t` grant ID, asset-specific per-transfer/lifetime/period amounts, period seconds, valid-from and expiration timestamps, sorted recipient account names (empty means unrestricted), lifetime spent, current period index and period spent, and a revoked bit. A unique index on `(grantor, grant_id)` and lookup index on `(actor, grantor, grant_id)` support deterministic access. Each grantor has one persistent high-water ID record created atomically with its first grant. IDs must strictly increase, may be skipped, and cannot wrap or be reused. A grantor can retain at most 100 live grants; revoked and expired rows are pruned during later grant creation. The cap bounds scans to at most 100 rows, and pruning never removes a usable grant. Recipient lists are bounded at 32 accounts.
+Creation and revocation require the grantor's active authority. A scoped transfer requires the actor's active authority. Existing Hive authority recursion and signature checks apply.
 
-## Operation schemas (JSON shape)
+A grant contains the grantor, actor, grant ID, permitted asset, per-transfer limit, per-period limit, lifetime limit, period duration, valid-from time, expiry, optional recipient allowlist, spending counters, current period index, and revoked flag. Grants are immutable. To change a grant, revoke it and create a new one with a greater ID.
 
-```json
-{"type":"create_scoped_authority_operation","value":{
-  "grantor":"alice","actor":"bob","grant_id":1,
-  "max_per_transfer":{"amount":"5000","precision":3,"nai":"@@000000013"},
-  "max_lifetime":{"amount":"250000","precision":3,"nai":"@@000000013"},
-  "max_per_period":{"amount":"50000","precision":3,"nai":"@@000000013"},
-  "period_seconds":86400,"valid_from":"2026-11-01T00:00:00",
-  "expires_at":"2026-11-08T00:00:00","allowed_recipients":["merchant1"]}}
+## Grant IDs and record cleanup
+
+Grant IDs are nonzero `uint32_t` values and must increase for each grantor. A persistent high-water record remains after grant records are deleted. IDs may skip, but cannot wrap or be reused. `UINT32_MAX` can be issued once; that grantor cannot issue another ID afterward.
+
+A grantor may have up to 100 retained grant records. On grant creation, the evaluator examines that bounded set and removes records already revoked or expired at the current head-block time. Active grants are never pruned. There is no background cleanup. Pruned grants no longer appear in the inspection API, but their IDs remain covered by the high-water record and operation history remains in the blockchain.
+
+## Spending and time
+
+The valid interval is `valid_from <= head_block_time < expires_at`. A transfer at the exact expiry timestamp fails. Periods are fixed windows anchored at `valid_from`:
+
+```text
+period_index = (head_block_time - valid_from) / period_seconds
 ```
 
-```json
-{"type":"scoped_transfer_operation","value":{
-  "grantor":"alice","actor":"bob","grant_id":1,"to":"merchant1",
-  "amount":{"amount":"5000","precision":3,"nai":"@@000000013"},"memo":"invoice"}}
-```
+When the index changes, period spending resets. Lifetime spending never resets. For each transfer, consensus checks the asset, actor, recipient, time, revocation status, liquid balance, per-transfer limit, period remaining amount, and lifetime remaining amount before changing state.
 
-Revocation identifies `(grantor, grant_id)` and requires grantor active authority. Its static-variant JSON shape is `{"type":"revoke_scoped_authority_operation","value":{"grantor":"alice","grant_id":1}}`. Generic wallet signing and RPC broadcast were demonstrated on the predecessor development chain; those signed flows have not yet been repeated against a populated chain using the consolidated single-HF30 schedule.
+If validation fails, the transaction undo session restores balances, counters, and pruning changes. Revocation prevents future use but preserves spending counters until ordinary deterministic pruning removes the record.
 
-## Spending and timestamp semantics
+## Batches
 
-All amounts use positive canonical `asset` integer units. For every successful scoped transfer, consensus validates the asset, destination, grant identity, actor signature, time interval, grant status, balance, and each spending ceiling before changing state. Lifetime and period additions use checked arithmetic; a failed check throws and the transaction's normal undo session rolls back all balance and counter writes.
+A batch can combine active-authority inputs and scoped inputs. It uses one asset, sorted unique sources and destinations, positive integer amounts, and exact input/output conservation. The actor's authority is required for scoped inputs; each ordinary input requires its source authority.
 
-The valid interval is half-open: `valid_from <= head_block_time < expires_at`. The fixed period index is `(head_block_time - valid_from) / period_seconds`; the period counter logically starts at zero when the index changes. Time is consensus block time. Lifetime spent never resets. Multiple operations in one transaction, multiple transactions in one block, and multiple grants use their own persistent counters in operation order.
+Outputs are attributed to inputs by walking sorted sources and sorted destinations. Each source consumes destination amounts in order. A scoped grant's allowlist must include every destination that receives any portion attributed to that source. This rule is part of consensus and is covered by recipient-attribution tests.
 
-Exact-expiration transfers fail. At the unified HF30 activation, grant creation deterministically removes that grantor's revoked rows and rows where `expires_at <= head_block_time`. Cleanup is lazy, bounded by the 100-live-grant cap, and runs in the creating transaction's undo session. The high-water metadata survives deletion, including deletion of the grantor's last grant. Queries omit pruned records and return `last_issued_grant_id`; historical operations remain in transaction and account history. Creation RC includes a scan weight for each retained row and charges the metadata estimate only on first creation for that grantor.
+## Example
 
-## Hardfork and compatibility
+Alice creates a grant for Bob with a 5.000 HBD per-transfer limit, 50.000 HBD per day, 250.000 HBD lifetime limit, and merchant allowlist. Alice signs creation with her active authority. Bob signs a scoped transfer with Bob's active authority. The chain debits Alice only after checking Bob, the grant, the merchant, the balance, and all spending limits.
 
-This checkout contains HF28 as its mainnet maximum (`HIVE_NUM_HARDFORKS` is 28 outside alternate-chain builds). Alternate-chain HF30 is the single provisional activation for all four operations and all grant lifecycle semantics. Mainnet builds do not include HF30 in their configured maximum and reject the operations in evaluator code.
-
-Existing regular operation tags are 0–49 and existing virtual-operation tags are 50–92. The four new regular operations are appended with tags 93–96. The normal-variant unit test checks these tags and non-virtual classification. The normal variant has a legacy-transfer binary golden fixture. The skip-VOPS `hive_protocol` target builds, but the full node cannot build with that macro because existing chain paths construct virtual operations omitted from the variant; an alternate-variant serialization round trip remains unverified. Before HF30, all four scoped and batch operations are rejected. HF30 itself requires no migration: issuance metadata is initialized during the first grant creation.
-
-## Security invariants
-
-1. Only grantor active-authorized creation/revocation changes grant policy.
-2. Actor active authority authorizes only the dedicated operation and cannot confer authority over the grantor.
-3. A transfer consumes exactly one matching grant's counters.
-4. Every limit and destination check precedes transfer success; state is transactionally undoable.
-5. Existing transfer and other operations remain governed by their existing authority paths.
-6. No client clock, oracle, background worker, or off-chain state affects acceptance.
-7. Expiration, revocation, and usage are based on deterministic state and block order.
-8. HF30 pruning removes only revoked or expired records; the permanent per-grantor high-water mark prevents identifier reuse.
+The full JSON forms and RPC examples are in [the API notes](SCOPED_AUTHORITIES_API.md). Implementation evidence and limitations are in [the testing notes](SCOPED_AUTHORITIES_TESTING.md).

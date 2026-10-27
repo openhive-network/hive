@@ -98,10 +98,8 @@ void create_scoped_authority_evaluator::do_apply( const create_scoped_authority_
   assert_scoped_authorities_enabled( _db );
   _db.get_account( o.grantor );
   _db.get_account( o.actor );
-  // A pending transaction is evaluated against the current head and then replayed
-  // when included in a later block. Its requested start can therefore be before
-  // the inclusion block timestamp. The grant does not exist before this operation
-  // executes, so accepting an earlier valid_from cannot make it usable retroactively.
+  // Pending transactions are checked at the current head and replayed at inclusion.
+  // An earlier valid_from is safe because this grant does not exist before creation.
   HIVE_CHAIN_TIME_ASSERT( o.expires_at > _db.head_block_time(), o.expires_at,
     "Scoped authority expiration must be in the future" );
 
@@ -115,7 +113,7 @@ void create_scoped_authority_evaluator::do_apply( const create_scoped_authority_
   uint32_t live_count = 0;
   uint32_t scanned = 0;
   auto itr = grants.lower_bound( boost::make_tuple( o.grantor, uint32_t( 0 ) ) );
-  // A first grant creates the ID record; accepting older rows without it could reuse IDs.
+  // Without metadata, existing rows could have IDs not covered by the high-water mark.
   HIVE_CHAIN_STATE_ASSERT( metadata_itr != metadata_index.end()
       || itr == grants.end() || itr->grantor != o.grantor,
     o.grantor, "Scoped authority records exist without grantor ID metadata" );
@@ -195,8 +193,7 @@ void scoped_transfer_evaluator::do_apply( const scoped_transfer_operation& o )
   HIVE_CHAIN_ASSET_ASSERT( amount <= grant.max_per_period.amount.value - period_spent,
     o.amount, "Transfer exceeds scoped period limit" );
 
-  // Keep existing liquid-transfer balance handling and reject HIVE treasury conversions here:
-  // scoped transfers are direct asset transfers and never invoke conversion behavior.
+  // Preserve the existing restriction on direct HIVE transfers to the treasury.
   if( _db.has_hardfork( HIVE_HARDFORK_0_21__3343 ) )
     HIVE_CHAIN_TREASURY_ASSERT( o.amount.symbol == HBD_SYMBOL || !_db.is_treasury( o.to ), o.to,
       "Cannot scoped-transfer HIVE to the treasury" );
@@ -289,9 +286,7 @@ void compressed_batch_transfer_evaluator::do_apply( const compressed_batch_trans
     output_remaining.push_back( output.amount );
   }
 
-  // Canonical attribution: sorted sources consume sorted outputs in order.
-  // This makes recipient restrictions meaningful even though balances are
-  // settled atomically as a pooled batch.
+  // Sorted inputs consume sorted outputs in order; allowlists apply to each attributed output.
   size_t output_index = 0;
   for( size_t input_index = 0; input_index < o.inputs.size(); ++input_index )
   {

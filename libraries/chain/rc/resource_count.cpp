@@ -536,8 +536,7 @@ struct count_operation_visitor
 
   void operator()( const create_scoped_authority_operation& op ) const
   {
-    // Grants are persistent state. Charge a deterministic conservative serialized-size estimate
-    // multiplied by the existing persistent-state byte weight, plus regular transaction execution.
+    // Charge the estimated persistent row size and grant creation work.
     state_bytes_count += _w.PERSISTENT_STATE_BYTE *
       ( HIVE_SCOPED_AUTHORITY_RC_FIXED_BYTES + HIVE_MAX_ACCOUNT_NAME_LENGTH * op.allowed_recipients.size() );
     execution_time_count += _e.transfer_time;
@@ -556,15 +555,14 @@ struct count_operation_visitor
         }
         count_itr = _grant_counts.emplace( op.grantor, count ).first;
       }
-      // Grant creation scans each retained row once; later creations in the same
-      // transaction are charged for the rows created by earlier operations too.
+      // Include retained rows and grants created earlier in this transaction.
       execution_time_count += _e.transfer_time * count_itr->second;
       ++count_itr->second;
 
       const auto& metadata = _db->get_index< scoped_authority_grantor_metadata_index, by_scoped_grantor >();
       if( metadata.find( op.grantor ) == metadata.end() && _metadata_charged.insert( op.grantor ).second )
       {
-        // The first grant creates the persistent ID high-water record.
+        // Charge once for the first persistent high-water record.
         state_bytes_count += _w.PERSISTENT_STATE_BYTE * HIVE_SCOPED_AUTHORITY_RC_METADATA_BYTES;
       }
     }
@@ -583,12 +581,9 @@ struct count_operation_visitor
 
   void operator()( const compressed_batch_transfer_operation& op ) const
   {
-    // Charge each account lookup and balance mutation; transaction-size RC also
-    // accounts for the serialized account names, amounts, memo and signature.
+    // Charge each input and output, plus grant lookups and counter writes.
     execution_time_count += _e.transfer_time * ( op.inputs.size() + op.outputs.size() );
-    // Like ordinary transfer_operation, HIVE/HBD transfers pay the market-byte
-    // component. Scoped inputs additionally read and update persistent grant
-    // counters, so price one extra state interaction for each such input.
+    // Match ordinary transfer's market-byte charge.
     market_op_count++;
     for( const auto& input : op.inputs )
       if( input.grant_id != 0 )

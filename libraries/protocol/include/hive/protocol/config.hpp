@@ -353,7 +353,6 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 
 #define HIVE_MAX_SHARE_SUPPLY                 int64_t(1000000000000000ll)
 
-// Scoped authorities are development-only until a future mainnet hardfork is assigned.
 #define HIVE_MAX_SCOPED_AUTHORITY_RECIPIENTS 32
 #define HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR 100
 #define HIVE_MAX_SCOPED_AUTHORITY_DURATION_SECONDS (365u * 24u * 60u * 60u)

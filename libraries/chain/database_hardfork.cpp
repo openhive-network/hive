@@ -517,7 +517,6 @@ void database::apply_hardfork( uint32_t hardfork )
     }
     case HIVE_HARDFORK_1_30:
     {
-      // Scoped authorities, batch transfers, and grant lifecycle rules activate together.
       break;
     }
     default:

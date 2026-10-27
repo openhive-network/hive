@@ -4,7 +4,6 @@
 
 namespace hive { namespace chain {
 
-/** Permanent grant ID high-water mark for one grantor. */
 class scoped_authority_grantor_metadata_object : public object<
   scoped_authority_grantor_metadata_object_type,
   scoped_authority_grantor_metadata_object,

@@ -89,7 +89,7 @@ enum object_type
   rc_expired_delegation_object_type,
 
   state_stamp_data_object_type,
-  // Appended to preserve all existing Chainbase object type IDs.
+  // Keep new object types at the end to preserve existing IDs.
   scoped_authority_object_type,
   scoped_authority_grantor_metadata_object_type,
 };

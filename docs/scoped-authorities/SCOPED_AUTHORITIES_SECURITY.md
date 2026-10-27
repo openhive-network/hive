@@ -1,47 +1,33 @@
-# Scoped Authorities Security Review
+# Security notes
 
-**Status: threat model for a development-only prototype. Focused and full C++ tests pass, but this source has not received an independent security audit.**
+This is an experimental consensus change. These notes describe the implemented boundaries and the checks exercised so far. They are not an independent security audit.
 
-## Threat model and boundaries
+## Authority boundary
 
-The actor key may be fully compromised. The intended bound is the union of grants that account owners deliberately create for that actor. The owner retains unrestricted control of their own funds through existing authority paths. The grant constrains only scoped transfers; it does not freeze funds or intercept legacy transfers.
+Grant creation and revocation require the grantor's active authority. A scoped transfer requires the actor's active authority. Existing Hive authority recursion verifies these authorities. A grant does not change owner, active, posting, recovery, or witness permissions, and it cannot authorize a legacy transfer or another financial operation.
 
-Creation/revocation use grantor active authority. Scoped transfer uses actor active authority. A grant must never be inserted into the account authority graph, satisfy an active/owner/posting requirement, or be treated as a substitute signature. No update operation is allowed in v1.
+The grant is immutable. The actor cannot raise limits, extend expiry, change recipients, create grants, revoke grants, or update account authorities through the scoped path. The grantor can still spend its own balance with normal account authority.
 
-## Required attack review before activation
+## Spending state
 
-| Attack | Required defense |
-|---|---|
-| Per-transfer overrun / split transfers | Checked amount for each operation plus persistent aggregate counters |
-| Several operations in a transaction/block | Evaluators mutate the same grant object in deterministic operation order; undo session covers all writes |
-| Several grants or actors | Counters keyed by grant object; no actor-level shared counter or unintended aggregation |
-| Forged ID / another grantor | Lookup by grantor and ID; actor and grantor fields compared against stored record |
-| Revocation / expiry reuse | Every use checks status/time; HF30 cleanup removes unusable rows while permanent high-water metadata blocks ID reuse |
-| Overflow, negative/zero amount, precision mismatch | Positive canonical asset validation and checked integer additions |
-| Boundary timestamp | `valid_from <= block_time < expires_at`; fixed period index anchored at valid_from |
-| Alternate operation path | Dedicated op only; no implicit grant support in transfer, savings, recurrent, vesting, escrow, market, or conversion evaluators |
-| Authority recursion / signature substitution | Actor is an ordinary required active authority; no special verifier path or implicit account authority |
-| Allowlist abuse / resource exhaustion | Validate names, canonical unique ordering, maximum count, per-grantor cap, RC charging |
-| Replay, reorg, snapshot | Chainbase object/index registration, undo coverage, replay equality, snapshot schema checks |
-| Serialization compatibility | Preserve every old regular and virtual operation tag; binary compatibility fixtures |
-| Legacy authorization regression | Existing authority and transfer test suites unchanged and passing |
+Limits use integer asset units. The period counter is based on the consensus head-block timestamp and a window anchored to `valid_from`. Expiry is exclusive: a transfer at `expires_at` is invalid. Lifetime spending is retained across periods. Revocation prevents new uses and leaves prior counters intact.
 
-## Compressed batch transfer invariants
+Rejected operations must not change balances, counters, or grant records. Evaluators validate before settlement and use the regular Chainbase transaction undo session. Tests cover failed transaction rollback and block pop. The lifecycle high-water record persists after revoked or expired grant records are pruned, preventing ID reuse.
 
-- Every direct input requires its own source active authority. Every scoped input uses the common actor's ordinary active authority plus the referenced grant; one actor signature cannot authorize a direct debit from an unrelated account.
-- Input/output vectors are strictly sorted, unique, positive, bounded to 100 entries each, and balance exactly in one canonical asset. Source/destination overlap is rejected with a sorted linear merge check.
-- Sorted source amounts are attributed in order to sorted destinations. Every destination portion attributed to a restricted input must satisfy that grant's allowlist. This rule prevents pooled inputs from laundering a restricted source into an unapproved recipient.
-- All source balances, grant status, per-transfer/period/lifetime limits, and allowlists are validated before settlement. Balance and counter writes use the transaction undo session; block pop and transaction failure restore the state.
-- A source appears at most once in an operation. A grant's one input amount is one per-transfer spend even when it funds several outputs, preventing output splitting from bypassing `max_per_transfer`.
+At most 100 grant records are retained per grantor. Grant creation scans only those records and prunes only grants already revoked or expired at head time. Recipient lists and batch vectors are bounded. Cleanup does not run per block.
 
-The byte encoding reuses Hive's FC binary serializer with one shared symbol and memo; account names remain explicit. It does not use a custom decoder, Chainbase object IDs, or noncanonical references. The 100-output signed-size comparison showed 53.35% fewer bytes than 100 standard transfer operations; the broader confirmed-block byte and RC results are in [COMPRESSED_BATCH_RC_BENCHMARK.md](COMPRESSED_BATCH_RC_BENCHMARK.md). RC execution weight charges every input and output; scoped inputs also carry an additional transfer weight for grant state access, and signature costs remain the existing protocol costs.
+## Batch attribution
 
-The single provisional HF30 activation includes the 100-live-grant cap and lazy pruning during grant creation. A per-grantor metadata object is created atomically with the first grant and stores the highest issued `uint32_t` ID; new IDs must be higher, and the metadata is never pruned. There is no intermediate lifecycle migration. `UINT32_MAX` may be issued once and then permanently exhausts that grantor's ID space. Failed transactions and block pops restore deleted rows and metadata through Chainbase undo. The API omits pruned rows but reports the last issued ID.
+Inputs and outputs are sorted, unique, and may not overlap. The evaluator allocates sorted inputs across sorted outputs in order. A scoped source is charged against each recipient receiving any portion of its allocation. This prevents a restricted source from being hidden inside a pooled transfer. The tests exercise restricted/unrestricted mixtures, split outputs, reordering, independent grants, and failed-batch rollback.
 
-RC transaction cost is charged to the transaction submitter through the existing Hive accounting. The confirmed-block benchmark compares resource vectors and RC costs against separate transfers and a multi-transfer transaction. Grant-creation cost is reported separately and is large enough that a one-use scoped grant is not RC efficient end to end. The measurements are fixture-specific and are not a production RC guarantee.
+The attribution rule is subtle and should receive independent review. In particular, reviewers should check repeated use of one grant, mixed active and scoped inputs, all transaction composition cases, and malformed serialized data.
 
-## Limitations and audit needs
+## Resource accounting and persistent state
 
-This design does not prevent the owner from spending funds normally, does not reserve balances, and cannot guarantee a transfer will succeed if the grantor balance is insufficient. Fixed periods can permit spending up to the configured amount on both sides of a period boundary. It excludes savings, delayed/recurrent transfer, escrow, and other financial paths. Batch-specific source-to-recipient attribution adds protocol complexity and needs independent review, especially for mixed direct/scoped inputs and multiple grant use in one transaction.
+The RC model charges transaction bytes and signatures through existing accounting. The implementation adds work weights per input and output and grant-state work for scoped inputs. Scoped batches charge the actor; active-only batches use the first sorted input source. The existing `multiop` reporting bucket is reused to avoid changing the persistent RC statistics object layout. The weights remain estimates and need economics review.
 
-Before any public hardfork proposal, independently audit integer bounds, authority semantics across mixed signatures, binary serialization, resource accounting, Chainbase rollback and snapshot behavior, API exposure, fork/replay determinism, and all supported node upgrade paths. This document is not an external security audit.
+The grant and high-water objects add persistent state. The live-record cap bounds scans but does not remove the one high-water metadata row per grantor that has created a grant. Snapshot and replay checks passed for the populated local chain described in the testing notes.
+
+## Deployment boundary
+
+The four operations are available only in the alternate-chain experimental HF30 path. The production-configured evaluator returns explicit disabled errors. Do not use this branch on mainnet. A future deployment requires a maintainer-assigned hardfork, migration and snapshot policy, review of operation tags in all supported builds, and an independent audit.

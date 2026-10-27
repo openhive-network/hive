@@ -369,8 +369,7 @@ BOOST_AUTO_TEST_CASE( scoped_expiration_survives_confirmed_blocks )
   generate_blocks( 1 ); // Confirm grant creation through normal pending transaction reapplication.
   BOOST_REQUIRE( find_grant( *db, "alice", 2 ).grant_id == 2 );
 
-  // No pending transactions remain. Advance exactly to expires_at using normal
-  // empty blocks; no grant or transfer transaction skips block validation.
+  // Advance through ordinary empty blocks so expiration uses block time.
   const auto expires_at = find_grant( *db, "alice", 2 ).expires_at;
   const auto seconds_to_expiry = ( expires_at - db->head_block_time() ).to_seconds();
   BOOST_REQUIRE_EQUAL( seconds_to_expiry % HIVE_BLOCK_INTERVAL, 0 );

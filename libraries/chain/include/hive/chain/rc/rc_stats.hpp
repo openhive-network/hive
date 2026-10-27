@@ -9,10 +9,8 @@
 
 namespace hive { namespace chain {
 
-// RC statistics are allocated for regular transaction operations only. The
-// first virtual-operation tag remains the stable multiop bucket. New signed
-// operations appended after historical VOP tags must be mapped into that
-// bucket rather than expanding this persistent Chainbase object by tag value.
+// Map appended signed operation tags to the stable multiop slot so the
+// persistent statistics array keeps its existing size.
 constexpr auto HIVE_RC_NUM_OPERATIONS =
 #ifdef HIVE_PROTOCOL_SKIP_VOPS
   hive::protocol::operation::tag< hive::protocol::create_scoped_authority_operation >::value;
