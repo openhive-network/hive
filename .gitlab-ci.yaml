@@ -1329,6 +1329,30 @@ memory_details_mainnet_5m_tests:
   tags:
     - public-runner-docker
 
+# Compares the number of measurements of every item (evaluators, automatic processing, plugin reactions to
+# notifications) collected during the 5M replay made by prepare_hived_data (hived --advanced-benchmark) with the pattern
+advanced_benchmark_mainnet_5m_tests:
+  extends:
+    - .job-defaults
+    - .manual_on_feature_branches  # Manual on feature branches (requires mainnet_5m data)
+  stage: test
+  image: "$CI_BASE_IMAGE"
+  needs:
+    - job: prepare_hived_data
+      artifacts: true  # advanced_benchmark.json
+  variables:
+    GIT_SUBMODULE_STRATEGY: "none"  # only the comparison script and the pattern are needed
+  script:
+    - python3 tests/integration/advanced_benchmark/compare_advanced_benchmark.py
+      tests/integration/advanced_benchmark/mainnet_5m.pat.json advanced_benchmark.json
+  artifacts:
+    paths:
+      - advanced_benchmark.json
+    when: always
+    expire_in: 1 week
+  tags:
+    - public-runner-docker
+
 artifacts_generation_tests:
   extends:
     - .job-defaults

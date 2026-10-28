@@ -92,7 +92,8 @@ echo "Preparing datadir and shm_dir in location ${DATA_CACHE}"
 echo "Attempting to perform replay basing on image ${IMG}..."
 
 # --dump-memory-details writes datadir/replay_benchmark.jsonl, which memory_details_mainnet_5m_tests compares with
-# tests/integration/dump_memory_details/mainnet_5m.pat.json
+# tests/integration/dump_memory_details/mainnet_5m.pat.json; --advanced-benchmark writes datadir/advanced_benchmark.json,
+# which advanced_benchmark_mainnet_5m_tests compares with tests/integration/advanced_benchmark/mainnet_5m.pat.json
 "$SCRIPTSDIR/run_hived_img.sh" --name=hived_instance \
     --detach \
     --docker-option=--volume="$DATA_CACHE":"$DATA_CACHE" \
@@ -100,7 +101,7 @@ echo "Attempting to perform replay basing on image ${IMG}..."
     --shared-file-dir="$DATA_CACHE/shm_dir" \
     --docker-option=--env=HAF_CI_MODE="${HAF_CI_MODE:-0}" \
     "$IMG" --replay-blockchain --stop-at-block=5000000 --exit-before-sync \
-    --set-benchmark-interval=100000 --dump-memory-details
+    --set-benchmark-interval=100000 --dump-memory-details --advanced-benchmark
 
 echo "Logs from container hived_instance:"
 docker logs -f hived_instance &

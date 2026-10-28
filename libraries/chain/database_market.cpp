@@ -149,8 +149,8 @@ void database::process_savings_withdraws()
 
   auto now = head_block_time();
   int count = 0;
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
+  static const util::advanced_benchmark_dumper::counter processing_counter( "processing", "hive::protocol::transfer_from_savings_operation" );
+  util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
   while( itr != idx.end() && itr->get_completion_time() <= now )
   {
     temp_balance withdrawn( itr->get_withdraw_amount().symbol );
@@ -175,8 +175,8 @@ void database::process_savings_withdraws()
     itr = idx.begin();
     ++count;
   }
-  if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "processing", "hive::protocol::transfer_from_savings_operation", count );
+  if( count )
+    benchmark.stop( processing_counter, count );
 }
 
 void database::remove_pending_savings_withdraws( const account_object& account, const account_name_type& account_name )

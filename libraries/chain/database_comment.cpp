@@ -454,8 +454,8 @@ void database::process_comment_cashout()
     */
   int count = 0;
   auto block_num = head_block_num();
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
+  static const util::advanced_benchmark_dumper::counter processing_counter( "processing", "hive::protocol::comment_operation" );
+  util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
   while( _current != cidx.end() && _current->get_cashout_time() <= _now )
   {
     if( has_hardfork( HIVE_HARDFORK_0_17__771 ) )
@@ -497,8 +497,8 @@ void database::process_comment_cashout()
 
     _current = cidx.begin();
   }
-  if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "processing", "hive::protocol::comment_operation", count );
+  if( count )
+    benchmark.stop( processing_counter, count );
 
   // Write the cached fund state back to the database
   modify( rf, [&]( reward_fund_object& rfo )

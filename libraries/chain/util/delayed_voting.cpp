@@ -82,8 +82,8 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
   auto current = idx.begin();
 
   int count = 0;
-  if( db.get_benchmark_dumper().is_enabled() )
-    db.get_benchmark_dumper().begin();
+  static const util::advanced_benchmark_dumper::counter processing_counter( "processing", "hive::protocol::transfer_to_vesting_operation" );
+  util::advanced_benchmark_dumper::measurement benchmark( db.get_benchmark_dumper() );
   while( current != idx.end() && current->has_delayed_votes() &&
         head_time >= ( current->get_oldest_delayed_vote_time() + HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS )
       )
@@ -115,8 +115,8 @@ void delayed_voting::run( const fc::time_point_sec& head_time )
     current = idx.begin();
     ++count;
   }
-  if( db.get_benchmark_dumper().is_enabled() && count )
-    db.get_benchmark_dumper().end( "processing", "hive::protocol::transfer_to_vesting_operation", count );
+  if( count )
+    benchmark.stop( processing_counter, count );
 }
 
 } } // namespace hive::chain

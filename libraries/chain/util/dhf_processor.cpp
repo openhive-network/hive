@@ -226,13 +226,13 @@ void dhf_processor::remove_old_proposals( const block_notification& note )
 {
   auto head_time = note.get_block_timestamp();
 
-  if( db.get_benchmark_dumper().is_enabled() )
-    db.get_benchmark_dumper().begin();
+  //we can't count it per proposal so it belongs to block context measurements
+  static const util::advanced_benchmark_dumper::counter removing_counter( "block", removing_name.c_str() );
+  util::advanced_benchmark_dumper::measurement benchmark( db.get_benchmark_dumper() );
 
   remove_proposals( head_time );
 
-  if( db.get_benchmark_dumper().is_enabled() ) //we can't count it per proposal so it belongs to block context measurements
-    db.get_benchmark_dumper().end( "block", dhf_processor::removing_name );
+  benchmark.stop( removing_counter );
 }
 
 void dhf_processor::make_payments( const block_notification& note )
@@ -243,8 +243,9 @@ void dhf_processor::make_payments( const block_notification& note )
   if( !is_maintenance_period( head_time ) )
     return;
 
-  if( db.get_benchmark_dumper().is_enabled() )
-    db.get_benchmark_dumper().begin();
+  //we can't count it per proposal so it belongs to block context measurements
+  static const util::advanced_benchmark_dumper::counter calculating_counter( "block", calculating_name.c_str() );
+  util::advanced_benchmark_dumper::measurement benchmark( db.get_benchmark_dumper() );
 
   t_proposals active_proposals;
   t_proposals no_active_yet_proposals;
@@ -258,8 +259,7 @@ void dhf_processor::make_payments( const block_notification& note )
     //Set `new maintenance time` and `last budget time`
     update_settings( head_time );
 
-    if( db.get_benchmark_dumper().is_enabled() ) //we can't count it per proposal so it belongs to block context measurements
-      db.get_benchmark_dumper().end( "block", dhf_processor::calculating_name );
+    benchmark.stop( calculating_counter );
     return;
   }
 
@@ -281,8 +281,7 @@ void dhf_processor::make_payments( const block_notification& note )
   //Set `new maintenance time` and `last budget time`
   update_settings( head_time );
 
-  if( db.get_benchmark_dumper().is_enabled() ) //we can't count it per proposal so it belongs to block context measurements
-    db.get_benchmark_dumper().end( "block", dhf_processor::calculating_name );
+  benchmark.stop( calculating_counter );
 }
 
 const std::string& dhf_processor::get_removing_name()

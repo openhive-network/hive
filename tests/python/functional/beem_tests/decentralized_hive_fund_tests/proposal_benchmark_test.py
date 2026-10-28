@@ -22,7 +22,8 @@
 # finally is created 600(2*300) proposals and 300 votes for every proposals -> 180600 objects are created
 #  ./proposal_benchmark_test.py "/home/a/hived" "/home/a/data" "../../hive_utils/resources/config.ini.in" initminer 2 300 200000.000 30000.000 100000.000
 
-# Time[ms] is saved in `r_advanced_benchmark.json` ( position{"op_name": "dhf_processor"} ) in directory where this script is called
+# Time[ns] is saved in `advanced_benchmark.json` in data dir of the node (items {"op_name": "dhf_processor_remove"} and
+# {"op_name": "dhf_processor_calculate"}), see programs/util/advanced_benchmark_to_csv.sh
 from __future__ import annotations
 
 import logging
