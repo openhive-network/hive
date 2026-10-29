@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from hiveio_api.fields.user_friendly import AccountName, PublicKey
 from hiveio_api.operations import (
     AccountCreateOperation,
     Authority,
@@ -12,10 +13,9 @@ from hiveio_api.operations import (
 )
 
 import test_tools as tt
-from schemas.fields.user_friendly import AccountName, PublicKey
 
 if TYPE_CHECKING:
-    from schemas.fields.public import AssetHbd, AssetHive
+    from hiveio_api.fields.public import AssetHbd, AssetHive
 
 
 def __create_account(name: str) -> AccountCreateOperation:

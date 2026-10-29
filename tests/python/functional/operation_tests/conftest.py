@@ -33,7 +33,7 @@ from hiveio_api.operations import (
 )
 
 if TYPE_CHECKING:
-    from schemas.fields.public import PublicKey
+    from hiveio_api.fields.public import PublicKey
     from hiveio_api.operations import (
         VirtualOperationBase as SchemaVirtualOperation,
     )

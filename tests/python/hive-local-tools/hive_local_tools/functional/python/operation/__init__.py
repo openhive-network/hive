@@ -23,10 +23,9 @@ from hive_local_tools.constants import (
 
 if TYPE_CHECKING:
     from hiveio_api.account_history_api.account_history_api_description import EnumVirtualOpsResponse
+    from hiveio_api.fields.public import HiveInt
     from hiveio_api.operations import Hf26OperationValue as Hf26Operations
     from hiveio_api.operations import VirtualOperationBase as SchemaVirtualOperation
-
-    from schemas.fields.public import HiveInt
 
 
 @dataclass

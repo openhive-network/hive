@@ -5,10 +5,10 @@ from datetime import timedelta
 from functools import partial
 from typing import TYPE_CHECKING
 
+from hiveio_api.fields.user_friendly import HiveInt
 from hiveio_api.operations import OperationBase as Operation
 
 import test_tools as tt
-from schemas.fields.user_friendly import HiveInt
 from test_tools.__private.wallet.constants import SimpleTransaction, SimpleTransactionLegacy
 from wax import get_tapos_data
 
