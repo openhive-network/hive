@@ -41,14 +41,14 @@ from api_client_generator.tidy import tidy_with_ruff
 
 from api_generation.common import pascal_case
 from api_generation.model_variants import PUBLIC, VALIDATION, ModelVariant
-from schemas.fields import public, validation
-from schemas.fields.public import HBD_ASSET, HIVE_ASSET, VESTS_ASSET, Asset, asset_info_of_symbol
+from hiveio_api.fields import public, validation
+from hiveio_api.fields.public import HBD_ASSET, HIVE_ASSET, VESTS_ASSET, Asset, asset_info_of_symbol
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from pathlib import Path
 
-    from schemas.fields.public import AssetInfo
+    from hiveio_api.fields.public import AssetInfo
 
 Form = Literal["hf26", "legacy"]
 
@@ -138,7 +138,7 @@ SCALARS: Final[dict[str, str]] = {"string": "str", "boolean": "bool", "integer":
 
 
 def asset_info(symbol: str) -> AssetInfo:
-    """Information about the kind of assets of a symbol of the description of operations - defined only by schemas."""
+    """Information about the kind of assets of a symbol of operations - defined only in `hiveio_api.fields.public`."""
     info = asset_info_of_symbol(symbol)
     if info is None:
         raise ValueError(f"Unknown symbol of assets in the description of operations: {symbol}")
@@ -569,7 +569,7 @@ class OperationsGenerator:
         return SCALARS[str(json_type)]
 
     def __hive_type(self, name: str) -> str:
-        """The field type of the name - of the module of the variant (`schemas.fields.public` / `.validation`)."""
+        """The field type of the name - of the module of the variant (`hiveio_api.fields.public` / `.validation`)."""
         return self.__code.import_name((public if self.__variant.public else validation).__name__, name)
 
     def __empty_list(self) -> str:

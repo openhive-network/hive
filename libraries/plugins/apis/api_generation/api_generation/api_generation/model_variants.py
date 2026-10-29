@@ -3,9 +3,9 @@ Two model sets generated from the same openapi.json in one generation path - the
 generator (`api_client_generator.hive_variants`) in the hiveio_api package.
 
 - public: dataclasses (`hiveio_api._base.HiveModel`) with builtin types expressed by aliases from
-  `schemas.fields.public` (e.g. `AccountName = str`) - returned by API calls, never validated,
+  `hiveio_api.fields.public` (e.g. `AccountName = str`) - returned by API calls, never validated,
 - validation: msgspec models (`PreconfiguredBaseModel`) with validation forms of the types
-  (`schemas.fields.validation`, e.g. `AccountName` validated by msgspec itself) - used only by explicit
+  (`hiveio_api.fields.validation`, e.g. `AccountName` validated by msgspec itself) - used only by explicit
   `validate_schema` calls, imported lazily.
 
 Both use the `x-hive-type` annotations of openapi.json, they differ only in the types the annotations are mapped to.
@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Final
 
 from api_client_generator import hive_variants
 
-from schemas.fields import public, validation
+from hiveio_api.fields import public, validation
 
 if TYPE_CHECKING:
     from pathlib import Path
