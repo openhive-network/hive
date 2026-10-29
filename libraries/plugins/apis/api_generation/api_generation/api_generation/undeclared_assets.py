@@ -1,7 +1,7 @@
 """
 Check of generated models - assets are always declared in openapi.json (`x-hive-type`), never generated as models.
 
-Assets are the user-friendly `schemas.Asset` (public models) or validating assets of schemas (validation models).
+Assets are the user-friendly `hiveio_api.Asset` (public models) or validating assets (validation models).
 A model with fields `amount`, `nai` and `precision` is an asset whose schema lacks `x-hive-type` - generation fails,
 so the definition gets fixed instead of the API returning a model unlike all other assets.
 """

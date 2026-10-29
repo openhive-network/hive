@@ -1,7 +1,7 @@
 """
 Check of openapi.json - dates are always declared (`format: date-time`), never left as plain strings.
 
-Dates of public models are the user-friendly `schemas.HiveDateTime`. A string in the time format of Hive (e.g.
+Dates of public models are the user-friendly `hiveio_api.HiveDateTime`. A string in the time format of Hive (e.g.
 `2016-03-24T16:05:00`) in an example of a response, in a place whose schema is not a date, means the schema lacks
 `format: date-time` - generation fails, so the definition gets fixed instead of the API returning a plain string where
 all other dates are `HiveDateTime`.
@@ -14,7 +14,7 @@ import re
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Final
 
-from schemas.hive_constants import HIVE_TIME_PATTERN
+from hiveio_api.fields.hive_constants import HIVE_TIME_PATTERN
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
