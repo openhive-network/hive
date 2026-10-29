@@ -13,8 +13,7 @@ from api_client_generator.hive_variants import HIVE_MODEL_METHODS  # noqa: E402
 from api_client_generator.model_options import ALIAS_METADATA_KEY  # noqa: E402
 from hiveio_api import _base  # noqa: E402
 from hiveio_api._base import HiveModel, InvalidValueWarning, MissingFieldWarning, UnexpectedFieldWarning  # noqa: E402
-
-from schemas.fields.public import HiveInt, Int64t, Uint64t  # noqa: E402  # annotations of models
+from hiveio_api.fields.public import HiveInt, Int64t, Uint64t  # noqa: E402  # annotations of models
 
 
 @dataclass(frozen=True, kw_only=True)

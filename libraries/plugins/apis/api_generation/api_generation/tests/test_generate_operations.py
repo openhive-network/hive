@@ -23,9 +23,9 @@ from hiveio_api._base import (  # noqa: E402
 )
 
 import msgspec  # noqa: E402
-from schemas.fields.validation import AssetHbd, LegacyAssetHive  # noqa: E402
-from schemas import Asset  # noqa: E402
-from schemas.validation import validate  # noqa: E402
+from hiveio_api import Asset  # noqa: E402
+from hiveio_api.fields.validation import AssetHbd, LegacyAssetHive  # noqa: E402
+from hiveio_api.validation import validate  # noqa: E402
 
 if TYPE_CHECKING:
     from pathlib import Path

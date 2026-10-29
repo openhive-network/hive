@@ -10,7 +10,6 @@ import json
 import operator
 import subprocess
 import sys
-import tomllib
 import types
 from typing import TYPE_CHECKING, Union, get_args, get_origin, get_type_hints
 
@@ -100,7 +99,7 @@ def test_public_models_use_only_builtin_aliases(description: Path) -> None:
         "hiveio_api.operations.values",
         "hiveio_api.operations.hf26",
         "hiveio_api.operations.legacy",
-        "schemas.fields.public",
+        "hiveio_api.fields.public",
     }, modules
 
 
@@ -153,7 +152,7 @@ def test_importing_and_building_responses_does_not_load_validation_machinery() -
         "from hiveio_api.database_api import DatabaseApi\n"
         "expected = get_type_hints(DatabaseApi.find_accounts)['return']\n"
         "build_response(expected, {'id': 1, 'jsonrpc': '2.0', 'result': {'accounts': []}})\n"
-        "print(sorted(name for name in sys.modules if name.startswith(('hiveio_api._validation', 'schemas.validation'))))\n"
+        "print(sorted(name for name in sys.modules if name.startswith(('hiveio_api._validation', 'hiveio_api.validation', 'msgspec'))))\n"
     )
 
     # ACT
@@ -213,15 +212,6 @@ def test_operations_are_made_from_their_values_in_both_forms() -> None:
     assert isinstance(back, Hf26TransferOperation)
     assert isinstance(back.value, TransferOperation)
     assert back.value.to_builtins() == transfer.to_builtins()
-
-
-def test_generator_and_package_depend_on_the_same_schemas() -> None:
-    # ARRANGE - the generator writes models for the field types of the schemas the package depends on
-    def schemas_of(pyproject: Path) -> object:
-        return tomllib.loads(pyproject.read_text())["tool"]["poetry"]["dependencies"]["hiveio-schemas"]["version"]
-
-    # ACT & ASSERT
-    assert schemas_of(PACKAGE_ROOT / "pyproject.toml") == schemas_of(PACKAGE_ROOT.parent / "api_generation" / "pyproject.toml")
 
 
 def test_infrastructure_of_clients_is_public_and_imported_when_used() -> None:

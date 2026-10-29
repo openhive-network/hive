@@ -1,7 +1,8 @@
 """
-Check of the code for NAIs and symbols of kinds of assets - schemas defines them only once (`HIVE_ASSET`, ...).
+Check of the code for NAIs and symbols of kinds of assets - defined only once (`HIVE_ASSET`, ... of
+`hiveio_api.fields.public`).
 
-The generator and hiveio_api refer to the information about kinds of assets of schemas - they never repeat NAIs, symbols or
+The generator and hiveio_api refer to the information about kinds of assets - they never repeat NAIs, symbols or
 precisions of assets.
 """
 
@@ -11,7 +12,7 @@ import ast
 import re
 from typing import TYPE_CHECKING, Final
 
-from schemas.fields.public import KNOWN_ASSETS
+from hiveio_api.fields.public import KNOWN_ASSETS
 
 if TYPE_CHECKING:
     from pathlib import Path

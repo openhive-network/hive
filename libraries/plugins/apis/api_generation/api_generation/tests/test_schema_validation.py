@@ -21,14 +21,13 @@ from hiveio_api import (  # noqa: E402
     validate_schema,
 )
 from hiveio_api import _schema_validation  # noqa: E402
-
-from schemas._preconfigured_base_model import PreconfiguredBaseModel  # noqa: E402
-from schemas.fields.validation import (  # noqa: E402, TC001  # resolved at runtime by msgspec
+from hiveio_api.fields.validation import (  # noqa: E402, TC001  # resolved at runtime by msgspec
     AccountName,
     AssetHive,
     HiveInt,
     LegacyAssetHive,
 )
+from hiveio_api.validation.model import PreconfiguredBaseModel  # noqa: E402
 
 VALIDATION_MODULE = "tests._fake_validation_module"
 
