@@ -148,6 +148,9 @@ private:
   result_type operator()( const pow_operation& op )
   {
     collect_pow(op.worker_account, op.work.worker);
+    // A witness created by the operation signs blocks with the worker key. An existing witness keeps its key,
+    // but that case cannot be told apart without chain state, so the worker key is recorded then as well.
+    collect_one(op, authority( 1, op.work.worker, 1 ), hive::app::key_t::WITNESS_SIGNING, op.worker_account);
   }
 
 

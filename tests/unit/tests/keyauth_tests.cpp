@@ -85,6 +85,38 @@ BOOST_AUTO_TEST_CASE( witness_signing_key_follows_signing_key_changes )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_FIXTURE_TEST_CASE( pow_records_worker_as_witness_signing_key, genesis_database_fixture )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: WITNESS_SIGNING keyauth of pow" );
+
+    db->set_hardfork( HIVE_HARDFORK_0_12 ); // pow is rejected since HF13
+    generate_block();
+
+    PREP_ACTOR( carol );
+    pow_operation op;
+    op.worker_account = "carol";
+    op.block_id = db->head_block_id();
+    op.work.worker = carol_public_key;
+    op.nonce = -1;
+    do
+    {
+      ++op.nonce;
+      op.work.create( carol_private_key, op.work_input() );
+    }
+    while( op.work.work >= db->get_pow_target() );
+    push_transaction( op, fc::ecc::private_key() ); // pow needs no signature
+
+    const witness_object& carol_witness = db->get_witness( "carol" );
+    BOOST_REQUIRE( carol_witness.signing_key == carol_public_key );
+    require_collected_signing_key( op, carol_witness );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
