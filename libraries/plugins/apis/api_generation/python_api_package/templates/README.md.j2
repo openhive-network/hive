@@ -67,7 +67,7 @@ operation = Hf26TransferOperation(
 )
 ```
 
-Assets of both JSON forms are one type - `Asset` (also `from schemas import Asset`): created by the kind of asset
+Assets of both JSON forms are one type - `Asset`: created by the kind of asset
 (`Asset.hive.satoshi(1001)`, `Asset.hbd.tokens(1.001)`, `Asset.vests.from_str("1.000000 VESTS")`,
 `Asset.hive.factory(amount=1001, nai="@@000000021", precision=3)`) or built from responses (`"1.000 HIVE"` or
 `{"amount": "1000", "precision": 3, "nai": "@@000000021"}`) and compared by value. Fields of models decide their form:
@@ -76,12 +76,12 @@ operations of `TransactionLegacy`) in the legacy form, in a field of NAI assets 
 created in; assets outside fields of assets keep the form they came in. Requests take the same forms, legacy assets
 with symbols of the network of the handle (`is_testnet()` - `TESTS` / `TBD` on the testnet).
 
-Kinds of assets are described by `AssetInfo` of schemas - `HIVE_ASSET`, `HBD_ASSET`, `VESTS_ASSET` (also
+Kinds of assets are described by `AssetInfo` - `HIVE_ASSET`, `HBD_ASSET`, `VESTS_ASSET` (also
 `from hiveio_api import HIVE_ASSET`) with the NAI, precision and symbols of both networks. `token()` of an asset, of a
 kind (`Asset.hive.token()`) and of a factory of assets (`Asset.hive.satoshi.token()`) gives the information, displayed
 as the symbol (`f"{asset.token()}"` is `HIVE`, `TESTS` of the testnet) and equal to both symbols of the kind.
 
-Dates are `HiveDateTime` (also `from schemas import HiveDateTime`) - aware `datetime`s (UTC when not told otherwise)
+Dates are `HiveDateTime` - aware `datetime`s (UTC when not told otherwise)
 with the JSON form of Hive, `2016-03-24T16:05:00` in UTC. They are compared and shifted by `timedelta` as any other
 date, also compared with dates in the JSON form and with naive datetimes (taken as UTC):
 
@@ -116,6 +116,20 @@ Models passed as parameters (e.g. `Transaction.parse_raw(...)` to `broadcast_tra
 API (`from_` as `from`) and exactly the keys of the data they were built from.
 
 Validation models of operations (Hive types, used by `validate_schema`) are in `hiveio_api._validation.operations`.
+
+### Field types
+
+Field types of Hive data are in `hiveio_api.fields`, in three variants of one set of names (formerly the package
+hiveio-schemas):
+
+- `hiveio_api.fields.public` - builtin aliases used by public models (`AccountName = str`), `Asset` and the information
+  about kinds of assets; no validation, msgspec is not imported,
+- `hiveio_api.fields.user_friendly` - types checked when created (`AccountName(".")` raises `FieldValidationError`),
+- `hiveio_api.fields.validation` - forms of msgspec models (validation models), checked by msgspec itself.
+
+`hiveio_api.validation` validates JSON data against msgspec models with these types (`validate(data, model)` returns
+all problems with their paths); `PreconfiguredBaseModel` (`hiveio_api.validation.model`) is the base class of such
+models.
 
 ### Running Examples
 

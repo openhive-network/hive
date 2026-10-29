@@ -44,9 +44,10 @@ ApiArgumentsToSerialize = tuple[tuple[object, ...], dict[str, object]]
 
 
 def _validating_type_to_builtins(value: object) -> object:
-    """Builtins of values `json` can not serialize - validating Hive types of `schemas.fields` (msgspec models)."""
+    """Builtins of values `json` can not serialize - validating Hive types of `hiveio_api.fields` (msgspec models)."""
     import msgspec  # validation machinery - imported only when such a type is sent
-    from schemas.encoders import enc_hook_hf26
+
+    from hiveio_api.validation.encoders import enc_hook_hf26
 
     return msgspec.to_builtins(value, enc_hook=enc_hook_hf26)
 
@@ -103,7 +104,7 @@ class AbstractApi(ABC, Generic[HandleT]):
         Serializer of parameters - public models with keys of the API, assets in the form of their fields.
 
         Assets in fields of legacy assets are sent with symbols of the network of the owner (`is_testnet` is asked only
-        for them - it may send a request itself). Validating Hive types (`schemas.fields`) are serialized in the form
+        for them - it may send a request itself). Validating Hive types (`hiveio_api.fields`) are serialized in the form
         given by their type (e.g. `LegacyAssetHive`).
         """
         is_testnet = self._owner.is_testnet

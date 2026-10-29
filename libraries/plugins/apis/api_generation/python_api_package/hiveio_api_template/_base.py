@@ -14,8 +14,8 @@ Fields renamed in Python (e.g. `Block stats` -> `Block_stats`, `from` -> `from_`
 Both situations are reported with warnings (`UnexpectedFieldWarning`, `MissingFieldWarning`), which can be
 disabled per call (`warn=False`) or with the standard `warnings` filters.
 
-Types which build themselves from builtins (`from_builtins` / `to_builtins`, e.g. `schemas.Asset` of assets,
-`schemas.HiveDateTime` of dates) are built by their `from_builtins` - a value they reject is kept as it is and reported
+Types which build themselves from builtins (`from_builtins` / `to_builtins`, e.g. `hiveio_api.Asset` of assets,
+`hiveio_api.HiveDateTime` of dates) are built by their `from_builtins` - a value they reject is kept as it is and reported
 with `InvalidValueWarning`. Integers of 64 bits (`Int64t`, `Uint64t`, `HiveInt`) sent by hived as strings (the ones not
 fitting doubles of JSON) are built as `int` and converted back to strings, as hived sends them.
 
@@ -54,7 +54,7 @@ from typing import (
 )
 
 from hiveio_api._errors import UnsupportedTypeError
-from schemas.fields.public import Asset, AssetForm, IntegerForm
+from hiveio_api.fields.public import Asset, AssetForm, IntegerForm
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -93,7 +93,7 @@ class InvalidValueWarning(UserWarning):
 
 
 class _BuiltinsConvertible(Protocol):
-    """Type building itself from builtins and converting itself back (e.g. `schemas.Asset`)."""
+    """Type building itself from builtins and converting itself back (e.g. `hiveio_api.Asset`)."""
 
     @classmethod
     def from_builtins(cls, value: object) -> Self: ...
@@ -453,7 +453,7 @@ def _model_plan(model: type[DataclassInstance]) -> _ModelPlan:
 
 
 def _create_model_plan(model: type[DataclassInstance]) -> _ModelPlan:
-    hints = get_type_hints(model, include_extras=True)  # with the forms of aliases of `schemas.fields.public`
+    hints = get_type_hints(model, include_extras=True)  # with the forms of aliases of `hiveio_api.fields.public`
     field_plans = tuple(
         _FieldPlan(
             attribute=field_.name,
@@ -501,7 +501,7 @@ def _asset_forms(annotation: object) -> set[AssetForm]:
 
 
 def _unannotated(annotation: object) -> object:
-    """The type without `Annotated` metadata (e.g. the forms of aliases of `schemas.fields.public`)."""
+    """The type without `Annotated` metadata (e.g. the forms of aliases of `hiveio_api.fields.public`)."""
     return get_args(annotation)[0] if get_origin(annotation) is Annotated else annotation
 
 
@@ -528,12 +528,12 @@ def value_builder(annotation: type[T]) -> Callable[[object], T]:
     Return a function building a value of the given type from builtins (e.g. result of `json.loads`).
 
     Nested public models (also inside lists, dicts and unions) are built with `from_builtins`, as types building
-    themselves from builtins (e.g. `schemas.Asset`), everything else is left as it is - nothing is validated. Values of
+    themselves from builtins (e.g. `hiveio_api.Asset`), everything else is left as it is - nothing is validated. Values of
     types without public models are returned without being traversed. Builders are cached per type.
 
     Raises:
         UnsupportedTypeError: When the type consists of something else than builtins, dataclasses and types building
-            themselves from builtins (e.g. msgspec models or validating Hive types from `schemas.fields`) - such types
+            themselves from builtins (e.g. msgspec models or validating Hive types from `hiveio_api.fields`) - such types
             can be used only for validation.
     """
     if (builder := _value_builders.get(annotation)) is None:
@@ -575,7 +575,7 @@ def _converter_for(annotation: object) -> _Converter | None:
     if origin is Literal:
         return None
 
-    if origin is Annotated:  # aliases of `schemas.fields.public` - `Int64t` is `int` sent also as a string
+    if origin is Annotated:  # aliases of `hiveio_api.fields.public` - `Int64t` is `int` sent also as a string
         if args[0] is int and IntegerForm.NUMBER_OR_STRING in args[1:]:
             return _integer_from_string
         return _converter_for(args[0])
@@ -600,7 +600,7 @@ def _converter_for(annotation: object) -> _Converter | None:
 
     raise UnsupportedTypeError(
         f"`{annotation}` cannot be built from builtins without validation - only builtins, dataclasses (public "
-        "models) and types building themselves from builtins (e.g. `schemas.Asset`), also in lists, dicts, tuples and "
+        "models) and types building themselves from builtins (e.g. `hiveio_api.Asset`), also in lists, dicts, tuples and "
         "unions, are supported."
     )
 

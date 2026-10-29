@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Generic, Literal, Self, TypeVar, cast, get_args, overload
 from urllib.parse import parse_qs, urlencode, urlparse
 
-from schemas.fields.serializable import Serializable
+from hiveio_api.fields.serializable import Serializable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
