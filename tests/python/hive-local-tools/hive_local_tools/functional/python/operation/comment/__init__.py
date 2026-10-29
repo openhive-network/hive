@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Literal
 
 from beekeepy.exceptions import ErrorInResponseError
+from hiveio_api.fields.public import Asset
 from hiveio_api.operations import (
     AuthorRewardOperation,
     CommentBenefactorRewardOperation,
@@ -27,10 +28,10 @@ from hive_local_tools.functional.python.operation import (
 from hive_local_tools.functional.python.operation import (
     get_transaction_timestamp as get_transaction_timestamp,
 )
-from schemas.fields.public import Asset
 
 if TYPE_CHECKING:
-    from schemas.fields.public import HiveInt
+    from hiveio_api.fields.public import HiveInt
+
     from test_tools.__private.wallet.constants import WalletResponse
 
 

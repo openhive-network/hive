@@ -15,7 +15,7 @@ from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from hive_local_tools.functional.python.operation import get_vesting_price
-from schemas.fields.user_friendly import AccountName, HiveInt
+from hiveio_api.fields.user_friendly import AccountName, HiveInt
 from hiveio_api.operations import (
     AccountCreateOperation,
     Authority,

@@ -15,7 +15,7 @@ from hive_local_tools.functional.python.operation import (
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from schemas.fields.public import AccountName
+    from hiveio_api.fields.public import AccountName
 
 
 class ClaimAccountToken(Operation):

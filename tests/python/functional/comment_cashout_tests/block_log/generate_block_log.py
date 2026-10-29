@@ -16,7 +16,7 @@ from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
 from hiveio_api import Asset
-from schemas.fields.user_friendly import AccountName, PublicKey
+from hiveio_api.fields.user_friendly import AccountName, PublicKey
 from hiveio_api.operations import AccountCreateOperation, Authority, TransferToVestingOperation, VoteOperation
 
 AMOUNT_OF_ALL_COMMENTS: Final[int] = 60

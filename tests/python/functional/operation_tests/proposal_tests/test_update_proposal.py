@@ -6,7 +6,7 @@ import pytest
 from test_tools.exceptions import ErrorInResponseError
 
 import test_tools as tt
-from schemas.fields.hive_datetime import HiveDateTime
+from hiveio_api.fields.hive_datetime import HiveDateTime
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import ProposalAccount
