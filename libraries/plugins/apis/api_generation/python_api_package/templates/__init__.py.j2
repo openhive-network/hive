@@ -21,10 +21,6 @@ from hiveio_api._schema_validation import register_validation_models, validate_j
 from hiveio_api._utilities.smart_lazy_import import smart_lazy_getattr
 
 if TYPE_CHECKING:
-    from schemas.fields.hive_datetime import HiveDateTime
-    from schemas.fields.public import HBD_ASSET, HIVE_ASSET, VESTS_ASSET, Asset, AssetInfo
-    from schemas.validation import SchemaError
-
     from hiveio_api._base import (
         HiveModel,
         InvalidValueWarning,
@@ -33,6 +29,9 @@ if TYPE_CHECKING:
         build,
         to_builtins,
     )
+    from hiveio_api.fields.hive_datetime import HiveDateTime
+    from hiveio_api.fields.public import HBD_ASSET, HIVE_ASSET, VESTS_ASSET, Asset, AssetInfo
+    from hiveio_api.validation import SchemaError
 
 __version__ = "0.0.0"
 
@@ -67,16 +66,16 @@ __all__ = [
 
 
 _LAZY_ATTRIBUTES: Final[dict[str, str]] = {
-    "HBD_ASSET": "schemas.fields.public",
-    "HIVE_ASSET": "schemas.fields.public",
-    "VESTS_ASSET": "schemas.fields.public",
-    "Asset": "schemas.fields.public",
-    "AssetInfo": "schemas.fields.public",
-    "HiveDateTime": "schemas.fields.hive_datetime",
+    "HBD_ASSET": "hiveio_api.fields.public",
+    "HIVE_ASSET": "hiveio_api.fields.public",
+    "VESTS_ASSET": "hiveio_api.fields.public",
+    "Asset": "hiveio_api.fields.public",
+    "AssetInfo": "hiveio_api.fields.public",
+    "HiveDateTime": "hiveio_api.fields.hive_datetime",
     "HiveModel": "hiveio_api._base",
     "InvalidValueWarning": "hiveio_api._base",
     "MissingFieldWarning": "hiveio_api._base",
-    "SchemaError": "schemas.validation",
+    "SchemaError": "hiveio_api.validation",
     "UnexpectedFieldWarning": "hiveio_api._base",
     "build": "hiveio_api._base",
     "to_builtins": "hiveio_api._base",

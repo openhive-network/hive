@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
     from types import ModuleType
 
-    from schemas.validation import SchemaError
+    from hiveio_api.validation import SchemaError
 
 __all__ = [
     "register_validation_models",
@@ -101,7 +101,7 @@ def validate_json(
     Raises:
         hiveio_api.UnknownEndpointError: When `model` is not given and there is no validation model for the endpoint.
     """
-    from schemas.validation import validate
+    from hiveio_api.validation import validate
 
     return validate(data, _target_model(endpoint, model))
 

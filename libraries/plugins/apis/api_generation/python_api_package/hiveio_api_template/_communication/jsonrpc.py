@@ -83,7 +83,7 @@ def build_response(
 
     Raises:
         hiveio_api.UnsupportedTypeError: When `expected_type` contains other types (e.g. msgspec models or Hive types
-            from `schemas.fields`) - such types can be used only for validation.
+            from `hiveio_api.fields`) - such types can be used only for validation.
     """
     build_result = value_builder(expected_type)
     id_ = _jsonrpc_id(response.get("id"))
