@@ -7,11 +7,20 @@ from pathlib import Path
 from typing import Final
 
 import pytest
-from api_generation.generate_description import strip_default_suffixes
-from api_generation.model_methods import add_model_methods
-from api_generation.undeclared_assets import UndeclaredAssetError, check_no_undeclared_assets
-from api_generation.undeclared_dates import UndeclaredDateError, check_no_undeclared_dates, find_undeclared_dates
-from generate_root_package import generate_root_package
+
+from tests.generated_package import require_generated_package
+
+require_generated_package()  # the generator imports the field types of hiveio_api
+
+from api_generation.generate_description import strip_default_suffixes  # noqa: E402
+from api_generation.model_methods import add_model_methods  # noqa: E402
+from api_generation.undeclared_assets import UndeclaredAssetError, check_no_undeclared_assets  # noqa: E402
+from api_generation.undeclared_dates import (  # noqa: E402
+    UndeclaredDateError,
+    check_no_undeclared_dates,
+    find_undeclared_dates,
+)
+from generate_root_package import generate_root_package  # noqa: E402
 
 
 def write_description(tmp_path: Path, api: str, models: str) -> Path:

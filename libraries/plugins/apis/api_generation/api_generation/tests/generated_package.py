@@ -30,10 +30,17 @@ def generated_modules(paths: Iterable[Path]) -> list[Path]:
     return [path for path in paths if not (TEMPLATE_DIR / path.relative_to(PACKAGE_DIR)).exists()]
 
 
-def require_generated_package() -> None:
-    """Skip the calling test module when the package is not generated, make the package importable otherwise."""
+def use_generated_package() -> bool:
+    """Make the package importable when it is generated (or required to be), tell whether it is."""
     generated = (PACKAGE_DIR / "__init__.py").exists()
     if not generated and not os.environ.get("HIVEIO_API_REQUIRE_GENERATED_PACKAGE"):
-        pytest.skip("hiveio_api package is not generated", allow_module_level=True)
+        return False
     if str(PACKAGE_ROOT) not in sys.path:
         sys.path.insert(0, str(PACKAGE_ROOT))
+    return True
+
+
+def require_generated_package() -> None:
+    """Skip the calling test module when the package is not generated, make the package importable otherwise."""
+    if not use_generated_package():
+        pytest.skip("hiveio_api package is not generated", allow_module_level=True)

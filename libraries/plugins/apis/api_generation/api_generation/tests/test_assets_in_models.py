@@ -7,9 +7,7 @@ from typing import TYPE_CHECKING, Final
 
 import pytest
 
-import schemas
 from tests.generated_package import PACKAGE_DIR, require_generated_package
-from tests.kinds_of_assets import literals_of_kinds_of_assets
 
 require_generated_package()
 
@@ -28,7 +26,9 @@ from hiveio_api.operations import (  # noqa: E402
 )
 
 # metadata of the aliases tells the form of assets - they have to be available at runtime (postponed annotations)
-from schemas.fields.public import AnyAsset, AssetHive, LegacyAnyAsset, LegacyAssetHbd  # noqa: E402,TCH001
+from hiveio_api.fields import public  # noqa: E402
+from hiveio_api.fields.public import AnyAsset, AssetHive, LegacyAnyAsset, LegacyAssetHbd  # noqa: E402,TCH001
+from tests.kinds_of_assets import literals_of_kinds_of_assets  # noqa: E402
 
 if TYPE_CHECKING:
     from hiveio_api._communication.jsonrpc import ExpectResultT, JSONRPCResult
@@ -289,7 +289,7 @@ def test_database_api_gets_assets_of_transactions_in_the_nai_form() -> None:
     ]
 
 
-def test_generated_models_of_operations_take_kinds_of_assets_from_schemas() -> None:
+def test_generated_models_of_operations_take_kinds_of_assets_from_their_definition() -> None:
     # ARRANGE
     modules = sorted((PACKAGE_DIR / "operations").glob("*.py"))
 
@@ -301,9 +301,9 @@ def test_generated_models_of_operations_take_kinds_of_assets_from_schemas() -> N
     assert not literals, "defaults of assets have to refer to kinds of assets (`Asset.hbd`), not to NAIs or symbols"
 
 
-def test_package_gives_details_of_kinds_of_assets_of_schemas() -> None:
+def test_package_gives_details_of_kinds_of_assets_of_its_field_types() -> None:
     # ACT & ASSERT
-    assert hiveio_api.HIVE_ASSET is schemas.HIVE_ASSET
-    assert hiveio_api.HBD_ASSET is schemas.HBD_ASSET
-    assert hiveio_api.VESTS_ASSET is schemas.VESTS_ASSET
-    assert hiveio_api.AssetInfo is schemas.AssetInfo
+    assert hiveio_api.HIVE_ASSET is public.HIVE_ASSET
+    assert hiveio_api.HBD_ASSET is public.HBD_ASSET
+    assert hiveio_api.VESTS_ASSET is public.VESTS_ASSET
+    assert hiveio_api.AssetInfo is public.AssetInfo
