@@ -20,7 +20,7 @@ source = [
 python = ">=3.14,<4"
 jinja2 = "^3.1.6"
 msgspec = "^0.20.0"  # field types of hiveio_api, imported by the generator from the source tree of the package
-hiveio-api-client-generator = {version = "1.7.1.dev20261029052111+unstable", source = "gitlab-hive"}
+hiveio-api-client-generator = {version = "1.7.1.post20261029210531", source = "gitlab-hive"}
 ruff = "^0.17.2"  # formats and tidies the generated hiveio_api - not a dependency of hiveio-api-client-generator
 
 [tool.poetry.group.dev.dependencies]
