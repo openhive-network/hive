@@ -583,13 +583,13 @@ hyperframe = ">=6.1,<7"
 
 [[package]]
 name = "hiveio-api"
-version = "1.28.8rc3.dev20261029052500"
+version = "1.28.8rc3.post20261029210300"
 description = "Hive JSON-RPC API client package with lazy-loaded submodules for all Hive APIs"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_api-1.28.8rc3.dev20261029052500-py3-none-any.whl", hash = "sha256:689fb350c9ac95aa41b6608d23522eba076cedc978721185795fbab9f6b3479e"},
+    {file = "hiveio_api-1.28.8rc3.post20261029210300-py3-none-any.whl", hash = "sha256:835c6c46f353121836f4695e89f7d7b8f4bec24ea15cbc6a8554e654ee447795"},
 ]
 
 [package.dependencies]
@@ -602,18 +602,18 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-beekeepy"
-version = "1.28.6.dev20261029053450"
+version = "1.28.6.post20261030002956"
 description = "All in one package for beekeeper interaction via Python interface."
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_beekeepy-1.28.6.dev20261029053450-py3-none-any.whl", hash = "sha256:7d4febb7666f9b6d872402f30cae875b83ce56f72538029623190799a6ac02ec"},
+    {file = "hiveio_beekeepy-1.28.6.post20261030002956-py3-none-any.whl", hash = "sha256:470b73d91767c83030873626113ce41fb9483a416707844f90bf1a049cdf917f"},
 ]
 
 [package.dependencies]
 aiohttp = ">=3.11.15,<4.0.0"
-hiveio-api = ">=1.28.8rc3.dev20261029052500,<1.28.8rc3.dev99999999999999"
+hiveio-api = ">=1.28.8rc3.post20261029210300,<1.28.8rc3.post99999999999999"
 loguru = ">=0.7.2,<0.8.0"
 msgspec = ">=0.20.0,<0.21.0"
 psutil = ">=7.0.0,<8.0.0"
@@ -627,20 +627,20 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-test-tools"
-version = "1.28.8.dev20261029054250"
+version = "1.28.8.post20261030102108"
 description = "Tools for testing hive software"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_test_tools-1.28.8.dev20261029054250-py3-none-any.whl", hash = "sha256:7baa5d512fc19294b2fa0d7565063f9e571c8aec4a5de871d4fab879fae72fd7"},
+    {file = "hiveio_test_tools-1.28.8.post20261030102108-py3-none-any.whl", hash = "sha256:f8625a514e5fdc36db7a6501f956cdfb5f1d8d652f6d38bad823b090ca4ff28a"},
 ]
 
 [package.dependencies]
 abstractcp = ">=1.0.0,<2.0.0"
-hiveio-api = ">=1.28.8rc3.dev20261029052500,<1.28.8rc3.dev99999999999999"
-hiveio-beekeepy = "1.28.6.dev20261029053450"
-hiveio-wax = "1.28.8.dev20261029054250"
+hiveio-api = ">=1.28.8rc3.post20261029210300,<1.28.8rc3.post99999999999999"
+hiveio-beekeepy = "1.28.6.post20261030002956"
+hiveio-wax = "1.28.8.post20261030102108"
 loguru = ">=0.7.2,<0.8.0"
 msgspec = ">=0.20.0,<0.21.0"
 python-dateutil = ">=2.8.2,<3.0.0"
@@ -652,19 +652,19 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-wax"
-version = "1.28.8.dev20261029054250"
+version = "1.28.8.post20261030102108"
 description = ""
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_wax-1.28.8.dev20261029054250-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:9262a1f1a9d97cc0d6876b903579f53ed7d14cbb1b3c166732323ae5035e90a5"},
-    {file = "hiveio_wax-1.28.8.dev20261029054250-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:486a8c96782833981280ee0259693d2fd5939b631a59ee20dc2c1594013859f6"},
+    {file = "hiveio_wax-1.28.8.post20261030102108-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:02191753b95d3afbecf6fe81522068ab759ea9367e8795aacb108275c036556b"},
+    {file = "hiveio_wax-1.28.8.post20261030102108-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:78caadd76013ac516417dea8feb609b9997848d3ec2a0005dbf53ef03776c3c9"},
 ]
 
 [package.dependencies]
-hiveio-api = "1.28.8rc3.dev20261029052500"
-hiveio-beekeepy = "1.28.6.dev20261029053450"
+hiveio-api = "1.28.8rc3.post20261029210300"
+hiveio-beekeepy = "1.28.6.post20261030002956"
 httpx = {version = ">=0.28.0,<0.29.0", extras = ["http2"]}
 loguru = ">=0.7.2,<0.8.0"
 protobuf = ">=6.33.0,<7.0.0"
@@ -2405,4 +2405,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "44a9873c1e4bdb0d502329836ab4f27517fed38a0bba4d24fc48fa1b3c528a86"
+content-hash = "fe2e7531999ebd006d2d4fbcee038b7158b50764538ed5f8ab86846da0cebff2"
