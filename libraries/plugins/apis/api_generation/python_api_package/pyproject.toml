@@ -32,7 +32,7 @@ poetry-dynamic-versioning = { version = "1.9.1", extras = ["plugin"] }
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4"
-msgspec = "^0.20.0"  # validation (hiveio_api.validation, validation models) - imported only when validating
+msgspec = "^0.22.0"  # validation (hiveio_api.validation, validation models) - imported only when validating
 
 [tool.poetry-dynamic-versioning]
 enable = true
