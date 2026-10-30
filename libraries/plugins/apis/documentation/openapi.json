@@ -23326,6 +23326,38 @@
             "config_template": {
                 "type": "object",
                 "properties": {
+                    "HIVE_MAX_SCOPED_AUTHORITY_RECIPIENTS": {
+                        "type": "integer",
+                        "description": "Maximum number of allowed recipients in a scoped authority."
+                    },
+                    "HIVE_MAX_SCOPED_AUTHORITIES_PER_GRANTOR": {
+                        "type": "integer",
+                        "description": "Maximum number of active scoped authorities per grantor."
+                    },
+                    "HIVE_MAX_SCOPED_AUTHORITY_DURATION_SECONDS": {
+                        "type": "integer",
+                        "description": "Maximum duration of a scoped authority in seconds."
+                    },
+                    "HIVE_MAX_SCOPED_AUTHORITY_PERIOD_SECONDS": {
+                        "type": "integer",
+                        "description": "Maximum scoped authority spending period in seconds."
+                    },
+                    "HIVE_MAX_COMPRESSED_BATCH_TRANSFER_INPUTS": {
+                        "type": "integer",
+                        "description": "Maximum number of compressed batch transfer inputs."
+                    },
+                    "HIVE_MAX_COMPRESSED_BATCH_TRANSFER_OUTPUTS": {
+                        "type": "integer",
+                        "description": "Maximum number of compressed batch transfer outputs."
+                    },
+                    "HIVE_SCOPED_AUTHORITY_RC_FIXED_BYTES": {
+                        "type": "integer",
+                        "description": "Fixed RC byte accounting for scoped authorities."
+                    },
+                    "HIVE_SCOPED_AUTHORITY_RC_METADATA_BYTES": {
+                        "type": "integer",
+                        "description": "Metadata RC byte accounting for scoped authorities."
+                    },
                     "HIVE_INITIAL_VOTE_POWER_RATE": {
                         "type": "integer",
                         "description": "Initial vote power regeneration rate."
