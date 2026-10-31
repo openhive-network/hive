@@ -17,7 +17,7 @@ from hive_local_tools.functional.python.block_log_generation import parse_block_
 from hive_local_tools.functional.python.operation import (
     create_transaction_with_any_operation,
 )
-from schemas.operations.custom_json_operation import CustomJsonOperation
+from hiveio_api.operations import CustomJsonOperation
 
 
 def generate_blocklog_for_denser(input_block_log_directory: Path) -> None:

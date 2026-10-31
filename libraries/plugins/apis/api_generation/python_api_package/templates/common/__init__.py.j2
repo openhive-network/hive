@@ -1,0 +1,19 @@
+"""Models shared by several APIs - a module per model, imported on first access."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from hiveio_api._utilities.smart_lazy_import import lazy_module_factory
+
+__all__ = [
+{% for model in models %}    "{{ model.name }}",
+{% endfor %}]
+
+if TYPE_CHECKING:
+{% for model in models %}    from {{ model.module }} import {{ model.name }}
+{% endfor %}
+__getattr__ = lazy_module_factory(
+    globals(),
+{% for model in models %}    ("{{ model.module }}", "{{ model.name }}"),
+{% endfor %})

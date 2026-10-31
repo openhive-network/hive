@@ -45,8 +45,8 @@ void database::process_recurrent_transfers()
 
   // uint16_t is okay because we stop at 1000, if the limit changes, make sure to check if it fits in the integer.
   uint16_t processed_transfers = 0;
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
+  static const util::advanced_benchmark_dumper::counter processing_counter( "processing", "hive::protocol::recurrent_transfer_operation" );
+  util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
   while( itr != recurrent_transfers_by_date.end() && itr->get_trigger_date() <= now )
   {
     // Since this is an intensive process, we don't want to process too many recurrent transfers in a single block
@@ -140,8 +140,8 @@ void database::process_recurrent_transfers()
 
     processed_transfers++;
   }
-  if( _benchmark_dumper.is_enabled() && processed_transfers )
-    _benchmark_dumper.end( "processing", "hive::protocol::recurrent_transfer_operation", processed_transfers );
+  if( processed_transfers )
+    benchmark.stop( processing_counter, processed_transfers );
 }
 
 void database::remove_proposal_votes_for_accounts_without_voting_rights()
@@ -211,8 +211,8 @@ void database::process_decline_voting_rights()
   auto itr = request_idx.begin();
 
   int count = 0;
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
+  static const util::advanced_benchmark_dumper::counter processing_counter( "processing", "hive::protocol::decline_voting_rights_operation" );
+  util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
 
   const auto& proposal_votes = get_index< proposal_vote_index, by_voter_proposal >();
   remove_guard obj_perf( get_remove_threshold() );
@@ -248,8 +248,8 @@ void database::process_decline_voting_rights()
       break;
     }
   }
-  if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "processing", "hive::protocol::decline_voting_rights_operation", count );
+  if( count )
+    benchmark.stop( processing_counter, count );
 }
 
 } }

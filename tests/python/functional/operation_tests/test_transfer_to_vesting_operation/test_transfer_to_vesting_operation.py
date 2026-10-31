@@ -21,17 +21,16 @@ from hive_local_tools.functional.python.operation import (
     get_virtual_operations,
     jump_to_date,
 )
-from schemas.operations.virtual.delayed_voting_operation import DelayedVotingOperation
-from schemas.operations.virtual.transfer_to_vesting_completed_operation import TransferToVestingCompletedOperation
+from hiveio_api.operations import DelayedVotingOperation, TransferToVestingCompletedOperation
 
 if TYPE_CHECKING:
-    from schemas.virtual_operation import (
-        VirtualOperation as SchemaVirtualOperation,
+    from hiveio_api.operations import (
+        VirtualOperationBase as SchemaVirtualOperation,
     )
 
 if TYPE_CHECKING:
-    from schemas.virtual_operation import (
-        VirtualOperation as SchemaVirtualOperation,
+    from hiveio_api.operations import (
+        VirtualOperationBase as SchemaVirtualOperation,
     )
 
 

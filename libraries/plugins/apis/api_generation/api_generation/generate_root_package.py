@@ -6,6 +6,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from api_client_generator.tidy import tidy_with_ruff
+from api_generation.common import pascal_case
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -32,23 +34,19 @@ def generate_root_package(
     apis = []
     for api_name in api_list:
         snake_case = api_name.replace("-", "_")
-        pascal_case = "".join(word.capitalize() for word in snake_case.split("_"))
-        apis.append({
-            "snake_case": snake_case,
-            "pascal_case": pascal_case,
-        })
+        apis.append({"snake_case": snake_case, "pascal_case": pascal_case(snake_case)})
 
     env = Environment(loader=FileSystemLoader(template_directory))
 
     for template_name, output_name in [
         ("__init__.py.j2", "__init__.py"),
-        ("_optional.py.j2", "_optional.py"),
         ("README.md.j2", "README.md"),
     ]:
         template = env.get_template(template_name)
         content = template.render(apis=apis)
         (package_directory / output_name).write_text(content)
 
+    tidy_with_ruff(package_directory / "__init__.py")
     print(f"Generated root package files with {len(apis)} APIs: {[a['snake_case'] for a in apis]}")
 
 

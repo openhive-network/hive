@@ -18,8 +18,7 @@ from hive_local_tools.functional.python.queen_utils import (
     __transfer,
     __vesting_delegate,
 )
-from schemas.fields.assets import AssetHive
-from schemas.policies import DisableSwapTypesPolicy, set_policies
+from hiveio_api import Asset
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -31,13 +30,6 @@ WITNESSES: Final[str] = [f"witness-{num}" for num in range(20)]
 INIT_SUPPLY: Final[int] = 400_000_000_000
 INITIAL_VESTING: Final[int] = 50_000_000_000
 HBD_INIT_SUPPLY: Final[int] = 30_000_000_000
-
-
-"""
-Disabling type swapping means that the schemas no longer automatically convert simple types into custom types.
-This makes the schemas module run much faster, but it can only be used in a few specific cases.
-"""
-set_policies(DisableSwapTypesPolicy(disabled=True))
 
 
 def prepare_block_log(output_block_log_directory: Path) -> None:
@@ -169,7 +161,7 @@ def prepare_block_log(output_block_log_directory: Path) -> None:
         __generate_and_broadcast_transaction,
         args=(wallet_hf26, node, __recurrent_transfer),
         args_sequences=(account_names,),
-        kwargs={"amount": AssetHive(amount=1), "executions": 2, "recurrence": 24},
+        kwargs={"amount": Asset.hive.satoshi(1), "executions": 2, "recurrence": 24},
         amount=AMOUNT_OF_ALL_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,

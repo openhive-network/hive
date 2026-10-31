@@ -70,12 +70,12 @@ def assert_account_resources(node: tt.InitNode, account_name: str, relate: opera
     or the account does not have funds (operator: eq).
     """
     for value in list(__get_resources_from_account(node, account_name).values()):
-        asset = tt.Asset.from_(value)
-        if isinstance(asset, tt.Asset.TestT):
+        asset = tt.Asset.from_nai(value)
+        if asset.is_hive():
             assert relate(asset.as_nai(), tt.Asset.Test(0))
-        if isinstance(asset, tt.Asset.VestT):
+        if asset.is_vests():
             assert relate(asset.as_nai(), tt.Asset.Vest(0))
-        if isinstance(asset, tt.Asset.TbdT):
+        if asset.is_hbd():
             assert relate(asset.as_nai(), tt.Asset.Tbd(0))
 
 
@@ -102,12 +102,12 @@ def assert_cleared_resources_in_hardfork_hive_operation(node: tt.InitNode, accou
 
     asset_keys = list(tt.Asset.Hbd(1.0).as_nai().keys())
     for op in hardfork_hive_virtual_operations:
-        for value in op.values():
+        for value in op.dict().values():
             if isinstance(value, dict) and list(value.keys()) == asset_keys:
-                asset = tt.Asset.from_(value)
-                if isinstance(asset, tt.Asset.TestT):
+                asset = tt.Asset.from_nai(value)
+                if asset.is_hive():
                     assert asset > tt.Asset.Test(0)
-                if isinstance(asset, tt.Asset.VestT):
+                if asset.is_vests():
                     assert asset > tt.Asset.Vest(0)
-                if isinstance(asset, tt.Asset.TbdT):
+                if asset.is_hbd():
                     assert asset > tt.Asset.Tbd(0)

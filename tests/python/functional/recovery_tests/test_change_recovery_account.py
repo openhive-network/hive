@@ -6,8 +6,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import OWNER_AUTH_RECOVERY_PERIOD
 from hive_local_tools.functional.python.recovery import get_recovery_agent
-from test_tools.exceptions import ErrorInResponseError
-from schemas.errors import ValidationError
+from test_tools.exceptions import ErrorInResponseError, WaxInvalidAccountNameError
 
 
 @run_for("testnet")
@@ -35,7 +34,7 @@ def test_resign_from_the_current_recovery_agent(node: tt.InitNode) -> None:
     wallet = tt.Wallet(attach_to=node)
     wallet.create_account("alice", vests=tt.Asset.Test(10))
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(WaxInvalidAccountNameError):
         wallet.api.change_recovery_account("alice", "")
 
 

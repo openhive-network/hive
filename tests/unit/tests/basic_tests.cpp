@@ -32,6 +32,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_authority_getter.hpp>
+#include <hive/chain/notifications.hpp>
 #include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/detail/state/block_summary_object.hpp>
 #include <hive/chain/detail/state/comment_object.hpp>
@@ -88,11 +89,19 @@
 #include <fc/reflect/typename.hpp>
 #include <fc/static_variant.hpp>
 #include <fc/optional.hpp>
+#include <fc/filesystem.hpp>
+#include <fc/io/json.hpp>
+#include <hive/utilities/signal.hpp>
+#include <hive/utilities/tempdir.hpp>
 #include "../db_fixture/clean_database_fixture.hpp"
 
+#include <boost/scope_exit.hpp>
+
 #include <algorithm>
+#include <chrono>
 #include <random>
 #include <string>
+#include <thread>
 
 using namespace hive;
 using namespace hive::chain;
@@ -3634,6 +3643,174 @@ BOOST_AUTO_TEST_CASE( asset_conversion_test )
   test_convert( true );
   test_convert( false );
 
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE( advanced_benchmark_tests )
+
+using hive::chain::util::advanced_benchmark_dumper;
+
+BOOST_AUTO_TEST_CASE( nested_measurements )
+{
+  try
+  {
+    const auto sleep_time = std::chrono::milliseconds( 50 );
+    const uint64_t sleep_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( sleep_time ).count();
+
+    const auto outer_counter = advanced_benchmark_dumper::register_counter( "test", "outer" );
+    const auto middle_counter = advanced_benchmark_dumper::register_counter( "test", "middle" );
+    const auto inner_counter = advanced_benchmark_dumper::register_counter( "test", "inner" );
+    BOOST_REQUIRE_EQUAL( advanced_benchmark_dumper::register_counter( "test", "outer" ), outer_counter );
+    BOOST_REQUIRE_NE( advanced_benchmark_dumper::register_counter( "other", "outer" ), outer_counter );
+
+    advanced_benchmark_dumper dumper;
+    {
+      advanced_benchmark_dumper::measurement not_enabled( dumper );
+      not_enabled.stop( outer_counter );
+    }
+    BOOST_REQUIRE( dumper.get_summary( 0 ).items.empty() );
+
+    dumper.set_enabled( true );
+    {
+      advanced_benchmark_dumper::measurement outer( dumper );
+      std::this_thread::sleep_for( sleep_time );
+      {
+        advanced_benchmark_dumper::measurement middle( dumper );
+        {
+          advanced_benchmark_dumper::measurement inner( dumper );
+          std::this_thread::sleep_for( sleep_time );
+          inner.stop( inner_counter );
+        }
+        std::this_thread::sleep_for( sleep_time );
+        middle.stop( middle_counter, 2 );
+      }
+      {
+        // measurement that ends without stop (e.g. there turned out to be nothing to count) is not counted anywhere
+        advanced_benchmark_dumper::measurement discarded( dumper );
+        std::this_thread::sleep_for( sleep_time );
+      }
+      // the same for measurement interrupted by exception
+      auto interrupted = [&]()
+      {
+        advanced_benchmark_dumper::measurement discarded( dumper );
+        std::this_thread::sleep_for( sleep_time );
+        throw std::runtime_error( "interrupted measurement" );
+      };
+      BOOST_REQUIRE_THROW( interrupted(), std::runtime_error );
+      outer.stop( outer_counter );
+    }
+
+    const auto summary = dumper.get_summary( 5 );
+    BOOST_REQUIRE_EQUAL( summary.block_number, 5u );
+    BOOST_REQUIRE_EQUAL( summary.items.size(), 3u );
+    const std::vector< std::string > names = { "inner", "middle", "outer" }; // sorted by name
+    const std::vector< uint64_t > counts = { 1, 2, 1 };
+    uint64_t total_time = 0;
+    for( size_t i = 0; i < summary.items.size(); ++i )
+    {
+      const auto& item = summary.items[i];
+      BOOST_TEST_MESSAGE( item.op_name << ": " << item.time << " ns" );
+      BOOST_REQUIRE_EQUAL( item.context, "test" );
+      BOOST_REQUIRE_EQUAL( item.op_name, names[i] );
+      BOOST_REQUIRE_EQUAL( item.count, counts[i] );
+      BOOST_REQUIRE_EQUAL( item.time_per_count, ( item.time + item.count - 1 ) / item.count );
+      // every measurement slept once by itself, time of nested and discarded measurements is not included
+      BOOST_REQUIRE_GE( item.time, sleep_ns );
+      BOOST_REQUIRE_LT( item.time, 2 * sleep_ns );
+      total_time += item.time;
+    }
+    BOOST_REQUIRE_EQUAL( summary.total_time, total_time );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( dump_to_file )
+{
+  try
+  {
+    fc::temp_directory dir( hive::utilities::temp_directory_path() );
+    const fc::path file = dir.path() / "advanced_benchmark.json";
+
+    advanced_benchmark_dumper dumper;
+    dumper.set_enabled( true );
+    auto measure = [&]( const std::string& context, const std::string& name, uint64_t count )
+    {
+      advanced_benchmark_dumper::measurement benchmark( dumper );
+      benchmark.stop( advanced_benchmark_dumper::register_counter( context, name ), count );
+    };
+    measure( "test", "b", 3 );
+    dumper.dump( 1 ); // no file set - nothing to do
+    BOOST_REQUIRE( !fc::exists( file ) );
+
+    dumper.set_file_name( file.string() );
+    dumper.dump( 2 );
+    measure( "test", "a", 1 );
+    measure( "other", "b", 2 );
+    measure( "test", "b", 1 );
+    dumper.dump( 3 ); // overwrites previous content
+
+    const auto expected = dumper.get_summary( 3 );
+    const auto dumped = fc::json::from_file( file, fc::json::format_validation_mode::full ).as< advanced_benchmark_dumper::summary >();
+    BOOST_REQUIRE( !fc::exists( file.string() + ".tmp" ) );
+    BOOST_REQUIRE_EQUAL( dumped.block_number, 3u );
+    BOOST_REQUIRE_EQUAL( dumped.total_time, expected.total_time );
+    BOOST_REQUIRE_EQUAL( dumped.items.size(), 3u );
+    // sorted by name, then by context
+    const std::vector< std::pair< std::string, std::string > > order = { { "test", "a" }, { "other", "b" }, { "test", "b" } };
+    const std::vector< uint64_t > counts = { 1, 2, 4 };
+    for( size_t i = 0; i < dumped.items.size(); ++i )
+    {
+      BOOST_REQUIRE_EQUAL( dumped.items[i].context, order[i].first );
+      BOOST_REQUIRE_EQUAL( dumped.items[i].op_name, order[i].second );
+      BOOST_REQUIRE_EQUAL( dumped.items[i].count, counts[i] );
+      BOOST_REQUIRE_EQUAL( dumped.items[i].time, expected.items[i].time );
+      BOOST_REQUIRE_EQUAL( dumped.items[i].time_per_count, expected.items[i].time_per_count );
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_FIXTURE_TEST_CASE( reaction_to_virtual_operation, clean_database_fixture )
+{
+  try
+  {
+    // plugin reaction to notification on virtual operation emitted by evaluator is measured inside measurement
+    // of that evaluator, but it has to be counted only in its own counter
+    const auto sleep_time = std::chrono::milliseconds( 50 );
+    const uint64_t sleep_ns = std::chrono::duration_cast< std::chrono::nanoseconds >( sleep_time ).count();
+
+    auto connection = db->add_pre_apply_operation_handler( [sleep_time]( const operation_notification& note )
+    {
+      if( note.op.which() == operation::tag< transfer_to_vesting_completed_operation >::value )
+        std::this_thread::sleep_for( sleep_time );
+    }, *db_plugin );
+    BOOST_SCOPE_EXIT( &connection ) { hive::utilities::disconnect_signal( connection ); } BOOST_SCOPE_EXIT_END
+
+    auto& dumper = db->get_benchmark_dumper();
+    dumper.set_enabled( true );
+    vest( HIVE_INIT_MINER_NAME, HIVE_asset( 1000 ) );
+    dumper.set_enabled( false );
+
+    const auto summary = dumper.get_summary( db->head_block_num() );
+    auto find_item = [&]( const std::string& context, const std::string& name )
+    {
+      auto it = std::find_if( summary.items.begin(), summary.items.end(), [&]( const advanced_benchmark_dumper::item& i )
+      {
+        return i.context == context && i.op_name == name;
+      } );
+      BOOST_REQUIRE_MESSAGE( it != summary.items.end(), "missing measurement of " << name << " in context '" << context << "'" );
+      return *it;
+    };
+    const auto evaluator = find_item( "", "hive::protocol::transfer_to_vesting_operation" );
+    const auto reaction = find_item( "pre->" HIVE_DEBUG_NODE_PLUGIN_NAME, "hive::protocol::transfer_to_vesting_completed_operation" );
+    BOOST_TEST_MESSAGE( "evaluator: " << evaluator.time << " ns, reaction: " << reaction.time << " ns" );
+    BOOST_REQUIRE_EQUAL( evaluator.count, 1u );
+    BOOST_REQUIRE_EQUAL( reaction.count, 1u );
+    BOOST_REQUIRE_GE( reaction.time, sleep_ns );
+    BOOST_REQUIRE_LT( evaluator.time, sleep_ns );
+  }
+  FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -5,7 +5,7 @@ import test_tools as tt
 from test_tools.exceptions import ErrorInResponseError
 
 from test_tools.exceptions import WaxAssertionError
-from wax.helpy import Hf26Asset as Asset
+from test_tools import Asset
 
 
 @pytest.fixture

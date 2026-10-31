@@ -32,6 +32,9 @@ class database_impl
 
     database&                                         _self;
     evaluator_registry< operation >                   _evaluator_registry;
+    // counters of execution time of evaluators and validation of operations (--advanced-benchmark)
+    util::advanced_benchmark_dumper::variant_counters< operation > _evaluator_benchmark_counters{ "" };
+    util::advanced_benchmark_dumper::variant_counters< operation > _validate_benchmark_counters{ "validate" };
     resource_credits                                  _rc;
     std::map<account_name_type, block_id_type>        _last_fast_approved_block_by_witness;
     std::unique_ptr<util::decoded_types_data_storage> _decoded_types_data_storage;

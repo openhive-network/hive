@@ -4465,52 +4465,13 @@ int32_t get_time( database& db, const std::string& name )
 {
   int32_t benchmark_time = -1;
 
-  auto& dumper = db.get_benchmark_dumper();
-  dumper.dump();
-
-  fc::path benchmark_file( dumper.get_file_name() );
-
-  if( !fc::exists( benchmark_file ) )
-    return benchmark_time;
-
-  /*
+  const auto summary = db.get_benchmark_dumper().get_summary( db.head_block_num() );
+  for( const auto& item : summary.items )
   {
-  "total_time": 1421,
-  "items": [{
-      "op_name": "dhf_processor",
-      "time": 80
-    },...
-  */
-  auto file = fc::json::from_file( benchmark_file, fc::json::format_validation_mode::full ).as< fc::variant >();
-  if( file.is_object() )
-  {
-    auto vo = file.get_object();
-    if( vo.contains( "items" ) )
+    if( item.op_name == name )
     {
-      auto items = vo[ "items" ];
-      if( items.is_array() )
-      {
-        auto v = items.as< std::vector< fc::variant > >();
-        for( auto& item : v )
-        {
-          if( !item.is_object() )
-            continue;
-
-          auto vo_item = item.get_object();
-          if( vo_item.contains( "op_name" ) && vo_item[ "op_name" ].is_string() )
-          {
-            std::string str = vo_item[ "op_name" ].as_string();
-            if( str == name )
-            {
-              if( vo_item.contains( "time" ) && vo_item[ "time" ].is_uint64() )
-              {
-                benchmark_time = vo_item[ "time" ].as_int64();
-                break;
-              }
-            }
-          }
-        }
-      }
+      benchmark_time = static_cast< int32_t >( item.time );
+      break;
     }
   }
   return benchmark_time;

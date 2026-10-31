@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from hiveio_api import Asset
 
 import test_tools as tt
 from test_tools.exceptions import ErrorInResponseError
@@ -138,7 +139,7 @@ def test_wrong_sign_in_transaction(wallet: tt.Wallet) -> None:
     wallet.api.transfer_to_vesting("initminer", accounts[0], tt.Asset.Test(100))
 
     operation = wallet.api.delegate_rc(accounts[0], [accounts[1]], DELEGATION, broadcast=False)
-    operation["operations"][0][1]["required_posting_auths"][0] = accounts[1]
+    operation["operations"][0]["value"]["required_posting_auths"][0] = accounts[1]
 
     with pytest.raises(ErrorInResponseError):
         wallet.api.sign_transaction(operation)
@@ -176,7 +177,7 @@ def test_multidelegation(node: tt.InitNode, wallet: tt.Wallet) -> None:
         url="https://initminer.com",
         block_signing_key=tt.Account("initminer").public_key,
         props={
-            "account_creation_fee": tt.Asset.TestT(amount=1),
+            "account_creation_fee": Asset.hive.satoshi(1),
             "maximum_block_size": 2097152,
             "hbd_interest_rate": 0,
         },

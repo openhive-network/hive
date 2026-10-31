@@ -9,7 +9,8 @@ from hive_local_tools.functional.python.operation import (
     check_if_fill_transfer_from_savings_vop_was_generated,
     get_virtual_operations,
 )
-from schemas.operations.virtual import FillTransferFromSavingsOperation
+from hiveio_api import Asset
+from hiveio_api.operations import FillTransferFromSavingsOperation
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import TransferAccount
@@ -19,13 +20,13 @@ if TYPE_CHECKING:
     ("receiver_of_savings_withdrawal", "currency", "check_savings_balance", "check_balance"),
     [
         # transfer from savings in HIVES, receiver is the same person as sender
-        ("alice", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
+        ("alice", Asset.hive.satoshi, "get_hive_savings_balance", "get_hive_balance"),
         # transfer from savings in HIVES, receiver is other account
-        ("bob", tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
+        ("bob", Asset.hive.satoshi, "get_hive_savings_balance", "get_hive_balance"),
         # transfer from savings in HBDS, receiver is the same person as sender
-        ("alice", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("alice", Asset.hbd.satoshi, "get_hbd_savings_balance", "get_hbd_balance"),
         # transfer from savings in HBDS, receiver is other account
-        ("bob", tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
+        ("bob", Asset.hbd.satoshi, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()
@@ -75,9 +76,9 @@ def test_transfer_from_savings_account(
     ("currency", "check_savings_balance", "check_balance"),
     [
         # transfers from savings in HIVES
-        (tt.Asset.TestT, "get_hive_savings_balance", "get_hive_balance"),
+        (Asset.hive.satoshi, "get_hive_savings_balance", "get_hive_balance"),
         # transfers from savings in HBDS
-        (tt.Asset.TbdT, "get_hbd_savings_balance", "get_hbd_balance"),
+        (Asset.hbd.satoshi, "get_hbd_savings_balance", "get_hbd_balance"),
     ],
 )
 @pytest.mark.testnet()

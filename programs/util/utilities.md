@@ -69,3 +69,20 @@ memory_details_to_csv.sh indexes --field=index_size replay_benchmark.jsonl > obj
 memory_details_to_csv.sh record --select=replay --sort=total_index_mem_usage replay_benchmark.jsonl
 ```
 Run it with `--help` for the description of commands and options.
+
+## advanced_benchmark_to_csv.sh: converts execution times dumped by hived to CSV
+hived run with `--advanced-benchmark` measures execution time of evaluators, validation and automatic processing of
+operations as well as plugin reactions to notifications. Times collected since start are written to
+`advanced_benchmark.json` in its data dir every `--set-benchmark-interval` blocks and at the end of each phase of work
+(replay, sync, live) - the file is replaced as a whole, so it can be looked at any time, e.g. during replay. Each item
+of the file holds total time and count of executions of one part of code measured in one context (empty context means
+evaluator). Measurements can be nested, but time of nested one (e.g. plugin reaction to virtual operation emitted by
+evaluator) is not included in time of the enclosing one.
+
+The script converts the items into CSV (requires `jq`), e.g. to import into a spreadsheet:
+```
+advanced_benchmark_to_csv.sh items advanced_benchmark.json > items.csv
+advanced_benchmark_to_csv.sh items --sort=time advanced_benchmark.json | head -20
+advanced_benchmark_to_csv.sh names --field=time_per_count advanced_benchmark.json > names.csv
+```
+Run it with `--help` for the description of commands and options.

@@ -5,7 +5,7 @@ import pytest
 import test_tools as tt
 
 from test_tools.exceptions import ErrorInResponseError
-from schemas.transaction import Transaction
+from hiveio_api.operations import Transaction
 from wax.complex_operations.account_update import AccountAuthorityUpdateOperation
 
 

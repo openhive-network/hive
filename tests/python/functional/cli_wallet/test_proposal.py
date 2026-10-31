@@ -71,9 +71,7 @@ def test_create_proposal_fail_negative_payment(
     assert len(list_proposals_by_creator(wallet, creator.name)) == 0
 
     prepared_proposal = prepare_proposal(funded_account)
-    # create asset with negative value manually - msgspec doesn't allow to do it via constructor
-    negative_value = tt.Asset.Tbd(1)
-    negative_value.amount = -1000
+    negative_value = tt.Asset.Tbd(-1)
     prepared_proposal.create_proposal_arguments["daily_pay"] = negative_value  # "-1.000 TBD"
     wallet.api.post_comment(**prepared_proposal.post_comment_arguments)
 

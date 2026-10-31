@@ -56,9 +56,9 @@ void database::process_conversions()
 
   //regular requests
   int count = 0;
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
   {
+    static const util::advanced_benchmark_dumper::counter processing_counter( "processing", "hive::protocol::convert_operation" );
+    util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
     const auto& request_by_date = get_index< convert_request_index, by_conversion_date >();
     auto itr = request_by_date.begin();
 
@@ -82,17 +82,17 @@ void database::process_conversions()
 
       ++count;
     }
+    if( count )
+      benchmark.stop( processing_counter, count );
   }
-  if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "processing", "hive::protocol::convert_operation", count );
 
   size_t regular_requests_no = pending_data.size();
 
   //collateralized requests
   count = 0;
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
   {
+    static const util::advanced_benchmark_dumper::counter processing_counter( "processing", "hive::protocol::collateralized_convert_operation" );
+    util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
     const auto& request_by_date = get_index< collateralized_convert_request_index, by_conversion_date >();
     auto itr = request_by_date.begin();
 
@@ -130,9 +130,9 @@ void database::process_conversions()
 
       ++count;
     }
+    if( count )
+      benchmark.stop( processing_counter, count );
   }
-  if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "processing", "hive::protocol::collateralized_convert_operation", count );
 
   //we have collected data on expected transfers and drained all balances
   //now burn all collected HBD and supplement collected HIVE with additional issue

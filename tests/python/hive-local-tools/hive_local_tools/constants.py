@@ -15,8 +15,6 @@ from __future__ import annotations
 
 from typing import Final
 
-from schemas.transaction import TransactionLegacy
-
 TRANSACTION_TEMPLATE: Final[dict] = {
     "ref_block_num": 0,
     "ref_block_prefix": 0,
@@ -28,10 +26,6 @@ TRANSACTION_TEMPLATE: Final[dict] = {
     "block_num": 0,
     "transaction_num": 0,
 }
-
-
-def get_transaction_model() -> TransactionLegacy:
-    return TransactionLegacy(**TRANSACTION_TEMPLATE)
 
 
 BASE_ACCOUNTS: Final[list] = ["hive.fund", "initminer", "miners", "null", "steem", "steem.dao", "temp"]

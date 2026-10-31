@@ -17,7 +17,7 @@ from hive_local_tools.constants import (
 )
 from hive_local_tools.functional.python.operation import get_virtual_operations
 from hive_local_tools.functional.python.operation.recurrent_transfer import RecurrentTransfer, RecurrentTransferAccount
-from schemas.operations.virtual import FailedRecurrentTransferOperation
+from hiveio_api.operations import FailedRecurrentTransferOperation
 
 
 @pytest.mark.testnet
@@ -245,11 +245,11 @@ def test_recurrent_transfer_cases_9_and_10(
 
     recurrent_transfer.move_after_last_transfer()
 
-    if isinstance(amount, tt.Asset.TestT):
+    if amount.is_hive():
         assert sender.hive == tt.Asset.Test(10)
         # 2 executions from first transfer and 5 executions from second transfer
         assert receiver.hive == (2 + 5) * amount
-    if isinstance(amount, tt.Asset.TbdT):
+    if amount.is_hbd():
         assert sender.hbd == tt.Asset.Tbd(10)
         # 2 executions from first transfer and 5 executions from second transfer
         assert receiver.hbd == (2 + 5) * amount
@@ -384,8 +384,8 @@ def test_recurrent_transfer_cases_13_14_15_16(
 ):
     wallet.create_account(
         "sender",
-        hives=6 * amount if isinstance(amount, tt.Asset.TestT) else None,
-        hbds=6 * amount if isinstance(amount, tt.Asset.TbdT) else None,
+        hives=6 * amount if amount.is_hive() else None,
+        hbds=6 * amount if amount.is_hbd() else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)
@@ -585,8 +585,8 @@ def test_recurrent_transfer_cases_19_and_20(
     """
     wallet.create_account(
         "sender",
-        hives=transfer_amount if isinstance(transfer_amount, tt.Asset.TestT) else None,
-        hbds=transfer_amount if isinstance(transfer_amount, tt.Asset.TbdT) else None,
+        hives=transfer_amount if transfer_amount.is_hive() else None,
+        hbds=transfer_amount if transfer_amount.is_hbd() else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)
@@ -639,8 +639,8 @@ def test_recurrent_transfer_cases_21_and_22(
     """
     wallet.create_account(
         "sender",
-        hives=10 if isinstance(amount, tt.Asset.TestT) else None,
-        hbds=10 if isinstance(amount, tt.Asset.TbdT) else None,
+        hives=10 if amount.is_hive() else None,
+        hbds=10 if amount.is_hbd() else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)
@@ -701,8 +701,8 @@ def test_recurrent_transfer_cases_23_and_24(
     """
     wallet.create_account(
         "sender",
-        hives=amount if isinstance(amount, tt.Asset.TestT) else None,
-        hbds=amount if isinstance(amount, tt.Asset.TbdT) else None,
+        hives=amount if amount.is_hive() else None,
+        hbds=amount if amount.is_hbd() else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)

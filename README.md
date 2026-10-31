@@ -102,6 +102,26 @@ Keys and password are stored in the wallet.json file.
 See [doc/devs/testing.md](doc/devs/testing.md) for testing build targets and info
 on how to use lcov to check code coverage of tests.
 
+## Changes spanning hive, wax and hive-local-tools
+
+The Python tests of hive use `tests/python/hive-local-tools`, which pins packages released by other repositories:
+`hiveio-wax` and `hiveio-test-tools` (built by [wax](https://gitlab.syncad.com/hive/wax) from its `hive` submodule)
+and `hiveio-beekeepy` ([beekeeper](https://gitlab.syncad.com/hive/beekeeper)). A change crossing these repositories
+goes through separate merge requests, each merged before the next one uses it, so that `develop` never pins
+development builds (`<version>.dev<timestamp>`) of another repository:
+
+1. **hive** - the changes wax needs (skipped when wax only updates its `hive` submodule). After the merge the `develop`
+   pipeline publishes the release of `hiveio-api` (`<version>.post<timestamp>`).
+2. **wax** - points the `hive` submodule and the ref of the hive CI include at that `develop` commit and pins the
+   releases of `hiveio-api` and `hiveio-beekeepy`. After the merge the `develop` pipeline of wax publishes the releases
+   of `hiveio-wax` and `hiveio-test-tools`.
+3. **hive** again - bumps `hive-local-tools` to the `develop` releases of wax and test-tools (and of beekeepy if it
+   changed).
+
+The merge request of step 1 is tested with the pins of `develop`, i.e. with the current releases of wax and test-tools:
+it must not break them, and tests needing the new wax come with step 3. Development builds may be pinned on a branch to
+try the whole chain out, but such a pin is never merged.
+
 # Configuration
 
 ## Config File

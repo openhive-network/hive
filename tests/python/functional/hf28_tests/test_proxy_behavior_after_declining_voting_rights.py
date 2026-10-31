@@ -7,7 +7,7 @@ import test_tools as tt
 from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.operation import Account, get_virtual_operations
-from schemas.operations.virtual import DeclinedVotingRightsOperation, ProxyClearedOperation
+from hiveio_api.operations import DeclinedVotingRightsOperation, ProxyClearedOperation
 
 
 @run_for("testnet")

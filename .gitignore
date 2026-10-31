@@ -96,7 +96,6 @@ libraries/plugins/apis/api_generation/tags_api/
 libraries/plugins/apis/api_generation/transaction_status_api/
 libraries/plugins/apis/api_generation/debug_node_api/
 libraries/plugins/apis/api_generation/search_api/
-libraries/plugins/apis/documentation/openapi_flattened.json
 libraries/plugins/apis/api_generation/package-lock.json
 libraries/plugins/apis/api_generation/package.json
 
@@ -141,6 +140,10 @@ build_*/
 /out/isenseconfig/Linux-Release
 node_modules
 build_wheel.env
+# binaries exported by CI build jobs (artifacts) and the pip cache restored by CI - as untracked files they would make
+# versions of Python packages built next to them dirty
+/hived-*binaries/
+/.pip-cache/
 
 # various log and benchmark files
 advanced_benchmark.json

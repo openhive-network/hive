@@ -1,8 +1,8 @@
 variables:
   # Docker image tags - use "latest" for stable images from common-ci-configuration
   # Don't pin to CI_COMMON_JOB_VERSION as those commit-specific images may not exist
-  BEEKEEPY_INITIALIZATION_TIMEOUT: 60  # for test-tools
-  BEEKEEPY_CLOSE_TIMEOUT: 60  # for test-tools
+  HIVEIO_INITIALIZATION_TIMEOUT: 60  # for test-tools
+  HIVEIO_CLOSE_TIMEOUT: 60  # for test-tools
   # The one common-ci-configuration ref used by this pipeline: every script fetched
   # at runtime (jobs and hived service entrypoints) comes from it. `include: ref` cannot
   # use variables, so the include below and scripts/ci-helpers/common_includes.yml repeat
@@ -294,8 +294,10 @@ include:
         "$CACHE_MANAGER" put hive "$CACHE_KEY" "${DATA_CACHE_DIR}" || echo "Warning: Failed to push to NFS cache"
       fi
     - cp "${DATA_CACHE_DIR}/datadir/docker_entrypoint.log" "${CI_PROJECT_DIR}/docker_entrypoint.log" 2>/dev/null || true
-    # dumped during the replay (see build_data.sh), checked by memory_details_mainnet_5m_tests
+    # dumped during the replay (see build_data.sh), checked by memory_details_mainnet_5m_tests and
+    # advanced_benchmark_mainnet_5m_tests
     - cp "${DATA_CACHE_DIR}/datadir/replay_benchmark.jsonl" "${CI_PROJECT_DIR}/replay_benchmark.jsonl" 2>/dev/null || true
+    - cp "${DATA_CACHE_DIR}/datadir/advanced_benchmark.json" "${CI_PROJECT_DIR}/advanced_benchmark.json" 2>/dev/null || true
     - ls -la "${DATA_CACHE_DIR}/datadir/"
   after_script:
     - rm "${DATA_CACHE_DIR}/replay_running" -f
@@ -307,3 +309,4 @@ include:
     paths:
       - docker_entrypoint.log
       - replay_benchmark.jsonl
+      - advanced_benchmark.json

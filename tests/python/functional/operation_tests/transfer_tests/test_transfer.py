@@ -6,7 +6,7 @@ import pytest
 
 import test_tools as tt
 from hive_local_tools.functional.python.operation import get_virtual_operations
-from schemas.operations.virtual import DhfConversionOperation
+from hiveio_api.operations import DhfConversionOperation
 
 if TYPE_CHECKING:
     from python.functional.operation_tests.conftest import TransferAccount

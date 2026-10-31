@@ -5,11 +5,12 @@
 # This script handles the full package lifecycle:
 #   1. Determines package version from git state (no generation needed)
 #   2. Checks if the package version already exists in GitLab PyPI registry
-#   3. If exists: creates env file and exits (skips generation/build entirely)
-#   4. If not: generates package, builds wheel, runs tests, and deploys to registry
+#   3. If exists: downloads the wheel and, given --operations-description, generates the package, fails when the
+#      wheel differs from it and runs generator tests (no build)
+#   4. If not: generates package, runs generator tests, builds wheel, runs package tests, and deploys to registry
 #
 # The build_wheel.env artifact is always created with the resolved version.
-# When the version exists in the registry, generation and build are skipped entirely.
+# When the version exists in the registry, the build is skipped.
 #
 # Usage:
 #   ./hiveio_api_package.sh [options]
@@ -17,13 +18,14 @@
 # Options:
 #   --hive-project-root=PATH      Root directory of the Hive project (default: pwd)
 #   --api-generation-dir=PATH     API generation directory (default: HIVE_PROJECT_ROOT/libraries/plugins/apis/api_generation)
-#   --dependency-source-dir=PATH  Dependency source directory (default: HIVE_PROJECT_ROOT/tests/python/hive-local-tools)
 #   --package-registry-project-id=ID  Project ID for package registry (default: CI_PROJECT_ID)
 #   --skip-registry-check         Skip checking if package exists in registry (always build)
 #   --skip-deploy                 Skip deployment to GitLab PyPI registry
-#   --skip-tests                  Skip running tests (example verification)
+#   --skip-tests                  Skip verifying the built wheel (generator tests always run)
+#   --operations-description=PATH Description of operations from the build of hived (operations_description.json),
+#                                 required when the package is generated; without it a package from the registry
+#                                 is neither verified nor tested by the generator tests
 #   --apis=<list>                 Space-separated list of APIs to generate (default: all)
-#   --flatten-openapi             Flatten OpenAPI definitions before generation
 #   --env-var-name=<name>         Environment variable name in build_wheel.env (default: WHEEL_BUILD_VERSION)
 #   --help                        Show this help message
 #
@@ -35,6 +37,7 @@
 #   - Generated package:  ${API_GENERATION_DIR}/python_api_package/
 #   - Wheel:              ${API_GENERATION_DIR}/python_api_package/dist/*.whl
 #   - Env file:           ${HIVE_PROJECT_ROOT}/build_wheel.env
+#   - Test report:        ${API_GENERATION_DIR}/api_generation/results.xml (JUnit, of the generator tests)
 #
 
 set -euo pipefail
@@ -53,7 +56,6 @@ TXT_CLEAR="${TXT_CLEAR:-\e[0m}"
 # Project paths (set via arguments, with defaults)
 HIVE_PROJECT_ROOT=""
 API_GENERATION_DIR=""
-DEPENDENCY_SOURCE_DIR=""
 
 # Derived paths (set after argument parsing)
 GENERATOR_PYPROJECT_DIR=""
@@ -69,7 +71,7 @@ OPT_SKIP_DEPLOY=""
 OPT_SKIP_TESTS=""
 OPT_SKIP_REGISTRY_CHECK=""
 OPT_APIS=""
-OPT_FLATTEN_OPENAPI=""
+OPT_OPERATIONS_DESCRIPTION=""
 OPT_ENV_VAR_NAME="WHEEL_BUILD_VERSION"
 
 # ==============================================================================
@@ -99,8 +101,6 @@ parse_args() {
                 HIVE_PROJECT_ROOT="${1#*=}"; shift ;;
             --api-generation-dir=*)
                 API_GENERATION_DIR="${1#*=}"; shift ;;
-            --dependency-source-dir=*)
-                DEPENDENCY_SOURCE_DIR="${1#*=}"; shift ;;
             --package-registry-project-id=*)
                 PACKAGE_REGISTRY_PROJECT_ID="${1#*=}"; shift ;;
             --skip-deploy)
@@ -111,8 +111,8 @@ parse_args() {
                 OPT_SKIP_REGISTRY_CHECK="true"; shift ;;
             --apis=*)
                 OPT_APIS="${1#*=}"; shift ;;
-            --flatten-openapi)
-                OPT_FLATTEN_OPENAPI="true"; shift ;;
+            --operations-description=*)
+                OPT_OPERATIONS_DESCRIPTION="${1#*=}"; shift ;;
             --env-var-name=*)
                 OPT_ENV_VAR_NAME="${1#*=}"; shift ;;
             --help|-h)
@@ -125,7 +125,6 @@ parse_args() {
     # Set defaults for paths if not provided
     HIVE_PROJECT_ROOT="${HIVE_PROJECT_ROOT:-$(pwd)}"
     API_GENERATION_DIR="${API_GENERATION_DIR:-${HIVE_PROJECT_ROOT}/libraries/plugins/apis/api_generation}"
-    DEPENDENCY_SOURCE_DIR="${DEPENDENCY_SOURCE_DIR:-${HIVE_PROJECT_ROOT}/tests/python/hive-local-tools}"
     PACKAGE_REGISTRY_PROJECT_ID="${PACKAGE_REGISTRY_PROJECT_ID:-${CI_PROJECT_ID:-}}"
 
     # Set derived paths
@@ -183,15 +182,6 @@ generate_package() {
     cd "${API_GENERATION_DIR}"
     poetry -C "${GENERATOR_PYPROJECT_DIR}" install
 
-    local apis_dir
-    apis_dir="$(dirname "${API_GENERATION_DIR}")"
-
-    if [[ -n "${OPT_FLATTEN_OPENAPI}" ]]; then
-        log_info "Flattening OpenAPI definitions..."
-        npm --prefix "${API_GENERATION_DIR}" install @apidevtools/json-schema-ref-parser@14.2.1 json-schema-merge-allof@0.8.1
-        node "${API_GENERATION_DIR}/flatten_swagger.js" "${apis_dir}/documentation/openapi.json" > "${apis_dir}/documentation/openapi_flattened.json"
-    fi
-
     if [[ -n "${OPT_APIS}" ]]; then
         for api in ${OPT_APIS}; do
             if [[ ! "${api}" =~ ^[a-z_][a-z0-9_]*$ ]]; then
@@ -200,19 +190,40 @@ generate_package() {
             fi
         done
         # shellcheck disable=SC2086
-        "${API_GENERATION_DIR}/generate_api_packages.sh" ${OPT_APIS}
+        "${API_GENERATION_DIR}/generate_api_packages.sh" "--operations-description=${OPT_OPERATIONS_DESCRIPTION}" ${OPT_APIS}
     else
-        "${API_GENERATION_DIR}/generate_api_packages.sh"
-    fi
-
-    if [[ -n "${OPT_FLATTEN_OPENAPI}" ]]; then
-        log_info "Cleaning up flattened OpenAPI artifacts..."
-        rm -f "${apis_dir}/documentation/openapi_flattened.json"
-        rm -rf "${API_GENERATION_DIR}/node_modules"
-        rm -f "${API_GENERATION_DIR}/package.json" "${API_GENERATION_DIR}/package-lock.json"
+        "${API_GENERATION_DIR}/generate_api_packages.sh" "--operations-description=${OPT_OPERATIONS_DESCRIPTION}"
     fi
 
     log_success "Package generated successfully"
+}
+
+# Runs tests of the generator and of the generated package (api_generation/tests).
+# Not affected by --skip-tests: they need only the generator environment.
+run_generator_tests() {
+    log_info "Running generator tests..."
+    cd "${GENERATOR_PYPROJECT_DIR}"
+    # missing generated package fails the tests instead of skipping them
+    HIVEIO_API_REQUIRE_GENERATED_PACKAGE=1 poetry -C "${GENERATOR_PYPROJECT_DIR}" run python -m pytest tests \
+        --junitxml="${GENERATOR_PYPROJECT_DIR}/results.xml"
+    log_success "Generator tests passed"
+}
+
+# Fails when the wheel downloaded from the registry differs from the package generated from this commit: the version
+# (committer date) repeats when a commit is amended without a new date, then downstream jobs would test a stale package.
+verify_downloaded_wheel_matches_generated_package() {
+    log_info "Comparing the downloaded wheel with the generated package..."
+    local extracted_dir
+    extracted_dir=$(mktemp -d)
+    python3 -m zipfile -e "${WHEEL_OUTPUT_DIR}"/*.whl "${extracted_dir}"
+    # __version__ is substituted only when the wheel is built
+    if ! diff -r -q -x __pycache__ -I '^__version__ = ' "${extracted_dir}/hiveio_api" "${GENERATED_PACKAGE_DIR}/hiveio_api"; then
+        log_error "The package in the registry was generated from other inputs than this commit."
+        log_error "Create a commit with a new committer date (e.g. git commit --amend --no-edit --reset-author)."
+        exit 1
+    fi
+    rm -rf "${extracted_dir}"
+    log_success "The downloaded wheel matches the generated package"
 }
 
 # Returns the version string from the generated package's pyproject.toml.
@@ -310,35 +321,27 @@ build_wheel() {
     verify_wheel_exists "built"
 }
 
-# Installs the package and runs example scripts for all APIs to verify correctness.
+# Installs the built wheel - not the sources, checked by the generator tests - and imports everything it exports: every
+# public name of every API and every validation module (catches files missing in the wheel).
 run_package_tests() {
-    log_info "Installing dependencies for testing..."
+    log_info "Installing the built wheel..."
+    poetry -C "${GENERATED_PACKAGE_DIR}" install --no-root
+    python3 -m pip install --no-deps --force-reinstall "${WHEEL_OUTPUT_DIR}"/*.whl
 
-    # Install hive-local-tools dependencies (provides beekeepy, schemas, etc.)
-    if [[ -d "${DEPENDENCY_SOURCE_DIR}" ]]; then
-        poetry -C "${DEPENDENCY_SOURCE_DIR}" install --no-root
-    fi
-
-    # Install the built package
-    poetry -C "${GENERATED_PACKAGE_DIR}" install --only-root
-
-    log_info "Verifying package by running examples for all APIs..."
-
-    python3 - <<'PY'
+    log_info "Verifying the wheel..."
+    (cd / && python3 - <<'PY'
 from __future__ import annotations
 
 import importlib
-import inspect
-from pathlib import Path
-from typing import get_type_hints
+import sys
 
 import hiveio_api
 
-
 errors: list[str] = []
+if "site-packages" not in hiveio_api.__file__:
+    errors.append(f"hiveio_api imported from {hiveio_api.__file__}, not from the installed wheel")
 
-for api_name in hiveio_api.__all__:
-    module_name = f"hiveio_api.{api_name}"
+for module_name in [f"hiveio_api.{api}" for api in hiveio_api.APIS] + ["hiveio_api.operations"]:
     module = importlib.import_module(module_name)
     for symbol in module.__all__:
         try:
@@ -346,44 +349,22 @@ for api_name in hiveio_api.__all__:
         except Exception as exception:
             errors.append(f"{module_name}.{symbol}: {type(exception).__name__}: {exception}")
 
-try:
-    import test_tools.__private.hived.api as hived_api
-except ModuleNotFoundError:
-    hived_api = None
+# public modules do not load validation models - only an explicit validate_schema call does
+loaded = [name for name in sys.modules if name.startswith("hiveio_api._validation.")]
+if loaded:
+    errors.append(f"Validation models loaded without validate_schema call: {loaded}")
 
-if hived_api is not None:
-    hived_api_dir = Path(hived_api.__file__).parent
-    for sync_api_path in sorted(hived_api_dir.glob("*/sync_api.py")):
-        module_name = f"{hived_api.__name__}.{sync_api_path.parent.name}.sync_api"
-        module = importlib.import_module(module_name)
-        for obj in vars(module).values():
-            if not inspect.isclass(obj) or obj.__module__ != module_name:
-                continue
-            for method_name, method in vars(obj).items():
-                if method_name == "api":
-                    continue
-                if not callable(method) or "return" not in getattr(method, "__annotations__", {}):
-                    continue
-                try:
-                    get_type_hints(method)
-                except Exception as exception:
-                    errors.append(f"{module_name}.{obj.__name__}.{method_name}: {type(exception).__name__}: {exception}")
+for api in hiveio_api.APIS:
+    try:
+        importlib.import_module(f"hiveio_api._validation.{api}").ENDPOINT_RESULTS
+    except Exception as exception:
+        errors.append(f"hiveio_api._validation.{api}: {type(exception).__name__}: {exception}")
 
 if errors:
     raise SystemExit("\n".join(errors))
 PY
-
-    local api_list
-    api_list=$(python3 -c "import hiveio_api; print(' '.join(hiveio_api.__all__))")
-    log_info "APIs to test: ${api_list}"
-
-    for api in ${api_list}; do
-        echo "Testing hiveio_api.${api}..."
-        python3 -m "hiveio_api.${api}"
-        log_success "Example verification passed for ${api}"
-    done
-
-    log_success "All API examples passed!"
+    )
+    log_success "Wheel verified"
 }
 
 # ==============================================================================
@@ -480,8 +461,15 @@ main() {
     version=$(get_package_version)
     log_info "Package version: ${version}"
 
-    # Step 2: Try to use existing package from registry (skip generation entirely)
+    # Step 2: Try to use existing package from registry (skip the build)
     if try_download_existing_package "${version}"; then
+        if [[ -n "${OPT_OPERATIONS_DESCRIPTION}" ]]; then
+            generate_package
+            verify_downloaded_wheel_matches_generated_package
+            run_generator_tests
+        else
+            log_warning "Generator tests skipped: no --operations-description to generate the package"
+        fi
         create_build_env_file "${version}" "true"
         log_success "=========================================="
         log_success "hiveio-api package build completed (from registry)"
@@ -491,6 +479,7 @@ main() {
 
     # Step 3: Package not in registry - generate, build, test, deploy
     generate_package
+    run_generator_tests
     build_test_and_deploy
 
     # Step 4: Create env file

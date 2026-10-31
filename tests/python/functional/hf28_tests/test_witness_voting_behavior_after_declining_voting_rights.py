@@ -9,7 +9,7 @@ from hive_local_tools import run_for
 from hive_local_tools.constants import TIME_REQUIRED_TO_DECLINE_VOTING_RIGHTS
 from hive_local_tools.functional.python.hf28.constants import VOTER_ACCOUNT
 from hive_local_tools.functional.python.operation import Account, get_virtual_operations
-from schemas.operations.virtual import DeclinedVotingRightsOperation
+from hiveio_api.operations import DeclinedVotingRightsOperation
 
 if TYPE_CHECKING:
     import test_tools as tt

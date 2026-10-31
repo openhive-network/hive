@@ -8,9 +8,6 @@ import test_tools as tt
 from loguru import logger
 from test_tools.__private.scope.scope_fixtures import *  # noqa: F403
 
-from schemas.policies.policy import set_policies
-from schemas.policies.testnet_assets import TestnetAssetsPolicy
-
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -24,11 +21,6 @@ def pytest_sessionstart() -> None:
     # Turn off unnecessary logs
     logging.getLogger("urllib3.connectionpool").propagate = False
     tt.logger.enable("test_tools")
-
-
-@pytest.fixture(autouse=True)
-def _use_testnet_assets() -> None:
-    set_policies(TestnetAssetsPolicy(use_testnet_assets=True))
 
 
 @pytest.fixture(name="node")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from hiveio_api import to_builtins
 
 import test_tools as tt
 from hive_local_tools import run_for
@@ -91,11 +92,11 @@ def get_extension_from_operation(node, api: str, block_num: int):
     if api == "block":
         block = getattr(node.api, api).get_block(block_num=block_num)
         operation = block.block.transactions[0].operations[0]
-        return operation.value["extensions"][0]
+        return to_builtins(operation.value["extensions"][0])
 
     if api == "condenser":
         block = getattr(node.api, api).get_block(block_num)
         operation = block.transactions[0].operations[0][1]
-        return operation["extensions"][0]
+        return to_builtins(operation["extensions"][0])
 
     raise RuntimeError("Shouldn't be ever reached")

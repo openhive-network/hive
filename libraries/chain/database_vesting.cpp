@@ -118,8 +118,8 @@ void database::process_vesting_withdrawals()
   auto now = cprops.get_head_block_time();
 
   int count = 0;
-  if( _benchmark_dumper.is_enabled() )
-    _benchmark_dumper.begin();
+  static const util::advanced_benchmark_dumper::counter processing_counter( "processing", "hive::protocol::withdraw_vesting_operation" );
+  util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
   while( current != widx.end() && current->next_vesting_withdrawal <= now )
   {
     const auto& from_account = *current; ++current; ++count;
@@ -302,8 +302,8 @@ void database::process_vesting_withdrawals()
 
     post_push_virtual_operation( *this, vop );
   }
-  if( _benchmark_dumper.is_enabled() && count )
-    _benchmark_dumper.end( "processing", "hive::protocol::withdraw_vesting_operation", count );
+  if( count )
+    benchmark.stop( processing_counter, count );
 }
 
 } }

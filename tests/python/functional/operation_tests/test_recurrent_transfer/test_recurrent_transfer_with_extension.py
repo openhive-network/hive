@@ -13,6 +13,7 @@ from hive_local_tools.functional.python.operation.recurrent_transfer import (
     RecurrentTransferAccount,
     RecurrentTransferDefinition,
 )
+from hiveio_api import Asset
 
 RECURRENT_TRANSFER_DEFINITIONS = [
     RecurrentTransferDefinition(10, 2 * MIN_RECURRENT_TRANSFERS_RECURRENCE, 2, 1),
@@ -22,7 +23,7 @@ RECURRENT_TRANSFER_DEFINITIONS = [
 
 
 @pytest.mark.testnet()
-@pytest.mark.parametrize("asset", [tt.Asset.TestT, tt.Asset.TbdT])
+@pytest.mark.parametrize("asset", [Asset.hive.satoshi, Asset.hbd.satoshi])
 def test_recurrent_transfer_with_extension_cases_1_and_2(
     asset: tt.Asset.AnyT,
     recurrent_transfer_setup: tuple[

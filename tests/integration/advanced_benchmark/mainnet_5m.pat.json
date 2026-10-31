@@ -1,0 +1,466 @@
+{
+  "block_number": 5000000,
+  "counts": {
+    "block": {
+      "post->account_history_rocksdb": 5000000,
+      "post->chain": 5000000,
+      "post->network_broadcast_api": 5000000,
+      "post->transaction_status": 5000000,
+      "pre->transaction_status": 5000000
+    },
+    "flush": {
+      "post->account_history_rocksdb": null
+    },
+    "hive::protocol::account_create_operation": {
+      "": 80658,
+      "post->account_by_key": 80658,
+      "post->market_history": 80658,
+      "post->reputation": 80658,
+      "pre->account_by_key": 80658,
+      "pre->account_history_rocksdb": 80658,
+      "pre->reputation": 80658,
+      "pre->witness": 80658
+    },
+    "hive::protocol::account_created_operation": {
+      "post->account_by_key": 92462,
+      "post->market_history": 92462,
+      "post->reputation": 92462,
+      "pre->account_by_key": 92462,
+      "pre->account_history_rocksdb": 92462,
+      "pre->reputation": 92462,
+      "pre->witness": 92462
+    },
+    "hive::protocol::account_update_operation": {
+      "": 30305,
+      "post->account_by_key": 30305,
+      "post->market_history": 30305,
+      "post->reputation": 30305,
+      "pre->account_by_key": 30305,
+      "pre->account_history_rocksdb": 30305,
+      "pre->reputation": 30305,
+      "pre->witness": 30305
+    },
+    "hive::protocol::account_witness_proxy_operation": {
+      "": 1730,
+      "post->account_by_key": 1730,
+      "post->market_history": 1730,
+      "post->reputation": 1730,
+      "pre->account_by_key": 1730,
+      "pre->account_history_rocksdb": 1730,
+      "pre->reputation": 1730,
+      "pre->witness": 1730
+    },
+    "hive::protocol::account_witness_vote_operation": {
+      "": 15740,
+      "post->account_by_key": 15740,
+      "post->market_history": 15740,
+      "post->reputation": 15740,
+      "pre->account_by_key": 15740,
+      "pre->account_history_rocksdb": 15740,
+      "pre->reputation": 15740,
+      "pre->witness": 15740
+    },
+    "hive::protocol::author_reward_operation": {
+      "post->account_by_key": 184928,
+      "post->market_history": 184928,
+      "post->reputation": 184928,
+      "pre->account_by_key": 184928,
+      "pre->account_history_rocksdb": 184928,
+      "pre->reputation": 184928,
+      "pre->witness": 184928
+    },
+    "hive::protocol::change_recovery_account_operation": {
+      "": 150,
+      "post->account_by_key": 150,
+      "post->market_history": 150,
+      "post->reputation": 150,
+      "pre->account_by_key": 150,
+      "pre->account_history_rocksdb": 150,
+      "pre->reputation": 150,
+      "pre->witness": 150
+    },
+    "hive::protocol::changed_recovery_account_operation": {
+      "post->account_by_key": 4,
+      "post->market_history": 4,
+      "post->reputation": 4,
+      "pre->account_by_key": 4,
+      "pre->account_history_rocksdb": 4,
+      "pre->reputation": 4,
+      "pre->witness": 4
+    },
+    "hive::protocol::comment_operation": {
+      "": 1257939,
+      "post->account_by_key": 1257939,
+      "post->market_history": 1257939,
+      "post->reputation": 1257939,
+      "pre->account_by_key": 1257939,
+      "pre->account_history_rocksdb": 1257939,
+      "pre->reputation": 1257939,
+      "pre->witness": 1257939,
+      "processing": 1768493
+    },
+    "hive::protocol::comment_options_operation": {
+      "": 163,
+      "post->account_by_key": 163,
+      "post->market_history": 163,
+      "post->reputation": 163,
+      "pre->account_by_key": 163,
+      "pre->account_history_rocksdb": 163,
+      "pre->reputation": 163,
+      "pre->witness": 163
+    },
+    "hive::protocol::comment_payout_update_operation": {
+      "post->account_by_key": 1150792,
+      "post->market_history": 1150792,
+      "post->reputation": 1150792,
+      "pre->account_by_key": 1150792,
+      "pre->account_history_rocksdb": 1150792,
+      "pre->reputation": 1150792,
+      "pre->witness": 1150792
+    },
+    "hive::protocol::comment_reward_operation": {
+      "post->account_by_key": 184928,
+      "post->market_history": 184928,
+      "post->reputation": 184928,
+      "pre->account_by_key": 184928,
+      "pre->account_history_rocksdb": 184928,
+      "pre->reputation": 184928,
+      "pre->witness": 184928
+    },
+    "hive::protocol::convert_operation": {
+      "": 7321,
+      "post->account_by_key": 7321,
+      "post->market_history": 7321,
+      "post->reputation": 7321,
+      "pre->account_by_key": 7321,
+      "pre->account_history_rocksdb": 7321,
+      "pre->reputation": 7321,
+      "pre->witness": 7321,
+      "processing": 6895
+    },
+    "hive::protocol::curation_reward_operation": {
+      "post->account_by_key": 1030170,
+      "post->market_history": 1030170,
+      "post->reputation": 1030170,
+      "pre->account_by_key": 1030170,
+      "pre->account_history_rocksdb": 1030170,
+      "pre->reputation": 1030170,
+      "pre->witness": 1030170
+    },
+    "hive::protocol::custom_json_operation": {
+      "": 477719,
+      "post->account_by_key": 477719,
+      "post->market_history": 477719,
+      "post->reputation": 477719,
+      "pre->account_by_key": 477719,
+      "pre->account_history_rocksdb": 477719,
+      "pre->reputation": 477719,
+      "pre->witness": 477719
+    },
+    "hive::protocol::custom_operation": {
+      "": 47,
+      "post->account_by_key": 47,
+      "post->market_history": 47,
+      "post->reputation": 47,
+      "pre->account_by_key": 47,
+      "pre->account_history_rocksdb": 47,
+      "pre->reputation": 47,
+      "pre->witness": 47
+    },
+    "hive::protocol::delete_comment_operation": {
+      "": 9488,
+      "post->account_by_key": 9488,
+      "post->market_history": 9488,
+      "post->reputation": 9488,
+      "pre->account_by_key": 9488,
+      "pre->account_history_rocksdb": 9488,
+      "pre->reputation": 9488,
+      "pre->witness": 9488
+    },
+    "hive::protocol::effective_comment_vote_operation": {
+      "post->account_by_key": 4449202,
+      "post->market_history": 4449202,
+      "post->reputation": 4449202,
+      "pre->account_by_key": 4449202,
+      "pre->account_history_rocksdb": 4449202,
+      "pre->reputation": 4449202,
+      "pre->witness": 4449202
+    },
+    "hive::protocol::feed_publish_operation": {
+      "": 26765,
+      "post->account_by_key": 26765,
+      "post->market_history": 26765,
+      "post->reputation": 26765,
+      "pre->account_by_key": 26765,
+      "pre->account_history_rocksdb": 26765,
+      "pre->reputation": 26765,
+      "pre->witness": 26765
+    },
+    "hive::protocol::fill_convert_request_operation": {
+      "post->account_by_key": 6895,
+      "post->market_history": 6895,
+      "post->reputation": 6895,
+      "pre->account_by_key": 6895,
+      "pre->account_history_rocksdb": 6895,
+      "pre->reputation": 6895,
+      "pre->witness": 6895
+    },
+    "hive::protocol::fill_order_operation": {
+      "post->account_by_key": 61425,
+      "post->market_history": 61425,
+      "post->reputation": 61425,
+      "pre->account_by_key": 61425,
+      "pre->account_history_rocksdb": 61425,
+      "pre->reputation": 61425,
+      "pre->witness": 61425
+    },
+    "hive::protocol::fill_vesting_withdraw_operation": {
+      "post->account_by_key": 24306,
+      "post->market_history": 24306,
+      "post->reputation": 24306,
+      "pre->account_by_key": 24306,
+      "pre->account_history_rocksdb": 24306,
+      "pre->reputation": 24306,
+      "pre->witness": 24306
+    },
+    "hive::protocol::hardfork_operation": {
+      "post->account_by_key": 13,
+      "post->market_history": 13,
+      "post->reputation": 13,
+      "pre->account_by_key": 13,
+      "pre->account_history_rocksdb": 13,
+      "pre->reputation": 13,
+      "pre->witness": 13
+    },
+    "hive::protocol::ineffective_delete_comment_operation": {
+      "post->account_by_key": 2,
+      "post->market_history": 2,
+      "post->reputation": 2,
+      "pre->account_by_key": 2,
+      "pre->account_history_rocksdb": 2,
+      "pre->reputation": 2,
+      "pre->witness": 2
+    },
+    "hive::protocol::interest_operation": {
+      "post->account_by_key": 5322,
+      "post->market_history": 5322,
+      "post->reputation": 5322,
+      "pre->account_by_key": 5322,
+      "pre->account_history_rocksdb": 5322,
+      "pre->reputation": 5322,
+      "pre->witness": 5322
+    },
+    "hive::protocol::limit_order_cancel_operation": {
+      "": 74414,
+      "post->account_by_key": 74414,
+      "post->market_history": 74414,
+      "post->reputation": 74414,
+      "pre->account_by_key": 74414,
+      "pre->account_history_rocksdb": 74414,
+      "pre->reputation": 74414,
+      "pre->witness": 74414
+    },
+    "hive::protocol::limit_order_cancelled_operation": {
+      "post->account_by_key": 107005,
+      "post->market_history": 107005,
+      "post->reputation": 107005,
+      "pre->account_by_key": 107005,
+      "pre->account_history_rocksdb": 107005,
+      "pre->reputation": 107005,
+      "pre->witness": 107005
+    },
+    "hive::protocol::limit_order_create_operation": {
+      "": 175650,
+      "post->account_by_key": 175650,
+      "post->market_history": 175650,
+      "post->reputation": 175650,
+      "pre->account_by_key": 175650,
+      "pre->account_history_rocksdb": 175650,
+      "pre->reputation": 175650,
+      "pre->witness": 175650
+    },
+    "hive::protocol::liquidity_reward_operation": {
+      "post->account_by_key": 537,
+      "post->market_history": 537,
+      "post->reputation": 537,
+      "pre->account_by_key": 537,
+      "pre->account_history_rocksdb": 537,
+      "pre->reputation": 537,
+      "pre->witness": 537
+    },
+    "hive::protocol::pow2_operation": {
+      "": 42587,
+      "post->account_by_key": 42587,
+      "post->market_history": 42587,
+      "post->reputation": 42587,
+      "pre->account_by_key": 42587,
+      "pre->account_history_rocksdb": 42587,
+      "pre->reputation": 42587,
+      "pre->witness": 42587
+    },
+    "hive::protocol::pow_operation": {
+      "": 195553,
+      "post->account_by_key": 195553,
+      "post->market_history": 195553,
+      "post->reputation": 195553,
+      "pre->account_by_key": 195553,
+      "pre->account_history_rocksdb": 195553,
+      "pre->reputation": 195553,
+      "pre->witness": 195553
+    },
+    "hive::protocol::pow_reward_operation": {
+      "post->account_by_key": 238140,
+      "post->market_history": 238140,
+      "post->reputation": 238140,
+      "pre->account_by_key": 238140,
+      "pre->account_history_rocksdb": 238140,
+      "pre->reputation": 238140,
+      "pre->witness": 238140
+    },
+    "hive::protocol::producer_missed_operation": {
+      "post->account_by_key": 44300,
+      "post->market_history": 44300,
+      "post->reputation": 44300,
+      "pre->account_by_key": 44300,
+      "pre->account_history_rocksdb": 44300,
+      "pre->reputation": 44300,
+      "pre->witness": 44300
+    },
+    "hive::protocol::producer_reward_operation": {
+      "post->account_by_key": 5000000,
+      "post->market_history": 5000000,
+      "post->reputation": 5000000,
+      "pre->account_by_key": 5000000,
+      "pre->account_history_rocksdb": 5000000,
+      "pre->reputation": 5000000,
+      "pre->witness": 5000000
+    },
+    "hive::protocol::proxy_cleared_operation": {
+      "post->account_by_key": 229,
+      "post->market_history": 229,
+      "post->reputation": 229,
+      "pre->account_by_key": 229,
+      "pre->account_history_rocksdb": 229,
+      "pre->reputation": 229,
+      "pre->witness": 229
+    },
+    "hive::protocol::recover_account_operation": {
+      "": 444,
+      "post->account_by_key": 444,
+      "post->market_history": 444,
+      "post->reputation": 444,
+      "pre->account_by_key": 444,
+      "pre->account_history_rocksdb": 444,
+      "pre->reputation": 444,
+      "pre->witness": 444
+    },
+    "hive::protocol::request_account_recovery_operation": {
+      "": 568,
+      "post->account_by_key": 568,
+      "post->market_history": 568,
+      "post->reputation": 568,
+      "pre->account_by_key": 568,
+      "pre->account_history_rocksdb": 568,
+      "pre->reputation": 568,
+      "pre->witness": 568
+    },
+    "hive::protocol::set_withdraw_vesting_route_operation": {
+      "": 1560,
+      "post->account_by_key": 1560,
+      "post->market_history": 1560,
+      "post->reputation": 1560,
+      "pre->account_by_key": 1560,
+      "pre->account_history_rocksdb": 1560,
+      "pre->reputation": 1560,
+      "pre->witness": 1560
+    },
+    "hive::protocol::system_warning_operation": {
+      "post->account_by_key": 48,
+      "post->market_history": 48,
+      "post->reputation": 48,
+      "pre->account_by_key": 48,
+      "pre->account_history_rocksdb": 48,
+      "pre->reputation": 48,
+      "pre->witness": 48
+    },
+    "hive::protocol::transfer_operation": {
+      "": 125401,
+      "post->account_by_key": 125401,
+      "post->market_history": 125401,
+      "post->reputation": 125401,
+      "pre->account_by_key": 125401,
+      "pre->account_history_rocksdb": 125401,
+      "pre->reputation": 125401,
+      "pre->witness": 125401
+    },
+    "hive::protocol::transfer_to_vesting_completed_operation": {
+      "post->account_by_key": 86497,
+      "post->market_history": 86497,
+      "post->reputation": 86497,
+      "pre->account_by_key": 86497,
+      "pre->account_history_rocksdb": 86497,
+      "pre->reputation": 86497,
+      "pre->witness": 86497
+    },
+    "hive::protocol::transfer_to_vesting_operation": {
+      "": 86497,
+      "post->account_by_key": 86497,
+      "post->market_history": 86497,
+      "post->reputation": 86497,
+      "pre->account_by_key": 86497,
+      "pre->account_history_rocksdb": 86497,
+      "pre->reputation": 86497,
+      "pre->witness": 86497
+    },
+    "hive::protocol::vesting_shares_split_operation": {
+      "post->account_by_key": 5360,
+      "post->market_history": 5360,
+      "post->reputation": 5360,
+      "pre->account_by_key": 5360,
+      "pre->account_history_rocksdb": 5360,
+      "pre->reputation": 5360,
+      "pre->witness": 5360
+    },
+    "hive::protocol::vote_operation": {
+      "": 4496930,
+      "post->account_by_key": 4496930,
+      "post->market_history": 4496930,
+      "post->reputation": 4496930,
+      "pre->account_by_key": 4496930,
+      "pre->account_history_rocksdb": 4496930,
+      "pre->reputation": 4496930,
+      "pre->witness": 4496930
+    },
+    "hive::protocol::withdraw_vesting_operation": {
+      "": 9290,
+      "post->account_by_key": 9290,
+      "post->market_history": 9290,
+      "post->reputation": 9290,
+      "pre->account_by_key": 9290,
+      "pre->account_history_rocksdb": 9290,
+      "pre->reputation": 9290,
+      "pre->witness": 9290,
+      "processing": 19705
+    },
+    "hive::protocol::witness_update_operation": {
+      "": 7100,
+      "post->account_by_key": 7100,
+      "post->market_history": 7100,
+      "post->reputation": 7100,
+      "pre->account_by_key": 7100,
+      "pre->account_history_rocksdb": 7100,
+      "pre->reputation": 7100,
+      "pre->witness": 7100
+    },
+    "irreversible": {
+      "post->account_history_rocksdb": 5000000
+    },
+    "reindex": {
+      "post->account_history_rocksdb": 1,
+      "pre->account_history_rocksdb": 1
+    },
+    "transaction": {
+      "post->transaction_status": 6961192
+    }
+  }
+}

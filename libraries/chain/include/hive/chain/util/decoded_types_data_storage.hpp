@@ -18,6 +18,7 @@
 #include <type_traits>
 #include <unordered_set>
 
+#include <boost/core/demangle.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 

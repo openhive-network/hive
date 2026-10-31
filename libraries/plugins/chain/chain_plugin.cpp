@@ -52,6 +52,7 @@
 namespace hive { namespace plugins { namespace chain {
 
 #define BENCHMARK_FILE_NAME "replay_benchmark.jsonl"
+#define ADVANCED_BENCHMARK_FILE_NAME "advanced_benchmark.json"
 
 using namespace hive;
 
@@ -1629,11 +1630,27 @@ void chain_plugin_impl::setup_benchmark_dumper()
     {
       dumper.initialize();
     }
+
+    if( benchmark_is_enabled )
+    {
+      const bfs::path advanced_benchmark_file = theApp.data_dir() / ADVANCED_BENCHMARK_FILE_NAME;
+      // file from previous run would be mistaken for the current data until first dump
+      boost::system::error_code ec;
+      bfs::remove( advanced_benchmark_file, ec );
+      ilog( "Execution times of evaluators and plugin reactions to notifications will be dumped to ${f}",
+        ( "f", advanced_benchmark_file.string() ) );
+      db.get_benchmark_dumper().set_file_name( advanced_benchmark_file.string() );
+    }
   }
 }
 
 void chain_plugin_impl::dump_benchmark_summary( summary_type summary )
 {
+  // execution times are collected while blocks and transactions are processed, so there is nothing to show
+  // before the first phase starts
+  if( benchmark_is_enabled && summary != summary_type::initial )
+    db.get_benchmark_dumper().dump( db.head_block_num() );
+
   if( benchmark_interval == 0 && !dump_memory_details )
     return;
 
@@ -1737,7 +1754,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("exit-before-sync", bpo::bool_switch()->default_value(false), "Exits before starting sync, handy for dumping snapshot without starting replay")
       ("force-replay", bpo::bool_switch()->default_value(false), "Before replaying clean all old files. If specifed, `--replay-blockchain` flag is implied")
       ("validate-during-replay", bpo::bool_switch()->default_value(false), "Runs all validations that are normally turned off during replay")
-      ("advanced-benchmark", "Make profiling for every plugin.")
+      ("advanced-benchmark", "Measure execution time of evaluators, automatic processing and plugin reactions to notifications. Times collected since start are written to " ADVANCED_BENCHMARK_FILE_NAME " in data dir every set-benchmark-interval blocks and at the end of each phase (replay, sync, live).")
       ("set-benchmark-interval", bpo::value<uint32_t>(), "Print time and memory usage every given number of blocks")
       ("dump-memory-details", bpo::bool_switch()->default_value(false), "Dump database objects memory usage info to " BENCHMARK_FILE_NAME " in data dir, one json record per line: every set-benchmark-interval blocks and summary at the end of each phase (initial, replay, sync, live).")
       ("check-locks", bpo::bool_switch()->default_value(false), "Check correctness of chainbase locking" )
@@ -2057,6 +2074,9 @@ void chain_plugin::plugin_initialize(const variables_map& options)
           ("sf", measure.shm_free) );
 
         get_app().notify_information("hived_benchmark", "multiindex_stats", fc::variant{measure});
+
+        if( my->benchmark_is_enabled )
+          db().get_benchmark_dumper().dump( current_block_number );
       }
     }, *this, 0);
   }

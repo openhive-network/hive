@@ -10,7 +10,7 @@ import test_tools as tt
 from hive_local_tools.constants import HIVE_GOVERNANCE_VOTE_EXPIRATION_PERIOD
 from hive_local_tools.functional.python.operation import get_virtual_operations
 from hive_local_tools.functional.python.operation.account_witness_proxy import AccountWitnessProxy
-from schemas.operations.virtual import ExpiredAccountNotificationOperation, ProxyClearedOperation
+from hiveio_api.operations import ExpiredAccountNotificationOperation, ProxyClearedOperation
 
 if TYPE_CHECKING:
     from .conftest import Account, Proposal

@@ -19,7 +19,7 @@ from test_tools.exceptions import ErrorInResponseError
 import test_tools as tt
 from hive_local_tools.functional.python import basic_authority
 from hive_local_tools.functional.python.operation import create_transaction_with_any_operation
-from schemas.operations.account_create_operation import AccountCreateOperation
+from hiveio_api.operations import AccountCreateOperation
 
 # Value configured by the `prepared_node` fixture (see operation_tests/conftest.py).
 ACCOUNT_CREATION_FEE = tt.Asset.Test(3)
@@ -89,7 +89,7 @@ def test_account_create_with_insufficient_balance(prepared_node: tt.InitNode, wa
     assert prepared_node.api.wallet_bridge.get_chain_properties().account_creation_fee == ACCOUNT_CREATION_FEE
 
     # `poor` has resource credits (vests) to broadcast, but no HIVE to pay the (valid) creation fee.
-    wallet.create_account("poor", hives=0, vests=50)
+    wallet.create_account("poor", vests=50)  # without a transfer of HIVE - a transfer of 0 is invalid
 
     with pytest.raises(ErrorInResponseError) as exception:
         create_transaction_with_any_operation(wallet, [_account_create_operation("poor", "bob", ACCOUNT_CREATION_FEE)])

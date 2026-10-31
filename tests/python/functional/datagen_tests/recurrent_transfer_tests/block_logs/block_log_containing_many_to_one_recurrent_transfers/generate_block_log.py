@@ -13,8 +13,7 @@ from hive_local_tools.functional import __generate_and_broadcast_transaction
 from hive_local_tools.functional.python import generate_block
 from hive_local_tools.functional.python.block_log_generation import parse_block_log_generator_args
 from hive_local_tools.functional.python.datagen.recurrent_transfer import execute_function_in_threads
-from schemas.fields.assets import AssetHive
-from schemas.policies import DisableSwapTypesPolicy, set_policies
+from hiveio_api import Asset
 from hive_local_tools.functional.python.queen_utils import (
     __create_account,
     __recurrent_transfer,
@@ -26,14 +25,7 @@ NUMBER_OF_SENDER_ACCOUNTS: Final[int] = 50_000
 ACCOUNTS_PER_CHUNK: Final[int] = 500
 MAX_WORKERS: Final[int] = os.cpu_count()
 RECEIVER_ACCOUNT_NAME: Final[str] = "receiver"
-SINGLE_TRANSFER_AMOUNT: Final[AssetHive] = AssetHive(amount=1)
-
-
-"""
-Disabling type swapping means that the schemas no longer automatically convert simple types into custom types.
-This makes the schemas module run much faster, but it can only be used in a few specific cases.
-"""
-set_policies(DisableSwapTypesPolicy(disabled=True))
+SINGLE_TRANSFER_AMOUNT: Final[Asset] = Asset.hive.satoshi(1)
 
 
 def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_directory: Path) -> None:
@@ -97,7 +89,7 @@ def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_dire
         __generate_and_broadcast_transaction,
         args=(wallet, init_node, __transfer),
         args_sequences=(account_names,),
-        kwargs={"transfer_asset": AssetHive(amount=4)},
+        kwargs={"transfer_asset": Asset.hive.satoshi(4)},
         amount=NUMBER_OF_SENDER_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,
@@ -111,7 +103,7 @@ def prepare_block_log_with_many_to_one_recurrent_transfers(output_block_log_dire
         __generate_and_broadcast_transaction,
         args=(wallet, init_node, __transfer_to_vesting),
         args_sequences=(account_names,),
-        kwargs={"transfer_asset": AssetHive(amount=10)},
+        kwargs={"transfer_asset": Asset.hive.satoshi(10)},
         amount=NUMBER_OF_SENDER_ACCOUNTS,
         chunk_size=ACCOUNTS_PER_CHUNK,
         max_workers=MAX_WORKERS,

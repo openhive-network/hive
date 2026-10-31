@@ -1,29 +1,10 @@
 from __future__ import annotations
 
-import json
-
 import pytest
 from test_tools.exceptions import ErrorInResponseError
-from schemas.convert import json_encode
 
 import test_tools as tt
 from hive_local_tools import run_for
-
-
-def _normalize_to_json(obj):
-    """Serialize to JSON and back to get plain dicts for comparison.
-
-    Handles both plain msgspec Structs (hiveio_api responses) and schemas Structs
-    with custom field types like HiveInt that msgspec.json.encode cannot serialize.
-    """
-    try:
-        result = json.loads(json_encode(obj))
-    except TypeError:
-        return json.loads(obj.json(exclude_none=True))
-    # Strip None values to match exclude_none=True behavior of the fallback path
-    if isinstance(result, dict):
-        return {k: v for k, v in result.items() if v is not None}
-    return result
 
 
 @pytest.mark.parametrize(
@@ -40,12 +21,12 @@ def test_get_transaction_in_reversible_block(node: tt.InitNode, include_reversib
     if not include_reversible:
         node.wait_for_irreversible_block()
     # delete one additional key to compare transactions
-    transaction = transaction.copy({"rc_cost"})
+    transaction_dict = transaction.dict()
+    transaction_dict.pop("rc_cost")
     response = node.api.account_history.get_transaction(
         id=transaction["transaction_id"], include_reversible=include_reversible
     )
-    response_dict = _normalize_to_json(response)
-    transaction_dict = _normalize_to_json(transaction)
+    response_dict = response.dict()
     assert transaction_dict == response_dict
 
 

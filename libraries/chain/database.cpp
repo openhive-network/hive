@@ -59,6 +59,7 @@
 #include <deque>
 #include <fstream>
 #include <functional>
+#include <optional>
 #include <stdlib.h>
 
 long next_hf_time()
@@ -198,11 +199,6 @@ void database::initialize_state_independent_data(const open_args& args)
   }
 
   _benchmark_dumper.set_enabled(args.benchmark_is_enabled);
-  if( _benchmark_dumper.is_enabled() &&
-      ( !_my->_pre_apply_operation_signal.empty() || !_my->_post_apply_operation_signal.empty() ) )
-  {
-    wlog( "BENCHMARK will run into nested measurements - data on operations that emit vops will be lost!!!" );
-  }
 
   _shared_file_full_threshold = args.shared_file_full_threshold;
   _shared_file_scale_rate = args.shared_file_scale_rate;
@@ -2259,8 +2255,8 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
 
   if( !( skip & skip_merkle_check ) )
   {
-    if( _benchmark_dumper.is_enabled() )
-      _benchmark_dumper.begin();
+    static const util::advanced_benchmark_dumper::counter merkle_check_counter( "block", "merkle check" );
+    util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
 
     auto merkle_root = full_block->get_merkle_root();
 
@@ -2280,8 +2276,7 @@ void database::_apply_block( const std::shared_ptr<full_block_type>& full_block,
       }
     }
 
-    if( _benchmark_dumper.is_enabled() )
-      _benchmark_dumper.end( "block", "merkle check" );
+    benchmark.stop( merkle_check_counter );
   }
 
   const witness_object& signing_witness = validate_block_header(skip, full_block);
@@ -2577,8 +2572,8 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
     if (!(skip & skip_tapos_check))
     {
-      if (_benchmark_dumper.is_enabled())
-        _benchmark_dumper.begin();
+      static const util::advanced_benchmark_dumper::counter tapos_check_counter( "transaction", "tapos check" );
+      util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
 
       block_summary_object::id_type bsid(trx.ref_block_num);
       const auto& tapos_block_summary = get<block_summary_object>(bsid);
@@ -2586,8 +2581,7 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
       HIVE_ASSERT(trx.ref_block_prefix == tapos_block_summary.block_id._hash[1], transaction_tapos_exception,
                   "", (trx.ref_block_prefix)("tapos_block_summary", tapos_block_summary.block_id._hash[1]));
 
-      if (_benchmark_dumper.is_enabled())
-        _benchmark_dumper.end("transaction", "tapos check");
+      benchmark.stop( tapos_check_counter );
     }
   }
 
@@ -2595,16 +2589,17 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
   {
     if (_benchmark_dumper.is_enabled())
     {
-      std::string name;
+      // NOTE: callback is not called when result of validation was already computed by blockchain_worker_thread_pool
+      std::optional< util::advanced_benchmark_dumper::measurement > benchmark;
       full_transaction->validate([&](const operation& op, bool post) {
         if (!post)
         {
-          name = _my->_evaluator_registry.get_evaluator(op).get_name(op);
-          _benchmark_dumper.begin();
+          benchmark.emplace( _benchmark_dumper );
         }
-        else
+        else if( benchmark )
         {
-          _benchmark_dumper.end("validate", name);
+          benchmark->stop( _my->_validate_benchmark_counters, op );
+          benchmark.reset();
         }
       });
     }
@@ -2620,8 +2615,8 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
 
     try
     {
-      if( _benchmark_dumper.is_enabled() )
-        _benchmark_dumper.begin();
+      static const util::advanced_benchmark_dumper::counter verify_authority_counter( "transaction", "verify_authority" );
+      util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
 
       const flat_set<public_key_type>& signature_keys = full_transaction->get_signature_keys();
       const required_authorities_type& required_authorities = full_transaction->get_required_authorities();
@@ -2639,8 +2634,7 @@ void database::validate_transaction(const std::shared_ptr<full_transaction_type>
                                        flat_set<account_name_type>(),
                                        flat_set<account_name_type>());
 
-      if (_benchmark_dumper.is_enabled())
-        _benchmark_dumper.end("transaction", "verify_authority", trx.signatures.size());
+      benchmark.stop( verify_authority_counter, trx.signatures.size() );
     }
     catch( protocol::tx_missing_active_auth& e )
     {
@@ -2689,8 +2683,8 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
   //Insert transaction into unique transactions database.
   if( !(skip & skip_transaction_dupe_check) )
   {
-    if( _benchmark_dumper.is_enabled() )
-      _benchmark_dumper.begin();
+    static const util::advanced_benchmark_dumper::counter dupe_check_counter( "transaction", "dupe check" );
+    util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
 
     create<transaction_object>([&](transaction_object& transaction) {
       transaction.trx_id = trx_id;
@@ -2698,8 +2692,7 @@ void database::_apply_transaction(const std::shared_ptr<full_transaction_type>& 
       transaction.expiration = trx.expiration;
     });
 
-    if( _benchmark_dumper.is_enabled() )
-      _benchmark_dumper.end( "transaction", "dupe check" );
+    benchmark.stop( dupe_check_counter );
   }
 
   notify_pre_apply_transaction( note );
@@ -2744,20 +2737,15 @@ void database_impl::apply_operation(const operation& op)
 
   _self.notify_pre_apply_operation( note );
 
-  std::string name;
-  if( _self._benchmark_dumper.is_enabled() )
-  {
-    name = _evaluator_registry.get_evaluator( op ).get_name( op );
-    _self._benchmark_dumper.begin();
-  }
+  // reactions to notifications on virtual operations emitted by evaluator are measured separately
+  util::advanced_benchmark_dumper::measurement benchmark( _self._benchmark_dumper );
 
   if( _self.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _self.rc().handle_operation_discount< operation >( op );
 
   _evaluator_registry.get_evaluator( op ).apply( op );
 
-  if( _self._benchmark_dumper.is_enabled() )
-    _self._benchmark_dumper.end( name );
+  benchmark.stop( _evaluator_benchmark_counters, op );
 
   _self.notify_post_apply_operation( note );
 }

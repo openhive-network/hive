@@ -421,24 +421,22 @@ struct fcall<TResult(TArgs...)>
   fcall() = default;
   fcall(const TNotification& func, util::advanced_benchmark_dumper& dumper,
     const abstract_plugin& plugin, const std::string& context, const std::string& item_name)
-    : _func(func), _benchmark_dumper(dumper), _context(context), _name(item_name) {}
+    : _func(func), _benchmark_dumper(dumper),
+      _benchmark_counter( util::advanced_benchmark_dumper::register_counter( context, item_name ) ) {}
 
   void operator () (TArgs&&... args)
   {
-    if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.begin();
+    util::advanced_benchmark_dumper::measurement benchmark( _benchmark_dumper );
 
     _func(std::forward<TArgs>(args)...);
 
-    if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.end( _context, _name );
+    benchmark.stop( _benchmark_counter );
   }
 
 private:
-  TNotification                    _func;
-  util::advanced_benchmark_dumper& _benchmark_dumper;
-  std::string                      _context;
-  std::string                      _name;
+  TNotification                                     _func;
+  util::advanced_benchmark_dumper&                  _benchmark_dumper;
+  util::advanced_benchmark_dumper::counter_id_type  _benchmark_counter;
 };
 
 template <typename TResult, typename... TArgs>
@@ -461,50 +459,36 @@ database::signal_connection_ptr connect_signal_impl( TSignal& signal, const TNot
   return hive::utilities::make_signal_connection_ptr( signal.connect(group, fcall_wrapper) );
 }
 
-database::signal_connection_ptr database::add_pre_apply_operation_handler( const apply_operation_handler_t& func,
-  const abstract_plugin& plugin, int32_t group )
+// Local helper function for connecting operation handlers with benchmarking support (separate counter for each operation)
+template <bool IS_PRE_OPERATION, typename TSignal>
+database::signal_connection_ptr connect_operation_signal_impl( TSignal& signal, const database::apply_operation_handler_t& func,
+  util::advanced_benchmark_dumper& benchmark_dumper, const abstract_plugin& plugin, int32_t group )
 {
-  std::string context = util::advanced_benchmark_dumper::generate_context_desc< true >( plugin.get_name() );
-  auto complex_func = [this, func, context]( const operation_notification& o )
+  // shared by all copies of the handler (counters are registered on first use)
+  auto benchmark_counters = std::make_shared< util::advanced_benchmark_dumper::variant_counters< operation > >(
+    util::advanced_benchmark_dumper::generate_context_desc< IS_PRE_OPERATION >( plugin.get_name() ) );
+  auto complex_func = [&benchmark_dumper, func, benchmark_counters]( const operation_notification& o )
   {
-    std::string name;
-
-    if (_benchmark_dumper.is_enabled())
-    {
-      name = o.op.get_stored_type_name();
-      _benchmark_dumper.begin();
-    }
+    util::advanced_benchmark_dumper::measurement benchmark( benchmark_dumper );
 
     func( o );
 
-    if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.end( context, name );
+    benchmark.stop( *benchmark_counters, o.op );
   };
 
-  return hive::utilities::make_signal_connection_ptr( _my->_pre_apply_operation_signal.connect(group, complex_func) );
+  return hive::utilities::make_signal_connection_ptr( signal.connect( group, complex_func ) );
+}
+
+database::signal_connection_ptr database::add_pre_apply_operation_handler( const apply_operation_handler_t& func,
+  const abstract_plugin& plugin, int32_t group )
+{
+  return connect_operation_signal_impl<true>( _my->_pre_apply_operation_signal, func, _benchmark_dumper, plugin, group );
 }
 
 database::signal_connection_ptr database::add_post_apply_operation_handler( const apply_operation_handler_t& func,
   const abstract_plugin& plugin, int32_t group )
 {
-  std::string context = util::advanced_benchmark_dumper::generate_context_desc< false >( plugin.get_name() );
-  auto complex_func = [this, func, context]( const operation_notification& o )
-  {
-    std::string name;
-
-    if (_benchmark_dumper.is_enabled())
-    {
-      name = o.op.get_stored_type_name();
-      _benchmark_dumper.begin();
-    }
-
-    func( o );
-
-    if (_benchmark_dumper.is_enabled())
-      _benchmark_dumper.end( context, name );
-  };
-
-  return hive::utilities::make_signal_connection_ptr( _my->_post_apply_operation_signal.connect(group, complex_func) );
+  return connect_operation_signal_impl<false>( _my->_post_apply_operation_signal, func, _benchmark_dumper, plugin, group );
 }
 
 database::signal_connection_ptr database::add_pre_apply_transaction_handler( const apply_transaction_handler_t& func,

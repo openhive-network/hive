@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from hive_local_tools.functional.python.operation import get_number_of_fill_order_operations, get_virtual_operations
-from schemas.operations.virtual.limit_order_cancelled_operation import LimitOrderCancelledOperation
+from hiveio_api.operations import LimitOrderCancelledOperation
 
 if TYPE_CHECKING:
     import test_tools as tt

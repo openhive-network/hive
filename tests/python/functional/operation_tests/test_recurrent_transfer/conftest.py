@@ -43,8 +43,8 @@ def sender(request: pytest.FixtureRequest, node: tt.InitNode, wallet: tt.Wallet)
 
     wallet.create_account(
         name="sender",
-        hives=top_up_sum if isinstance(top_up_sum, tt.Asset.TestT) else None,
-        hbds=top_up_sum if isinstance(top_up_sum, tt.Asset.TbdT) else None,
+        hives=top_up_sum if top_up_sum and top_up_sum.is_hive() else None,
+        hbds=top_up_sum if top_up_sum and top_up_sum.is_hbd() else None,
         vests=tt.Asset.Test(1),
     )
     sender = RecurrentTransferAccount("sender", node, wallet)
