@@ -56,6 +56,8 @@ namespace hive { namespace chain {
       const std::deque<block_id_type>& item_hashes_received ) const = 0;
     /// Check among reversible blocks on main branch then among irreversible.
     virtual block_id_type find_block_id_for_num( uint32_t block_num ) const = 0;
+    /// Number of the oldest block available; it is 1 unless older blocks have been pruned.
+    virtual uint32_t get_tail_block_num() const = 0;
     /** Needed by p2p plugin only.
      *  See implementations of database::get_blockchain_synopsis & fork_database::get_blockchain_synopsis
     */

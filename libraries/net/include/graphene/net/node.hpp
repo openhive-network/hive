@@ -192,6 +192,15 @@ namespace graphene { namespace net {
           * that are not on our chain can never become part of it */
          virtual uint32_t get_last_irreversible_block_num() const = 0;
 
+         /** returns the number of the oldest block we can provide to peers; it is 1 unless older
+          * blocks have been pruned from our block log */
+         virtual uint32_t get_tail_block_num() const = 0;
+
+         /** returns true when our head block is recent enough to consider us in live sync rather
+          * than catching up with the network. It is evaluated on every call, so unlike the
+          * chain's own switch to live mode it becomes false again when we fall behind */
+         virtual bool is_at_live_sync() = 0;
+
          virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const = 0;
 
          virtual void error_encountered(const std::string& message, const fc::oexception& error) = 0;

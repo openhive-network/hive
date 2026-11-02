@@ -132,6 +132,12 @@ block_id_type fork_db_block_reader::find_block_id_for_num( uint32_t block_num )c
   return result;
 }
 
+uint32_t fork_db_block_reader::get_tail_block_num() const
+{
+  // Fork database only adds blocks newer than the ones in block storage.
+  return _block_reader.get_tail_block_num();
+}
+
 std::vector<std::shared_ptr<full_block_type>> fork_db_block_reader::fetch_block_range(
   const uint32_t starting_block_num, const uint32_t count,
   fc::microseconds wait_for_microseconds /*= fc::microseconds()*/ ) const

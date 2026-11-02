@@ -439,6 +439,8 @@ namespace graphene { namespace net {
       fc::time_point_sec get_blockchain_now() override;
       item_hash_t get_head_block_id() const override;
       uint32_t get_last_irreversible_block_num() const override;
+      uint32_t get_tail_block_num() const override;
+      bool is_at_live_sync() override;
       uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const override;
       void error_encountered(const std::string& message, const fc::oexception& error) override;
       std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -6972,6 +6974,11 @@ namespace graphene { namespace net {
     uint32_t statistics_gathering_node_delegate_wrapper::get_last_irreversible_block_num() const
     {
       INVOKE_AND_COLLECT_STATISTICS(get_last_irreversible_block_num);
+    }
+
+    uint32_t statistics_gathering_node_delegate_wrapper::get_tail_block_num() const
+    {
+      INVOKE_AND_COLLECT_STATISTICS(get_tail_block_num);
     }
 
     uint32_t statistics_gathering_node_delegate_wrapper::estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const

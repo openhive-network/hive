@@ -154,6 +154,13 @@ block_id_type single_block_storage::find_block_id_for_num( uint32_t block_num ) 
   return lib->get_block_id();
 }
 
+uint32_t single_block_storage::get_tail_block_num() const
+{
+  // Only the last irreversible block is kept. Without it no block has been pruned yet.
+  const auto lib = head_block();
+  return lib ? lib->get_block_num() : 1;
+}
+
 std::vector<block_id_type> single_block_storage::get_blockchain_synopsis(
   const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
 {

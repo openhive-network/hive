@@ -373,6 +373,11 @@ block_id_type block_log_wrapper::find_block_id_for_num( uint32_t block_num ) con
   return result;
 }
 
+uint32_t block_log_wrapper::get_tail_block_num() const
+{
+  return get_actual_tail_block_num();
+}
+
 std::vector<block_id_type> block_log_wrapper::get_blockchain_synopsis(
   const block_id_type& reference_point, uint32_t number_of_blocks_after_reference_point ) const
 {
