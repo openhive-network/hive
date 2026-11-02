@@ -290,12 +290,31 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
     return result;
   }
 
+  // The ids below the fork database come from block storage, which doesn't keep blocks older
+  // than its tail when pruning (block-log-split >= 0). An empty id in their place would make
+  // the peer drop us for sending a list of blocks that is not sequential.
+  if (first_block_num_in_reply <= last_block_from_block_log_in_reply)
+  {
+    const uint32_t tail_block_num = _block_reader.get_tail_block_num();
+    if (first_block_num_in_reply < tail_block_num)
+      FC_THROW_EXCEPTION(internal_peer_needs_pruned_blocks,
+                         "Unable to provide a list of blocks starting at block #${first_block_num}, "
+                         "blocks older than #${tail_block_num} have been pruned",
+                         ("first_block_num", first_block_num_in_reply)(tail_block_num));
+  }
+
   for (uint32_t block_num = first_block_num_in_reply;
        block_num <= last_block_from_block_log_in_reply;
        ++block_num)
   {
     uint32_t index_in_result = block_num - first_block_num_in_reply;
     result[index_in_result] = get_block_id_for_num(block_num);
+    // pruning may have removed the block since the check above
+    if (result[index_in_result] == block_id_type())
+      FC_THROW_EXCEPTION(internal_peer_needs_pruned_blocks,
+                         "Unable to provide a list of blocks starting at block #${first_block_num}, "
+                         "block #${block_num} is not available",
+                         ("first_block_num", first_block_num_in_reply)(block_num));
   }
 
   if (!result.empty() && block_header::num_from_id(result.back()) < head_block_num)

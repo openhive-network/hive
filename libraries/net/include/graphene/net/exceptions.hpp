@@ -35,5 +35,6 @@ namespace graphene { namespace net {
    FC_DECLARE_DERIVED_EXCEPTION( peer_is_on_an_unreachable_fork,        graphene::net::net_exception, 90005, "peer is on another fork" );
    FC_DECLARE_DERIVED_EXCEPTION( unlinkable_block_exception,            graphene::net::net_exception, 90006, "unlinkable block" )
    FC_DECLARE_DERIVED_EXCEPTION( p2p_node_shutting_down_exception,      graphene::net::net_exception, 90007, "p2p node is shutting down" )
+   FC_DECLARE_DERIVED_EXCEPTION( peer_needs_pruned_blocks,              graphene::net::net_exception, 90008, "peer needs blocks that we have pruned" )
 
 } }

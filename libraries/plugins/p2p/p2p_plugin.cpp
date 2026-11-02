@@ -251,6 +251,10 @@ std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids(const std
   {
     FC_THROW_EXCEPTION(graphene::net::peer_is_on_an_unreachable_fork, "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis");
   }
+  catch (const hive::chain::internal_peer_needs_pruned_blocks&)
+  {
+    FC_THROW_EXCEPTION(graphene::net::peer_needs_pruned_blocks, "Unable to provide a list of blocks the peer needs, they have been pruned");
+  }
 } FC_CAPTURE_AND_RETHROW((blockchain_synopsis)(remaining_item_count)(limit)) }
 
 std::shared_ptr<chain::full_block_type> p2p_plugin_impl::get_full_block(const block_id_type& id)

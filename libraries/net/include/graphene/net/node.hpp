@@ -380,6 +380,14 @@ namespace graphene { namespace net {
   bool rejection_is_failure(rejection_reason_code reason_code);
 
   /**
+   * Whether a peer whose newest block is @p peers_head_block_num needs blocks older than our tail
+   * block @p our_tail_block_num (1 unless we prune our block log), so that we can't help it sync.
+   * A peer lagging behind our tail by at most GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS blocks is still
+   * served: it catches up through normal block propagation.
+   */
+  bool peer_needs_blocks_we_pruned(uint32_t peers_head_block_num, uint32_t our_tail_block_num);
+
+  /**
    * The connection to @p remote_endpoint that has not finished closing, or null if there is none.
    * Connections still closing or terminating count as well as active and handshaking ones: until
    * their socket is gone, a new outbound connection bound to our listening port would need the

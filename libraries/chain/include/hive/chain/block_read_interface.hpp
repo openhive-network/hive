@@ -67,6 +67,8 @@ namespace hive { namespace chain {
     /** used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and
      *  generates a sequential list of block ids that builds off of the last item in the synopsis
      *  that we have in common
+     *  @throws internal_peer_needs_pruned_blocks when the list would have to start below the tail
+     *  block (see get_tail_block_num)
      */
     virtual std::vector<block_id_type> get_block_ids(
       const std::vector<block_id_type>& blockchain_synopsis,
