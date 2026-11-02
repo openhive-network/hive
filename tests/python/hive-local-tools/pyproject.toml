@@ -23,12 +23,13 @@ source = [
 
 [tool.poetry.dependencies]
 python = ">=3.14,<4"
-pytest = "^9.0.0"
-pytest-rerunfailures = "^14.0"
-pytest-timeout = "^2.3.1"
-pytest-asyncio = "^1.0.0"
-pytest-repeat = "^0.9.3"
-pytest-xdist = "^3.6.1"
+# Lower bounds only: hive's CI installs the versions of common-ci-configuration's
+# python-test-tools (PYTHON_TEST_TOOLS_CONSTRAINTS); consumers of hive_local_tools resolve their own
+pytest = ">=9.0.0"
+pytest-rerunfailures = ">=14.0"
+pytest-timeout = ">=2.3.1"
+pytest-asyncio = ">=1.0.0"
+pytest-xdist = ">=3.6.1"
 tavern = "^3.0.2"
 types-PyYAML = "^6.0.12"
 hiveio-test-tools = {version = "1.28.8.post20261030102108", source = "gitlab-hive"}

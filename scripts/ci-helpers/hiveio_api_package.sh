@@ -27,6 +27,8 @@
 #                                 is neither verified nor tested by the generator tests
 #   --apis=<list>                 Space-separated list of APIs to generate (default: all)
 #   --env-var-name=<name>         Environment variable name in build_wheel.env (default: WHEEL_BUILD_VERSION)
+#   --test-tools-constraints=PATH pip constraints of common-ci-configuration's python-test-tools, giving the pytest
+#                                 version of the generator tests (default: PYTHON_TEST_TOOLS_CONSTRAINTS), required by them
 #   --help                        Show this help message
 #
 # Environment variables (GitLab CI):
@@ -73,6 +75,7 @@ OPT_SKIP_REGISTRY_CHECK=""
 OPT_APIS=""
 OPT_OPERATIONS_DESCRIPTION=""
 OPT_ENV_VAR_NAME="WHEEL_BUILD_VERSION"
+OPT_TEST_TOOLS_CONSTRAINTS=""
 
 # ==============================================================================
 # Logging
@@ -115,6 +118,8 @@ parse_args() {
                 OPT_OPERATIONS_DESCRIPTION="${1#*=}"; shift ;;
             --env-var-name=*)
                 OPT_ENV_VAR_NAME="${1#*=}"; shift ;;
+            --test-tools-constraints=*)
+                OPT_TEST_TOOLS_CONSTRAINTS="${1#*=}"; shift ;;
             --help|-h)
                 show_help ;;
             *)
@@ -126,6 +131,7 @@ parse_args() {
     HIVE_PROJECT_ROOT="${HIVE_PROJECT_ROOT:-$(pwd)}"
     API_GENERATION_DIR="${API_GENERATION_DIR:-${HIVE_PROJECT_ROOT}/libraries/plugins/apis/api_generation}"
     PACKAGE_REGISTRY_PROJECT_ID="${PACKAGE_REGISTRY_PROJECT_ID:-${CI_PROJECT_ID:-}}"
+    OPT_TEST_TOOLS_CONSTRAINTS="${OPT_TEST_TOOLS_CONSTRAINTS:-${PYTHON_TEST_TOOLS_CONSTRAINTS:-}}"
 
     # Set derived paths
     GENERATOR_PYPROJECT_DIR="${API_GENERATION_DIR}/api_generation"
@@ -203,6 +209,12 @@ generate_package() {
 run_generator_tests() {
     log_info "Running generator tests..."
     cd "${GENERATOR_PYPROJECT_DIR}"
+    if [[ ! -f "${OPT_TEST_TOOLS_CONSTRAINTS}" ]]; then
+        log_error "No python-test-tools constraints at '${OPT_TEST_TOOLS_CONSTRAINTS}' (--test-tools-constraints): pytest is not installed unconstrained"
+        exit 1
+    fi
+    poetry -C "${GENERATOR_PYPROJECT_DIR}" run python -m pip install -c "${OPT_TEST_TOOLS_CONSTRAINTS}" pytest
+    poetry -C "${GENERATOR_PYPROJECT_DIR}" run python -m pytest --version
     # missing generated package fails the tests instead of skipping them
     HIVEIO_API_REQUIRE_GENERATED_PACKAGE=1 poetry -C "${GENERATOR_PYPROJECT_DIR}" run python -m pytest tests \
         --junitxml="${GENERATOR_PYPROJECT_DIR}/results.xml"

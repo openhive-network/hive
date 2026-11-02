@@ -591,6 +591,16 @@ static_linking_check:
     - name: $TEST_BLOCK_LOG_LATEST_VERSION_IMAGE
       alias: test-block-log-server
 
+# Installs the pytest family at the versions of common-ci-configuration's python-test-tools
+# image (PYTHON_TEST_TOOLS_TAG) over whatever the project install brought: the python test
+# jobs need ci-base-image's compiler and 7z, so they cannot run in python-test-tools itself.
+# Reads PYTHON_TEST_TOOLS_CONSTRAINTS, written by .python_test_tools_constraints, which fails
+# the job when the constraints cannot be obtained.
+.install_python_test_tools:
+  script:
+    - python3 -m pip install -c "$PYTHON_TEST_TOOLS_CONSTRAINTS" pytest pytest-xdist pytest-timeout pytest-asyncio pytest-rerunfailures
+    - python3 -m pip list | grep -E '^pytest( |-)'
+
 .python_based:
   image: "$CI_BASE_IMAGE"
   extends:
@@ -599,6 +609,8 @@ static_linking_check:
     - cd $CI_PROJECT_DIR/tests/python/hive-local-tools
     - !reference [.project_develop_configuration_template, before_script]
     - cd $CI_PROJECT_DIR
+    - !reference [.python_test_tools_constraints, script]
+    - !reference [.install_python_test_tools, script]
 
 .python_static_analysis_configuration:
   extends: .python_based
@@ -754,8 +766,9 @@ quick_test_setup:
     - python3 -m pip install .[tests]
     - python3 -m pip install .
     # beem[tests] installs pytest 7.2.2, which does not run on Python 3.14: put back
-    # the versions hive-local-tools' lock installed
+    # hive-local-tools' locked dependencies and python-test-tools' pytest family
     - poetry -C "${PYPROJECT_DIR}" install
+    - !reference [.install_python_test_tools, script]
     - cd ..
     - mkdir -p build/tests/hive-node-data
     - cd tests/python/functional/beem_tests

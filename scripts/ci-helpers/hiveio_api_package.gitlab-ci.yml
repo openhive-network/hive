@@ -58,6 +58,8 @@
     OPERATIONS_DESCRIPTION: ""  # operations_description.json from the build of hived - required
   stage: build
   script:
+    # the pytest version of the generator tests (PYTHON_TEST_TOOLS_CONSTRAINTS, read by hiveio_api_package.sh)
+    - !reference [.python_test_tools_constraints, script]
     - |
       SCRIPT_ARGS=(
         "--hive-project-root=${HIVE_PROJECT_ROOT}"
