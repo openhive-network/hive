@@ -35,7 +35,7 @@ class GitRevisionProvider:
             version, git_revision = get_distribution("hive").version.split("+")
             GitRevisionProvider._save_version_file(version, git_revision)
             return git_revision
-        except:
+        except Exception:
             GitRevisionProvider._save_version_file(VERSION, "")
         return ""
 
