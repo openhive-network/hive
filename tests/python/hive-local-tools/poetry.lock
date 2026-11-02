@@ -1633,21 +1633,6 @@ docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1)"]
 testing = ["coverage (>=6.2)", "hypothesis (>=5.7.1)"]
 
 [[package]]
-name = "pytest-repeat"
-version = "0.9.4"
-description = "pytest plugin for repeating tests"
-optional = false
-python-versions = ">=3.9"
-groups = ["main"]
-files = [
-    {file = "pytest_repeat-0.9.4-py3-none-any.whl", hash = "sha256:c1738b4e412a6f3b3b9e0b8b29fcd7a423e50f87381ad9307ef6f5a8601139f3"},
-    {file = "pytest_repeat-0.9.4.tar.gz", hash = "sha256:d92ac14dfaa6ffcfe6917e5d16f0c9bc82380c135b03c2a5f412d2637f224485"},
-]
-
-[package.dependencies]
-pytest = "*"
-
-[[package]]
 name = "pytest-rerunfailures"
 version = "14.0"
 description = "pytest plugin to re-run tests to eliminate flaky failures"
@@ -2405,4 +2390,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "fe2e7531999ebd006d2d4fbcee038b7158b50764538ed5f8ab86846da0cebff2"
+content-hash = "169e7db762a74a44853cc68399429d1a71daa8c6d6e54c9f349e0627a2af43b3"

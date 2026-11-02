@@ -60,9 +60,6 @@ if __name__ == "__main__":
         description='Hive - Decentralizing the exchange of ideas and information',
         long_description= 'Hive is a Graphene based, social blockchain that was created as a fork of Steem and born on the core idea of decentralization.',
         packages=find_packages(exclude=['scripts']),
-        setup_requires=[
-            'pytest-runner',
-        ],
         dependency_links=[
             'https://github.com/bcb/jsonrpcserver/tarball/8f3437a19b6d1a8f600ee2c9b112116c85f17827#egg=jsonrpcserver-4.1.3+8f3437a'
         ],
