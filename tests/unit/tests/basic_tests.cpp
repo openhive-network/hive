@@ -78,6 +78,7 @@
 
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
+#include <hive/protocol/forward_keyauths.hpp>
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/protocol.hpp>
 #include <hive/protocol/transaction_util.hpp>
@@ -3645,6 +3646,88 @@ BOOST_AUTO_TEST_CASE( asset_conversion_test )
 
 }
 
+BOOST_AUTO_TEST_CASE( genesis_keyauths )
+{
+  try
+  {
+    using hive::app::key_t;
+    using hive::app::collected_keyauth_t;
+
+    const auto rows = hive::app::operation_get_genesis_keyauths();
+    auto rows_of = [&]( const std::string& account_name )
+    {
+      std::vector< collected_keyauth_t > result;
+      std::copy_if( rows.begin(), rows.end(), std::back_inserter( result ),
+        [&]( const collected_keyauth_t& row ) { return row.account_name == account_name; } );
+      return result;
+    };
+    const std::vector< key_t > all_roles = { key_t::OWNER, key_t::ACTIVE, key_t::POSTING, key_t::MEMO };
+    const fc::ecc::public_key_data no_key = public_key_type();
+
+    for( const std::string account_name : { HIVE_MINER_ACCOUNT, HIVE_NULL_ACCOUNT } )
+    {
+      BOOST_TEST_MESSAGE( "checking " << account_name );
+      const auto& genesis_auth = db->get< account_authority_object, by_account >( account_name );
+      const auto account_rows = rows_of( account_name );
+      BOOST_REQUIRE_EQUAL( account_rows.size(), all_roles.size() );
+      for( size_t i = 0; i < 3; ++i )
+      {
+        const auto& row = account_rows[i];
+        const shared_authority& auth = ( i == 0 ) ? genesis_auth.get_owner() : ( i == 1 ) ? genesis_auth.get_active() : genesis_auth.get_posting();
+        BOOST_REQUIRE( row.key_kind == all_roles[i] );
+        BOOST_REQUIRE_EQUAL( row.weight_threshold, auth.weight_threshold );
+        BOOST_REQUIRE_EQUAL( row.weight_threshold, 1u );
+        BOOST_REQUIRE( auth.key_auths.empty() && auth.account_auths.empty() );
+        BOOST_REQUIRE( row.keyauth_variant );
+        BOOST_REQUIRE( row.key_auth == no_key );
+        BOOST_REQUIRE( row.account_auth.empty() );
+        BOOST_REQUIRE_EQUAL( row.w, 0 );
+        BOOST_REQUIRE( !row.key_exists );
+      }
+      const auto& memo = account_rows[3];
+      BOOST_REQUIRE( memo.key_kind == key_t::MEMO );
+      BOOST_REQUIRE_EQUAL( memo.weight_threshold, 0u );
+      BOOST_REQUIRE( memo.key_auth == no_key );
+      BOOST_REQUIRE_EQUAL( memo.w, 0 );
+      BOOST_REQUIRE( memo.key_exists );
+    }
+
+    auto check_keyed = [&]( const std::string& account_name, const fc::ecc::public_key_data& key )
+    {
+      const auto account_rows = rows_of( account_name );
+      BOOST_REQUIRE_EQUAL( account_rows.size(), all_roles.size() );
+      for( size_t i = 0; i < account_rows.size(); ++i )
+      {
+        const auto& row = account_rows[i];
+        BOOST_REQUIRE( row.key_kind == all_roles[i] );
+        BOOST_REQUIRE_EQUAL( row.weight_threshold, 1u );
+        BOOST_REQUIRE( row.keyauth_variant );
+        BOOST_REQUIRE( row.key_auth == key );
+        BOOST_REQUIRE( row.account_auth.empty() );
+        BOOST_REQUIRE_EQUAL( row.w, 1 );
+        BOOST_REQUIRE( row.key_exists );
+      }
+    };
+    check_keyed( "steem", public_key_type( HIVE_STEEM_PUBLIC_KEY_STR ) );
+    check_keyed( "initminer", public_key_type( HIVE_INIT_PUBLIC_KEY_STR ) );
+
+    const auto temp_rows = rows_of( HIVE_TEMP_ACCOUNT );
+    BOOST_REQUIRE_EQUAL( temp_rows.size(), all_roles.size() );
+    for( size_t i = 0; i < temp_rows.size(); ++i )
+    {
+      const auto& row = temp_rows[i];
+      BOOST_REQUIRE( row.key_kind == all_roles[i] );
+      BOOST_REQUIRE_EQUAL( row.weight_threshold, 0u );
+      BOOST_REQUIRE( row.key_auth == no_key );
+      BOOST_REQUIRE_EQUAL( row.w, 0 );
+      BOOST_REQUIRE_EQUAL( row.key_exists, row.key_kind == key_t::MEMO );
+    }
+
+    BOOST_REQUIRE_EQUAL( rows.size(), 5 * all_roles.size() );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE( advanced_benchmark_tests )
@@ -3812,5 +3895,6 @@ BOOST_FIXTURE_TEST_CASE( reaction_to_virtual_operation, clean_database_fixture )
   }
   FC_LOG_AND_RETHROW()
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()
