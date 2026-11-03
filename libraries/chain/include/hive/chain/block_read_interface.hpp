@@ -60,6 +60,8 @@ namespace hive { namespace chain {
     virtual uint32_t get_tail_block_num() const = 0;
     /** Needed by p2p plugin only.
      *  See implementations of database::get_blockchain_synopsis & fork_database::get_blockchain_synopsis
+     *  @throws internal_synopsis_reference_point_pruned when the reference point is older than the
+     *  last irreversible block and its id is no longer known
     */
     virtual std::vector<block_id_type> get_blockchain_synopsis(
       const block_id_type& reference_point,
@@ -67,7 +69,7 @@ namespace hive { namespace chain {
     /** used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and
      *  generates a sequential list of block ids that builds off of the last item in the synopsis
      *  that we have in common
-     *  @throws internal_peer_needs_pruned_blocks when the list would have to start below the tail
+     *  @throws internal_peer_needs_pruned_blocks when the peer would need blocks older than the tail
      *  block (see get_tail_block_num)
      */
     virtual std::vector<block_id_type> get_block_ids(

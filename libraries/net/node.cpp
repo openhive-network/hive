@@ -3099,6 +3099,7 @@ namespace graphene { namespace net {
       }
 
       fc::oexception synopsis_exception;
+      bool reference_point_pruned = false;
       try
       {
         std::vector<item_hash_t> blockchain_synopsis = create_blockchain_synopsis_for_peer(peer);
@@ -3114,10 +3115,29 @@ namespace graphene { namespace net {
       {
         synopsis_exception = e;
       }
+      catch (const synopsis_reference_point_pruned& e)
+      {
+        // without a reference point the synopsis starts at our head, so this can't happen twice
+        if (peer->last_block_delegate_has_seen != item_hash_t())
+          reference_point_pruned = true;
+        else
+          synopsis_exception = e;
+      }
       if (synopsis_exception)
       {
         fc::exception error_for_peer(FC_LOG_MESSAGE(error, "You are on a fork I'm unable to switch to"));
         disconnect_from_peer(peer, "You are on a fork I'm unable to switch to", true, error_for_peer);
+      }
+      else if (reference_point_pruned)
+      {
+        // We no longer have the last block we know the peer has, so we can't tell where its chain
+        // joins ours. That doesn't put it on another fork: drop the ids it gave us and ask again,
+        // this time starting from our head.
+        dlog("sync: the last block we know peer ${peer} has was pruned, asking it for block ids again",
+             ("peer", peer->get_remote_endpoint()));
+        peer->ids_of_items_to_get.clear();
+        peer->number_of_unfetched_item_ids = 0;
+        fetch_next_batch_of_item_ids_from_peer(peer, true /*reset_fork_tracking_data_for_peer*/);
       }
     }
 

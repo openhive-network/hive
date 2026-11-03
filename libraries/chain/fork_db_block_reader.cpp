@@ -193,6 +193,15 @@ std::vector<block_id_type> fork_db_block_reader::get_blockchain_synopsis(
       // We can only do this if the reference point really is in the blockchain
       if (read_block_id == reference_point)
         synopsis.insert(synopsis.begin(), reference_point);
+      else if (read_block_id == block_id_type())
+      {
+        // Block storage no longer knows that block, so we can't tell whether the peer's chain joins
+        // ours there. That doesn't put the peer on another fork; the caller can start over without
+        // the reference point.
+        FC_THROW_EXCEPTION(internal_synopsis_reference_point_pruned,
+                           "Unable to generate a synopsis starting at block #${reference_point_block_num}, it has been pruned",
+                           (reference_point_block_num));
+      }
       else
       {
         wlog("Unable to generate a usable synopsis because the peer we're generating it for forked too long ago "
@@ -222,6 +231,12 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
   shared_ptr<fork_item> head;
   uint32_t head_block_num;
   vector<block_id_type> result;
+  // the first block of the reply is the newest one we share with the peer, unless it has no blocks
+  bool peer_has_first_block = false;
+  // The peer will fetch the blocks that follow the first one of the reply, so they have to be ones we
+  // still keep. Block storage may know ids of blocks older than its tail (see single_block_storage),
+  // but such a block can't start the reply unless it is right before the tail.
+  const uint32_t tail_block_num = _block_reader.get_tail_block_num();
 
   // get and hold a fork database lock so a fork switch can't happen while we're in the middle of creating
   // this list of block ids
@@ -245,7 +260,9 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
     {
       bool found_a_block_in_synopsis = false;
       for (const block_id_type& block_id_in_synopsis : boost::adaptors::reverse(blockchain_synopsis))
-        if (block_id_in_synopsis == block_id_type() || is_included_block_unlocked(block_id_in_synopsis))
+        if (block_id_in_synopsis == block_id_type() ||
+            (block_header::num_from_id(block_id_in_synopsis) >= tail_block_num - 1 &&
+             is_included_block_unlocked(block_id_in_synopsis)))
         {
           last_known_block_id = block_id_in_synopsis;
           found_a_block_in_synopsis = true;
@@ -259,6 +276,7 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
     // the list will be composed of block ids from the block_log first, followed by ones from the fork database.
     // when building our reply, we'll fill in the ones from the fork_database first, so we can release the
     // fork_db lock, then we'll grab the ids from the block_log at our leisure.
+    peer_has_first_block = last_known_block_id != block_id_type();
     first_block_num_in_reply = block_header::num_from_id(last_known_block_id);
     if (first_block_num_in_reply == 0)
       ++first_block_num_in_reply;
@@ -295,8 +313,8 @@ std::vector<block_id_type> fork_db_block_reader::get_block_ids(
   // the peer drop us for sending a list of blocks that is not sequential.
   if (first_block_num_in_reply <= last_block_from_block_log_in_reply)
   {
-    const uint32_t tail_block_num = _block_reader.get_tail_block_num();
-    if (first_block_num_in_reply < tail_block_num)
+    const uint32_t first_block_num_peer_needs = first_block_num_in_reply + (peer_has_first_block ? 1 : 0);
+    if (first_block_num_peer_needs < tail_block_num)
       FC_THROW_EXCEPTION(internal_peer_needs_pruned_blocks,
                          "Unable to provide a list of blocks starting at block #${first_block_num}, "
                          "blocks older than #${tail_block_num} have been pruned",

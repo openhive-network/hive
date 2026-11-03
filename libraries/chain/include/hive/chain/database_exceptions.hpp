@@ -116,6 +116,7 @@ namespace hive { namespace chain {
   HIVE_DECLARE_INTERNAL_EXCEPTION( verify_auth_account_not_found, 2,  "Auth account not found" )
   HIVE_DECLARE_INTERNAL_EXCEPTION( peer_is_on_an_unreachable_fork, 3, "Peer is on an unreachable fork" )
   HIVE_DECLARE_INTERNAL_EXCEPTION( peer_needs_pruned_blocks, 4, "Peer needs blocks that have been pruned" )
+  HIVE_DECLARE_INTERNAL_EXCEPTION( synopsis_reference_point_pruned, 5, "Block a synopsis would start from has been pruned" )
 
 } } // hive::chain
 

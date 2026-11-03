@@ -4,9 +4,16 @@
 
 namespace hive { namespace chain {
 
+namespace {
+  // While syncing, p2p asks about blocks a peer offered while we applied them from other peers,
+  // and about the last block it knows a peer has. Both trail the last irreversible block by at
+  // most a few thousand blocks, so that many ids (1.25 MiB) leave plenty of margin.
+  constexpr uint32_t RECENT_BLOCK_IDS_CAPACITY = 0x10000;
+}
+
 single_block_storage::single_block_storage( appbase::application& app,
                                             blockchain_worker_thread_pool& thread_pool )
-  : _app( app ), _thread_pool( thread_pool )
+  : _app( app ), _thread_pool( thread_pool ), _recent_block_ids( RECENT_BLOCK_IDS_CAPACITY )
 {}
 
 void single_block_storage::open_and_init( const block_log_open_args& bl_open_args, bool read_only,
@@ -16,6 +23,13 @@ void single_block_storage::open_and_init( const block_log_open_args& bl_open_arg
 
   _open_args = bl_open_args;
   _db = db;
+
+  // Ids of blocks older than the one we start from are not needed: peers can only offer blocks
+  // that follow one we have.
+  _recent_block_ids.clear();
+  const auto lib = head_block();
+  if( lib )
+    _recent_block_ids.remember( lib->get_block_id() );
 }
 
 void single_block_storage::reopen_for_writing()
@@ -30,6 +44,7 @@ void single_block_storage::close_storage()
 
 void single_block_storage::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
 {
+  _recent_block_ids.remember( full_block->get_block_id() );
   _db->set_last_irreversible_block_data( full_block );
 }
 
@@ -133,7 +148,11 @@ std::vector<std::shared_ptr<full_block_type>> single_block_storage::fetch_block_
 bool single_block_storage::is_known_block(const block_id_type& id) const
 {
   const auto lib = head_block();
-  return lib && ( lib->get_block_id() == id );
+  if( lib && lib->get_block_id() == id )
+    return true;
+
+  const auto recent_id = _recent_block_ids.find( protocol::block_header::num_from_id( id ) );
+  return recent_id && *recent_id == id;
 }
 
 std::deque<block_id_type>::const_iterator single_block_storage::find_first_item_not_in_blockchain(
@@ -147,11 +166,15 @@ std::deque<block_id_type>::const_iterator single_block_storage::find_first_item_
 block_id_type single_block_storage::find_block_id_for_num( uint32_t block_num ) const
 {
   const auto lib = head_block();
-  if( not lib || lib->get_block_num() != block_num )
+  if( lib && lib->get_block_num() == block_num )
+    return lib->get_block_id();
+
+  const auto recent_id = _recent_block_ids.find( block_num );
+  if( not recent_id )
     FC_THROW_EXCEPTION( fc::key_not_found_exception,
                         "block number ${block_num} not found", (block_num) );
 
-  return lib->get_block_id();
+  return *recent_id;
 }
 
 uint32_t single_block_storage::get_tail_block_num() const

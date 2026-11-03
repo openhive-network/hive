@@ -1,11 +1,15 @@
 #pragma once
 
 #include <hive/chain/block_storage_interface.hpp>
+#include <hive/chain/recent_block_ids.hpp>
 
 namespace hive { namespace chain {
 
   /**
    * @brief block storage implementation containing only head block.
+   *
+   * Ids of recent older blocks are remembered (see recent_block_ids), so they are still known
+   * blocks, but they can't be read.
    */
   class single_block_storage : public block_storage_i
   {
@@ -59,6 +63,7 @@ namespace hive { namespace chain {
     blockchain_worker_thread_pool&  _thread_pool;
     block_log_open_args             _open_args;
     database*                       _db = nullptr;
+    recent_block_ids                _recent_block_ids;
   };
 
 } }
