@@ -302,7 +302,14 @@ collected_keyauth_collection_t operation_get_genesis_keyauths()
     collected_keyauth_t temp_item {"temp", key_t::OWNER, 0, true, public_key_type(), {}, 0, false};
     add_key_authorizations(collector, temp_item, genesis_key_types);
 
-    // Other genesis accounts - only MEMO
+    // 'miners' and 'null' accounts - impossible authority (threshold 1, no members)
+    for (const std::string account_name : {HIVE_MINER_ACCOUNT, HIVE_NULL_ACCOUNT})
+    {
+        collected_keyauth_t impossible_item {account_name, key_t::OWNER, 1, true, public_key_type(), {}, 0, false};
+        add_key_authorizations(collector, impossible_item, genesis_key_types);
+    }
+
+    // MEMO for remaining genesis accounts
     std::vector<std::string> other_accounts = {HIVE_MINER_ACCOUNT, HIVE_NULL_ACCOUNT, HIVE_TEMP_ACCOUNT};
     for (const auto& account_name : other_accounts)
     {
