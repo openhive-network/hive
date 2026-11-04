@@ -72,6 +72,18 @@ std::shared_ptr<full_block_type> fork_db_block_reader::fetch_block_by_id(
   } FC_CAPTURE_AND_RETHROW()
 }
 
+fc::optional<fc::time_point_sec> fork_db_block_reader::fetch_block_time_by_id(
+  const block_id_type& id ) const
+{
+  try {
+    shared_ptr<fork_item> fork_item = _fork_db.fetch_block( id );
+    if (fork_item)
+      return fork_item->full_block->get_block_header().timestamp;
+
+    return _block_reader.fetch_block_time_by_id( id );
+  } FC_CAPTURE_AND_RETHROW()
+}
+
 
 bool fork_db_block_reader::is_known_block( const block_id_type& id ) const
 {

@@ -289,6 +289,16 @@ std::shared_ptr<full_block_type> block_log_wrapper::fetch_block_by_id(
   } FC_CAPTURE_AND_RETHROW()
 }
 
+fc::optional<fc::time_point_sec> block_log_wrapper::fetch_block_time_by_id(
+  const block_id_type& id ) const
+{
+  // the time is not among block log artifacts, the block has to be read
+  std::shared_ptr<full_block_type> block = fetch_block_by_id( id );
+  if( block )
+    return block->get_block_header().timestamp;
+  return fc::optional<fc::time_point_sec>();
+}
+
 std::shared_ptr<full_block_type> block_log_wrapper::get_block_by_number( uint32_t block_num,
   fc::microseconds wait_for_microseconds ) const
 {

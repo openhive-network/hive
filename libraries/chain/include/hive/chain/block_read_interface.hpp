@@ -3,6 +3,7 @@
 #include <hive/protocol/block.hpp>
 #include <hive/chain/full_block.hpp>
 
+#include <fc/optional.hpp>
 #include <fc/time.hpp>
 
 #include <deque>
@@ -34,6 +35,11 @@ namespace hive { namespace chain {
 
     /// Check among reversible blocks. If found none check among irreversible blocks.
     virtual std::shared_ptr<full_block_type> fetch_block_by_id( const block_id_type& id ) const = 0;
+    /** Needed by p2p plugin only.
+     *  Like fetch_block_by_id, but only the timestamp, which may still be known when the block
+     *  itself can't be read anymore (see is_known_block).
+    */
+    virtual fc::optional<fc::time_point_sec> fetch_block_time_by_id( const block_id_type& id ) const = 0;
 
     /** Check among reversible blocks. If found 1 return it, if found more return the one
      *  from main branch. If found none check among irreversible blocks.

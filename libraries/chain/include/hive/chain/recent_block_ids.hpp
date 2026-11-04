@@ -4,6 +4,7 @@
 
 #include <fc/exception/exception.hpp>
 #include <fc/optional.hpp>
+#include <fc/time.hpp>
 
 #include <algorithm>
 #include <mutex>
@@ -14,50 +15,57 @@ namespace hive { namespace chain {
   using hive::protocol::block_id_type;
 
   /**
-   * @brief Ids of the most recent irreversible blocks, for block storage that doesn't keep the blocks.
+   * @brief Ids and timestamps of the most recent irreversible blocks, for block storage that
+   * doesn't keep the blocks.
    *
-   * The id of block N is kept at position N % capacity, so the ids of the newest `capacity` blocks
-   * are remembered. A block number in an id identifies the block an entry belongs to. Safe to use
-   * from many threads.
+   * Block N is kept at position N % capacity, so the newest `capacity` blocks are remembered.
+   * A block number in an id identifies the block an entry belongs to. Safe to use from many
+   * threads.
    */
   class recent_block_ids
   {
   public:
-    explicit recent_block_ids( uint32_t capacity ) : _ids( capacity )
+    struct entry
+    {
+      block_id_type       id;
+      fc::time_point_sec  timestamp;
+    };
+
+    explicit recent_block_ids( uint32_t capacity ) : _entries( capacity )
     {
       FC_ASSERT( capacity > 0 );
     }
 
-    /// Remembers the id of a block that has become irreversible.
-    void remember( const block_id_type& id )
+    /// Remembers a block that has become irreversible.
+    void remember( const block_id_type& id, const fc::time_point_sec& timestamp )
     {
       const uint32_t block_num = protocol::block_header::num_from_id( id );
       std::lock_guard<std::mutex> guard( _mutex );
-      _ids[ block_num % _ids.size() ] = id;
+      _entries[ block_num % _entries.size() ] = entry{ id, timestamp };
     }
 
-    /// Id of the block with given number, if it is still remembered.
-    fc::optional<block_id_type> find( uint32_t block_num ) const
+    /// The block with given number, if it is still remembered.
+    fc::optional<entry> find( uint32_t block_num ) const
     {
       if( block_num == 0 )
-        return fc::optional<block_id_type>();
+        return fc::optional<entry>();
       std::lock_guard<std::mutex> guard( _mutex );
-      const block_id_type& id = _ids[ block_num % _ids.size() ];
+      const entry& found = _entries[ block_num % _entries.size() ];
       // an empty entry has block number 0, an outdated one belongs to an older block
-      if( protocol::block_header::num_from_id( id ) != block_num )
-        return fc::optional<block_id_type>();
-      return id;
+      if( protocol::block_header::num_from_id( found.id ) != block_num )
+        return fc::optional<entry>();
+      return found;
     }
 
     void clear()
     {
       std::lock_guard<std::mutex> guard( _mutex );
-      std::fill( _ids.begin(), _ids.end(), block_id_type() );
+      std::fill( _entries.begin(), _entries.end(), entry() );
     }
 
   private:
-    mutable std::mutex          _mutex;
-    std::vector<block_id_type>  _ids;
+    mutable std::mutex  _mutex;
+    std::vector<entry>  _entries;
   };
 
 } }

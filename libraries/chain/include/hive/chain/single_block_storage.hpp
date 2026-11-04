@@ -8,8 +8,8 @@ namespace hive { namespace chain {
   /**
    * @brief block storage implementation containing only head block.
    *
-   * Ids of recent older blocks are remembered (see recent_block_ids), so they are still known
-   * blocks, but they can't be read.
+   * Ids and timestamps of recent older blocks are remembered (see recent_block_ids), so they are
+   * still known blocks, but they can't be read.
    */
   class single_block_storage : public block_storage_i
   {
@@ -41,6 +41,7 @@ namespace hive { namespace chain {
                                  block_processor_t processor,
                                  blockchain_worker_thread_pool& thread_pool ) const override;
     virtual full_block_ptr_t fetch_block_by_id( const block_id_type& id ) const override;
+    virtual fc::optional<fc::time_point_sec> fetch_block_time_by_id( const block_id_type& id ) const override;
     virtual full_block_ptr_t get_block_by_number(
       uint32_t block_num, fc::microseconds wait_for_microseconds = fc::microseconds() ) const override;
     virtual full_block_range_t fetch_block_range( const uint32_t starting_block_num, 

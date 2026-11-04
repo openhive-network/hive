@@ -312,9 +312,10 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 {
   try
   {
-    std::shared_ptr<hive::chain::full_block_type> block = 
-      chain.block_reader().fetch_block_by_id(block_id);
-    return block ? block->get_block_header().timestamp : fc::time_point_sec::min();
+    // also known for recent blocks a fully pruned node no longer has
+    const fc::optional<fc::time_point_sec> block_time =
+      chain.block_reader().fetch_block_time_by_id(block_id);
+    return block_time ? *block_time : fc::time_point_sec::min();
   } FC_CAPTURE_AND_RETHROW((block_id))
 }
 
