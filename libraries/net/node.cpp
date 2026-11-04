@@ -439,6 +439,8 @@ namespace graphene { namespace net {
       fc::time_point_sec get_blockchain_now() override;
       item_hash_t get_head_block_id() const override;
       uint32_t get_last_irreversible_block_num() const override;
+      uint32_t get_tail_block_num() const override;
+      bool is_at_live_sync() override;
       uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const override;
       void error_encountered(const std::string& message, const fc::oexception& error) override;
       std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -808,6 +810,8 @@ namespace graphene { namespace net {
                                 const std::string& reason_for_disconnect,
                                 bool caused_by_error = false,
                                 const fc::oexception& additional_data = fc::oexception());
+      void disconnect_from_peer_needing_pruned_blocks(peer_connection* peer, uint32_t peers_head_block_num,
+                                                      uint32_t our_tail_block_num);
 
       // methods implementing node's public interface
       void set_node_delegate(node_delegate* del);
@@ -2416,6 +2420,8 @@ namespace graphene { namespace net {
         originating_peer->chain_id = user_data["chain_id"].as<hive::protocol::chain_id_type>();
       if (user_data.contains("last_available_zstd_compression_dictionary_number"))
         originating_peer->last_available_zstd_compression_dictionary_number = user_data["last_available_zstd_compression_dictionary_number"].as<uint8_t>();
+      if (user_data.contains("last_known_block_number"))
+        originating_peer->last_known_block_number = user_data["last_known_block_number"].as<uint32_t>();
     }
 
     void node_impl::on_hello_message( peer_connection* originating_peer, const hello_message& hello_message_received )
@@ -2639,7 +2645,28 @@ namespace graphene { namespace net {
             originating_peer->is_firewalled = firewalled_state::unknown;
           }
 
-          if (!is_accepting_new_connections())
+          const uint32_t our_tail_block_num = _delegate->get_tail_block_num();
+          if (originating_peer->last_known_block_number &&
+              peer_needs_blocks_we_pruned(*originating_peer->last_known_block_number, our_tail_block_num))
+          {
+            // We can't help the peer sync, so don't take one of its connection slots.  Unlike a disconnect
+            // after the handshake, a rejection still lets it ask us for addresses and makes it wait before
+            // dialing us again. No reason code fits and none is needed (any rejection but a duplicate
+            // connection counts as a failed attempt), so the explanation is only in the text.
+            std::ostringstream rejection_message;
+            rejection_message << "I can't help you sync: blocks older than #" << our_tail_block_num
+                              << " have been pruned on this node and you are at block #" << *originating_peer->last_known_block_number;
+            originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
+            send_connection_rejected_message(originating_peer,
+                                             originating_peer->get_socket().remote_endpoint(),
+                                             rejection_reason_code::unspecified,
+                                             rejection_message.str());
+            ilog("Received a hello_message from peer ${peer} at block #${peer_block}, but blocks older than #${tail} have been pruned on this node, rejection",
+                 ("peer", originating_peer->get_remote_endpoint())
+                 ("peer_block", *originating_peer->last_known_block_number)
+                 ("tail", our_tail_block_num));
+          }
+          else if (!is_accepting_new_connections())
           {
             originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
             send_connection_rejected_message(originating_peer,
@@ -2888,6 +2915,17 @@ namespace graphene { namespace net {
         peers_last_item_seen.item_hash = peers_last_item_hash_seen;
       }
 
+      // If we prune our block log, a peer that needs blocks older than our tail can't sync from us.
+      // Without this check it would find none of its blocks here and get an empty reply below, making
+      // both sides treat each other as in sync.
+      const uint32_t peers_head_block_num = get_block_number(peers_last_item_seen.item_hash);
+      const uint32_t our_tail_block_num = _delegate->get_tail_block_num();
+      if (peer_needs_blocks_we_pruned(peers_head_block_num, our_tail_block_num))
+      {
+        disconnect_from_peer_needing_pruned_blocks(originating_peer, peers_head_block_num, our_tail_block_num);
+        return;
+      }
+
       blockchain_item_ids_inventory_message reply_message;
       reply_message.item_type = fetch_blockchain_item_ids_message_received.item_type;
       reply_message.total_remaining_item_count = 0;
@@ -2904,6 +2942,13 @@ namespace graphene { namespace net {
         // we reply with an empty list as if we had an empty blockchain;
         // we don't want to disconnect because they may be able to provide
         // us with blocks on their chain
+      }
+      catch (const peer_needs_pruned_blocks&)
+      {
+        // the check above lets through peers within GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS of our tail, which
+        // still can't be sent ids of blocks we no longer have (e.g. a peer with no blocks on a young chain)
+        disconnect_from_peer_needing_pruned_blocks(originating_peer, peers_head_block_num, _delegate->get_tail_block_num());
+        return;
       }
 
       bool disconnect_from_inhibited_peer = false;
@@ -3541,6 +3586,19 @@ namespace graphene { namespace net {
 
       // expire old inventory so we'll be making decisions our about whether to fetch blocks below based only on recent inventory
       originating_peer->clear_old_inventory();
+
+      // Peers don't advertise items to a node they are syncing, but one that can't serve our sync (e.g. a node
+      // that pruned the blocks we need) treats us as in sync and does. Until we catch up we can't use current
+      // transactions anyway: their TaPoS refers to blocks we don't have yet. Fast-confirm transactions skip
+      // TaPoS, so they would even be accepted and record approvals of blocks far ahead of our head, which keeps
+      // our last irreversible block from advancing until we reach those blocks.
+      if (item_ids_inventory_message_received.item_type == trx_message_type && !_delegate->is_at_live_sync())
+      {
+        dlog("ignoring inventory of ${count} transactions from peer ${endpoint}: we are not at live sync",
+             ("count", item_ids_inventory_message_received.item_hashes_available.size())
+             ("endpoint", originating_peer->get_remote_endpoint()));
+        return;
+      }
 
       dlog("received inventory of ${count} items from peer ${endpoint}",
            ("count", item_ids_inventory_message_received.item_hashes_available.size())("endpoint", originating_peer->get_remote_endpoint()));
@@ -6226,6 +6284,22 @@ namespace graphene { namespace net {
       // peer_to_disconnect->close_connection();
     }
 
+    void node_impl::disconnect_from_peer_needing_pruned_blocks(peer_connection* peer, uint32_t peers_head_block_num,
+                                                               uint32_t our_tail_block_num)
+    {
+      VERIFY_CORRECT_THREAD();
+      ilog("Disconnecting peer ${peer} at block #${peer_block}: it needs blocks older than #${tail}, which have been pruned on this node",
+           ("peer", peer->get_remote_endpoint())("peer_block", peers_head_block_num)("tail", our_tail_block_num));
+      std::ostringstream reason;
+      reason << "I can't help you sync: blocks older than #" << our_tail_block_num << " have been pruned on this node";
+      fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You need blocks older than #${tail}, which have been pruned on this node "
+                                                  "(your newest block is #${peer_block})",
+                                                  ("tail", our_tail_block_num)("peer_block", peers_head_block_num)));
+      // reported as caused by an error: that is what makes the peer, whatever its version, record the
+      // failure and try its other peers before coming back to us
+      disconnect_from_peer(peer, reason.str(), true, detailed_error);
+    }
+
     void node_impl::listen_on_endpoint( const fc::ip::endpoint& ep, bool wait_if_not_available )
     {
       VERIFY_CORRECT_THREAD();
@@ -6974,6 +7048,16 @@ namespace graphene { namespace net {
       INVOKE_AND_COLLECT_STATISTICS(get_last_irreversible_block_num);
     }
 
+    uint32_t statistics_gathering_node_delegate_wrapper::get_tail_block_num() const
+    {
+      INVOKE_AND_COLLECT_STATISTICS(get_tail_block_num);
+    }
+
+    bool statistics_gathering_node_delegate_wrapper::is_at_live_sync()
+    {
+      INVOKE_AND_COLLECT_STATISTICS(is_at_live_sync);
+    }
+
     uint32_t statistics_gathering_node_delegate_wrapper::estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const
     {
       INVOKE_AND_COLLECT_STATISTICS(estimate_last_known_fork_from_git_revision_timestamp, unix_timestamp);
@@ -7002,6 +7086,11 @@ namespace graphene { namespace net {
   {
     return reason_code != rejection_reason_code::already_connected &&
            reason_code != rejection_reason_code::connected_to_self;
+  }
+
+  bool peer_needs_blocks_we_pruned(uint32_t peers_head_block_num, uint32_t our_tail_block_num)
+  {
+    return uint64_t(peers_head_block_num) + GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS < our_tail_block_num;
   }
 
   peer_connection_ptr find_unclosed_connection_to_endpoint(const fc::ip::endpoint& remote_endpoint,

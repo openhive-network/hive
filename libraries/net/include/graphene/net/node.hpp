@@ -192,6 +192,15 @@ namespace graphene { namespace net {
           * that are not on our chain can never become part of it */
          virtual uint32_t get_last_irreversible_block_num() const = 0;
 
+         /** returns the number of the oldest block we can provide to peers; it is 1 unless older
+          * blocks have been pruned from our block log */
+         virtual uint32_t get_tail_block_num() const = 0;
+
+         /** returns true when our head block is recent enough to consider us in live sync rather
+          * than catching up with the network. It is evaluated on every call, so unlike the
+          * chain's own switch to live mode it becomes false again when we fall behind */
+         virtual bool is_at_live_sync() = 0;
+
          virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const = 0;
 
          virtual void error_encountered(const std::string& message, const fc::oexception& error) = 0;
@@ -369,6 +378,14 @@ namespace graphene { namespace net {
    * was merely redundant.
    */
   bool rejection_is_failure(rejection_reason_code reason_code);
+
+  /**
+   * Whether a peer whose newest block is @p peers_head_block_num needs blocks older than our tail
+   * block @p our_tail_block_num (1 unless we prune our block log), so that we can't help it sync.
+   * A peer lagging behind our tail by at most GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS blocks is still
+   * served: it catches up through normal block propagation.
+   */
+  bool peer_needs_blocks_we_pruned(uint32_t peers_head_block_num, uint32_t our_tail_block_num);
 
   /**
    * The connection to @p remote_endpoint that has not finished closing, or null if there is none.

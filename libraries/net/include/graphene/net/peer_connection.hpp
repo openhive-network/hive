@@ -215,6 +215,8 @@ namespace graphene { namespace net
       fc::optional<uint32_t> bitness;
       fc::optional<hive::protocol::chain_id_type> chain_id;
       fc::optional<uint8_t> last_available_zstd_compression_dictionary_number;
+      /// head block number the peer reported in its hello
+      fc::optional<uint32_t> last_known_block_number;
 
       // for inbound connections, these fields record what the peer sent us in
       // its hello message.  For outbound, they record what we sent the peer

@@ -88,6 +88,8 @@ public:
   virtual fc::time_point_sec get_blockchain_now() override;
   virtual graphene::net::item_hash_t get_head_block_id() const override;
   virtual uint32_t get_last_irreversible_block_num() const override;
+  virtual uint32_t get_tail_block_num() const override;
+  virtual bool is_at_live_sync() override;
   virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp( uint32_t ) const override;
   virtual void error_encountered( const std::string& message, const fc::oexception& error ) override;
   virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -249,6 +251,10 @@ std::vector<graphene::net::item_hash_t> p2p_plugin_impl::get_block_ids(const std
   {
     FC_THROW_EXCEPTION(graphene::net::peer_is_on_an_unreachable_fork, "Unable to provide a list of blocks starting at any of the blocks in peer's synopsis");
   }
+  catch (const hive::chain::internal_peer_needs_pruned_blocks&)
+  {
+    FC_THROW_EXCEPTION(graphene::net::peer_needs_pruned_blocks, "Unable to provide a list of blocks the peer needs, they have been pruned");
+  }
 } FC_CAPTURE_AND_RETHROW((blockchain_synopsis)(remaining_item_count)(limit)) }
 
 std::shared_ptr<chain::full_block_type> p2p_plugin_impl::get_full_block(const block_id_type& id)
@@ -316,6 +322,20 @@ graphene::net::item_hash_t p2p_plugin_impl::get_head_block_id() const
 uint32_t p2p_plugin_impl::get_last_irreversible_block_num() const
 { try {
   return chain.db().get_last_irreversible_block_num();
+} FC_CAPTURE_AND_RETHROW() }
+
+uint32_t p2p_plugin_impl::get_tail_block_num() const
+{ try {
+  return chain.block_reader().get_tail_block_num();
+} FC_CAPTURE_AND_RETHROW() }
+
+bool p2p_plugin_impl::is_at_live_sync()
+{ try {
+  // same criterion chain plugin uses to switch to live mode (it honors --force-live-sync too),
+  // but checked every time instead of once
+  std::shared_ptr<hive::chain::full_block_type> head_block = chain.block_reader().head_block();
+  fc::time_point_sec head_block_time = head_block ? head_block->get_block_header().timestamp : fc::time_point_sec::min();
+  return chain.get_time_gap_to_live_sync( head_block_time ).count() < 0;
 } FC_CAPTURE_AND_RETHROW() }
 
 // Runs on the p2p thread as a long-lived task while any seed string from the configuration is

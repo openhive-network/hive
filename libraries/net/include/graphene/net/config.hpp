@@ -48,6 +48,15 @@
 // generous clock skew and momentary head lag while rejecting fabricated far-future ids
 #define GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS                 20
 
+// how far a peer's head may lag behind the oldest block we still have (our tail block, above 1
+// only when we prune our block log) and still be treated as a peer we can serve.  A node that
+// keeps no block log (block-log-split = 0) has its last irreversible block as the tail, and with
+// one-block irreversibility that is its head block or close to it, so peers in live sync are
+// often momentarily behind it; they get the missing blocks through normal block propagation.
+// Peers further behind are rejected at the handshake or disconnected with an explanation,
+// instead of being sent block ids we don't have
+#define GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS                      20
+
 // if the invalid-block disconnect breaker has been keeping peers whose blocks we rejected,
 // but our head hasn't advanced for this long, the breaker's systemic-blip assumption is
 // falsified -- those peers may be all that's occupying our slots while none of them can

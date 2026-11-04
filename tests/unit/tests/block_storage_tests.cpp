@@ -4,6 +4,7 @@
 #include <hive/chain/block_log.hpp>
 #include <hive/chain/block_log_wrapper.hpp>
 #include <hive/chain/block_storage_interface.hpp>
+#include <hive/chain/database_exceptions.hpp>
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 #include <hive/plugins/block_api/block_api.hpp>
 
@@ -1701,6 +1702,99 @@ BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_true_recreates_missing_artifa
 
       log.close();
     }
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+/// Generates @p count blocks and returns the ids of all blocks by block number; once pruned, they
+/// can't be read.
+std::map<uint32_t, block_id_type> generate_blocks_remembering_ids( hived_fixture& fixture, uint32_t count )
+{
+  std::map<uint32_t, block_id_type> ids;
+  for( uint32_t block_num = 1; block_num <= fixture.db->head_block_num(); ++block_num )
+    ids[ block_num ] = fixture.get_block_reader().find_block_id_for_num( block_num );
+  for( uint32_t i = 0; i < count; ++i )
+  {
+    fixture.generate_block();
+    ids[ fixture.db->head_block_num() ] = fixture.db->head_block_id();
+  }
+  return ids;
+}
+
+/// Requires @p list to be the ids of all blocks from @p first_block_num up to the head block.
+void require_ids_up_to_head( const std::vector<block_id_type>& list, uint32_t first_block_num,
+                             const std::map<uint32_t, block_id_type>& ids, uint32_t head_block_num )
+{
+  BOOST_REQUIRE_EQUAL( list.size(), head_block_num - first_block_num + 1 );
+  for( uint32_t i = 0; i < list.size(); ++i )
+  {
+    BOOST_REQUIRE_EQUAL( hive::protocol::block_header::num_from_id( list[i] ), first_block_num + i );
+    BOOST_REQUIRE( list[i] == ids.at( first_block_num + i ) );
+  }
+}
+
+BOOST_AUTO_TEST_CASE( get_block_ids_with_pruned_block_log )
+{
+  try {
+    ilog( "Testing that the list of block ids for a peer never contains blocks that were pruned." );
+
+    // Split 1 keeps only the part before the head part, so the 1st and 2nd parts are gone by now.
+    const uint32_t block_count = 3 * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE + 50;
+    const uint32_t limit = 10000;
+
+    for( int block_log_split : { LEGACY_SINGLE_FILE_BLOCK_LOG, 1, 0 } )
+    {
+      ilog( "block-log-split = ${block_log_split}", (block_log_split) );
+      hived_fixture fixture( true /*remove blockchain*/ );
+      INIT_FIXTURE_1( "block-log-split", std::to_string( block_log_split ) );
+
+      const std::map<uint32_t, block_id_type> ids = generate_blocks_remembering_ids( fixture, block_count );
+      const uint32_t head_block_num = fixture.db->head_block_num();
+      const uint32_t lib = fixture.db->get_last_irreversible_block_num();
+      const block_read_i& block_reader = fixture.get_block_reader();
+      const uint32_t tail = block_reader.get_tail_block_num();
+
+      if( block_log_split == LEGACY_SINGLE_FILE_BLOCK_LOG )
+      {
+        BOOST_REQUIRE_EQUAL( tail, 1u );
+      }
+      else
+      {
+        if( block_log_split == 0 ) // only the last irreversible block is kept
+          BOOST_REQUIRE_EQUAL( tail, lib );
+        else // first block of the part before the one holding last irreversible block
+          BOOST_REQUIRE_EQUAL( tail, ( ( lib - 1 ) / BLOCKS_IN_SPLIT_BLOCK_LOG_FILE - 1 ) * BLOCKS_IN_SPLIT_BLOCK_LOG_FILE + 1 );
+        BOOST_REQUIRE( block_reader.get_block_by_number( tail ) );
+        BOOST_REQUIRE_THROW( block_reader.get_block_by_number( tail - 1 ), fc::assert_exception );
+      }
+
+      uint32_t remaining_item_count = 0;
+      // A peer without blocks needs the chain from block 1, which only a full block log has.
+      if( tail == 1 )
+      {
+        require_ids_up_to_head( block_reader.get_block_ids( {}, remaining_item_count, limit ), 1, ids, head_block_num );
+        BOOST_REQUIRE_EQUAL( remaining_item_count, 0u );
+      }
+      else
+      {
+        BOOST_REQUIRE_THROW( block_reader.get_block_ids( {}, remaining_item_count, limit ), internal_peer_needs_pruned_blocks );
+        // old nodes send a synopsis containing the empty id instead of an empty one
+        BOOST_REQUIRE_THROW( block_reader.get_block_ids( { block_id_type() }, remaining_item_count, limit ),
+                             internal_peer_needs_pruned_blocks );
+        // A peer whose blocks are all pruned here can't be told apart from one on another fork;
+        // the p2p layer compares block numbers to decide (peer_needs_blocks_we_pruned).
+        BOOST_REQUIRE_THROW( block_reader.get_block_ids( { ids.at( tail / 2 ) }, remaining_item_count, limit ),
+                             internal_peer_is_on_an_unreachable_fork );
+      }
+
+      // A peer that has the tail block can be served.
+      require_ids_up_to_head( block_reader.get_block_ids( { ids.at( tail ) }, remaining_item_count, limit ), tail,
+                              ids, head_block_num );
+      BOOST_REQUIRE_EQUAL( remaining_item_count, 0u );
+    }
+
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;

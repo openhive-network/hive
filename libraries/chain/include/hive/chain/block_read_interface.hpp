@@ -56,6 +56,8 @@ namespace hive { namespace chain {
       const std::deque<block_id_type>& item_hashes_received ) const = 0;
     /// Check among reversible blocks on main branch then among irreversible.
     virtual block_id_type find_block_id_for_num( uint32_t block_num ) const = 0;
+    /// Number of the oldest block available; it is 1 unless older blocks have been pruned.
+    virtual uint32_t get_tail_block_num() const = 0;
     /** Needed by p2p plugin only.
      *  See implementations of database::get_blockchain_synopsis & fork_database::get_blockchain_synopsis
     */
@@ -65,6 +67,8 @@ namespace hive { namespace chain {
     /** used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and
      *  generates a sequential list of block ids that builds off of the last item in the synopsis
      *  that we have in common
+     *  @throws internal_peer_needs_pruned_blocks when the list would have to start below the tail
+     *  block (see get_tail_block_num)
      */
     virtual std::vector<block_id_type> get_block_ids(
       const std::vector<block_id_type>& blockchain_synopsis,
