@@ -11,6 +11,7 @@
 #
 # The build_wheel.env artifact is always created with the resolved version.
 # When the version exists in the registry, the build is skipped.
+# In CI (CI set) a version marked dirty - tracked files modified in the work tree - fails the job.
 #
 # Usage:
 #   ./hiveio_api_package.sh [options]
@@ -247,6 +248,23 @@ get_package_version() {
     poetry version -s
 }
 
+# Prints the work tree status the version is derived from (a modified tracked file marks it dirty).
+log_work_tree_status() {
+    log_info "Work tree status (git status --porcelain):"
+    git -C "${GENERATED_PACKAGE_DIR}" status --porcelain
+}
+
+# Fails in CI when the version is marked dirty: a published version must not claim modified sources.
+# Arguments: $1 - version string to check
+fail_on_dirty_version_in_ci() {
+    local version="$1"
+    if [[ -n "${CI:-}" && "${version}" == *dirty* ]]; then
+        log_error "Version ${version} of ${PACKAGE_NAME} is dirty: tracked files were modified in the CI work tree."
+        git -C "${GENERATED_PACKAGE_DIR}" status --porcelain --untracked-files=no
+        exit 1
+    fi
+}
+
 # ==============================================================================
 # Registry Operations
 # ==============================================================================
@@ -327,7 +345,11 @@ build_wheel() {
     log_info "Validating poetry.lock consistency..."
     poetry check --lock
 
-    poetry version
+    log_work_tree_status
+    local version
+    version=$(poetry version -s)
+    log_info "Building version: ${version}"
+    fail_on_dirty_version_in_ci "${version}"
     poetry build --format wheel
 
     verify_wheel_exists "built"
@@ -471,7 +493,9 @@ main() {
     # Step 1: Get version (before generation - only needs git state + pyproject.toml)
     local version
     version=$(get_package_version)
+    log_work_tree_status
     log_info "Package version: ${version}"
+    fail_on_dirty_version_in_ci "${version}"
 
     # Step 2: Try to use existing package from registry (skip the build)
     if try_download_existing_package "${version}"; then

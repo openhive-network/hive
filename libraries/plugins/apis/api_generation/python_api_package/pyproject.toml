@@ -37,6 +37,9 @@ msgspec = "^0.20.0"  # validation (hiveio_api.validation, validation models) - i
 [tool.poetry-dynamic-versioning]
 enable = true
 pattern = "default-unprefixed"
+# only changes of tracked files mark the version dirty: CI jobs write untracked files into the work tree (job
+# artifacts, pip constraints, project Poetry plugins in .poetry/) of a clean checkout
+ignore-untracked = true
 # PEP 440 compliant versioning
 # https://peps.python.org/pep-0440/
 #
@@ -53,7 +56,7 @@ pattern = "default-unprefixed"
 #   - distance=0           -> exact tag version
 #   - distance>0, stable   -> tag + .post{timestamp} (post-release, after tag)
 #   - distance>0, unstable -> tag + .dev{timestamp} (pre-release, before tag)
-#   - dirty                -> + 'dirty' marker
+#   - dirty                -> + 'dirty' marker (modified tracked files; untracked files are ignored)
 #
 # Stability detection:
 #   - stable: develop/master/main branches OR tag checkout (detached HEAD with distance=0)
