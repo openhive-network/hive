@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import sys
 import typing
 import warnings
+from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
 import pytest
@@ -28,7 +30,6 @@ from hiveio_api.fields.validation import AssetHbd, LegacyAssetHive  # noqa: E402
 from hiveio_api.validation import validate  # noqa: E402
 
 if TYPE_CHECKING:
-    from pathlib import Path
     from types import ModuleType
 
 ACCOUNT: Final[dict[str, str]] = {"type": "string", "x-hive-type": "AccountName"}
@@ -471,6 +472,28 @@ def test_transactions_are_validated_in_their_form(
 
     # ASSERT
     assert [error.path for error in errors] == paths, errors
+
+
+def test_validation_models_are_reexported_by_the_public_module(modules: tuple[ModuleType, ModuleType]) -> None:
+    # ARRANGE
+    _, validation = modules
+    assert validation.__file__ is not None
+    public_module = Path(validation.__file__).parents[1] / "validation" / "operations.py"
+
+    # ACT
+    tree = ast.parse(public_module.read_text())
+    imports = [node for node in tree.body if isinstance(node, ast.ImportFrom) and node.module != "__future__"]
+    exported = next(
+        ast.literal_eval(node.value)
+        for node in tree.body
+        if isinstance(node, ast.Assign) and any(getattr(target, "id", None) == "__all__" for target in node.targets)
+    )
+
+    # ASSERT - the models themselves (the same objects), not copies
+    assert [(node.module, sorted(alias.name for alias in node.names)) for node in imports] == [
+        ("hiveio_api._validation.operations", sorted(validation.__all__))
+    ]
+    assert sorted(exported) == sorted(validation.__all__)
 
 
 def test_unions_of_operation_values(modules: tuple[ModuleType, ModuleType]) -> None:
