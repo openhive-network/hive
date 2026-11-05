@@ -37,7 +37,6 @@ def _value_builder(annotation: type[T]) -> Callable[[object], T]:
 def _validating_type_to_builtins(value: object) -> object:
     """Builtins of values `json` can not serialize - validating Hive types of `hiveio_api.fields` (msgspec models)."""
     import msgspec
-
     from hiveio_api.validation.encoders import enc_hook_hf26
 
     return msgspec.to_builtins(value, enc_hook=enc_hook_hf26)
