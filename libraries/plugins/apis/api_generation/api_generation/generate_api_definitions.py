@@ -18,7 +18,7 @@ from api_generation.undeclared_dates import check_no_undeclared_dates
 from jinja2 import Environment, FileSystemLoader
 
 if TYPE_CHECKING:
-    from api_client_generator._private.common.models_aliased import ApiDescription
+    from api_client_generator.json_rpc import ApiDescription
 
 
 def exported_names(file_path: Path) -> list[str]:
