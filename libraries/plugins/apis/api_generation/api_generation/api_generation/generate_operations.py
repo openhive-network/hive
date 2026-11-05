@@ -753,7 +753,7 @@ def _package_code(module_of: dict[str, str]) -> str:
         "\n"
         "from typing import TYPE_CHECKING\n"
         "\n"
-        "from hiveio_api._utilities.smart_lazy_import import aggregate_same_import, lazy_module_factory\n"
+        "from hiveio_api_client._utilities.smart_lazy_import import aggregate_same_import, lazy_module_factory\n"
         "\n"
         "if TYPE_CHECKING:\n"
         f"{type_checking}"

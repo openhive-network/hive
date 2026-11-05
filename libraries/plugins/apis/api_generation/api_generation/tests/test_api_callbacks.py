@@ -9,14 +9,22 @@ from tests.generated_package import require_generated_package
 
 require_generated_package()
 
-from hiveio_api._apis.abc.api import AbstractAsyncApi, AbstractSyncApi  # noqa: E402
-from hiveio_api._apis.abc.api_collection import AbstractAsyncApiCollection, AbstractSyncApiCollection  # noqa: E402
-from hiveio_api._apis.abc.sendable import AsyncSendable, SyncSendable  # noqa: E402
-from hiveio_api._communication.abc.communicator_models import AsyncCallbacks, Callbacks  # noqa: E402
-from hiveio_api._communication.jsonrpc import ExpectResultT, JSONRPCResult, build_response  # noqa: E402
+from hiveio_api.client import (  # noqa: E402
+    AbstractAsyncApi,
+    AbstractAsyncApiCollection,
+    AbstractSyncApi,
+    AbstractSyncApiCollection,
+    AsyncCallbacks,
+    AsyncSendable,
+    Callbacks,
+    ExpectResultT,
+    JSONRPCResult,
+    SyncSendable,
+    build_response,
+)
 
 if TYPE_CHECKING:
-    from hiveio_api._communication.abc.communicator_models import Request, RequestContext
+    from hiveio_api.client import Request, RequestContext
 
 
 def result(expected_type: type[ExpectResultT]) -> JSONRPCResult[ExpectResultT]:

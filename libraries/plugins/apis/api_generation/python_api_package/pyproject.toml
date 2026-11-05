@@ -32,7 +32,8 @@ poetry-dynamic-versioning = { version = "1.9.1", extras = ["plugin"] }
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4"
-msgspec = "^0.20.0"  # validation (hiveio_api.validation, validation models) - imported only when validating
+msgspec = "^0.20.0"  # validation (hiveio_api.validation, validation models), also used by hiveio-api-client
+hiveio-api-client = {version = ">=1.7.1.post20261105022902,<2", source = "gitlab-hive"}  # base classes of clients, re-exported by hiveio_api.client
 
 [tool.poetry-dynamic-versioning]
 enable = true

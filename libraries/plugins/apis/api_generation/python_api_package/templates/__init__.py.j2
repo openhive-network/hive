@@ -16,9 +16,12 @@ from __future__ import annotations
 import importlib
 from typing import TYPE_CHECKING, Final
 
+from hiveio_api_client import install_value_codec
+from hiveio_api_client._utilities.smart_lazy_import import smart_lazy_getattr
+
 from hiveio_api._errors import HiveioApiBaseError, UnknownEndpointError, UnsupportedTypeError
 from hiveio_api._schema_validation import register_validation_models, validate_json, validate_schema
-from hiveio_api._utilities.smart_lazy_import import smart_lazy_getattr
+from hiveio_api._value_codec import HIVE_VALUE_CODEC
 
 if TYPE_CHECKING:
     from hiveio_api._base import (
@@ -34,6 +37,9 @@ if TYPE_CHECKING:
     from hiveio_api.validation import SchemaError
 
 __version__ = "0.0.0"
+
+# values of API calls of all clients of hiveio-api-client (also the generated ones of hiveio_api) are Hive types
+install_value_codec(HIVE_VALUE_CODEC)
 
 APIS: Final[tuple[str, ...]] = (
 {% for api in apis %}    "{{ api.snake_case }}",

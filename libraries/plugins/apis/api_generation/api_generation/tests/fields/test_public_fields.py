@@ -101,21 +101,21 @@ def test_classes_are_of_the_package_not_of_its_private_modules(class_: type) -> 
     assert class_.__module__ == public.__name__
 
 
-def test_package_does_not_import_msgspec() -> None:
+def test_public_fields_do_not_load_validating_types() -> None:
     # ACT
     result = subprocess.run(
         [
             sys.executable,
             "-c",
             f"import sys; sys.path.insert(0, {str(PACKAGE_ROOT)!r}); import hiveio_api.fields.public; "
-            "print(sorted(m for m in sys.modules if m.startswith(('msgspec', 'hiveio_api.fields', 'hiveio_api.validation'))))",
+            "print(sorted(m for m in sys.modules if m.startswith(('hiveio_api.fields', 'hiveio_api.validation'))))",
         ],
         capture_output=True,
         text=True,
         check=True,
     )
 
-    # ASSERT
+    # ASSERT - msgspec itself is loaded by hiveio-api-client (the codec `import hiveio_api` installs), not by the fields
     assert result.stdout.strip() == (
         "['hiveio_api.fields', 'hiveio_api.fields.hive_constants', 'hiveio_api.fields.hive_datetime', "
         "'hiveio_api.fields.public', 'hiveio_api.fields.public._asset_info', 'hiveio_api.fields.public._assets', "

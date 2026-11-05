@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import pytest
 
@@ -10,9 +11,16 @@ from tests.generated_package import require_generated_package
 
 require_generated_package()
 
-from hiveio_api._apis.abc.api import AbstractSyncApi, ApiArgumentSerialization  # noqa: E402
-from hiveio_api._apis.abc.sendable import SyncSendable  # noqa: E402
-from hiveio_api._communication.jsonrpc import ExpectResultT, JSONRPCResult, build_response  # noqa: E402
+from hiveio_api.client import (  # noqa: E402
+    AbstractSyncApi,
+    ApiArgumentSerialization,
+    ExpectResultT,
+    JSONRPCResult,
+    SyncSendable,
+    build_response,
+)
+from hiveio_api.fields.json_string import JsonString  # noqa: E402
+from hiveio_api.fields.validation import AssetHive  # noqa: E402
 
 
 class Owner(SyncSendable):
@@ -81,6 +89,24 @@ def test_keyword_arguments_are_sent_as_object_with_keys_of_the_api() -> None:
     assert sent_params(owner) == {"from": "alice", "to": "bob", "amount": 1}
 
 
+def test_validating_hive_types_are_sent_in_their_json_form() -> None:
+    # ARRANGE - `json` serializes neither msgspec models (assets) nor `Serializable` types, the codec of hiveio_api does
+    owner = Owner()
+    memo = JsonString('{"app": "test"}')
+    amount: Any = {"asset": AssetHive(amount="1000", precision=3, nai="@@000000021"), "memo": memo}
+
+    # ACT
+    ObjectApi(owner).transfer(from_="alice", to="bob", amount=amount)
+
+    # ASSERT
+    assert sent_params(owner) == {
+        "from": "alice",
+        "to": "bob",
+        "amount": {"asset": {"amount": "1000", "precision": 3, "nai": "@@000000021"}, "memo": memo.serialize()},
+    }
+    assert json.loads(memo.serialize()) == {"app": "test"}
+
+
 @pytest.mark.parametrize(
     ("api", "params"),
     [
@@ -104,7 +130,7 @@ def test_api_of_object_serialization_rejects_positional_arguments() -> None:
     owner = Owner()
 
     # ACT & ASSERT
-    with pytest.raises(AssertionError, match="only keyword arguments"):
+    with pytest.raises(TypeError, match="only keyword arguments"):
         ObjectApi(owner).transfer("alice", to="bob", amount=1)  # type: ignore[call-arg]  # the call checked at runtime
     assert owner.data is None
 
@@ -114,6 +140,6 @@ def test_api_of_array_serialization_rejects_keyword_arguments() -> None:
     owner = Owner()
 
     # ACT & ASSERT
-    with pytest.raises(AssertionError, match="only positional arguments"):
+    with pytest.raises(TypeError, match="only positional arguments"):
         ArrayApi(owner).get_accounts(accounts=["alice"], delayed_votes_active=True)  # type: ignore[call-arg]  # as above
     assert owner.data is None

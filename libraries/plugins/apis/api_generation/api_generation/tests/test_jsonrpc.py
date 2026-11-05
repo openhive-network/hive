@@ -11,7 +11,7 @@ require_generated_package()
 
 from hiveio_api import UnsupportedTypeError  # noqa: E402
 from hiveio_api._base import HiveModel, value_builder  # noqa: E402
-from hiveio_api._communication.jsonrpc import JSONRPCError, JSONRPCRequest, JSONRPCResult, build_response  # noqa: E402
+from hiveio_api.client import JSONRPCError, JSONRPCRequest, JSONRPCResult, build_response  # noqa: E402
 from hiveio_api.fields.user_friendly import AccountName, Uint16t  # noqa: E402
 from hiveio_api.validation.model import PreconfiguredBaseModel  # noqa: E402
 

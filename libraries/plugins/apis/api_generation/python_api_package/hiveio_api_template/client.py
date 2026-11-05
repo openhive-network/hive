@@ -3,46 +3,47 @@ Infrastructure of API clients - base classes of APIs and API collections, their 
 `AsyncSendable`), callbacks of requests, requests and responses, JSON-RPC, URLs and builtins of parameters of API calls
 (`to_api_builtins`).
 
-The public interface for libraries building handles on top of the generated clients (e.g. beekeepy) - names are
-imported from their modules when used for the first time.
+The public interface for libraries building handles on top of the generated clients (e.g. beekeepy). The names are the
+objects of the runtime of generated clients, `hiveio_api_client` (not copies of them) - a handle implementing
+`AsyncSendable` of this module is an owner of clients generated against `hiveio_api_client` too, and vice versa. They are
+imported when used for the first time.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hiveio_api._utilities.smart_lazy_import import (
+from hiveio_api_client._utilities.smart_lazy_import import (
     aggregate_same_import,
     lazy_module_factory,
 )
 
 if TYPE_CHECKING:
-    from hiveio_api._apis.abc.api import (
+    from hiveio_api_client import (
         AbstractAsyncApi,
+        AbstractAsyncApiCollection,
         AbstractSyncApi,
+        AbstractSyncApiCollection,
+        AnyUrl,
         ApiArgumentSerialization,
         ApiArgumentsToSerialize,
-        HandleT,
-        RegisteredApisT,
-    )
-    from hiveio_api._apis.abc.api_collection import (
-        AbstractAsyncApiCollection,
-        AbstractSyncApiCollection,
-    )
-    from hiveio_api._apis.abc.sendable import (
-        AsyncSendable,
-        SyncSendable,
-    )
-    from hiveio_api._base import to_api_builtins
-    from hiveio_api._communication.abc.communicator_models import (
         AsyncCallback,
         AsyncCallbacks,
         AsyncErrorCallback,
         AsyncRequestCallback,
         AsyncResponseCallback,
+        AsyncSendable,
         Callbacks,
         ErrorCallback,
+        ExpectResultT,
+        HandleT,
+        HttpUrl,
+        JSONRPCError,
+        JSONRPCRequest,
+        JSONRPCResult,
         Methods,
+        P2PUrl,
+        RegisteredApisT,
         Request,
         RequestCallback,
         RequestContext,
@@ -50,20 +51,11 @@ if TYPE_CHECKING:
         Response,
         ResponseCallback,
         SyncCallback,
-    )
-    from hiveio_api._communication.jsonrpc import (
-        ExpectResultT,
-        JSONRPCError,
-        JSONRPCRequest,
-        JSONRPCResult,
-        build_response,
-    )
-    from hiveio_api._communication.url import (
-        AnyUrl,
-        HttpUrl,
-        P2PUrl,
+        SyncSendable,
         Url,
         WsUrl,
+        build_response,
+        to_api_builtins,
     )
 
 __all__ = [
@@ -109,33 +101,29 @@ __getattr__ = lazy_module_factory(
     globals(),
     *aggregate_same_import(
         "AbstractAsyncApi",
+        "AbstractAsyncApiCollection",
         "AbstractSyncApi",
+        "AbstractSyncApiCollection",
+        "AnyUrl",
         "ApiArgumentSerialization",
         "ApiArgumentsToSerialize",
-        "HandleT",
-        "RegisteredApisT",
-        module="hiveio_api._apis.abc.api",
-    ),
-    *aggregate_same_import(
-        "AbstractAsyncApiCollection",
-        "AbstractSyncApiCollection",
-        module="hiveio_api._apis.abc.api_collection",
-    ),
-    *aggregate_same_import(
-        "AsyncSendable",
-        "SyncSendable",
-        module="hiveio_api._apis.abc.sendable",
-    ),
-    ("hiveio_api._base", "to_api_builtins"),
-    *aggregate_same_import(
         "AsyncCallback",
         "AsyncCallbacks",
         "AsyncErrorCallback",
         "AsyncRequestCallback",
         "AsyncResponseCallback",
+        "AsyncSendable",
         "Callbacks",
         "ErrorCallback",
+        "ExpectResultT",
+        "HandleT",
+        "HttpUrl",
+        "JSONRPCError",
+        "JSONRPCRequest",
+        "JSONRPCResult",
         "Methods",
+        "P2PUrl",
+        "RegisteredApisT",
         "Request",
         "RequestCallback",
         "RequestContext",
@@ -143,22 +131,11 @@ __getattr__ = lazy_module_factory(
         "Response",
         "ResponseCallback",
         "SyncCallback",
-        module="hiveio_api._communication.abc.communicator_models",
-    ),
-    *aggregate_same_import(
-        "ExpectResultT",
-        "JSONRPCError",
-        "JSONRPCRequest",
-        "JSONRPCResult",
-        "build_response",
-        module="hiveio_api._communication.jsonrpc",
-    ),
-    *aggregate_same_import(
-        "AnyUrl",
-        "HttpUrl",
-        "P2PUrl",
+        "SyncSendable",
         "Url",
         "WsUrl",
-        module="hiveio_api._communication.url",
+        "build_response",
+        "to_api_builtins",
+        module="hiveio_api_client",
     ),
 )
