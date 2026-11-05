@@ -40,6 +40,7 @@
 #include <fc/io/stdio.hpp>
 #include <fc/network/http/server.hpp>
 #include <fc/network/http/websocket.hpp>
+#include <fc/network/url.hpp>
 #include <fc/rpc/cli.hpp>
 #include <fc/rpc/http_api.hpp>
 #include <fc/rpc/websocket_api.hpp>
@@ -87,6 +88,18 @@ namespace
   {
     exit_promise->set_value(signal);
   }
+
+  std::string get_prompt_server_suffix( bool offline, const std::string& ws_server )
+  {
+    if( offline )
+      return "@offline";
+
+    fc::url server_url( ws_server );
+    std::string suffix = "@" + ( server_url.host().valid() ? *server_url.host() : ws_server );
+    if( server_url.port().valid() )
+      suffix += ":" + std::to_string( *server_url.port() );
+    return suffix;
+  }
 }
 
 int main( int argc, char** argv )
@@ -119,6 +132,7 @@ int main( int argc, char** argv )
       ("output-formatter", bpo::value< std::string >(), "Allows to present a result in different ways. Possible values(none/text/json)" )
       ("transaction-serialization", bpo::value< std::string >()->default_value( "legacy" ), "Allows to generate JSON using legacy/HF26 format. Possible values(legacy/hf26). By default is `legacy`." )
       ("store-transaction", bpo::value< std::string >(), "Requires a name of file. Allows to save a serialized transaction into the file in a current directory. By default a name of file is empty." )
+      ("use-legacy-prompt", "Use the legacy prompt (e.g. `locked >>> `) that does not show the server the wallet is connected to" )
       ;
     vector<string> allowed_ips;
 
@@ -317,15 +331,17 @@ int main( int argc, char** argv )
     for( auto& name_formatter : wallet_formatter::get_result_formatters() )
       wallet_cli->format_result( name_formatter.first, name_formatter.second );
 
+    const std::string prompt_suffix = ( options.count("use-legacy-prompt") ? "" : get_prompt_server_suffix( wdata.offline, wdata.ws_server ) ) + " >>> ";
+
     if( wapiptr->is_new() )
     {
       std::cout << "Please use the set_password method to initialize a new wallet before continuing\n";
-      wallet_cli->set_prompt( "new >>> " );
+      wallet_cli->set_prompt( "new" + prompt_suffix );
     } else
-      wallet_cli->set_prompt( "locked >>> " );
+      wallet_cli->set_prompt( "locked" + prompt_suffix );
 
     boost::signals2::scoped_connection locked_connection(wapiptr->lock_changed.connect([&](bool locked) {
-      wallet_cli->set_prompt(  locked ? "locked >>> " : "unlocked >>> " );
+      wallet_cli->set_prompt( ( locked ? "locked" : "unlocked" ) + prompt_suffix );
     }));
 
     auto _websocket_server = std::make_shared<fc::http::websocket_server>();

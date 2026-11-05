@@ -2,8 +2,17 @@ from __future__ import annotations
 
 import re
 from subprocess import run as run_executable
+from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 import test_tools as tt
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+# With stdin not being a terminal, cli_wallet writes its prompt to stdout before reading each line.
+_PROMPT_COMMANDS = 'set_password "password"\nunlock "password"\nlock\n'
+_PROMPT_TIMEOUT_SECONDS = 60
 
 
 def test_help_option() -> None:
@@ -27,6 +36,7 @@ def test_help_option() -> None:
         "--transaction-serialization",
         "--store-transaction",
         "--retry-server-connection-delay",
+        "--use-legacy-prompt",
     ]
 
     cli_wallet_path = tt.paths_to_executables.get_path_of("cli_wallet")
@@ -44,11 +54,11 @@ def test_wallet_help_default_values() -> None:
     process = run_executable([cli_wallet_path, "--help"], capture_output=True)
     stdout = process.stdout.decode("utf-8")
     lines = stdout.split("\n")
-    default_values = {}
+    default_values: dict[str, str | None] = {}
     for line in lines:
-        parameter = re.match(r".*(--[\w-]+)", line)
-        if parameter is not None:
-            parameter = parameter[1]
+        parameter_match = re.match(r".*(--[\w-]+)", line)
+        if parameter_match is not None:
+            parameter = parameter_match[1]
         else:
             continue
 
@@ -73,3 +83,37 @@ def test_wallet_help_default_values() -> None:
     assert default_values["--output-formatter"] is None
     assert default_values["--transaction-serialization"] == "legacy"
     assert default_values["--store-transaction"] is None
+    assert default_values["--use-legacy-prompt"] is None
+
+
+def _prompts_of_session(tmp_path: Path, *arguments: str) -> list[str]:
+    cli_wallet_path = tt.paths_to_executables.get_path_of("cli_wallet")
+    process = run_executable(
+        [cli_wallet_path, "--wallet-file", str(tmp_path / "wallet.json"), *arguments],
+        input=_PROMPT_COMMANDS,
+        capture_output=True,
+        text=True,
+        timeout=_PROMPT_TIMEOUT_SECONDS,
+    )
+    return re.findall(r"(\S+ >>> )", process.stdout)
+
+
+def _expected_prompts(suffix: str) -> list[str]:
+    return [f"{state}{suffix} >>> " for state in ("new", "locked", "unlocked", "locked")]
+
+
+def test_prompt_shows_connected_server(node: tt.InitNode, tmp_path: Path) -> None:
+    server = node.ws_endpoint.as_string(with_protocol=True)
+    url = urlsplit(server)
+
+    prompts = _prompts_of_session(tmp_path, f"--server-rpc-endpoint={server}")
+
+    assert prompts == _expected_prompts(f"@{url.hostname}:{url.port}")
+
+
+def test_prompt_in_offline_mode(tmp_path: Path) -> None:
+    assert _prompts_of_session(tmp_path, "--offline") == _expected_prompts("@offline")
+
+
+def test_legacy_prompt(tmp_path: Path) -> None:
+    assert _prompts_of_session(tmp_path, "--offline", "--use-legacy-prompt") == _expected_prompts("")
