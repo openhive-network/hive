@@ -419,7 +419,10 @@ run_published_dependents_tests() {
     "${venv_dir}/bin/pip" install --quiet --force-reinstall --no-deps "${WHEEL_OUTPUT_DIR}"/*.whl
     "${venv_dir}/bin/pip" install --quiet --extra-index-url "${PUBLISHED_PACKAGES_INDEX_URL}" "${WHEEL_OUTPUT_DIR}"/*.whl
 
-    (cd / && "${venv_dir}/bin/python" - <<'PY'
+    # run outside the source tree, in a writable directory: importing test_tools creates `generated/` in the cwd
+    local work_dir
+    work_dir=$(mktemp -d)
+    (cd "${work_dir}" && "${venv_dir}/bin/python" - <<'PY'
 from __future__ import annotations
 
 import beekeepy
@@ -440,7 +443,7 @@ if errors:
     raise SystemExit("\n".join(errors))
 PY
     )
-    rm -rf "${venv_dir}"
+    rm -rf "${venv_dir}" "${work_dir}"
     log_success "Published dependents imported"
 }
 
