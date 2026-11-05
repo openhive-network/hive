@@ -9,7 +9,7 @@ from api_generation.common import APIS_WITH_LEGACY_ARGS_SERIALIZATION
 from api_generation.model_variants import VALIDATION
 
 CLIENT_BASE_CLASS: Final[str] = "AbstractAsyncApi"
-CLIENT_BASE_CLASS_SOURCE: Final[str] = "hiveio_api._apis.abc.api"
+CLIENT_BASE_CLASS_SOURCE: Final[str] = "hiveio_api_client"
 
 if TYPE_CHECKING:
     from types import ModuleType

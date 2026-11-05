@@ -131,6 +131,14 @@ hiveio-schemas):
 all problems with their paths); `PreconfiguredBaseModel` (`hiveio_api.validation.model`) is the base class of such
 models.
 
+### Infrastructure of clients
+
+Base classes of APIs, their owners (`AsyncSendable`, `SyncSendable`), callbacks, JSON-RPC and URLs come from the
+runtime of generated clients, hiveio-api-client (`hiveio_api_client`); `hiveio_api.client` exports the same objects
+under the same names. `import hiveio_api` installs its `ValueCodec` in hiveio-api-client, so parameters of all API calls
+of the process are sent with Hive types (public models, assets, validating field types) and results are built as public
+models.
+
 ### Running Examples
 
 Each API includes an example that can be run as a module:

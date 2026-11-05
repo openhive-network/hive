@@ -38,11 +38,11 @@ from typing import TYPE_CHECKING, Final, Literal, TypedDict
 from api_client_generator.hive_variants import HIVE_MODEL_METHODS
 from api_client_generator.model_options import ALIAS_METADATA_KEY
 from api_client_generator.tidy import tidy_with_ruff
+from hiveio_api.fields import public, validation
+from hiveio_api.fields.public import HBD_ASSET, HIVE_ASSET, VESTS_ASSET, Asset, asset_info_of_symbol
 
 from api_generation.common import pascal_case
 from api_generation.model_variants import PUBLIC, VALIDATION, ModelVariant
-from hiveio_api.fields import public, validation
-from hiveio_api.fields.public import HBD_ASSET, HIVE_ASSET, VESTS_ASSET, Asset, asset_info_of_symbol
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -409,7 +409,7 @@ class OperationsGenerator:
             "legacy_operation",
             f"def legacy_operation(value: {operation_base}) -> {LEGACY_UNION}:\n"
             '    """\n'
-            "    The operation of the legacy form with the given value - e.g. `(\"transfer\", transfer)`.\n"
+            '    The operation of the legacy form with the given value - e.g. `("transfer", transfer)`.\n'
             "\n"
             "    A value of the HF26 form of an operation with assets becomes the value of the legacy form (the assets keep\n"
             "    their amounts - they take the legacy form of the fields when serialized).\n"
@@ -726,7 +726,9 @@ def generate_operations(description_file: Path, openapi_file: Path, base_directo
 
 def _package_code(module_of: dict[str, str]) -> str:
     """The public package of operations - imports a module when one of its names is used for the first time."""
-    names_of = {module: sorted(name for name, of in module_of.items() if of == module) for module in set(module_of.values())}
+    names_of = {
+        module: sorted(name for name, of in module_of.items() if of == module) for module in set(module_of.values())
+    }
     type_checking = "".join(
         f"    from .{module} import (\n" + "".join(f"        {name},\n" for name in names) + "    )\n"
         for module, names in sorted(names_of.items())
@@ -753,7 +755,7 @@ def _package_code(module_of: dict[str, str]) -> str:
         "\n"
         "from typing import TYPE_CHECKING\n"
         "\n"
-        "from hiveio_api._utilities.smart_lazy_import import aggregate_same_import, lazy_module_factory\n"
+        "from hiveio_api_client._utilities.smart_lazy_import import aggregate_same_import, lazy_module_factory\n"
         "\n"
         "if TYPE_CHECKING:\n"
         f"{type_checking}"
