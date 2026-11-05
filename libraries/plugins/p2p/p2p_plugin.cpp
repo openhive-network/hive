@@ -286,6 +286,10 @@ std::vector< graphene::net::item_hash_t > p2p_plugin_impl::get_blockchain_synops
     // instead of letting a generic exception escape its handling
     FC_THROW_EXCEPTION(graphene::net::block_older_than_undo_history, "Unable to construct a blockchain synopsis for this peer; it is on a fork we cannot reconcile with");
   }
+  catch (const hive::chain::internal_synopsis_reference_point_pruned&)
+  {
+    FC_THROW_EXCEPTION(graphene::net::synopsis_reference_point_pruned, "Unable to construct a blockchain synopsis for this peer; the block it would start from has been pruned");
+  }
 } FC_CAPTURE_AND_RETHROW((reference_point)(number_of_blocks_after_reference_point)) }
 
 void p2p_plugin_impl::sync_status( uint32_t item_type, uint32_t item_count )
@@ -308,9 +312,10 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 {
   try
   {
-    std::shared_ptr<hive::chain::full_block_type> block = 
-      chain.block_reader().fetch_block_by_id(block_id);
-    return block ? block->get_block_header().timestamp : fc::time_point_sec::min();
+    // also known for recent blocks a fully pruned node no longer has
+    const fc::optional<fc::time_point_sec> block_time =
+      chain.block_reader().fetch_block_time_by_id(block_id);
+    return block_time ? *block_time : fc::time_point_sec::min();
   } FC_CAPTURE_AND_RETHROW((block_id))
 }
 

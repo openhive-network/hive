@@ -5,8 +5,11 @@
 #include <hive/chain/block_log_wrapper.hpp>
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/chain/recent_block_ids.hpp>
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 #include <hive/plugins/block_api/block_api.hpp>
+
+#include <fc/bitutil.hpp>
 
 #include "../db_fixture/hived_fixture.hpp"
 
@@ -1709,8 +1712,9 @@ BOOST_AUTO_TEST_CASE( allow_artifacts_regeneration_true_recreates_missing_artifa
 }
 
 /// Generates @p count blocks and returns the ids of all blocks by block number; once pruned, they
-/// can't be read.
-std::map<uint32_t, block_id_type> generate_blocks_remembering_ids( hived_fixture& fixture, uint32_t count )
+/// can't be read. Timestamps of the generated blocks are put in @p times.
+std::map<uint32_t, block_id_type> generate_blocks_remembering_ids( hived_fixture& fixture, uint32_t count,
+  std::map<uint32_t, fc::time_point_sec>& times )
 {
   std::map<uint32_t, block_id_type> ids;
   for( uint32_t block_num = 1; block_num <= fixture.db->head_block_num(); ++block_num )
@@ -1719,6 +1723,7 @@ std::map<uint32_t, block_id_type> generate_blocks_remembering_ids( hived_fixture
   {
     fixture.generate_block();
     ids[ fixture.db->head_block_num() ] = fixture.db->head_block_id();
+    times[ fixture.db->head_block_num() ] = fixture.db->head_block_time();
   }
   return ids;
 }
@@ -1750,7 +1755,8 @@ BOOST_AUTO_TEST_CASE( get_block_ids_with_pruned_block_log )
       hived_fixture fixture( true /*remove blockchain*/ );
       INIT_FIXTURE_1( "block-log-split", std::to_string( block_log_split ) );
 
-      const std::map<uint32_t, block_id_type> ids = generate_blocks_remembering_ids( fixture, block_count );
+      std::map<uint32_t, fc::time_point_sec> times;
+      const std::map<uint32_t, block_id_type> ids = generate_blocks_remembering_ids( fixture, block_count, times );
       const uint32_t head_block_num = fixture.db->head_block_num();
       const uint32_t lib = fixture.db->get_last_irreversible_block_num();
       const block_read_i& block_reader = fixture.get_block_reader();
@@ -1783,9 +1789,11 @@ BOOST_AUTO_TEST_CASE( get_block_ids_with_pruned_block_log )
         // old nodes send a synopsis containing the empty id instead of an empty one
         BOOST_REQUIRE_THROW( block_reader.get_block_ids( { block_id_type() }, remaining_item_count, limit ),
                              internal_peer_needs_pruned_blocks );
-        // A peer whose blocks are all pruned here can't be told apart from one on another fork;
-        // the p2p layer compares block numbers to decide (peer_needs_blocks_we_pruned).
+        // A peer whose newest blocks are older than our tail gets no list, as if it was on another
+        // fork; the p2p layer compares block numbers to decide (peer_needs_blocks_we_pruned).
         BOOST_REQUIRE_THROW( block_reader.get_block_ids( { ids.at( tail / 2 ) }, remaining_item_count, limit ),
+                             internal_peer_is_on_an_unreachable_fork );
+        BOOST_REQUIRE_THROW( block_reader.get_block_ids( { ids.at( tail - 2 ) }, remaining_item_count, limit ),
                              internal_peer_is_on_an_unreachable_fork );
       }
 
@@ -1793,8 +1801,99 @@ BOOST_AUTO_TEST_CASE( get_block_ids_with_pruned_block_log )
       require_ids_up_to_head( block_reader.get_block_ids( { ids.at( tail ) }, remaining_item_count, limit ), tail,
                               ids, head_block_num );
       BOOST_REQUIRE_EQUAL( remaining_item_count, 0u );
+
+      // p2p also needs timestamps of the blocks it knows a peer has (see p2p_plugin_impl::get_block_time)
+      BOOST_REQUIRE( block_reader.fetch_block_time_by_id( ids.at( head_block_num ) ) == times.at( head_block_num ) );
+      BOOST_REQUIRE( block_reader.fetch_block_time_by_id( ids.at( lib ) ) == times.at( lib ) );
+
+      // The synopsis we send a peer may have to start at an irreversible block. A block log has
+      // them all, a node keeping only the last irreversible block remembers ids and timestamps of
+      // recent ones.
+      const block_id_type old_block_id = ids.at( lib / 2 );
+      block_id_type block_id_on_other_fork = old_block_id;
+      block_id_on_other_fork._hash[4] ^= 1; // same block number
+      if( block_log_split == 1 ) // the part with that block is gone
+      {
+        BOOST_REQUIRE( !block_reader.is_known_block( old_block_id ) );
+        BOOST_REQUIRE( !block_reader.fetch_block_time_by_id( old_block_id ) );
+        BOOST_REQUIRE_THROW( block_reader.find_block_id_for_num( lib / 2 ), fc::key_not_found_exception );
+        BOOST_REQUIRE_THROW( block_reader.get_blockchain_synopsis( old_block_id, 0 ),
+                             internal_synopsis_reference_point_pruned );
+        BOOST_REQUIRE_THROW( block_reader.get_blockchain_synopsis( block_id_on_other_fork, 0 ),
+                             internal_synopsis_reference_point_pruned );
+        BOOST_REQUIRE_THROW( block_reader.get_block_ids( { ids.at( tail - 1 ) }, remaining_item_count, limit ),
+                             internal_peer_is_on_an_unreachable_fork );
+      }
+      else
+      {
+        BOOST_REQUIRE( block_reader.is_known_block( old_block_id ) );
+        BOOST_REQUIRE( !block_reader.is_known_block( block_id_on_other_fork ) );
+        BOOST_REQUIRE( block_reader.fetch_block_time_by_id( old_block_id ) == times.at( lib / 2 ) );
+        BOOST_REQUIRE( !block_reader.fetch_block_time_by_id( block_id_on_other_fork ) );
+        BOOST_REQUIRE( block_reader.find_block_id_for_num( lib / 2 ) == old_block_id );
+        const std::vector<block_id_type> synopsis = block_reader.get_blockchain_synopsis( old_block_id, 0 );
+        BOOST_REQUIRE_EQUAL( synopsis.size(), 1u );
+        BOOST_REQUIRE( synopsis.front() == old_block_id );
+        BOOST_REQUIRE_THROW( block_reader.get_blockchain_synopsis( block_id_on_other_fork, 0 ),
+                             internal_peer_is_on_an_unreachable_fork );
+      }
+      if( block_log_split == 0 )
+      {
+        // A peer one block behind our tail only needs blocks we have.
+        require_ids_up_to_head( block_reader.get_block_ids( { ids.at( tail - 1 ) }, remaining_item_count, limit ),
+                                tail - 1, ids, head_block_num );
+        BOOST_REQUIRE_EQUAL( remaining_item_count, 0u );
+      }
     }
 
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+BOOST_AUTO_TEST_CASE( recent_block_ids_keep_newest )
+{
+  try {
+    ilog( "Testing that only ids of the newest blocks are remembered." );
+
+    // the number of a block is in the first 4 bytes of its id (see block_header::num_from_id)
+    const auto make_id = []( uint32_t block_num )
+    {
+      block_id_type id;
+      id._hash[0] = fc::endian_reverse_u32( block_num );
+      id._hash[1] = 0x12345678;
+      return id;
+    };
+
+    const auto make_time = []( uint32_t block_num )
+    {
+      return fc::time_point_sec( HIVE_BLOCK_INTERVAL * block_num );
+    };
+
+    recent_block_ids recent( 4 );
+    BOOST_REQUIRE( !recent.find( 0 ) );
+    BOOST_REQUIRE( !recent.find( 1 ) );
+
+    for( uint32_t block_num = 1; block_num <= 6; ++block_num )
+      recent.remember( make_id( block_num ), make_time( block_num ) );
+    for( uint32_t block_num = 3; block_num <= 6; ++block_num )
+    {
+      const auto recent_block = recent.find( block_num );
+      BOOST_REQUIRE( recent_block );
+      BOOST_REQUIRE( recent_block->id == make_id( block_num ) );
+      BOOST_REQUIRE( recent_block->timestamp == make_time( block_num ) );
+    }
+    // overwritten by newer blocks
+    BOOST_REQUIRE( !recent.find( 1 ) );
+    BOOST_REQUIRE( !recent.find( 2 ) );
+    // not seen yet, although their places are taken
+    BOOST_REQUIRE( !recent.find( 7 ) );
+    BOOST_REQUIRE( !recent.find( 10 ) );
+    BOOST_REQUIRE( !recent.find( 0 ) );
+
+    recent.clear();
+    BOOST_REQUIRE( !recent.find( 6 ) );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;

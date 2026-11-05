@@ -3,6 +3,7 @@
 #include <hive/protocol/block.hpp>
 #include <hive/chain/full_block.hpp>
 
+#include <fc/optional.hpp>
 #include <fc/time.hpp>
 
 #include <deque>
@@ -34,6 +35,11 @@ namespace hive { namespace chain {
 
     /// Check among reversible blocks. If found none check among irreversible blocks.
     virtual std::shared_ptr<full_block_type> fetch_block_by_id( const block_id_type& id ) const = 0;
+    /** Needed by p2p plugin only.
+     *  Like fetch_block_by_id, but only the timestamp, which may still be known when the block
+     *  itself can't be read anymore (see is_known_block).
+    */
+    virtual fc::optional<fc::time_point_sec> fetch_block_time_by_id( const block_id_type& id ) const = 0;
 
     /** Check among reversible blocks. If found 1 return it, if found more return the one
      *  from main branch. If found none check among irreversible blocks.
@@ -60,6 +66,8 @@ namespace hive { namespace chain {
     virtual uint32_t get_tail_block_num() const = 0;
     /** Needed by p2p plugin only.
      *  See implementations of database::get_blockchain_synopsis & fork_database::get_blockchain_synopsis
+     *  @throws internal_synopsis_reference_point_pruned when the reference point is older than the
+     *  last irreversible block and its id is no longer known
     */
     virtual std::vector<block_id_type> get_blockchain_synopsis(
       const block_id_type& reference_point,
@@ -67,7 +75,7 @@ namespace hive { namespace chain {
     /** used by the p2p layer, get_block_ids takes a blockchain synopsis provided by a peer, and
      *  generates a sequential list of block ids that builds off of the last item in the synopsis
      *  that we have in common
-     *  @throws internal_peer_needs_pruned_blocks when the list would have to start below the tail
+     *  @throws internal_peer_needs_pruned_blocks when the peer would need blocks older than the tail
      *  block (see get_tail_block_num)
      */
     virtual std::vector<block_id_type> get_block_ids(

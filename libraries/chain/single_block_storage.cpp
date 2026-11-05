@@ -4,9 +4,16 @@
 
 namespace hive { namespace chain {
 
+namespace {
+  // While syncing, p2p asks about blocks a peer offered while we applied them from other peers,
+  // and about the last block it knows a peer has. Both trail the last irreversible block by at
+  // most a few thousand blocks, so that many blocks (1.5 MiB) leave plenty of margin.
+  constexpr uint32_t RECENT_BLOCK_IDS_CAPACITY = 0x10000;
+}
+
 single_block_storage::single_block_storage( appbase::application& app,
                                             blockchain_worker_thread_pool& thread_pool )
-  : _app( app ), _thread_pool( thread_pool )
+  : _app( app ), _thread_pool( thread_pool ), _recent_block_ids( RECENT_BLOCK_IDS_CAPACITY )
 {}
 
 void single_block_storage::open_and_init( const block_log_open_args& bl_open_args, bool read_only,
@@ -16,6 +23,13 @@ void single_block_storage::open_and_init( const block_log_open_args& bl_open_arg
 
   _open_args = bl_open_args;
   _db = db;
+
+  // Ids of blocks older than the one we start from are not needed: peers can only offer blocks
+  // that follow one we have.
+  _recent_block_ids.clear();
+  const auto lib = head_block();
+  if( lib )
+    _recent_block_ids.remember( lib->get_block_id(), lib->get_block_header().timestamp );
 }
 
 void single_block_storage::reopen_for_writing()
@@ -30,6 +44,7 @@ void single_block_storage::close_storage()
 
 void single_block_storage::append( const std::shared_ptr<full_block_type>& full_block, const bool is_at_live_sync )
 {
+  _recent_block_ids.remember( full_block->get_block_id(), full_block->get_block_header().timestamp );
   _db->set_last_irreversible_block_data( full_block );
 }
 
@@ -93,6 +108,19 @@ std::shared_ptr<full_block_type> single_block_storage::fetch_block_by_id(
   } FC_CAPTURE_AND_RETHROW()
 }
 
+fc::optional<fc::time_point_sec> single_block_storage::fetch_block_time_by_id(
+  const block_id_type& id ) const
+{
+  const auto lib = head_block();
+  if( lib && lib->get_block_id() == id )
+    return lib->get_block_header().timestamp;
+
+  const auto recent_block = _recent_block_ids.find( protocol::block_header::num_from_id( id ) );
+  if( recent_block && recent_block->id == id )
+    return recent_block->timestamp;
+  return fc::optional<fc::time_point_sec>();
+}
+
 std::shared_ptr<full_block_type> single_block_storage::get_block_by_number( uint32_t block_num,
   fc::microseconds wait_for_microseconds ) const
 {
@@ -133,7 +161,11 @@ std::vector<std::shared_ptr<full_block_type>> single_block_storage::fetch_block_
 bool single_block_storage::is_known_block(const block_id_type& id) const
 {
   const auto lib = head_block();
-  return lib && ( lib->get_block_id() == id );
+  if( lib && lib->get_block_id() == id )
+    return true;
+
+  const auto recent_block = _recent_block_ids.find( protocol::block_header::num_from_id( id ) );
+  return recent_block && recent_block->id == id;
 }
 
 std::deque<block_id_type>::const_iterator single_block_storage::find_first_item_not_in_blockchain(
@@ -147,11 +179,15 @@ std::deque<block_id_type>::const_iterator single_block_storage::find_first_item_
 block_id_type single_block_storage::find_block_id_for_num( uint32_t block_num ) const
 {
   const auto lib = head_block();
-  if( not lib || lib->get_block_num() != block_num )
+  if( lib && lib->get_block_num() == block_num )
+    return lib->get_block_id();
+
+  const auto recent_block = _recent_block_ids.find( block_num );
+  if( not recent_block )
     FC_THROW_EXCEPTION( fc::key_not_found_exception,
                         "block number ${block_num} not found", (block_num) );
 
-  return lib->get_block_id();
+  return recent_block->id;
 }
 
 uint32_t single_block_storage::get_tail_block_num() const
