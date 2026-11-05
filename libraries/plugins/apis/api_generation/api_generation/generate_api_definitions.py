@@ -18,7 +18,7 @@ from api_generation.undeclared_dates import check_no_undeclared_dates
 from jinja2 import Environment, FileSystemLoader
 
 if TYPE_CHECKING:
-    from api_client_generator._private.common.models_aliased import ApiDescription
+    from api_client_generator.json_rpc import ApiDescription
 
 
 def exported_names(file_path: Path) -> list[str]:
@@ -65,7 +65,7 @@ def load_symbol_from_file(file_path: Path, symbol_name: str) -> object:
     relative_path = file_path.relative_to(project_directory)
     module_name = ".".join(relative_path.with_suffix("").parts)
 
-    spec = importlib.util.spec_from_file_location(module_name, str(file_path))
+    spec: ModuleSpec = importlib.util.spec_from_file_location(module_name, str(file_path))
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)

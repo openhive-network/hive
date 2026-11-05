@@ -14,7 +14,7 @@ CLIENT_BASE_CLASS_SOURCE: Final[str] = "hiveio_api_client"
 if TYPE_CHECKING:
     from types import ModuleType
 
-    from api_client_generator._private.common.models_aliased import ApiDescription
+    from api_client_generator.json_rpc import ApiDescription
 
     from api_generation.common import AvailableApis
 
