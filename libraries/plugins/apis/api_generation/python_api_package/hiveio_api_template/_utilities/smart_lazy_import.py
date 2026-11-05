@@ -7,6 +7,10 @@ packages (beekeepy, test-tools, clive) working. Its names are the objects of `hi
 
 from __future__ import annotations
 
-from hiveio_api_client.lazy_import import aggregate_same_import, lazy_module_factory, smart_lazy_getattr
+from hiveio_api_client.lazy_import import (
+    aggregate_same_import,
+    lazy_module_factory,
+    smart_lazy_getattr,
+)
 
 __all__ = ["aggregate_same_import", "lazy_module_factory", "smart_lazy_getattr"]
