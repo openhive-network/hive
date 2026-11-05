@@ -413,7 +413,8 @@ run_published_dependents_tests() {
     venv_dir=$(mktemp -d)
     python3 -m venv "${venv_dir}"
 
-    "${venv_dir}/bin/pip" install --quiet --extra-index-url "${PUBLISHED_PACKAGES_INDEX_URL}" hiveio-test-tools hiveio-beekeepy
+    # test_tools resolves pytest's own modules (`_pytest.fixtures`) when imported, so pytest has to be installed too
+    "${venv_dir}/bin/pip" install --quiet --extra-index-url "${PUBLISHED_PACKAGES_INDEX_URL}" hiveio-test-tools hiveio-beekeepy pytest
     # the published dependents pin a released hiveio-api - replace it with the built wheel, then add its dependencies
     "${venv_dir}/bin/pip" install --quiet --force-reinstall --no-deps "${WHEEL_OUTPUT_DIR}"/*.whl
     "${venv_dir}/bin/pip" install --quiet --extra-index-url "${PUBLISHED_PACKAGES_INDEX_URL}" "${WHEEL_OUTPUT_DIR}"/*.whl
