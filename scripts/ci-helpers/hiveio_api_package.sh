@@ -68,6 +68,8 @@ WHEEL_OUTPUT_DIR=""
 # Package configuration
 PACKAGE_NAME="hiveio-api"
 PACKAGE_REGISTRY_PROJECT_ID=""
+# the group registry of hive packages (hiveio-api-client, hiveio-beekeepy, hiveio-test-tools, ...) - readable anonymously
+PUBLISHED_PACKAGES_INDEX_URL="https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
 
 # Script options
 OPT_SKIP_DEPLOY=""
@@ -399,6 +401,50 @@ if errors:
 PY
     )
     log_success "Wheel verified"
+
+    run_published_dependents_tests
+}
+
+# Installs the built wheel with the published hiveio-test-tools (and the hiveio-beekeepy it depends on) in a fresh
+# virtual environment and imports them - they import modules of hiveio_api kept only for them (deprecated aliases).
+run_published_dependents_tests() {
+    log_info "Importing published dependents of hiveio-api with the built wheel..."
+    local venv_dir
+    venv_dir=$(mktemp -d)
+    python3 -m venv "${venv_dir}"
+
+    # test_tools resolves pytest's own modules (`_pytest.fixtures`) when imported, so pytest has to be installed too
+    "${venv_dir}/bin/pip" install --quiet --extra-index-url "${PUBLISHED_PACKAGES_INDEX_URL}" hiveio-test-tools hiveio-beekeepy pytest
+    # the published dependents pin a released hiveio-api - replace it with the built wheel, then add its dependencies
+    "${venv_dir}/bin/pip" install --quiet --force-reinstall --no-deps "${WHEEL_OUTPUT_DIR}"/*.whl
+    "${venv_dir}/bin/pip" install --quiet --extra-index-url "${PUBLISHED_PACKAGES_INDEX_URL}" "${WHEEL_OUTPUT_DIR}"/*.whl
+
+    # run outside the source tree, in a writable directory: importing test_tools creates `generated/` in the cwd
+    local work_dir
+    work_dir=$(mktemp -d)
+    (cd "${work_dir}" && "${venv_dir}/bin/python" - <<'PY'
+from __future__ import annotations
+
+import beekeepy
+import hiveio_api
+import hiveio_api._utilities.smart_lazy_import as deprecated
+import hiveio_api_client.lazy_import
+import test_tools
+
+errors: list[str] = []
+if "site-packages" not in hiveio_api.__file__:
+    errors.append(f"hiveio_api imported from {hiveio_api.__file__}, not from the installed wheel")
+for name in ("aggregate_same_import", "lazy_module_factory", "smart_lazy_getattr"):
+    if getattr(deprecated, name) is not getattr(hiveio_api_client.lazy_import, name):
+        errors.append(f"hiveio_api._utilities.smart_lazy_import.{name} is not hiveio_api_client.lazy_import.{name}")
+print(f"Imported {beekeepy.__name__} and {test_tools.__name__}")
+
+if errors:
+    raise SystemExit("\n".join(errors))
+PY
+    )
+    rm -rf "${venv_dir}" "${work_dir}"
+    log_success "Published dependents imported"
 }
 
 # ==============================================================================
