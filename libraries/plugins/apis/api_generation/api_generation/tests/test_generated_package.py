@@ -219,8 +219,10 @@ def test_infrastructure_of_clients_is_the_runtime_package_imported_when_used() -
     script = (
         "import sys\n"
         f"sys.path.insert(0, {str(PACKAGE_ROOT)!r})\n"
+        "import hiveio_api\n"
+        "loaded = {name for name in sys.modules if name.startswith('hiveio_api_client.')}\n"
         "import hiveio_api.client as client\n"
-        "print(sorted(name for name in sys.modules if name.startswith(('hiveio_api_client._apis', 'hiveio_api_client._communication'))))\n"
+        "print(sorted({name for name in sys.modules if name.startswith('hiveio_api_client.')} - loaded))\n"
         "import hiveio_api_client\n"
         "print(sorted(name for name in client.__all__ if getattr(client, name) is not getattr(hiveio_api_client, name)))\n"
         "print(len(client.__all__))\n"
@@ -238,13 +240,15 @@ def test_infrastructure_of_clients_is_the_runtime_package_imported_when_used() -
 
 def test_package_holds_no_copy_of_the_runtime_of_clients() -> None:
     # ARRANGE
-    runtime_modules = ("_apis", "_communication", "_utilities")
+    runtime_modules = ("_apis", "_communication")
 
     # ACT
     copies = [name for name in runtime_modules if (PACKAGE_DIR / name).exists()]
+    utilities = sorted(path.name for path in (PACKAGE_DIR / "_utilities").glob("*.py"))
 
-    # ASSERT - hiveio-api-client owns them
+    # ASSERT - hiveio-api-client owns them, `_utilities` keeps only the deprecated alias of its lazy imports
     assert copies == []
+    assert utilities == ["__init__.py", "smart_lazy_import.py"]
 
 
 @pytest.mark.parametrize("endpoint", endpoints_with_examples())

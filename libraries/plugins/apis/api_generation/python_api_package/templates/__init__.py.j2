@@ -17,7 +17,7 @@ import importlib
 from typing import TYPE_CHECKING, Final
 
 from hiveio_api_client import install_value_codec
-from hiveio_api_client._utilities.smart_lazy_import import smart_lazy_getattr
+from hiveio_api_client.lazy_import import smart_lazy_getattr
 
 from hiveio_api._errors import HiveioApiBaseError, UnknownEndpointError, UnsupportedTypeError
 from hiveio_api._schema_validation import register_validation_models, validate_json, validate_schema
