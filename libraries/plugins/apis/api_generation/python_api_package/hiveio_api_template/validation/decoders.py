@@ -2,8 +2,9 @@
 Decoding of Hive types from JSON by msgspec (`dec_hook`).
 
 Hive types have a fixed JSON form - types of hand-written models unknown to msgspec (`HiveDateTime`, `JsonString`)
-decode themselves (`Serializable.deserialize`). Validation models need no hooks - their forms
-(`hiveio_api.fields.validation`) are checked by msgspec itself.
+decode themselves (`Serializable.deserialize`), URLs of hiveio-api-client (`HttpUrl`, `WsUrl`, `P2PUrl` - not
+`Serializable` since they moved out of hiveio_api) are built from their serialized form. Validation models need no
+hooks - their forms (`hiveio_api.fields.validation`) are checked by msgspec itself.
 """
 
 from __future__ import annotations
@@ -15,9 +16,9 @@ from pathlib import Path
 from typing import Any, Final, get_origin
 
 import msgspec
-from msgspec.json import Decoder
-
 from hiveio_api.fields.serializable import Serializable
+from hiveio_api_client import Url
+from msgspec.json import Decoder
 
 DecoderFactory = Callable[[type[msgspec.Struct]], Decoder[msgspec.Struct]]
 
@@ -27,12 +28,14 @@ _preparation_lock: Final = threading.Lock()
 
 
 def dec_hook_hf26(type_: type, obj: Any) -> Any:
-    """Decode a value of a type unknown to msgspec (`Serializable`, `Path`, `object`) - `dec_hook` of msgspec."""
+    """Decode a value of a type unknown to msgspec (`Serializable`, `Url`, `Path`, `object`) - `dec_hook` of msgspec."""
     cls: type = get_origin(type_) or type_  # generic types (e.g. `JsonString[object]`) are given with their parameters
     if cls is object:  # any value (e.g. an item of a free-form JSON array) is kept as it is
         return obj
     if issubclass(cls, Serializable):
         return cls.deserialize(obj)
+    if issubclass(cls, Url):
+        return cls(obj)
     if cls is Path:
         return Path(obj)
     raise NotImplementedError(f"Objects of type {type_} are not supported")
