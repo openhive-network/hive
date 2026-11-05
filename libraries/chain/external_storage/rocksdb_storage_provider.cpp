@@ -6,6 +6,8 @@
 #include <hive/chain/external_storage/utilities.hpp>
 #include <hive/chain/external_storage/types.hpp>
 
+#include <hive/chain/database_exceptions.hpp>
+
 #include <appbase/application.hpp>
 
 namespace hive { namespace chain {
@@ -111,7 +113,26 @@ void rocksdb_storage_provider::shutdownDb()
 void rocksdb_storage_provider::wipeDb()
 {
   ilog( "Destroy `${name}` RocksDB database", ("name", name) );
-  ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
+
+  // DestroyDB reports a missing directory as an error (it cannot create the LOCK file there),
+  // but there is nothing to wipe in that case.
+  if( !bfs::exists( _storagePath ) )
+  {
+    ilog( "`${name}` RocksDB database does not exist at location: ${p}, nothing to destroy.", ("name", name)( "p", _storagePath.string() ) );
+    return;
+  }
+
+  auto status = ::rocksdb::DestroyDB( _storagePath.string(), ::rocksdb::Options() );
+  if( !status.ok() )
+  {
+    elog( "RocksDB cannot destroy `${name}` database at location: `${p}'.\nReturned error: ${e}",
+      ("name", name)( "p", _storagePath.string() )( "e", status.ToString() ) );
+    // plugin_exception, because account history wipes and restores run from database signal
+    // handlers (HIVE_TRY_NOTIFY), which only let that exception type through to the caller.
+    HIVE_ASSERT( false, plugin_exception, "Destroying `${name}` RocksDB database at `${p}' failed: ${e}",
+      ("name", name)( "p", _storagePath.string() )( "e", status.ToString() ) );
+  }
+
   ilog( "`${name}` RocksDB database has been destroyed at location: ${p}.", ("name", name)( "p", _storagePath.string() ) );
 }
 
