@@ -180,6 +180,49 @@ def test_importing_the_package_does_not_load_models() -> None:
     assert result.stdout.splitlines() == ["[]", "Asset HiveDateTime to_builtins", "build hiveio_api.rc_api"]
 
 
+def test_validation_models_of_transactions_are_public_and_imported_when_used() -> None:
+    # ARRANGE
+    transaction = {
+        "ref_block_num": 1,
+        "ref_block_prefix": 2,
+        "expiration": "2026-01-01T00:00:00",
+        "operations": [
+            {
+                "type": "transfer_operation",
+                "value": {
+                    "from": "alice",
+                    "to": "bob",
+                    "amount": {"amount": "1", "precision": 3, "nai": "@@000000021"},
+                    "memo": "",
+                },
+            }
+        ],
+        "extensions": [],
+        "signatures": [],
+    }
+    script = (
+        "import json, sys\n"
+        f"sys.path.insert(0, {str(PACKAGE_ROOT)!r})\n"
+        "from hiveio_api.validation import SchemaError, validate\n"
+        "print(sorted(name for name in sys.modules if name.endswith('validation.operations')))\n"
+        "from hiveio_api.validation.operations import Transaction\n"
+        "from hiveio_api._validation import operations\n"
+        "print(Transaction is operations.Transaction)\n"
+        "transaction = json.loads(sys.argv[1])\n"
+        "print(validate(transaction, Transaction))\n"
+        "errors = validate({**transaction, 'ref_block_num': 'one'}, Transaction)\n"
+        "print([(type(error).__name__, error.path) for error in errors])\n"
+    )
+
+    # ACT
+    result = subprocess.run(
+        [sys.executable, "-c", script, json.dumps(transaction)], capture_output=True, text=True, check=True
+    )
+
+    # ASSERT - importing `hiveio_api.validation` loads no models of operations
+    assert result.stdout.splitlines() == ["[]", "True", "[]", "[('SchemaError', '$.ref_block_num')]"]
+
+
 def test_operations_are_made_from_their_values_in_both_forms() -> None:
     # ARRANGE
     from hiveio_api import Asset
