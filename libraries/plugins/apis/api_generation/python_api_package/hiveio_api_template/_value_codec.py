@@ -22,13 +22,13 @@ T = TypeVar("T")
 
 
 def _to_api_builtins(value: object, testnet: Callable[[], bool]) -> object:
-    from hiveio_api._base import to_api_builtins
+    from ._base import to_api_builtins
 
     return to_api_builtins(value, testnet=testnet)
 
 
 def _value_builder(annotation: type[T]) -> Callable[[object], T]:
-    from hiveio_api._base import value_builder
+    from ._base import value_builder
 
     builder: Callable[[object], T] = value_builder(annotation)
     return builder

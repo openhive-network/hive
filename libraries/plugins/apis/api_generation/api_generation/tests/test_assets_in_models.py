@@ -13,7 +13,7 @@ require_generated_package()
 
 import hiveio_api  # noqa: E402
 from hiveio_api import Asset, InvalidValueWarning  # noqa: E402
-from hiveio_api._base import HiveModel, build, to_api_builtins, to_builtins  # noqa: E402
+from hiveio_api import HiveModel, build, to_api_builtins, to_builtins  # noqa: E402
 from hiveio_api.client import AsyncSendable  # noqa: E402
 from hiveio_api.condenser_api import CondenserApi  # noqa: E402
 from hiveio_api.database_api import DatabaseApi  # noqa: E402

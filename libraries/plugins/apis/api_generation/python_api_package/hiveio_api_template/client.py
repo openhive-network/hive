@@ -11,12 +11,8 @@ imported when used for the first time.
 
 from __future__ import annotations
 
+import importlib
 from typing import TYPE_CHECKING
-
-from hiveio_api_client._utilities.smart_lazy_import import (
-    aggregate_same_import,
-    lazy_module_factory,
-)
 
 if TYPE_CHECKING:
     from hiveio_api_client import (
@@ -97,45 +93,7 @@ __all__ = [
     "to_api_builtins",
 ]
 
-__getattr__ = lazy_module_factory(
-    globals(),
-    *aggregate_same_import(
-        "AbstractAsyncApi",
-        "AbstractAsyncApiCollection",
-        "AbstractSyncApi",
-        "AbstractSyncApiCollection",
-        "AnyUrl",
-        "ApiArgumentSerialization",
-        "ApiArgumentsToSerialize",
-        "AsyncCallback",
-        "AsyncCallbacks",
-        "AsyncErrorCallback",
-        "AsyncRequestCallback",
-        "AsyncResponseCallback",
-        "AsyncSendable",
-        "Callbacks",
-        "ErrorCallback",
-        "ExpectResultT",
-        "HandleT",
-        "HttpUrl",
-        "JSONRPCError",
-        "JSONRPCRequest",
-        "JSONRPCResult",
-        "Methods",
-        "P2PUrl",
-        "RegisteredApisT",
-        "Request",
-        "RequestCallback",
-        "RequestContext",
-        "RequestTimings",
-        "Response",
-        "ResponseCallback",
-        "SyncCallback",
-        "SyncSendable",
-        "Url",
-        "WsUrl",
-        "build_response",
-        "to_api_builtins",
-        module="hiveio_api_client",
-    ),
-)
+def __getattr__(name: str) -> object:
+    if name in __all__:
+        return getattr(importlib.import_module("hiveio_api_client"), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
