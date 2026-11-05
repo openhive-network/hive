@@ -9,14 +9,14 @@ from tests.generated_package import require_generated_package
 
 require_generated_package()
 
-from hiveio_api._communication.abc.communicator_models import (  # noqa: E402
+from hiveio_api.client import (  # noqa: E402
+    HttpUrl,
+    JSONRPCRequest,
     Request,
     RequestContext,
     RequestTimings,
     Response,
 )
-from hiveio_api._communication.jsonrpc import JSONRPCRequest  # noqa: E402
-from hiveio_api._communication.url import HttpUrl  # noqa: E402
 
 URL = HttpUrl("http://127.0.0.1:8090")
 

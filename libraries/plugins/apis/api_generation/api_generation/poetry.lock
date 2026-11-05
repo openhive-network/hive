@@ -151,6 +151,25 @@ files = [
 ]
 
 [[package]]
+name = "hiveio-api-client"
+version = "1.7.1.post20261105022902"
+description = "Runtime of generated Hive API clients - base classes of APIs and an HTTP transport"
+optional = false
+python-versions = ">=3.12,<4"
+groups = ["main"]
+files = [
+    {file = "hiveio_api_client-1.7.1.post20261105022902-py3-none-any.whl", hash = "sha256:06d10f4ef72675a9176d2d67db43366ff486e865c2d95a8989a3d63b2316fa71"},
+]
+
+[package.dependencies]
+msgspec = ">=0.20.0,<0.21.0"
+
+[package.source]
+type = "legacy"
+url = "https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple"
+reference = "gitlab-hive"
+
+[[package]]
 name = "hiveio-api-client-generator"
 version = "1.7.1.dev20261029052111+unstable"
 description = ""
@@ -790,4 +809,4 @@ typing-extensions = ">=4.12.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "f928e51e5f58e45ca832db49c61722f3ee486f02572669f9e675eab37f769074"
+content-hash = "eb730fe0ee1533333ba51c4f7338758861a475d2c74b429b75dfd29014bfec0c"

@@ -13,10 +13,14 @@ require_generated_package()
 
 import hiveio_api  # noqa: E402
 from hiveio_api import Asset, InvalidValueWarning  # noqa: E402
-from hiveio_api._apis.abc.sendable import AsyncSendable  # noqa: E402
-from hiveio_api._base import HiveModel, build, to_api_builtins, to_builtins  # noqa: E402
+from hiveio_api import HiveModel, build, to_api_builtins, to_builtins  # noqa: E402
+from hiveio_api.client import AsyncSendable  # noqa: E402
 from hiveio_api.condenser_api import CondenserApi  # noqa: E402
 from hiveio_api.database_api import DatabaseApi  # noqa: E402
+
+# metadata of the aliases tells the form of assets - they have to be available at runtime (postponed annotations)
+from hiveio_api.fields import public  # noqa: E402
+from hiveio_api.fields.public import AnyAsset, AssetHive, LegacyAnyAsset, LegacyAssetHbd  # noqa: E402,TCH001
 from hiveio_api.operations import (  # noqa: E402
     Hf26TransferOperation,
     Transaction,
@@ -25,13 +29,10 @@ from hiveio_api.operations import (  # noqa: E402
     TransferOperationLegacy,
 )
 
-# metadata of the aliases tells the form of assets - they have to be available at runtime (postponed annotations)
-from hiveio_api.fields import public  # noqa: E402
-from hiveio_api.fields.public import AnyAsset, AssetHive, LegacyAnyAsset, LegacyAssetHbd  # noqa: E402,TCH001
 from tests.kinds_of_assets import literals_of_kinds_of_assets  # noqa: E402
 
 if TYPE_CHECKING:
-    from hiveio_api._communication.jsonrpc import ExpectResultT, JSONRPCResult
+    from hiveio_api.client import ExpectResultT, JSONRPCResult
 
 
 @dataclass(kw_only=True)

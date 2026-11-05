@@ -148,17 +148,17 @@ def test_importing_and_building_responses_does_not_load_validation_machinery() -
         "import sys\n"
         f"sys.path.insert(0, {str(PACKAGE_ROOT)!r})\n"
         "from typing import get_type_hints\n"
-        "from hiveio_api._communication.jsonrpc import build_response\n"
+        "from hiveio_api.client import build_response\n"
         "from hiveio_api.database_api import DatabaseApi\n"
         "expected = get_type_hints(DatabaseApi.find_accounts)['return']\n"
         "build_response(expected, {'id': 1, 'jsonrpc': '2.0', 'result': {'accounts': []}})\n"
-        "print(sorted(name for name in sys.modules if name.startswith(('hiveio_api._validation', 'hiveio_api.validation', 'msgspec'))))\n"
+        "print(sorted(name for name in sys.modules if name.startswith(('hiveio_api._validation', 'hiveio_api.validation'))))\n"
     )
 
     # ACT
     result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, check=True)
 
-    # ASSERT
+    # ASSERT - msgspec itself is loaded by hiveio-api-client (its default codec), not by hiveio_api
     assert result.stdout.strip() == "[]"
 
 
@@ -214,21 +214,37 @@ def test_operations_are_made_from_their_values_in_both_forms() -> None:
     assert back.value.to_builtins() == transfer.to_builtins()
 
 
-def test_infrastructure_of_clients_is_public_and_imported_when_used() -> None:
+def test_infrastructure_of_clients_is_the_runtime_package_imported_when_used() -> None:
     # ARRANGE
     script = (
         "import sys\n"
         f"sys.path.insert(0, {str(PACKAGE_ROOT)!r})\n"
         "import hiveio_api.client as client\n"
-        "print(sorted(name for name in sys.modules if name.startswith(('hiveio_api._apis', 'hiveio_api._communication'))))\n"
-        "print(all(getattr(client, name) is not None for name in client.__all__))\n"
+        "print(sorted(name for name in sys.modules if name.startswith(('hiveio_api_client._apis', 'hiveio_api_client._communication'))))\n"
+        "import hiveio_api_client\n"
+        "print(sorted(name for name in client.__all__ if getattr(client, name) is not getattr(hiveio_api_client, name)))\n"
+        "print(len(client.__all__))\n"
     )
 
     # ACT
     result = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, check=True)
 
-    # ASSERT
-    assert result.stdout.splitlines() == ["[]", "True"]
+    # ASSERT - the objects of hiveio-api-client (not copies), so handles and clients of both packages work together
+    not_loaded, not_the_same, exported = result.stdout.splitlines()
+    assert not_loaded == "[]"
+    assert not_the_same == "[]"
+    assert int(exported) > 0
+
+
+def test_package_holds_no_copy_of_the_runtime_of_clients() -> None:
+    # ARRANGE
+    runtime_modules = ("_apis", "_communication", "_utilities")
+
+    # ACT
+    copies = [name for name in runtime_modules if (PACKAGE_DIR / name).exists()]
+
+    # ASSERT - hiveio-api-client owns them
+    assert copies == []
 
 
 @pytest.mark.parametrize("endpoint", endpoints_with_examples())
@@ -278,7 +294,7 @@ def test_examples_built_as_public_models_stay_valid(endpoint: str) -> None:
     """Public models keep everything needed to restore the response (e.g. keys which are not identifiers)."""
     # ARRANGE
     import hiveio_api
-    from hiveio_api._communication.jsonrpc import JSONRPCResult, build_response
+    from hiveio_api.client import JSONRPCResult, build_response
 
     api, _, method_name = endpoint.rpartition(".")
     method = getattr(_client_class(api), method_name)
@@ -415,9 +431,8 @@ def test_dates_given_by_default_are_hive_dates() -> None:
 
 def test_public_models_are_sent_with_keys_of_the_api() -> None:
     # ARRANGE
-    from hiveio_api._apis.abc.sendable import AsyncSendable
-    from hiveio_api._communication.jsonrpc import ExpectResultT, JSONRPCResult, build_response
     from hiveio_api import Asset
+    from hiveio_api.client import AsyncSendable, ExpectResultT, JSONRPCResult, build_response
     from hiveio_api.network_broadcast_api import NetworkBroadcastApi
     from hiveio_api.operations import Transaction, TransferOperation
 
