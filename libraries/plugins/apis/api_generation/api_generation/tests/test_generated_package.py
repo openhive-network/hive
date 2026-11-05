@@ -236,15 +236,136 @@ def test_infrastructure_of_clients_is_the_runtime_package_imported_when_used() -
     assert int(exported) > 0
 
 
-def test_package_holds_no_copy_of_the_runtime_of_clients() -> None:
-    # ARRANGE
-    runtime_modules = ("_apis", "_communication", "_utilities")
+FORMER_MODULES_OF_THE_RUNTIME: dict[str, list[str]] = {
+    "_apis": [],
+    "_apis.abc": [],
+    "_apis.abc.api": [
+        "AbstractApi",
+        "AbstractAsyncApi",
+        "AbstractSyncApi",
+        "ApiArgumentSerialization",
+        "ApiArgumentsToSerialize",
+        "AsyncApiT",
+        "HandleT",
+        "P",
+        "R",
+        "RegisteredApisT",
+        "SyncApiT",
+        "_ApiCallbacks",
+        "_convert_pascal_case_to_sneak_case",
+    ],
+    "_apis.abc.api_collection": ["AbstractApiCollection", "AbstractAsyncApiCollection", "AbstractSyncApiCollection"],
+    "_apis.abc.endpoint": ["ApiT", "BoundEndpoint", "CallbacksT", "Endpoint", "P", "R"],
+    "_apis.abc.rest_api_definition_helpers": [
+        "AsyncApiT",
+        "AsyncRestApiDefinitionHelper",
+        "P",
+        "R",
+        "SyncApiT",
+        "SyncRestApiDefinitionHelper",
+    ],
+    "_apis.abc.sendable": ["AsyncSendable", "Sendable", "SyncSendable"],
+    "_communication": [],
+    "_communication.abc": [],
+    "_communication.abc.communicator_models": [
+        "AsyncCallback",
+        "AsyncCallbacks",
+        "AsyncErrorCallback",
+        "AsyncRequestCallback",
+        "AsyncResponseCallback",
+        "Callbacks",
+        "ErrorCallback",
+        "JsonValue",
+        "Methods",
+        "Request",
+        "RequestCallback",
+        "RequestContext",
+        "RequestTimings",
+        "Response",
+        "ResponseCallback",
+        "SyncCallback",
+        "_Stages",
+    ],
+    "_communication.jsonrpc": [
+        "ExpectResultT",
+        "JSONRPCError",
+        "JSONRPCRequest",
+        "JSONRPCResult",
+        "JsonRpcIdT",
+        "build_response",
+    ],
+    "_communication.url": [
+        "AnyUrl",
+        "HttpProtocolT",
+        "HttpUrl",
+        "P2PProtocolT",
+        "P2PUrl",
+        "ProtocolT",
+        "Url",
+        "WsProtocolT",
+        "WsUrl",
+    ],
+    "_utilities": [],
+    "_utilities.build_json_rpc_call": ["build_json_rpc_call"],
+    "_utilities.smart_lazy_import": [
+        "AggregatedAliasedImportInput",
+        "AggregatedModuleInterfaceMappingInput",
+        "Alias",
+        "AliasMapping",
+        "AliasedImportInput",
+        "GetattrProtocol",
+        "ImportInput",
+        "ModuleComponent",
+        "ModuleGlobals",
+        "ModuleInterfaceMapping",
+        "ModuleInterfaceMappingInput",
+        "ModulePath",
+        "_extract_aliases",
+        "_validate_all_in_translations",
+        "aggregate_same_import",
+        "lazy_module_factory",
+        "smart_lazy_getattr",
+    ],
+}
+"""Modules of the runtime of clients which hiveio_api had before hiveio-api-client, with the names they defined."""
+
+
+@pytest.mark.parametrize(("module", "names"), FORMER_MODULES_OF_THE_RUNTIME.items(), ids=operator.itemgetter(0))
+def test_former_modules_of_the_runtime_re_export_its_objects(module: str, names: list[str]) -> None:
+    # ARRANGE - released packages (beekeepy, clive) import them
+    former = importlib.import_module(f"hiveio_api.{module}")
+    runtime = importlib.import_module(f"hiveio_api_client.{module}")
 
     # ACT
-    copies = [name for name in runtime_modules if (PACKAGE_DIR / name).exists()]
+    not_the_same = [name for name in names if getattr(former, name) is not getattr(runtime, name)]
 
-    # ASSERT - hiveio-api-client owns them
-    assert copies == []
+    # ASSERT - the objects of hiveio-api-client, not copies
+    assert not_the_same == []
+    assert "Deprecated" in (former.__doc__ or "")
+
+
+def test_former_helpers_renamed_or_moved_are_the_current_ones() -> None:
+    # ARRANGE
+    from hiveio_api._apis.abc.api import _validating_type_to_builtins
+    from hiveio_api._communication.jsonrpc import _jsonrpc_id
+    from hiveio_api._value_codec import HIVE_VALUE_CODEC
+    from hiveio_api_client._communication.jsonrpc import jsonrpc_id
+
+    # ACT & ASSERT
+    assert _jsonrpc_id is jsonrpc_id
+    assert _validating_type_to_builtins is HIVE_VALUE_CODEC.json_default
+
+
+def test_package_holds_only_re_exports_of_the_runtime_of_clients() -> None:
+    # ARRANGE
+    former = sorted(
+        ".".join(path.relative_to(PACKAGE_DIR).with_suffix("").parts).removesuffix(".__init__")
+        for name in ("_apis", "_communication", "_utilities")
+        for path in (PACKAGE_DIR / name).rglob("*.py")
+    )
+
+    # ACT & ASSERT - no module beyond the former ones (hiveio-api-client owns the runtime)
+    assert former == sorted(FORMER_MODULES_OF_THE_RUNTIME)
 
 
 @pytest.mark.parametrize("endpoint", endpoints_with_examples())

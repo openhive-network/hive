@@ -68,6 +68,8 @@ WHEEL_OUTPUT_DIR=""
 # Package configuration
 PACKAGE_NAME="hiveio-api"
 PACKAGE_REGISTRY_PROJECT_ID=""
+# index of the packages of the hive group (beekeepy, hiveio-api-client), also the source of python_api_package
+HIVE_GROUP_PYPI_INDEX_URL="${HIVE_GROUP_PYPI_INDEX_URL:-https://gitlab.syncad.com/api/v4/groups/136/-/packages/pypi/simple}"
 
 # Script options
 OPT_SKIP_DEPLOY=""
@@ -399,6 +401,51 @@ if errors:
 PY
     )
     log_success "Wheel verified"
+
+    run_published_dependents_tests
+}
+
+# Installs the published beekeepy and the built wheel over the hiveio-api it requires (as downstream test jobs do) in
+# a fresh virtual environment and imports beekeepy: released packages import former internal modules of hiveio_api
+# (`hiveio_api._utilities.smart_lazy_import`), kept as re-exports of hiveio-api-client.
+run_published_dependents_tests() {
+    local venv_dir
+    venv_dir=$(mktemp -d)
+
+    log_info "Installing the published beekeepy with the built wheel..."
+    python3 -m venv "${venv_dir}"
+    "${venv_dir}/bin/python" -m pip install --index-url "${HIVE_GROUP_PYPI_INDEX_URL}" --extra-index-url https://pypi.org/simple \
+        hiveio-beekeepy
+    # beekeepy pins hiveio-api to released versions - the built one is installed over it
+    "${venv_dir}/bin/python" -m pip install --index-url "${HIVE_GROUP_PYPI_INDEX_URL}" --extra-index-url https://pypi.org/simple \
+        --force-reinstall "${WHEEL_OUTPUT_DIR}"/*.whl
+
+    log_info "Importing beekeepy..."
+    (cd / && "${venv_dir}/bin/python" - <<'PY'
+from __future__ import annotations
+
+from importlib.metadata import version
+
+import beekeepy
+import hiveio_api._utilities.smart_lazy_import as former
+import hiveio_api_client._utilities.smart_lazy_import as runtime
+
+print(f"beekeepy {version('hiveio-beekeepy')} with hiveio-api {version('hiveio-api')}")
+errors: list[str] = []
+for name in beekeepy.__all__:
+    try:
+        getattr(beekeepy, name)
+    except Exception as exception:
+        errors.append(f"beekeepy.{name}: {type(exception).__name__}: {exception}")
+if former.lazy_module_factory is not runtime.lazy_module_factory:
+    errors.append("hiveio_api._utilities.smart_lazy_import is not a re-export of hiveio-api-client")
+
+if errors:
+    raise SystemExit("\n".join(errors))
+PY
+    )
+    rm -rf "${venv_dir}"
+    log_success "Published beekeepy works with the built wheel"
 }
 
 # ==============================================================================
