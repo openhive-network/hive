@@ -2077,7 +2077,7 @@ void database::set_last_irreversible_block_data(std::shared_ptr<full_block_type>
 
   libd = *new_block;
 
-  cached_lib = new_block;
+  cached_lib.store( new_block );
 
   //dlog("setting irreversible_block_num new ${l}", ("l", last_irreversible_object->irreversible_block_data));
 }
@@ -2086,7 +2086,7 @@ std::shared_ptr<full_block_type> database::get_last_irreversible_block_data() co
 {
   FC_ASSERT(last_irreversible_object && "Premature access to non-initialized irreversible object data.");
 
-  return cached_lib;
+  return cached_lib.load();
 }
 
 const irreversible_block_data_type* database::get_last_irreversible_object() const

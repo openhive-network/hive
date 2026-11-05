@@ -75,7 +75,7 @@ void database::initialize_irreversible_storage()
   );
   _my->_last_irreversible_block_num.store( last_irreversible_object->_irreversible_block_num, std::memory_order_release );
 
-  cached_lib = last_irreversible_object->_irreversible_block_data.create_full_block();
+  cached_lib.store( last_irreversible_object->_irreversible_block_data.create_full_block() );
 }
 
 void database::on_segment_remapped()

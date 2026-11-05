@@ -32,6 +32,7 @@ namespace hive { namespace protocol {
 
 #include <fc/log/logger.hpp>
 
+#include <atomic>
 #include <functional>
 #include <map>
 
@@ -755,7 +756,8 @@ namespace chain {
 
     private:
       struct irreversible_block_data_type *last_irreversible_object = nullptr;
-      std::shared_ptr<full_block_type> cached_lib;
+      // read without the state lock, e.g. by p2p and block_api through single_block_storage::head_block()
+      std::atomic<std::shared_ptr<full_block_type>> cached_lib;
 
       void on_segment_remapped() override;
 
