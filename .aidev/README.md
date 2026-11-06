@@ -297,13 +297,22 @@ that need CI's fixtures, and `static`. They stay in GitLab CI.
 ## The compiler cache
 
 Nothing runs without compiling hived, which is 30-60 minutes cold. The checks share
-CI's sccache Redis (`SCCACHE_REDIS` in `.gitlab-ci.yaml`):
+their site's sccache cache, or CI's sccache Redis (`SCCACHE_REDIS` in `.gitlab-ci.yaml`):
 
+- where a site WebDAV cache serves the host (Jefferson, Poland; aidev#17961), AIDEV
+  hands the slot `AIDEV_SCCACHE_WEBDAV_ENDPOINT` (e.g. `http://steem-9.syncad.com:8090/`)
+  and the build uses sccache's WebDAV backend against it (`SCCACHE_WEBDAV_ENDPOINT`,
+  key prefix `hive`), once its `/healthz` answers and its `PROPFIND` serves what the
+  CI image's sccache (0.8) needs to read: a 404 for a missing key, and a stored key
+  as a non-collection with its `getcontentlength`. A cache whose `PROPFIND` reports
+  every path as a collection (as aidev#17961's nginx stub does) would make every
+  compile a miss, so it is not used and the build log says why;
 - the suite container has no network of its own, so the profile declares a
   one-service stack, `sccache-relay.compose.yml`, that relays `sccache:6379` to the
   site's sccache Redis AIDEV hands the stack as `AIDEV_SCCACHE_REDIS_HOSTPORT`
-  (filled by that site's own builds; aidev#17950), else to CI's Redis
-  (`192.168.50.109:6379`);
+  (aidev#17950), else to CI's Redis (`192.168.50.109:6379`). Handed a WebDAV cache,
+  it also relays `sccache:8090` to it, for a suite not handed the endpoint itself
+  (the cache is then reached at its root);
 - sccache keys include absolute paths, so `run-checks.sh` builds from
   `/home/hived/source` into `/home/hived/build`, with the cmake arguments of CI's
   `testnet_node_build` (the `Dockerfile`'s build stage, precompiled headers off),
@@ -314,11 +323,13 @@ CI's sccache Redis (`SCCACHE_REDIS` in `.gitlab-ci.yaml`):
   hash and links that make the submodules' relative `gitdir:` paths resolve,
   because fc's revision CMake reads those files itself and cannot follow a
   worktree's (or an absolute) git directory;
-- when the relay or Redis is unreachable, sccache falls back to a local cache and
-  the build is cold. `test-results/<suite>/sccache.tsv` records, per building step,
-  which cache answered: `relay` (with its upstream when the suite is handed
-  `AIDEV_SCCACHE_REDIS_HOSTPORT`, else `-`), `HIVE_SCCACHE_REDIS`, a preset
-  `SCCACHE_REDIS`, or `local` (cold). `test-results/<suite>/build.log` ends with
+- when no cache answers, sccache falls back to a local cache and the build is
+  cold. `test-results/<suite>/sccache.tsv` records, per building step, which cache
+  answered, in this order of preference: `webdav` (the endpoint, reached directly),
+  `webdav-relay` (`http://sccache:8090/`, with its upstream when the suite is handed
+  the endpoint, else `-`), a preset `SCCACHE_REDIS`, `relay` (with its upstream when
+  the suite is handed `AIDEV_SCCACHE_REDIS_HOSTPORT`, else `-`), `HIVE_SCCACHE_REDIS`,
+  or `local` (cold). `test-results/<suite>/build.log` ends with
   `sccache --show-stats`.
 
 To run by hand (from a clone with submodules; a worktree also needs its git

@@ -36,11 +36,12 @@
 #
 # Compiler cache: the build runs from /home/hived/source into /home/hived/build
 # with the cmake arguments of the Dockerfile's build stage, because sccache keys
-# include absolute paths, so the checks hit what CI's builds put in its Redis
-# cache (reached through the stack's `sccache` relay,
-# .aidev/sccache-relay.compose.yml, which forwards to the site's cache AIDEV hands
-# the stack as AIDEV_SCCACHE_REDIS_HOSTPORT, else to CI's). When the relay or
-# Redis is unreachable, sccache uses a local cache and the build is cold.
+# include absolute paths, so builds on every host share one cache: the site's
+# WebDAV cache AIDEV hands the slot as AIDEV_SCCACHE_WEBDAV_ENDPOINT, reached
+# directly or through the stack's `sccache` relay (.aidev/sccache-relay.compose.yml),
+# else the Redis that relay forwards to (AIDEV_SCCACHE_REDIS_HOSTPORT, else CI's,
+# where the checks hit what CI's builds put there). When none answers, sccache
+# uses a local cache and the build is cold.
 #
 # Reports go to test-results/<suite>/: junit.xml (one case per step) plus each
 # test binary's own junit report, timings.tsv, each step's wall time, and
@@ -162,11 +163,22 @@ step() {
     return "$rc"
 }
 
-# The cache through the stack's relay, else at HIVE_SCCACHE_REDIS (CI's own
+# The site's WebDAV cache AIDEV hands the slot, directly or through the stack's
+# relay; else the Redis through the relay, else at HIVE_SCCACHE_REDIS (CI's own
 # address, which a build on the host's network may reach), else a local one.
+# Each is probed first: sccache refuses to start on a backend it cannot reach.
 # Printed, and recorded in sccache.tsv, which outlives a passing run's output.
 sccache_backend() {
-    local url
+    if [ -n "${AIDEV_SCCACHE_WEBDAV_ENDPOINT:-}" ] && webdav_answers "$AIDEV_SCCACHE_WEBDAV_ENDPOINT"; then
+        use_webdav "$AIDEV_SCCACHE_WEBDAV_ENDPOINT"
+        sccache_answered webdav "$SCCACHE_WEBDAV_ENDPOINT" -
+        return
+    fi
+    if webdav_answers http://sccache:8090/; then
+        use_webdav http://sccache:8090/
+        sccache_answered webdav-relay "$SCCACHE_WEBDAV_ENDPOINT" "${AIDEV_SCCACHE_WEBDAV_ENDPOINT:--}"
+        return
+    fi
     if [ -n "${SCCACHE_REDIS:-}" ]; then
         sccache_answered SCCACHE_REDIS "$SCCACHE_REDIS" -
         return
@@ -185,6 +197,44 @@ sccache_backend() {
     sccache_answered local "$SCCACHE_DIR" -
 }
 
+# One key prefix wherever the cache is reached from, so every host's build hits
+# what another put there.
+use_webdav() {  # ENDPOINT
+    unset SCCACHE_REDIS
+    export SCCACHE_WEBDAV_ENDPOINT="$1" SCCACHE_WEBDAV_KEY_PREFIX=hive
+}
+
+# Whether the WebDAV cache at http://HOST[:PORT][/PATH] answers, and answers
+# sccache's reads: the CI image's sccache (0.8) stats a key with PROPFIND before
+# reading it, and reads nothing (a miss, counted as a cache error) unless a
+# missing key is a 404 and a stored one a non-collection with its
+# getcontentlength. The stored key probed is the one sccache writes when its
+# server starts; a cache that has not stored it yet is taken on the 404 alone.
+webdav_answers() {
+    local rest="${1#http://}" hp path reply
+    hp="${rest%%/*}" path="${rest#"$hp"}"; path="${path%/}"
+    [[ "$hp" == *:* ]] || hp="$hp:80"
+    local at=("${hp%:*}" "${hp##*:}")
+    reply="$(http_reply GET "${at[@]}" "$path/healthz")"
+    [[ "$reply" == "HTTP/"*" 200 "* ]] || return 1
+    reply="$(http_reply PROPFIND "${at[@]}" "$path/hive/.sccache-probe-missing")"
+    if [[ "$reply" != "HTTP/"*" 404 "* ]]; then
+        echo "sccache: the WebDAV cache at $1 does not answer PROPFIND of a missing key with 404 (${reply%%$'\r'*}), so sccache could not read from it; not used"
+        return 1
+    fi
+    reply="$(http_reply PROPFIND "${at[@]}" "$path/hive/.sccache_check")"
+    [[ "$reply" == "HTTP/"*" 404 "* ]] && return 0
+    if [[ "$reply" == *getcontentlength* && "$reply" != *collection* ]]; then return 0; fi
+    echo "sccache: the WebDAV cache at $1 answers PROPFIND of a stored key without its size (${reply%%$'\r'*}), so sccache could not read from it; not used"
+    return 1
+}
+
+http_reply() {  # METHOD HOST PORT PATH: the response's status line, headers and body (4 kB at most), within 3 s
+    timeout 3 bash -c 'exec 3<>"/dev/tcp/$2/$3" &&
+        printf "%s %s HTTP/1.0\r\nHost: %s\r\nDepth: 0\r\n\r\n" "$1" "$4" "$2" >&3 &&
+        head -c 4096 <&3' _ "$@" 2>/dev/null
+}
+
 # The relay's upstream is known only when AIDEV hands the suite the address it
 # handed the stack; without it the relay forwards to CI's Redis unless the stack
 # was given one anyway, so it is recorded as unknown (-). `name` is step's.
@@ -192,7 +242,7 @@ sccache_answered() {  # BACKEND ADDRESS UPSTREAM
     local upstream="$3"
     [ "$upstream" != - ] || upstream="not handed to the suite"
     case "$1" in
-        relay) echo "sccache: cache through the stack's relay at $2, upstream $upstream" ;;
+        relay|webdav-relay) echo "sccache: cache through the stack's relay at $2, upstream $upstream" ;;
         local) echo "sccache: no shared cache answers, local cache in $2 (cold build)" ;;
         *) echo "sccache: cache at $2 ($1)" ;;
     esac
