@@ -35,8 +35,9 @@
 # (.aidev/build-jobs.sh); HIVE_BUILD_JOBS overrides that.
 #
 # Compiler cache: the build runs from /home/hived/source into /home/hived/build
-# with the cmake arguments of the Dockerfile's build stage, because sccache keys
-# include absolute paths, so builds on every host share one cache: the site's
+# with the cmake arguments of the Dockerfile's build stage, and SCCACHE_BASEDIRS
+# strips the source and build roots from sccache's keys (as the Dockerfile's build
+# stage does), so builds on every host, at any path, share one cache: the site's
 # WebDAV cache AIDEV hands the slot as AIDEV_SCCACHE_WEBDAV_ENDPOINT, reached
 # directly or through the stack's `sccache` relay (.aidev/sccache-relay.compose.yml),
 # else the Redis that relay forwards to (AIDEV_SCCACHE_REDIS_HOSTPORT, else CI's,
@@ -126,9 +127,14 @@ mirror_source() {
 src=/home/hived/source
 bld=/home/hived/build
 if ! { [ -w /home/hived ] && [ ! -e "$src" ] && mirror_source && link_gitdirs; }; then
-    echo "cannot use CI's paths under /home/hived (uid $(id -u)); building in $PWD/build without CI's cache keys" >&2
+    echo "cannot use CI's paths under /home/hived (uid $(id -u)); building in $PWD/build" >&2
     src="$PWD"; bld="$PWD/build"
 fi
+# sccache 0.14+ (ci-base-image pypa_2_28-pg18-6 on); an older one ignores it. The
+# checkout is a root too, for a path CMake resolves through $src's links.
+SCCACHE_BASEDIRS="$src:$bld"
+[ "$src" = "$PWD" ] || SCCACHE_BASEDIRS="$SCCACHE_BASEDIRS:$PWD"
+export SCCACHE_BASEDIRS
 
 # shellcheck source=.aidev/build-jobs.sh
 . .aidev/build-jobs.sh
@@ -167,8 +173,10 @@ step() {
 # relay; else the Redis through the relay, else at HIVE_SCCACHE_REDIS (CI's own
 # address, which a build on the host's network may reach), else a local one.
 # Each is probed first: sccache refuses to start on a backend it cannot reach.
-# Printed, and recorded in sccache.tsv, which outlives a passing run's output.
+# Printed with sccache's version, and recorded in sccache.tsv, which outlives a
+# passing run's output.
 sccache_backend() {
+    echo "$(sccache --version 2>&1), SCCACHE_BASEDIRS=$SCCACHE_BASEDIRS"
     if [ -n "${AIDEV_SCCACHE_WEBDAV_ENDPOINT:-}" ] && webdav_answers "$AIDEV_SCCACHE_WEBDAV_ENDPOINT"; then
         use_webdav "$AIDEV_SCCACHE_WEBDAV_ENDPOINT"
         sccache_answered webdav "$SCCACHE_WEBDAV_ENDPOINT" -
@@ -205,10 +213,11 @@ use_webdav() {  # ENDPOINT
 }
 
 # Whether the WebDAV cache at http://HOST[:PORT][/PATH] answers, and answers
-# sccache's reads: the CI image's sccache (0.8) stats a key with PROPFIND before
-# reading it, and reads nothing (a miss, counted as a cache error) unless a
-# missing key is a 404 and a stored one a non-collection with its
-# getcontentlength. The stored key probed is the one sccache writes when its
+# sccache's reads: sccache before 0.10 (images on ci-base-image before
+# pypa_2_28-pg18-6, such as an older environment.image seed) stats a key with
+# PROPFIND before reading it, and reads nothing (a miss, counted as a cache
+# error) unless a missing key is a 404 and a stored one a non-collection with
+# its getcontentlength. The stored key probed is the one sccache writes when its
 # server starts; a cache that has not stored it yet is taken on the 404 alone.
 webdav_answers() {
     local rest="${1#http://}" hp path reply
