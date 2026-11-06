@@ -39,10 +39,10 @@ labels:
     color: "#8b0000"
     description: "Dispatch is withheld by an unsatisfied dependency trailer."
     authority: machine
-  - name: ai-filed
+  - name: automated
     group: provenance
-    color: "#666666"
-    description: "Filed by automation rather than by a person."
+    color: "#bfbfbf"
+    description: "Filed by an automated aidev process."
     authority: descriptive
 
 exclusive_groups:
