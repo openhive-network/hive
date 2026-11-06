@@ -12,8 +12,9 @@ through merge requests (as in hive/haf), **keeping the source branch**
 
 `.aidev/run-checks.sh <suite> <step>[,<step>...]...` runs the named steps and writes
 `test-results/<suite>/junit.xml`, one test case per step, plus each test
-binary's own junit report and `timings.tsv`, each step's wall time (also printed
-at the end of the output). Steps joined by commas run at the same time and share
+binary's own junit report, `timings.tsv`, each step's wall time, and `sccache.tsv`,
+the compiler cache each building step used (both also printed at the end of the
+output). Steps joined by commas run at the same time and share
 `HIVE_TEST_JOBS` test processes (default: min(8, nproc)) evenly; when one ends, the
 others take over its share (the step's `run_chain_tests_parallel.sh` reads its
 parallelism from a file GNU parallel re-reads as each unit ends), and the log says
@@ -299,8 +300,10 @@ Nothing runs without compiling hived, which is 30-60 minutes cold. The checks sh
 CI's sccache Redis (`SCCACHE_REDIS` in `.gitlab-ci.yaml`):
 
 - the suite container has no network of its own, so the profile declares a
-  one-service stack, `sccache-relay.compose.yml`, that relays `sccache:6379` to CI's
-  Redis;
+  one-service stack, `sccache-relay.compose.yml`, that relays `sccache:6379` to the
+  site's sccache Redis AIDEV hands the stack as `AIDEV_SCCACHE_REDIS_HOSTPORT`
+  (filled by that site's own builds; aidev#17950), else to CI's Redis
+  (`192.168.50.109:6379`);
 - sccache keys include absolute paths, so `run-checks.sh` builds from
   `/home/hived/source` into `/home/hived/build`, with the cmake arguments of CI's
   `testnet_node_build` (the `Dockerfile`'s build stage, precompiled headers off),
@@ -312,7 +315,11 @@ CI's sccache Redis (`SCCACHE_REDIS` in `.gitlab-ci.yaml`):
   because fc's revision CMake reads those files itself and cannot follow a
   worktree's (or an absolute) git directory;
 - when the relay or Redis is unreachable, sccache falls back to a local cache and
-  the build is cold. `test-results/<suite>/build.log` ends with `sccache --show-stats`.
+  the build is cold. `test-results/<suite>/sccache.tsv` records, per building step,
+  which cache answered: `relay` (with its upstream when the suite is handed
+  `AIDEV_SCCACHE_REDIS_HOSTPORT`, else `-`), `HIVE_SCCACHE_REDIS`, a preset
+  `SCCACHE_REDIS`, or `local` (cold). `test-results/<suite>/build.log` ends with
+  `sccache --show-stats`.
 
 To run by hand (from a clone with submodules; a worktree also needs its git
 directory mounted at the same path and the checkout mounted at its own path):
