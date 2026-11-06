@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Extract FC_ASSERT expressions and emit code for assertion id generation."""
+
 from __future__ import annotations
 
 import argparse
 import pathlib
 import re
 import sys
-from typing import Iterator, TextIO
-
+from collections.abc import Iterator
+from typing import TextIO
 
 PROJECT_ROOT: pathlib.Path = pathlib.Path(__file__).resolve().parents[1]
 LOG_FILE_PATH: pathlib.Path = pathlib.Path("/tmp/extract_assertion_ids.log")
@@ -17,13 +18,7 @@ def find_all_assertion_macros(project_root: pathlib.Path) -> list[str]:
     """Return assertion-like macro names declared in the specialised exceptions header."""
 
     file_with_macro = (
-        project_root
-        / "libraries"
-        / "protocol"
-        / "include"
-        / "hive"
-        / "protocol"
-        / "hive_specialised_exceptions.hpp"
+        project_root / "libraries" / "protocol" / "include" / "hive" / "protocol" / "hive_specialised_exceptions.hpp"
     )
     if not file_with_macro.is_file():
         return []
@@ -52,6 +47,7 @@ FIND_REGEX: str = r"(?!\#define)[ ]+" + f"((?:{ASSERTION_NAME_PATTERN}))" r"\s*\
 _FC_ASSERT_PATTERN = re.compile(FIND_REGEX)
 
 _COMMENT_SANITIZE_PATTERN = re.compile(r'\\"|//|/\*|\*/|\\\n|"')
+
 
 def _iter_fc_assertions(source: str) -> Iterator[str]:
     """Yield the expression found inside each FC_ASSERT invocation."""
@@ -87,7 +83,7 @@ def _iter_fc_assertions(source: str) -> Iterator[str]:
             position = match.end()
             continue
 
-        yield source[match.end():index]
+        yield source[match.end() : index]
         position = index + 1
 
 
@@ -137,7 +133,7 @@ def _process_file(path: pathlib.Path, namespace: str) -> list[str]:
     for assertion in assertions:
         trimmed = _trim_assertion_expression(assertion).strip()
         sanitized = _sanitize_for_comment(trimmed)
-        generated.append(f'  h = HASH_EXPR( {trimmed} );')
+        generated.append(f"  h = HASH_EXPR( {trimmed} );")
         generated.append(
             f'  fsv << "uint64_t assertion_" << h << " = " << h << "ull; /*{path.name}*/ /*{sanitized}*/ " << std::endl;'
         )
@@ -231,7 +227,6 @@ int main( int argc, char** argv )
     fsw.close();
     return 0;
 }""")
-        
 
     return 0
 
