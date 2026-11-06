@@ -302,8 +302,9 @@ their site's sccache cache, or CI's sccache Redis (`SCCACHE_REDIS` in `.gitlab-c
 - where a site WebDAV cache serves the host (Jefferson, Poland; aidev#17961), AIDEV
   hands the slot `AIDEV_SCCACHE_WEBDAV_ENDPOINT` (e.g. `http://steem-9.syncad.com:8090/`)
   and the build uses sccache's WebDAV backend against it (`SCCACHE_WEBDAV_ENDPOINT`,
-  key prefix `hive`), once its `/healthz` answers and its `PROPFIND` serves what the
-  CI image's sccache (0.8) needs to read: a 404 for a missing key, and a stored key
+  key prefix `hive`), once its `/healthz` answers and its `PROPFIND` serves what
+  sccache before 0.10 (images on `ci-base-image` before `pypa_2_28-pg18-6`, which
+  ships 0.19.0) needs to read: a 404 for a missing key, and a stored key
   as a non-collection with its `getcontentlength`. A cache whose `PROPFIND` reports
   every path as a collection (as aidev#17961's nginx stub does) would make every
   compile a miss, so it is not used and the build log says why;
@@ -313,12 +314,18 @@ their site's sccache cache, or CI's sccache Redis (`SCCACHE_REDIS` in `.gitlab-c
   (aidev#17950), else to CI's Redis (`192.168.50.109:6379`). Handed a WebDAV cache,
   it also relays `sccache:8090` to it, for a suite not handed the endpoint itself
   (the cache is then reached at its root);
-- sccache keys include absolute paths, so `run-checks.sh` builds from
-  `/home/hived/source` into `/home/hived/build`, with the cmake arguments of CI's
-  `testnet_node_build` (the `Dockerfile`'s build stage, precompiled headers off),
-  in CI's own build image. A check then hits what CI
-  compiled, and CI hits what a check compiled (466 of 468 compiles on the first
-  local run; build 2-3 minutes). `/home/hived/source` is a container-local mirror
+- `run-checks.sh` builds from `/home/hived/source` into `/home/hived/build`, with
+  the cmake arguments of CI's `testnet_node_build` (the `Dockerfile`'s build stage,
+  precompiled headers off), in CI's own build image. Both set `SCCACHE_BASEDIRS`
+  to their source and build roots (sccache 0.14+), so the cache keys do not depend
+  on where the tree is: a check hits what CI compiled, and CI hits what a check
+  compiled, also when `run-checks.sh` cannot use `/home/hived` and builds in
+  `./build` (all 825 compiles of the `build` step hit there after a build under
+  `/home/hived`; without `SCCACHE_BASEDIRS`, none of `hive_protocol`'s and
+  `hive_chain`'s 692 hit from another path). A hit can return an
+  object compiled at another path, so a program the build runs must not have its
+  output paths compiled in (the assertion-id generators take theirs as
+  arguments). `/home/hived/source` is a container-local mirror
   of the checkout: links to its entries, plus a `.git` holding HEAD as a detached
   hash and links that make the submodules' relative `gitdir:` paths resolve,
   because fc's revision CMake reads those files itself and cannot follow a

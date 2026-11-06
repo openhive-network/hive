@@ -203,17 +203,26 @@ def main() -> int:
         output_file.write("""
 #include <fc/exception/exception.hpp>
 #include <fstream>
+#include <iostream>
 
 #define HASH_EXPR( EXPR ) fc::exception::hash_expr( #EXPR );
 
 
+// The output paths come from the command line, not from this source: sccache's
+// SCCACHE_BASEDIRS keys this object independently of the build directory, so a
+// path compiled in could name another checkout's build tree.
 int main( int argc, char** argv )
 {
+    if( argc != 3 )
+    {
+        std::cerr << "usage: " << argv[0] << " <verifier header path> <wax inline path>" << std::endl;
+        return 1;
+    }
     uint64_t h = 0;
     std::fstream fsv, fsw;
-    fsv.open(""" + '"' + assertion_id_verifier_header_path + '"' + """, std::ios::out | std::ios::trunc);
+    fsv.open( argv[1], std::ios::out | std::ios::trunc );
     fsv << "#include <cstdint>" << std::endl;
-    fsw.open(""" + '"' + assertion_id_wax_inline_path + '"' + """, std::ios::out | std::ios::trunc);
+    fsw.open( argv[2], std::ios::out | std::ios::trunc );
 """)
         for line in generated_lines:
             output_file.write("  " + line + "\n")

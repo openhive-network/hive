@@ -34,7 +34,7 @@ environment:
   inputs: [".aidev/runtime/Dockerfile", "tests/python/hive-local-tools/pyproject.toml", "tests/python/hive-local-tools/poetry.lock"]
   build: {dockerfile: ".aidev/runtime/Dockerfile", context: "tests/python/hive-local-tools"}
   # CI's build image at CI_BASE_IMAGE_TAG (scripts/ci-helpers/ci_image_tag_vars.yml)
-  base: {image: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:pypa_2_28-pg18-5", follow: true}
+  base: {image: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:pypa_2_28-pg18-6", follow: true}
 
 issues:
   intake_label: todo

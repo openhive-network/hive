@@ -78,7 +78,7 @@ add_executable( protocol_assertion_id_generator ${ASSERTION_ID_GENERATOR_SOURCE}
 target_link_libraries( protocol_assertion_id_generator PUBLIC fc )
 add_custom_command(
   OUTPUT ${ASSERTION_ID_VERIFICATION_HEADER_SOURCE} ${ASSERTION_ID_WAX_INLINE_SOURCE}
-  COMMAND protocol_assertion_id_generator
+  COMMAND protocol_assertion_id_generator ${ASSERTION_ID_VERIFICATION_HEADER_SOURCE} ${ASSERTION_ID_WAX_INLINE_SOURCE}
   DEPENDS protocol_assertion_id_generator
 )
 # 3. Build the verifier to verify uniqueness of the hashes dumped in previous step.
