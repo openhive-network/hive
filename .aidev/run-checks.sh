@@ -38,11 +38,13 @@
 # with the cmake arguments of the Dockerfile's build stage, because sccache keys
 # include absolute paths, so the checks hit what CI's builds put in its Redis
 # cache (reached through the stack's `sccache` relay,
-# .aidev/sccache-relay.compose.yml). When the relay or Redis is unreachable,
-# sccache uses a local cache and the build is cold.
+# .aidev/sccache-relay.compose.yml, which forwards to the site's cache AIDEV hands
+# the stack as AIDEV_SCCACHE_REDIS_HOSTPORT, else to CI's). When the relay or
+# Redis is unreachable, sccache uses a local cache and the build is cold.
 #
 # Reports go to test-results/<suite>/: junit.xml (one case per step) plus each
-# test binary's own junit report, and timings.tsv, each step's wall time.
+# test binary's own junit report, timings.tsv, each step's wall time, and
+# sccache.tsv, the compiler cache each building step used.
 #
 # Each test unit runs under its own timeout (scripts/run_chain_tests_parallel.sh),
 # widened under AIDEV's adaptive timeouts; see .aidev/README.md.
@@ -54,6 +56,7 @@ out="$PWD/test-results/$suite"
 rm -rf "$out"; mkdir -p "$out"
 cases="$out/cases.tsv"; : > "$cases"
 timings="$out/timings.tsv"; printf 'step\tseconds\texit\n' > "$timings"
+sccache_record="$out/sccache.tsv"; printf 'step\tbackend\taddress\tupstream\n' > "$sccache_record"
 date +%s > "$out/started-at"  # the slot's start, for a later suite's time budget
 cpus="$(nproc)"
 test_jobs="${HIVE_TEST_JOBS:-$(( cpus < 8 ? cpus : 8 ))}"
@@ -159,20 +162,41 @@ step() {
     return "$rc"
 }
 
-# CI's cache through the stack's relay, else at HIVE_SCCACHE_REDIS (CI's own
+# The cache through the stack's relay, else at HIVE_SCCACHE_REDIS (CI's own
 # address, which a build on the host's network may reach), else a local one.
+# Printed, and recorded in sccache.tsv, which outlives a passing run's output.
 sccache_backend() {
     local url
-    if [ -n "${SCCACHE_REDIS:-}" ]; then return; fi
-    for url in redis://sccache:6379 ${HIVE_SCCACHE_REDIS:-}; do
-        if redis_answers "$url"; then
-            export SCCACHE_REDIS="$url"
-            echo "sccache: CI cache at $SCCACHE_REDIS"
-            return
-        fi
-    done
+    if [ -n "${SCCACHE_REDIS:-}" ]; then
+        sccache_answered SCCACHE_REDIS "$SCCACHE_REDIS" -
+        return
+    fi
+    if redis_answers redis://sccache:6379; then
+        export SCCACHE_REDIS=redis://sccache:6379
+        sccache_answered relay "$SCCACHE_REDIS" "${AIDEV_SCCACHE_REDIS_HOSTPORT:--}"
+        return
+    fi
+    if [ -n "${HIVE_SCCACHE_REDIS:-}" ] && redis_answers "$HIVE_SCCACHE_REDIS"; then
+        export SCCACHE_REDIS="$HIVE_SCCACHE_REDIS"
+        sccache_answered HIVE_SCCACHE_REDIS "$SCCACHE_REDIS" -
+        return
+    fi
     export SCCACHE_DIR="${SCCACHE_DIR:-$PWD/.sccache}"
-    echo "sccache: no CI cache answers, local cache in $SCCACHE_DIR (cold build)"
+    sccache_answered local "$SCCACHE_DIR" -
+}
+
+# The relay's upstream is known only when AIDEV hands the suite the address it
+# handed the stack; without it the relay forwards to CI's Redis unless the stack
+# was given one anyway, so it is recorded as unknown (-). `name` is step's.
+sccache_answered() {  # BACKEND ADDRESS UPSTREAM
+    local upstream="$3"
+    [ "$upstream" != - ] || upstream="not handed to the suite"
+    case "$1" in
+        relay) echo "sccache: cache through the stack's relay at $2, upstream $upstream" ;;
+        local) echo "sccache: no shared cache answers, local cache in $2 (cold build)" ;;
+        *) echo "sccache: cache at $2 ($1)" ;;
+    esac
+    printf '%s\t%s\t%s\t%s\n' "${name:-}" "$@" >> "$sccache_record"
 }
 
 submodules_checked_out() {
@@ -347,7 +371,7 @@ concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when i
     slots="$(mktemp -d)" || return 1
     share_slots "$slots" "$@"
     for s in "$@"; do
-        setsid "$BASH" -c "set -uo pipefail; $(declare -p out cases timings src bld step_skipped); $(declare -f)"'
+        setsid "$BASH" -c "set -uo pipefail; $(declare -p out cases timings sccache_record src bld step_skipped); $(declare -f)"'
             test_slots="$1"; run "$2"' step "$slots/$s" "$s" < /dev/null &
         step_of[$!]="$s"
     done
@@ -393,6 +417,7 @@ done
 printf 'total\t%s\t%s\n' "$SECONDS" "$status" >> "$timings"
 echo "== wall time per step (seconds):" >&2
 cat "$timings" >&2
+[ "$(wc -l < "$sccache_record")" -le 1 ] || { echo "== compiler cache:"; cat "$sccache_record"; } >&2
 skipped="$(awk -F'\t' '$1 == "case" && $3 == "skip" { printf "%s%s: %s", sep, $2, $5; sep = "; " }' "$cases")"
 [ -z "$skipped" ] || { echo "== skipped:"; awk -F'\t' '$1 == "case" && $3 == "skip" { print "  " $2 ": " $5 }' "$cases"; } >&2
 python3 .aidev/junit_cases.py "$out/junit.xml" "$suite" "$cases"
