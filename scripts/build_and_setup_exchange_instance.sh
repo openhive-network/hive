@@ -32,6 +32,7 @@ print_help () {
     echo "  --webserver-http-endpoint=<endpoint>  Map the hived internal http endpoint to the specified external one. Endpoints are specified either by port number or by ip-address:port."
     echo "  --webserver-ws-endpoint=<endpoint>    Map the hived internal WS endpoint to the specified external one. Endpoints are specified either by port number or by ip-address:port."
     echo "  --p2p-endpoint=<endpoint>             Map the hived internal P2P endpoint to the specified external one. Endpoints are specified either by port number or by ip-address:port."
+    echo "  --no-publish                          Do not publish any port on the host (neither the endpoints above nor the cli_wallet port 8093)."
     echo "  --data-dir=DIRECTORY_PATH             Obligatory. Specify path to the hived data directory. If this directory does not contain a config.ini file, a default one will be created."
     echo "  --shared-file-dir=DIRECTORY_PATH      Specify path for storing the shared_memory_file.bin file"
     echo
@@ -64,6 +65,8 @@ RUN_HIVED_IMG_ARGS=()
 
 IMPLICIT_SHM_DIR=""
 
+CLI_WALLET_PUBLISH_ARG=--docker-option="-p 8093:8093"
+
 add_run_hived_img_arg() {
   local arg="$1"
   RUN_HIVED_IMG_ARGS+=("$arg")
@@ -86,6 +89,10 @@ process_option() {
         add_run_hived_img_arg "${o}"
         ;;
     --p2p-endpoint=*)
+        add_run_hived_img_arg "${o}"
+        ;;
+    --no-publish)
+        CLI_WALLET_PUBLISH_ARG=""
         add_run_hived_img_arg "${o}"
         ;;
     --data-dir=*)
@@ -248,5 +255,5 @@ fi
 
 prepare_data_directory "${HIVED_DATADIR}" "${img_name}" "${BLOCK_LOG_BASE_URL}"
 
-"${HIVED_SOURCE_DIR}/scripts/run_hived_img.sh" "${img_name}" --docker-option="-p 8093:8093" "${IMPLICIT_SHM_DIR}" "${RUN_HIVED_IMG_ARGS[@]}"
+"${HIVED_SOURCE_DIR}/scripts/run_hived_img.sh" "${img_name}" ${CLI_WALLET_PUBLISH_ARG:+"${CLI_WALLET_PUBLISH_ARG}"} "${IMPLICIT_SHM_DIR}" "${RUN_HIVED_IMG_ARGS[@]}"
 

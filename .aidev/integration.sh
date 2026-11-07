@@ -355,8 +355,8 @@ host_sees() {  # DIR FILE RUNTIME_IMAGE
     docker run --rm -v "$hp:/probe:ro" --entrypoint test "$3" -f "/probe/$2" > /dev/null 2>&1
 }
 
-# The scripts' containers have fixed names (and the exchange one a fixed host
-# port), so a host runs each script once at a time. The lock is a docker network,
+# The scripts' containers have fixed names, so a host runs each script once at a
+# time. The lock is a docker network,
 # whose creation fails while one of that name exists; one older than any run is
 # a killed run's, and is taken over. Each lock is labelled with the run holding it.
 integration_lock() {  # SCRIPT

@@ -137,6 +137,7 @@ HIVED_IMAGE_TAG="${HIVED_IMAGE_NAME##*:}"
   --exit-at-block="$INITIAL_SYNC_BLOCK" \
   --block-log-split=9999 \
   --name=sync-instance \
+  --no-publish \
   --detach \
   --preserve-container \
   --checkpoint="[\"${CHECKPOINT_BLOCK}\",\"${CHECKPOINT_BLOCK_ID}\"]" \
@@ -152,6 +153,7 @@ run_step sync monitor_container "sync-instance"
   --block-log-split=9999 \
   --exit-at-block="$INITIAL_SYNC_BLOCK" \
   --name=dump-snapshot-instance \
+  --no-publish \
   --detach \
   --preserve-container \
   --plugin=app_status_api
@@ -166,6 +168,7 @@ echo "Starting load snapshot with pruned block log..."
   --block-log-split=$BLOCK_LOG_SPLIT \
   --stop-at-block="$TARGET_SYNC_BLOCK" \
   --name=load-snapshot-instance \
+  --no-publish \
   --detach \
   --preserve-container \
   --plugin=app_status_api
