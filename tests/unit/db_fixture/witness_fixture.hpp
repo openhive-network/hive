@@ -93,9 +93,12 @@ struct witness_fixture : public hived_fixture
 
     config_arg_override_t config_args = {
       config_line_t( { "shared-file-size", { shared_file_size } } ),
-      config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } ),
-      config_line_t( { "p2p-parameters", { _p2p_parameters_value } } )
+      config_line_t( { "private-key", { init_account_priv_key.key_to_wif() } } )
     };
+    // a test that needs other p2p parameters passes its own in extra_config_args (the option can't be given twice)
+    if( std::none_of( extra_config_args.begin(), extra_config_args.end(),
+      []( const config_line_t& line ) { return line.first == "p2p-parameters"; } ) )
+      config_args.emplace_back( config_line_t( { "p2p-parameters", { _p2p_parameters_value } } ) );
     for( auto& name : represented_witnesses )
       config_args.emplace_back( config_line_t( "witness", { "\"" + name + "\"" } ) );
     config_args.insert( config_args.end(), extra_config_args.begin(), extra_config_args.end() );
