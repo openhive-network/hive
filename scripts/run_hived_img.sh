@@ -20,6 +20,7 @@ cat <<EOF
     --webserver-http-endpoint=<endpoint>  Maps hived internal http endpoint to the specified external one. Endpoint can be a port number or ip-address:port.
     --webserver-ws-endpoint=<endpoint>    Maps hived internal WS endpoint to the specified external one. Endpoint can be a port number or ip-address:port.
     --p2p-endpoint=<endpoint>             Map hived internal P2P endpoint to the specified external one. Endpoint can be a port number or ip-address:port.
+    --no-publish                          Do not publish the http, WS and P2P ports on the host (the endpoint options above are then ignored). Use it when the container is reached only from inside (e.g. docker exec), so that it does not need free host ports.
     --data-dir=DIRECTORY_PATH             Specify path to a hived data directory on the host.
     --shared-file-dir=DIRECTORY_PATH      Specify directory path to a shared_memory_file.bin on the host.
     --name=CONTAINER_NAME                 Specify a dedicated name for the spawned container instance.
@@ -41,6 +42,7 @@ IMAGE_NAME=
 HIVED_DATADIR=
 HIVED_SHM_FILE_DIR=
 DETACH_MODE=0
+PUBLISH_PORTS=1
 
 HTTP_ENDPOINT="0.0.0.0:8091"
 WS_ENDPOINT="0.0.0.0:8090"
@@ -84,6 +86,10 @@ while [ $# -gt 0 ]; do
     --p2p-endpoint)
         shift
         P2_ENDPOINT="${1}"
+        ;;
+
+    --no-publish)
+        PUBLISH_PORTS=0
         ;;
 
     --data-dir=*)
@@ -193,9 +199,11 @@ if [ -n "$HIVED_SHM_FILE_DIR" ]; then
 fi
 
 # Similar to hived, the dockerized version should also immediately start listening on the specified ports 
-add_docker_arg "--publish=${HTTP_ENDPOINT}:8091"
-add_docker_arg "--publish=${WS_ENDPOINT}:8090"
-add_docker_arg "--publish=${P2_ENDPOINT}:2001"
+if [ ${PUBLISH_PORTS} -eq 1 ]; then
+  add_docker_arg "--publish=${HTTP_ENDPOINT}:8091"
+  add_docker_arg "--publish=${WS_ENDPOINT}:8090"
+  add_docker_arg "--publish=${P2_ENDPOINT}:2001"
+fi
 
 # echo "Using docker image: $IMAGE_NAME"
 # echo "Additional hived args: ${CMD_ARGS[@]}"
