@@ -14,6 +14,7 @@
 #include <atomic>
 #include <functional>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
@@ -196,6 +197,7 @@ private:
 struct inventory_limit_report
 {
   fc::ip::endpoint peer;
+  fc::time_point time; ///< when the node logged it
   uint32_t deferred = 0;
   uint32_t dropped = 0;
   uint32_t still_deferred = 0;
@@ -212,6 +214,7 @@ public:
     const fc::variant_object data = m.get_data();
     inventory_limit_report report;
     report.peer = data[ "peer" ].as< fc::ip::endpoint >();
+    report.time = m.get_context().get_timestamp();
     report.deferred = data[ "deferred" ].as< uint32_t >();
     report.dropped = data[ "dropped" ].as< uint32_t >();
     report.still_deferred = data[ "still_deferred" ].as< uint32_t >();
@@ -324,12 +327,9 @@ BOOST_AUTO_TEST_CASE( inventory_limit_deferral_test )
         ilog( "node under test listens at ${ep}", ( "ep", node_endpoint ) );
 
         fc::thread peer_thread( "test_peers" );
-        test_peer flooding_peer( peer_thread, db->get_chain_id(), "flooding peer" );
         test_peer honest_peer( peer_thread, db->get_chain_id(), "honest peer" );
-        flooding_peer.connect( node_endpoint );
         honest_peer.connect( node_endpoint );
-        BOOST_REQUIRE( wait_until( [&]() { return flooding_peer.in_sync() && honest_peer.in_sync(); },
-                                   fc::time_point::now() + fc::seconds( 10 ) ) );
+        BOOST_REQUIRE( wait_until( [&]() { return honest_peer.in_sync(); }, fc::time_point::now() + fc::seconds( 10 ) ) );
 
         std::vector< full_transaction_ptr > deferred_transactions;
         std::vector< full_transaction_ptr > honest_transactions;
@@ -345,28 +345,49 @@ BOOST_AUTO_TEST_CASE( inventory_limit_deferral_test )
         // The node timestamps both in seconds, so when it processes the whole flood within one second
         // (it starts right after a second begins) the deferred hashes are as old as the inventory: when
         // that expires they expire with it, rather than being admitted into the room it leaves.
+        // When the processing ends in a later second (on a loaded host), how many deferred hashes expire
+        // rather than being admitted depends on when the node next happens to expire inventory, and an
+        // admission alone is not reported, so the flood is repeated once by a new flooding peer, whose
+        // inventory and deferred list start empty. The node reports the deferral after it stamped the whole
+        // flood, so the flood stayed within one second if the report is logged in the second it started.
         const uint32_t never_delivered = 500;
-        std::vector< item_hash_t > flood;
-        for( uint32_t i = 0; i < inventory_limit + 1 + never_delivered; ++i )
-          flood.push_back( fc::ripemd160::hash( "never delivered " + std::to_string( i ) ) );
-        fc::sleep_until( fc::time_point( fc::time_point_sec( fc::time_point::now() ) ) + fc::seconds( 1 ) );
-        const fc::time_point flood_time = fc::time_point::now();
-        flooding_peer.advertise( flood );
-
-        BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return !catcher->reports().empty(); }, flood_time + fc::seconds( 10 ) ),
-                               "the node did not report advertisements over its inventory limit" );
+        std::unique_ptr< test_peer > flooding_peer;
+        fc::time_point flood_time;
+        size_t first_report = 0; // where the reports of the current flooding peer start
+        for( int attempt = 1; ; ++attempt )
         {
+          flooding_peer = std::make_unique< test_peer >( peer_thread, db->get_chain_id(), "flooding peer" );
+          flooding_peer->connect( node_endpoint );
+          BOOST_REQUIRE( wait_until( [&]() { return flooding_peer->in_sync(); }, fc::time_point::now() + fc::seconds( 10 ) ) );
+
+          std::vector< item_hash_t > flood;
+          for( uint32_t i = 0; i < inventory_limit + 1 + never_delivered; ++i )
+            flood.push_back( fc::ripemd160::hash( "never delivered " + std::to_string( attempt ) + " " + std::to_string( i ) ) );
+          first_report = catcher->reports().size();
+          fc::sleep_until( fc::time_point( fc::time_point_sec( fc::time_point::now() ) ) + fc::seconds( 1 ) );
+          flood_time = fc::time_point::now();
+          flooding_peer->advertise( flood );
+
+          BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return catcher->reports().size() > first_report; }, flood_time + fc::seconds( 10 ) ),
+                                 "the node did not report advertisements over its inventory limit" );
           const inventory_limit_report report = last_report();
-          BOOST_CHECK( report.peer == flooding_peer.endpoint() );
+          BOOST_CHECK( report.peer == flooding_peer->endpoint() );
           BOOST_CHECK_EQUAL( report.deferred, never_delivered );
           BOOST_CHECK_EQUAL( report.dropped, 0u );
           BOOST_CHECK_EQUAL( report.still_deferred, never_delivered );
+
+          if( fc::time_point_sec( report.time ) == fc::time_point_sec( flood_time ) )
+            break;
+          ilog( "flood ${attempt} started at ${start} and was reported at ${end}, across a second boundary",
+                ( "attempt", attempt )( "start", flood_time )( "end", report.time ) );
+          BOOST_REQUIRE_MESSAGE( attempt < 2, "the node processed the flood across a second boundary twice" );
+          flooding_peer.reset();
         }
 
         // these arrive while earlier advertisements are still deferred, so they are deferred too
         fc::sleep_until( flood_time + fc::seconds( 5 ) );
-        flooding_peer.provide( deferred_transactions );
-        flooding_peer.advertise( hashes_of( deferred_transactions ) );
+        flooding_peer->provide( deferred_transactions );
+        flooding_peer->advertise( hashes_of( deferred_transactions ) );
 
         honest_peer.provide( honest_transactions );
         honest_peer.advertise( hashes_of( honest_transactions ) );
@@ -393,19 +414,20 @@ BOOST_AUTO_TEST_CASE( inventory_limit_deferral_test )
 
         // the node is still waiting for the first flooded transactions it asked for; once the peer tells
         // it they are not available, it fetches the admitted ones
-        flooding_peer.stop_withholding();
+        flooding_peer->stop_withholding();
         BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return count_included( deferred_transactions ) == deferred_transactions.size(); },
                                            fc::time_point::now() + fc::seconds( 30 ) ),
                                "deferred transactions were not fetched and included once there was room for them" );
 
-        const std::vector< inventory_limit_report > reports = catcher->reports();
+        const std::vector< inventory_limit_report > all_reports = catcher->reports();
+        const std::vector< inventory_limit_report > reports( all_reports.begin() + first_report, all_reports.end() );
         for( const inventory_limit_report& report : reports )
         {
-          BOOST_CHECK( report.peer == flooding_peer.endpoint() );
+          BOOST_CHECK( report.peer == flooding_peer->endpoint() );
           BOOST_CHECK_LE( report.still_deferred, inventory_limit );
         }
         BOOST_CHECK_EQUAL( reports.back().still_deferred, 0u );
-        BOOST_CHECK( !flooding_peer.closed() );
+        BOOST_CHECK( !flooding_peer->closed() );
         BOOST_CHECK( !honest_peer.closed() );
 
         ilog( "'API' thread finished" );
