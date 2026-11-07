@@ -138,6 +138,12 @@
 #define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING      200
 
 /**
+ * How often (at most) we log, per peer, that advertisements were deferred or
+ * dropped because the peer exceeded our inventory limit
+ */
+#define GRAPHENE_NET_INVENTORY_LIMIT_REPORT_INTERVAL_SEC     10
+
+/**
  * During normal operation, how many items will be fetched from each
  * peer at a time.  This will only come into play when the network
  * is being flooded -- typically transactions will be fetched as soon
