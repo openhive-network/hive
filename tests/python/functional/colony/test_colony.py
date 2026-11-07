@@ -204,6 +204,67 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
     wait_for_start_colony(witness_node, min_trx_in_block=2500, timeout=420)
 
 
+@pytest.mark.testnet
+def test_colony_sustained_load_across_inventory_limit(
+    block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
+) -> None:
+    """
+    ColonyNode ●───────────● WitnessNode ●───────────● ObserverNode
+
+    5000 transactions per block cross the per-peer inventory limit (60,000 advertisements per minute) after about
+    12 blocks. Over-limit advertisements used to be dropped for good, which stalled the colony; they must reach the
+    witness instead, so blocks stay full.
+    """
+    witness_node = tt.WitnessNode(witnesses=["initminer", *WITNESSES])
+    witness_node.config.shared_file_size = "4G"
+    for witness in WITNESSES:
+        witness_node.config.private_key.append(tt.Account(witness).private_key)
+    witness_node.config.private_key.append(tt.Account("initminer").private_key)
+
+    colony_node = tt.ApiNode()
+    colony_node.config.shared_file_size = "4G"
+    prepare_colony_config(colony_node)
+    colony_node.config.colony_start_at_block = block_log_single_sign.get_head_block_number()
+
+    observer_node = tt.ApiNode()
+    observer_node.config.shared_file_size = "4G"
+
+    colony_node.config.p2p_endpoint, witness_node.config.p2p_endpoint = ttcn.generate_free_addresses(2)
+    witness_node.config.p2p_seed_node = colony_node.config.p2p_endpoint
+    observer_node.config.p2p_seed_node = witness_node.config.p2p_endpoint
+
+    nodes = [witness_node, colony_node, observer_node]
+    for node in nodes:
+        node.run(
+            replay_from=block_log_single_sign,
+            timeout=180,
+            alternate_chain_specs=alternate_chain_spec,
+            exit_before_synchronization=True,
+        )
+
+    simultaneous_node_startup(
+        nodes,
+        timeout=180,
+        alternate_chain_specs=alternate_chain_spec,
+        wait_for_live=True,
+        time_control=tt.StartTimeControl(start_time=block_log_single_sign.get_head_block_time()),
+    )
+
+    min_trx_in_block = 5000 * 90 // 100
+    wait_for_start_colony(observer_node, min_trx_in_block=min_trx_in_block, timeout=420)
+
+    saturated_at = observer_node.get_last_block_number()
+    underfilled = {}
+    for block_num in range(saturated_at + 1, saturated_at + 26):
+        observer_node.wait_for_block_with_number(block_num)
+        trx_count = len(observer_node.api.block.get_block(block_num=block_num).block.transactions)
+        tt.logger.info(f"block {block_num}: {trx_count} transactions")
+        if trx_count < min_trx_in_block:
+            underfilled[block_num] = trx_count
+
+    assert not underfilled, f"Blocks with fewer than {min_trx_in_block} transactions after saturation: {underfilled}"
+
+
 def test_colony_with_unknown_colony_signer(
     block_log_single_sign: tt.BlockLog, alternate_chain_spec: tt.AlternateChainSpecs
 ) -> None:
