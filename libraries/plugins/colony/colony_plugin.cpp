@@ -28,6 +28,7 @@
 #define COLONY_DEFAULT_THREADS 2 // number of working threads used by default (threads have separate pools of users)
 #define COLONY_DEFAULT_MAX_TRANSACTIONS 1000 // number of max transactions per block used by default when there is
   // no other source of default nor explicit value - the value is split between threads
+#define COLONY_SCAN_LOCK_TIME 50 // max time (milliseconds) the startup account scan holds db read lock in one go
 #define COLONY_WAIT_FOR_WORK 50 // default time (milliseconds) to wait before next check if block was made when there
   // is nothing to produce for current block; also time to wait in spin lock for too many concurrent transactions to be handled
 #define COLONY_OVERFLOW_TOLERANCE_MIN 100 // minimum margin of overflowing transactions
@@ -145,6 +146,9 @@ class colony_plugin_impl
     ~colony_plugin_impl() {}
 
     void start( uint32_t block_num );
+    void scan_accounts( const flat_set<public_key_type>& common_keys, bool active_needed, bool posting_needed,
+      fc::time_point_sec lib_ts );
+    void start_workers();
 
     void end_of_sync();
     void post_apply_transaction( const transaction_notification& note );
@@ -175,6 +179,12 @@ class colony_plugin_impl
     bool                                                 _disable_broadcast = false;
     bool                                                 _fill_comment_buffers = false;
     bool                                                 _use_posting = false;
+
+    // startup account scan runs in its own thread in short read locked chunks, so it does not stall the writer
+    fc::thread                                           _scanner{ "colony_scan" };
+    fc::future<void>                                     _scan_done;
+    std::atomic_bool                                     _stop_scan = { false };
+    std::atomic_bool                                     _workers_ready = { false }; // _threads is complete
 
     // locking copied from database::with_read_lock/with_write_lock
     typedef boost::shared_mutex read_write_mutex;
@@ -653,7 +663,6 @@ void colony_plugin_impl::start( uint32_t block_num )
   _head_block_id = _db.head_block_id();
   _head_block_time = _db.head_block_time();
 
-  // scan existing accounts to extract those for which you can effectively use _sign_with keys
   flat_set<public_key_type> common_keys;
   for( const auto& key : _sign_with )
     common_keys.insert( key.get_public_key() );
@@ -663,7 +672,6 @@ void colony_plugin_impl::start( uint32_t block_num )
   _use_posting = !active_needed;
   if( _use_posting )
     posting_needed = true; // custom jsons will use posting even if there are no comments/votes
-  const auto& accounts = _db.get_index< account_index, by_name >();
   const auto& comments = _db.get_index< comment_cashout_index, by_id >();
   _fill_comment_buffers = _params[ REPLY ].weight > 0 || _params[ VOTE ].weight > 0;
   if( _fill_comment_buffers )
@@ -705,53 +713,101 @@ void colony_plugin_impl::start( uint32_t block_num )
     }
     ilog( "Colony threads have ${initial_comments} initial comments to use.", ( initial_comments ) );
   }
-  decltype( _threads )::iterator threadI;
-  int i = 0;
-  int not_matching_accounts = 0;
   fc::time_point_sec lib_ts = HIVE_GENESIS_TIME;
   {
     auto lib = _db.get_last_irreversible_block_data();
     if( lib.get() != nullptr )
       lib_ts = lib->get_block_header().timestamp;
   }
-  database_authority_getter authority_getters( _db );
-  for( const auto& account : accounts )
+  _scan_done = _scanner.async( [this, common_keys, active_needed, posting_needed, lib_ts]()
   {
-    if( account.get_block_creation_time() > lib_ts )
+    try
     {
-      dlog( "Account ${a} is too fresh to be safely used as colony worker.", ( "a", account.get_name() ) );
-      continue;
+      scan_accounts( common_keys, active_needed, posting_needed, lib_ts );
+      if( not _stop_scan.load() )
+        start_workers();
     }
+    catch( const fc::exception& e )
+    {
+      elog( "Colony account scan failed: ${e}. Shutting down.", ( "e", e.to_detail_string() ) );
+      theApp.generate_interrupt_request();
+    }
+  } );
+}
 
-    bool hf28 = _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES );
-    required_authorities_type required_authorities;
-    if( active_needed )
-      required_authorities.required_active.insert( account.get_name() );
-    if( posting_needed && ( hf28 || !active_needed ) )
-      required_authorities.required_posting.insert( account.get_name() );
+void colony_plugin_impl::scan_accounts( const flat_set<public_key_type>& common_keys, bool active_needed,
+  bool posting_needed, fc::time_point_sec lib_ts )
+{
+  // scan existing accounts to extract those for which you can effectively use _sign_with keys;
+  // accounts older than LIB can't vanish between chunks, so resuming by name is safe
+  decltype( _threads )::iterator threadI;
+  int i = 0;
+  int not_matching_accounts = 0;
+  int scanned_accounts = 0;
+  account_name_type last_name;
+  bool started = false;
+  bool finished = false;
+  database_authority_getter authority_getters( _db );
+  while( not finished && not _stop_scan.load() )
+  {
+    _db.with_read_lock( [&]()
+    {
+      const fc::time_point chunk_end = fc::time_point::now() + fc::milliseconds( COLONY_SCAN_LOCK_TIME );
+      const auto& accounts = _db.get_index< account_index, by_name >();
+      auto accountI = started ? accounts.upper_bound( last_name ) : accounts.begin();
+      started = true;
+      bool hf28 = _db.has_hardfork( HIVE_HARDFORK_1_28_ALLOW_STRICT_AND_MIXED_AUTHORITIES );
+      for( ; accountI != accounts.end() && fc::time_point::now() < chunk_end; ++accountI )
+      {
+        const auto& account = *accountI;
+        last_name = account.get_name();
+        ++scanned_accounts;
+        if( account.get_block_creation_time() > lib_ts )
+        {
+          dlog( "Account ${a} is too fresh to be safely used as colony worker.", ( "a", account.get_name() ) );
+          continue;
+        }
 
-    if( hive::protocol::has_authorization( hf28, false, // no signature redundancy allowed
-        required_authorities, common_keys, authority_getters ) )
-    {
-      if( i < _max_threads )
-        threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
-      threadI->_accounts.emplace_back( account.get_name() );
-      ++i;
-      ++threadI;
-      if( threadI == _threads.end() )
-        threadI = _threads.begin();
-    }
-    else
-    {
-      dlog( "Active authority of ${a} does not match given set of private keys.", ( "a", account.get_name() ) );
-      ++not_matching_accounts; // expected to have at least built-in accounts as not matching
-    }
+        required_authorities_type required_authorities;
+        if( active_needed )
+          required_authorities.required_active.insert( account.get_name() );
+        if( posting_needed && ( hf28 || !active_needed ) )
+          required_authorities.required_posting.insert( account.get_name() );
+
+        if( hive::protocol::has_authorization( hf28, false, // no signature redundancy allowed
+            required_authorities, common_keys, authority_getters ) )
+        {
+          if( i < _max_threads )
+            threadI = _threads.emplace( _threads.end(), *this, (uint8_t)i );
+          threadI->_accounts.emplace_back( account.get_name() );
+          ++i;
+          ++threadI;
+          if( threadI == _threads.end() )
+            threadI = _threads.begin();
+        }
+        else
+        {
+          dlog( "Active authority of ${a} does not match given set of private keys.", ( "a", account.get_name() ) );
+          ++not_matching_accounts; // expected to have at least built-in accounts as not matching
+        }
+      }
+      if( accountI == accounts.end() )
+      {
+        finished = true;
+        // still under db lock, so no post_apply_block runs between refresh of head data and the flag
+        _head_block_id = _db.head_block_id();
+        _head_block_time = _db.head_block_time();
+        _workers_ready.store( not _threads.empty() );
+      }
+    } );
   }
+  if( not finished )
+    return;
 
   if( not_matching_accounts > 0 )
   {
     ilog( "Found ${a} accounts, ${f} have active authorities that don't match given set of private keys.",
-      ( "a", accounts.size() )( "f", not_matching_accounts ) );
+      ( "a", scanned_accounts )( "f", not_matching_accounts ) );
   }
   if( _threads.empty() )
   {
@@ -763,7 +819,10 @@ void colony_plugin_impl::start( uint32_t block_num )
     wlog( "Not enough accounts suitable for use as colony workers (${i}) to share between ${n} threads.", ( i )( "n", _max_threads ) );
     _max_threads = i;
   }
+}
 
+void colony_plugin_impl::start_workers()
+{
   if( not _disable_broadcast && not theApp.is_interrupt_request() )
   {
     auto* _p2p_plugin = theApp.find_plugin< hive::plugins::p2p::p2p_plugin >();
@@ -816,10 +875,15 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
     return;
   }
 
+  // until the account scan completes, _threads is being built by the scanner thread
+  const bool workers_ready = _workers_ready.load();
   write_lock lock( _common_mutex, boost::defer_lock_t() );
   lock.lock(); // block all reads until we finish updating common data below
-  for( auto& thread : _threads )
-    thread._tx_needs_update.store( true, std::memory_order_relaxed );
+  if( workers_ready )
+  {
+    for( auto& thread : _threads )
+      thread._tx_needs_update.store( true, std::memory_order_relaxed );
+  }
 
   _head_block_id = _db.head_block_id();
   _head_block_time = _db.head_block_time();
@@ -834,7 +898,7 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
   // remain in pending after reapplication
   _overflowing_tx = 0;
   // adjust concurrency limit when option ordered us to (so all threads lock after two blocks)
-  if( _max_concurrency == 0 )
+  if( _max_concurrency == 0 && workers_ready )
     _concurrency = ( 2 * note.full_block->get_full_transactions().size() + _threads.size() - 1 ) / _threads.size();
 
   if( _fill_comment_buffers )
@@ -1004,6 +1068,11 @@ void colony_plugin::plugin_pre_shutdown()
   hive::utilities::disconnect_signal( my->_end_of_sync_conn );
   hive::utilities::disconnect_signal( my->_post_apply_transaction_conn );
   hive::utilities::disconnect_signal( my->_post_apply_block_conn );
+
+  my->_stop_scan.store( true );
+  if( my->_scan_done.valid() )
+    my->_scan_done.wait();
+  my->_scanner.quit();
 
   for( auto& thread : my->_threads )
     thread.finalize();
