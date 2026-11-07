@@ -18,6 +18,8 @@ Options to create API and P2P endpoints (these also create the appropriate docke
 --p2p-endpoint=<endpoint>
 ```
 
+By default the container publishes 0.0.0.0:8091 (http), 0.0.0.0:8090 (WS) and 0.0.0.0:2001 (P2P) on the host. Pass `--no-publish` to publish none of them (the endpoint options are then ignored), e.g. when the node is reached only through `docker exec` and must not depend on those host ports being free.
+
 Options to specify working directories for the node (the script will pass the appropriate volume mappings to the underlying docker run command based on the following options):
 
 
