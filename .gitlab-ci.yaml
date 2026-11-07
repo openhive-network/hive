@@ -1776,6 +1776,7 @@ colony_tests:
       - TEST_NAME: test_colony_on_complex_network
       - TEST_NAME: test_multiple_colony_nodes_communication_with_single_witness_node
       - TEST_NAME: test_colony_with_unknown_colony_signer
+      - TEST_NAME: test_block_time_offset
   tags:
     - public-runner-docker
 
