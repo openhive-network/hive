@@ -210,6 +210,10 @@ def test_colony_sustained_load_across_inventory_limit(
 ) -> None:
     """
     ColonyNode ●───────────● WitnessNode ●───────────● ObserverNode
+        ●─────────────────────────────────────────────────●
+
+    The witness is seeded with the colony and the observer with the witness; peer exchange then also links the colony
+    to the observer, so the three nodes form a full mesh and each link carries the whole transaction stream.
 
     5000 transactions per block cross the per-peer inventory limit (60,000 advertisements per minute) after about
     12 blocks. Over-limit advertisements used to be dropped for good, which stalled the colony; they must reach the
