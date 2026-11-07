@@ -732,6 +732,16 @@ void colony_plugin_impl::start( uint32_t block_num )
       elog( "Colony account scan failed: ${e}. Shutting down.", ( "e", e.to_detail_string() ) );
       theApp.generate_interrupt_request();
     }
+    catch( const std::exception& e )
+    {
+      elog( "Colony account scan failed: ${e}. Shutting down.", ( "e", e.what() ) );
+      theApp.generate_interrupt_request();
+    }
+    catch( ... )
+    {
+      elog( "Colony account scan failed with unknown exception. Shutting down." );
+      theApp.generate_interrupt_request();
+    }
   } );
 }
 
