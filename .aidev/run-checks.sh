@@ -45,8 +45,10 @@
 # uses a local cache and the build is cold.
 #
 # Reports go to test-results/<suite>/: junit.xml (one case per step) plus each
-# test binary's own junit report, timings.tsv, each step's wall time, and
-# sccache.tsv, the compiler cache each building step used.
+# test binary's own junit report, timings.tsv, each step's wall time,
+# sccache.tsv, the compiler cache each building step used, and sccache-hits.tsv,
+# how many of its compiles that cache served; the run's output ends with both, a
+# hit rate under half named a cold cache.
 #
 # Each test unit runs under its own timeout (scripts/run_chain_tests_parallel.sh),
 # widened under AIDEV's adaptive timeouts; see .aidev/README.md.
@@ -59,6 +61,7 @@ rm -rf "$out"; mkdir -p "$out"
 cases="$out/cases.tsv"; : > "$cases"
 timings="$out/timings.tsv"; printf 'step\tseconds\texit\n' > "$timings"
 sccache_record="$out/sccache.tsv"; printf 'step\tbackend\taddress\tupstream\n' > "$sccache_record"
+sccache_hits_record="$out/sccache-hits.tsv"; printf 'step\tcompiles\thits\thit_rate\n' > "$sccache_hits_record"
 date +%s > "$out/started-at"  # the slot's start, for a later suite's time budget
 cpus="$(nproc)"
 test_jobs="${HIVE_TEST_JOBS:-$(( cpus < 8 ? cpus : 8 ))}"
@@ -258,6 +261,35 @@ sccache_answered() {  # BACKEND ADDRESS UPSTREAM
     printf '%s\t%s\t%s\t%s\n' "${name:-}" "$@" >> "$sccache_record"
 }
 
+# The compiler cache hits of the build just run, from its sccache server's stats
+# (zeroed before the build: one server serves every build of the container), into
+# the step's log and sccache-hits.tsv: a compile is one sccache could cache, a
+# hit one the cache served. The stats are read best-effort: the build's verdict
+# never depends on them. `name` is step's.
+sccache_hits() {
+    local counts compiles hits rate=-
+    sccache --show-stats || true
+    counts="$(sccache --show-stats --stats-format=json 2>/dev/null | python3 -c '
+import json, sys
+s = json.load(sys.stdin)["stats"]
+hits, misses = (sum(s[k]["counts"].values()) for k in ("cache_hits", "cache_misses"))
+print(hits + misses, hits)' 2>/dev/null)" || counts="- -"
+    read -r compiles hits <<< "$counts"
+    if [ "$compiles" = - ]; then
+        echo "sccache: no statistics, hit rate unknown"
+    elif [ "$compiles" -eq 0 ]; then
+        echo "sccache: nothing compiled"
+    else
+        rate="$(( 100 * hits / compiles ))%"
+        echo "sccache: $hits of $compiles compiles hit the cache ($rate)$(sccache_cold "$hits" "$compiles")"
+    fi
+    printf '%s\t%s\t%s\t%s\n' "${name:-}" "$compiles" "$hits" "$rate" >> "$sccache_hits_record"
+}
+
+sccache_cold() {  # HITS COMPILES: a note when fewer than half hit
+    [ $(( 2 * $1 )) -ge "$2" ] || echo "; the cache was cold, so the build compiled from scratch"
+}
+
 submodules_checked_out() {
     local m
     for m in libraries/fc libraries/appbase libraries/vendor/rocksdb libraries/vendor/zstd \
@@ -282,8 +314,9 @@ build() (  # a subshell: the `cd` below must not move the steps that follow
     configure ON || return 1
     local rc=0 started="$bld/.ninja-started"
     touch "$started" || return 1
+    sccache --zero-stats > /dev/null 2>&1 || true
     build_ninja chain_test plugin_test assertion_id_verifier || rc=$?
-    sccache --show-stats || true
+    sccache_hits
     [ "$rc" -eq 0 ] || duplicate_assertion_ids "$bld/generated_assert_id" "$started"
     return "$rc"
 )
@@ -315,8 +348,9 @@ hived_binaries() (  # TESTNET (ON|OFF) [UTIL...]
     local utils=(shared_memory_file_util "${@:2}")
     sccache_backend
     configure "$1" || return 1
-    build_ninja hived cli_wallet "${utils[@]}" || return 1
-    sccache --show-stats || true
+    sccache --zero-stats > /dev/null 2>&1 || true
+    build_ninja hived cli_wallet "${utils[@]}" || { sccache_hits; return 1; }
+    sccache_hits
     mkdir -p "$out/bin" && cp programs/hived/hived programs/cli_wallet/cli_wallet \
         "${utils[@]/#/programs/util/}" "$out/bin/"
 )
@@ -430,7 +464,7 @@ concurrently() {  # STEP...: sharing $test_jobs, a step's share handed on when i
     slots="$(mktemp -d)" || return 1
     share_slots "$slots" "$@"
     for s in "$@"; do
-        setsid "$BASH" -c "set -uo pipefail; $(declare -p out cases timings sccache_record src bld step_skipped); $(declare -f)"'
+        setsid "$BASH" -c "set -uo pipefail; $(declare -p out cases timings sccache_record sccache_hits_record src bld step_skipped); $(declare -f)"'
             test_slots="$1"; run "$2"' step "$slots/$s" "$s" < /dev/null &
         step_of[$!]="$s"
     done
@@ -477,6 +511,12 @@ printf 'total\t%s\t%s\n' "$SECONDS" "$status" >> "$timings"
 echo "== wall time per step (seconds):" >&2
 cat "$timings" >&2
 [ "$(wc -l < "$sccache_record")" -le 1 ] || { echo "== compiler cache:"; cat "$sccache_record"; } >&2
+if [ "$(wc -l < "$sccache_hits_record")" -gt 1 ]; then
+    echo "== compiler cache hits:"
+    cat "$sccache_hits_record"
+    awk -F'\t' 'NR > 1 && $2 ~ /^[0-9]+$/ && $2 > 0 && 2 * $3 < $2 {
+        printf "%s: the compiler cache was cold (%s of %s compiles hit), so it compiled from scratch\n", $1, $3, $2 }' "$sccache_hits_record"
+fi >&2
 skipped="$(awk -F'\t' '$1 == "case" && $3 == "skip" { printf "%s%s: %s", sep, $2, $5; sep = "; " }' "$cases")"
 [ -z "$skipped" ] || { echo "== skipped:"; awk -F'\t' '$1 == "case" && $3 == "skip" { print "  " $2 ": " $5 }' "$cases"; } >&2
 python3 .aidev/junit_cases.py "$out/junit.xml" "$suite" "$cases"

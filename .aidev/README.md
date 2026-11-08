@@ -43,8 +43,11 @@ Each suite of `full` and `baseline` declares `memory:`, what AIDEV reserves on t
 host for one run until it has measured the suite's own runs (the suite's container
 is capped a headroom above it, 1.25× by default): `full`'s `default` and `baseline`
 40g, `full`'s `integration` 12g (52g together), `full`'s `wallet_patterns` 16g (after
-`default`, never beside it). `quick`, `canary` and `coverage`
-declare none. Source: over 14 `run_full_tests` runs
+`default`, never beside it). `quick`, `canary` and `coverage` declare 24g, 12
+build jobs: priced from their own runs instead, they were capped near what a build
+at one job peaks at (~2 GB, 2.5 GB with the headroom), which left the next build
+one job, so quick built in ~580 s at a 99.8% compiler cache hit rate (#998). Source
+for `full` and `baseline`: over 14 `run_full_tests` runs
 (2026-10-13/14, before the integration suite was on), the pull host's free memory
 fell by 6-14 GB on steem-11 (32 threads) and up to 35 GB on steem-3 and steem-5
 (48 threads), host-wide samples ~30 s apart. The peak is the build, `ninja -j nproc`
