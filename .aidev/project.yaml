@@ -65,11 +65,21 @@ sandbox:
 # cli_wallet pattern tests (`full`'s `wallet_patterns`): the rest of test-tools,
 # the 5M block-log fixtures and the fork/colony jobs stay in GitLab CI.
 verification:
+  # quick, canary and coverage declare their memory, as `full` does: the build's
+  # ninja runs one job per 2 GB the container leaves it (.aidev/build-jobs.sh),
+  # and a price learnt from the slot's own runs feeds on itself. A build capped
+  # at 2.5 GB runs one job and peaks near 2 GB, which keeps the cap there: quick
+  # built in ~580 s at a 99.8% cache hit rate (#998). 24 GB is ~12 jobs (76 s warm),
+  # and a cold build fits it too. A list of one suite, as `baseline`'s, because only a
+  # suite entry declares `memory`.
   quick:
-    adapter: command
-    args: [".aidev/run-checks.sh", "quick", "build", "chain-smoke", "plugin-api"]
-    artifacts: ["test-results/quick/"]
-    timeout: 900  # the quick cap; the slot takes ~5-8 min
+    suites:
+      - name: default
+        adapter: command
+        args: [".aidev/run-checks.sh", "quick", "build", "chain-smoke", "plugin-api"]
+        artifacts: ["test-results/quick/"]
+        timeout: 900  # the quick cap; the slot takes ~3-5 min
+        memory: 24g
   full:
     suites:
       # One build, then chain_test and plugin_test at the same time, each split
@@ -134,16 +144,22 @@ verification:
   # The promote gate: the merged candidate builds and its quick tests pass;
   # every workflow's `full` already ran all of chain_test and plugin_test.
   canary:
-    adapter: command
-    args: [".aidev/run-checks.sh", "canary", "build", "chain-smoke", "plugin-api"]
-    artifacts: ["test-results/canary/"]
-    timeout: 1500
+    suites:
+      - name: default
+        adapter: command
+        args: [".aidev/run-checks.sh", "canary", "build", "chain-smoke", "plugin-api"]
+        artifacts: ["test-results/canary/"]
+        timeout: 1500
+        memory: 24g
   # No C++ coverage build: AIDEV runs `coverage` only in the post-implementation
   # scan, where it checks that the candidate builds and its quick tests pass.
   coverage:
-    adapter: command
-    args: [".aidev/run-checks.sh", "coverage", "build", "chain-smoke", "plugin-api"]
-    artifacts: ["test-results/coverage/"]
+    suites:
+      - name: default
+        adapter: command
+        args: [".aidev/run-checks.sh", "coverage", "build", "chain-smoke", "plugin-api"]
+        artifacts: ["test-results/coverage/"]
+        memory: 24g
 
 # Adaptive per-unit test timeouts (docs/operations/adaptive-timeouts.md in aidev):
 # aidev hands each suite AIDEV_TIMEOUTS_FILE and collects AIDEV_TIMEOUTS_OBSERVATIONS;
