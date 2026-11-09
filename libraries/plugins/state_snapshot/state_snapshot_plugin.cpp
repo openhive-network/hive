@@ -16,6 +16,7 @@
 #include <hive/chain/util/state_checker_tools.hpp>
 
 #include <hive/chain/external_storage/fd_budget.hpp>
+#include <hive/chain/external_storage/rocksdb_format.hpp>
 #include <hive/chain/external_storage/state_snapshot_provider.hpp>
 #include <hive/chain/external_storage/types.hpp>
 
@@ -155,9 +156,9 @@ rocksdb_cleanup_helper rocksdb_cleanup_helper::open(const ::rocksdb::Options& op
   {
   rocksdb_cleanup_helper retVal;
 
-  ::rocksdb::DB* db = nullptr;
-  auto status = ::rocksdb::DB::Open(opts, path.string(), &db);
-  retVal._db.reset(db);
+  ::rocksdb::Options pinnedOpts(opts);
+  hive::chain::pin_rocksdb_on_disk_format(pinnedOpts);
+  auto status = ::rocksdb::DB::Open(pinnedOpts, path.string(), &retVal._db);
   if(status.ok())
     {
     ilog("Successfully opened db at path: `${p}'", ("p", path.string()));
@@ -183,6 +184,7 @@ void rocksdb_cleanup_helper::close()
 
   if(cfOptions != nullptr)
     actualOptions = *cfOptions;
+  hive::chain::pin_rocksdb_on_disk_format(actualOptions);
 
   ::rocksdb::ColumnFamilyHandle* cf = nullptr;
   auto status = _db->CreateColumnFamily(actualOptions, name, &cf);
@@ -296,6 +298,7 @@ class snapshot_processor_data : public BaseClass
       {
       ::rocksdb::Options opts;
       opts.comparator = &_size_t_comparator;
+      hive::chain::pin_rocksdb_on_disk_format(opts);
       hive::chain::raise_fd_limit();
 
       return opts;
@@ -1258,10 +1261,8 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
   cfDescriptors.push_back(cfDescriptor);
 
   std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
-  std::unique_ptr<::rocksdb::DB> manifestDbPtr;
-  ::rocksdb::DB* manifestDb = nullptr;
+  std::unique_ptr<::rocksdb::DB> manifestDb;
   auto status = ::rocksdb::DB::OpenForReadOnly(dbOptions, manifestDbPath.string(), cfDescriptors, &cfHandles , &manifestDb);
-  manifestDbPtr.reset(manifestDb);
   if(status.ok())
     {
     ilog("Successfully opened snapshot manifest-db at path: `${p}'", ("p", manifestDbPath.string()));
@@ -1431,7 +1432,6 @@ state_snapshot_plugin::impl::load_snapshot_manifest(const bfs::path& actualStora
   }
 
   manifestDb->Close();
-  manifestDbPtr.release();
 
   return std::make_tuple(retVal, extDataIdx, std::move(blockchain_configuration), std::move(plugins), libn);
 }
@@ -1460,9 +1460,8 @@ state_snapshot_plugin::impl::load_snapshot_compatibility_data(const bfs::path& a
     cfDescriptors.emplace_back(columnFamily, ::rocksdb::ColumnFamilyOptions());
 
   std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
-  ::rocksdb::DB* manifestDb = nullptr;
+  std::unique_ptr<::rocksdb::DB> manifestDb;
   auto status = ::rocksdb::DB::OpenForReadOnly(dbOptions, manifestDbPath.string(), cfDescriptors, &cfHandles, &manifestDb);
-  std::unique_ptr<::rocksdb::DB> manifestDbPtr(manifestDb);
   FC_ASSERT(status.ok(), "Cannot open snapshot manifest-db at path: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
 
   std::vector<std::string> values(entries.size());
@@ -1858,9 +1857,8 @@ std::optional<uint32_t> state_snapshot_plugin::impl::find_snapshot_irreversible_
     cfDescriptors.emplace_back("IRREVERSIBLE_STATE", ::rocksdb::ColumnFamilyOptions());
 
     std::vector<::rocksdb::ColumnFamilyHandle*> cfHandles;
-    ::rocksdb::DB* manifestDb = nullptr;
+    std::unique_ptr<::rocksdb::DB> manifestDb;
     auto status = ::rocksdb::DB::OpenForReadOnly(::rocksdb::Options(), manifestDbPath.string(), cfDescriptors, &cfHandles, &manifestDb);
-    std::unique_ptr<::rocksdb::DB> manifestDbPtr(manifestDb);
     FC_ASSERT(status.ok(), "Cannot open snapshot manifest-db at path: `${p}'. Error details: `${e}'.", ("p", manifestDbPath.string())("e", status.ToString()));
 
     std::string value;

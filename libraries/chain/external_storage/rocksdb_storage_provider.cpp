@@ -3,6 +3,7 @@
 
 #include <hive/chain/external_storage/comment_rocksdb_objects.hpp>
 #include <hive/chain/external_storage/fd_budget.hpp>
+#include <hive/chain/external_storage/rocksdb_format.hpp>
 #include <hive/chain/external_storage/utilities.hpp>
 #include <hive/chain/external_storage/types.hpp>
 
@@ -55,6 +56,7 @@ Options make_db_options()
   // index/filter blocks, so reaching an evicted file costs a reopen - reads get slower - but the
   // descriptor count stays bounded and correctness is unaffected (issue #869).
   options.max_open_files = max_open_files_budget();
+  pin_rocksdb_on_disk_format( options );
   return options;
 }
 
@@ -90,7 +92,7 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   ilog("Prepare column definitions." );
   auto columnDefs = prepareTunedColumnDefinitions(true);
 
-  DB* _db = nullptr;
+  std::unique_ptr<DB> _db;
   auto strPath = _storagePath.string();
   Options options = make_db_options();
 
@@ -99,7 +101,7 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
 
   if( status.ok() )
   {
-    getStorage().reset( _db );
+    getStorage() = std::move( _db );
 
     ilog("Verify store version.");
     verifyStoreVersion();
@@ -172,7 +174,7 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
   struct db_wrapper
   {
     external_basic_provider* provider = nullptr;
-    DB* db = nullptr;
+    std::unique_ptr<DB> db;
 
     db_wrapper( external_basic_provider* provider ): provider( provider ){}
 
@@ -206,7 +208,7 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
         wlog( "OpenForReadOnly failed for `${name}` RocksDB. Error: ${e}", ("name", name)("e", _status.ToString()) );
       if( _status.ok() )
       {
-        getStorage().reset( _db.db );
+        getStorage() = std::move( _db.db );
 
         ilog( "Cleanup column handles." );
         cleanupColumnHandles();
@@ -229,7 +231,7 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
 
     if( _status.ok() )
     {
-      getStorage().reset( _db.db );
+      getStorage() = std::move( _db.db );
 
       ilog( "Prepare column definitions." );
       auto _columnDefs = prepareTunedColumnDefinitions(false);
@@ -281,7 +283,10 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_storage_provider::prepareTun
 {
   auto columnDefs = prepareColumnDefinitions( addDefaultColumn );
   for( auto& columnDef : columnDefs )
+  {
     tune_level_compaction( columnDef.options );
+    pin_rocksdb_on_disk_format( columnDef.options );
+  }
   return columnDefs;
 }
 
