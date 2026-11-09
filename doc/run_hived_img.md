@@ -24,7 +24,7 @@ Options to specify working directories for the node (the script will pass the ap
 
 
 `--data-dir=DIRECTORY_PATH` - specifies the blockchain data directory. See deployment scenarios described below for details on how to prepare this directory<br>
-`--shared-file-dir=DIRECTORY_PATH` - specifies the directory where dockerized hived will store its state file (shared_memory.bin). For best performance results, it should be located on a ram-disk (e.g. a subdirectory created under /dev/shm).
+`--shared-file-dir=DIRECTORY_PATH` - specifies the directory where dockerized hived will store its state file (shared_memory.bin). For best performance results, it should be located on a ram-disk (e.g. a subdirectory created under /dev/shm) that gives huge pages, see [State on a ram-disk: use huge pages](#state-on-a-ram-disk-use-huge-pages).
 
 hived in the image runs as user `hived` (UID 1000), so both directories must be writable by that UID. When they are owned by another user, there is no need to `chown 1000` them or make them world-writable: pass that user's UID in `HIVED_UID` and hived runs as it instead, e.g. for directories owned by the user starting the node:
 
@@ -38,6 +38,22 @@ What the entrypoint changes and what it leaves alone:
 - It hands over to that UID only the home directory `/home/hived` itself (not its contents) and `/home/hived/.hived` if it exists, without descending into mounts. The rest of the image's files under `/home/hived` (binaries, scripts) stay owned by UID 1000 and remain readable.
 - It never changes the owner of the data directory, the shared file directory or anything else mounted into the container, such as a read-only `config.ini`; no file on the host changes owner.
 - The data directory and the shared file directory must therefore already be writable by `HIVED_UID`. If one is not, the container stops before hived starts with a message naming the directory and its owner. This also applies to the image's own (unmounted) volumes, which are owned by UID 1000: with `HIVED_UID`, mount both directories.
+
+### State on a ram-disk: use huge pages
+
+The state file is a mapping of many GB that hived reads and writes at random, so with the 4 KiB pages of a default tmpfs it spends a large part of its time on TLB misses: a mainnet replay of blocks 1-18M took 3375 s with the state on a plain `/dev/shm` and 2757 s (about 18% less) on a tmpfs mounted with huge pages. Default tmpfs mounts, including `/dev/shm` and the tmpfs mounts Docker makes, use `huge=never` unless the host sets `/sys/kernel/mm/transparent_hugepage/shmem_enabled`. Put the state on a tmpfs mounted with `huge=within_size` (or `huge=always`), or with `huge=advise`, under which hived requests huge pages for its state with `madvise`:
+
+    sudo mkdir -p /mnt/hived-shm
+    sudo mount -t tmpfs -o size=32G,huge=within_size tmpfs /mnt/hived-shm
+    # or add the option to an existing mount, e.g. /dev/shm:
+    sudo mount -o remount,huge=within_size /dev/shm
+
+and pass a directory on it to `run_hived_img.sh --shared-file-dir=/mnt/hived-shm/consensus_node` (or `shared-file-dir` in config.ini when running hived natively). Docker's `--tmpfs` refuses the `huge` option; to give a plain `docker run` a tmpfs with huge pages, use the host mount above, or a volume of the local driver:
+
+    docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=size=32G,huge=within_size hived-shm
+    docker run ... -v hived-shm:/home/hived/shm_dir -e SHM_DIR=/home/hived/shm_dir ...
+
+When the state directory is on a tmpfs without huge pages, hived logs a warning at startup naming the mount. A state file written before the mount option was changed keeps its small pages until the kernel's khugepaged collapses them; recreating the file (a replay, or loading a snapshot) gives huge pages at once. Huge pages apply only to tmpfs: a state file on a disk filesystem (ext4, ZFS and so on) is unaffected. To check that they are used, look for a non-zero `ShmemPmdMapped` in the `shared_memory.bin` entry of `/proc/<hived pid>/smaps` (tmpfs files are counted there, not in `FilePmdMapped`), or in `/proc/meminfo`.
 
 ### Examining the hived log file
 

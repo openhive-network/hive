@@ -22,7 +22,7 @@ cat <<EOF
     --p2p-endpoint=<endpoint>             Map hived internal P2P endpoint to the specified external one. Endpoint can be a port number or ip-address:port.
     --no-publish                          Do not publish the http, WS and P2P ports on the host (the endpoint options above are then ignored). Use it when the container is reached only from inside (e.g. docker exec), so that it does not need free host ports.
     --data-dir=DIRECTORY_PATH             Specify path to a hived data directory on the host.
-    --shared-file-dir=DIRECTORY_PATH      Specify directory path to a shared_memory_file.bin on the host.
+    --shared-file-dir=DIRECTORY_PATH      Specify directory path to a shared_memory_file.bin on the host. On a ram-disk, use a tmpfs mounted with huge=within_size or huge=advise (see doc/run_hived_img.md).
     --name=CONTAINER_NAME                 Specify a dedicated name for the spawned container instance.
     --preserve-container                  Allows to preserve a docker container created at docker run spawn (by default it is removed on finish to avoid host machine pollution).
                                           Once used, caller is responsible for choosing unique container name (by passing --name option), or manually removing already existing container.

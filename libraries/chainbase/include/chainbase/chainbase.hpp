@@ -994,6 +994,12 @@ namespace chainbase {
       using evict_page_cache_function = std::function< void( const bfs::path& state_file ) >;
       void set_evict_page_cache_function( evict_page_cache_function evict_page_cache ) { _evict_page_cache = std::move( evict_page_cache ); }
 
+      /// Requests huge pages for the mapping of the state file at address, after every open and resize maps it for
+      /// writing, as advise_huge_pages does, returning 0 or an errno value. Replaceable so that tests can observe it and
+      /// simulate a failure.
+      using advise_huge_pages_function = std::function< int( void* address, size_t size ) >;
+      void set_advise_huge_pages_function( advise_huge_pages_function advise ) { _advise_huge_pages = std::move( advise ); }
+
 #ifdef CHAINBASE_CHECK_LOCKING
       void require_lock_fail( const char* method, const char* lock_type, const char* tname )const;
 
@@ -1403,6 +1409,7 @@ namespace chainbase {
       class state_file_lock;
 
       void open_storage( const bfs::path& dir, bool read_only, bool evict_page_cache, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension );
+      void request_huge_pages();
 
       unique_ptr<bip::managed_mapped_file>                        _segment;
       /// The storage opened with read_only_storage, in place of _segment.
@@ -1415,6 +1422,8 @@ namespace chainbase {
       link_file_function                                          _link_file;
       /// Empty for posix_fadvise() itself.
       evict_page_cache_function                                   _evict_page_cache;
+      /// Empty for advise_huge_pages() itself.
+      advise_huge_pages_function                                  _advise_huge_pages;
 
       /**
         * This is a sparse list of known indicies kept to accelerate creation of undo sessions

@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <chainbase/chainbase.hpp>
+#include <chainbase/huge_pages.hpp>
 
 #include <hive/utilities/tempdir.hpp>
 
@@ -13,7 +14,10 @@
 #include <cstdint>
 #include <ctime>
 #include <fstream>
+#include <optional>
+#include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <sys/wait.h>
@@ -299,6 +303,73 @@ BOOST_AUTO_TEST_CASE( failed_resize_aborts_with_its_cause )
   BOOST_CHECK( WIFSIGNALED( status ) && WTERMSIG( status ) == SIGABRT );
   BOOST_CHECK( logged.find( "FATAL: could not map the shared memory file" ) != std::string::npos );
   BOOST_CHECK( logged.find( "Free space available is less than declared size" ) != std::string::npos );
+}
+
+BOOST_AUTO_TEST_CASE( huge_pages_are_requested_for_every_mapping_of_the_state_file )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+
+  chainbase::database db;
+  std::vector< std::pair< void*, size_t > > advised;
+  // refused as by a kernel without transparent huge pages, which must not stop the node
+  db.set_advise_huge_pages_function( [&advised]( void* address, size_t size ) { advised.emplace_back( address, size ); return EINVAL; } );
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_REQUIRE_EQUAL( advised.size(), 1u );
+  BOOST_CHECK( advised.back().first != nullptr );
+  BOOST_CHECK_EQUAL( advised.back().second, STATE_FILE_SIZE );
+
+  db.resize( 2 * STATE_FILE_SIZE );
+  db.resize( 3 * STATE_FILE_SIZE );
+  BOOST_REQUIRE_EQUAL( advised.size(), 3u );
+  BOOST_CHECK_EQUAL( advised[ 1 ].second, 2 * STATE_FILE_SIZE );
+  BOOST_CHECK_EQUAL( advised[ 2 ].second, 3 * STATE_FILE_SIZE );
+  BOOST_CHECK_EQUAL( db.get_max_memory(), 3 * STATE_FILE_SIZE );
+  db.close();
+
+  chainbase::database reopened;
+  reopened.set_advise_huge_pages_function( [&advised]( void* address, size_t size ) { advised.emplace_back( address, size ); return 0; } );
+  reopened.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_REQUIRE_EQUAL( advised.size(), 4u );
+  BOOST_CHECK_EQUAL( advised.back().second, 3 * STATE_FILE_SIZE );
+  reopened.close();
+}
+
+BOOST_AUTO_TEST_CASE( tmpfs_mount_without_huge_pages_is_found_in_mountinfo )
+{
+  const std::string mountinfo =
+    "22 1 8:1 / / rw,relatime shared:1 - ext4 /dev/sda1 rw,errors=remount-ro\n"
+    "25 22 0:23 / /dev rw,nosuid,relatime shared:2 - devtmpfs udev rw,size=8000000k,mode=755\n"
+    "26 25 0:24 / /dev/shm rw,nosuid,nodev shared:3 - tmpfs tmpfs rw,inode64\n"
+    "40 22 0:40 / /mnt/huge rw,relatime shared:20 - tmpfs tmpfs rw,size=1048576k,inode64,huge=within_size\n"
+    "41 22 0:41 / /mnt/advise rw,relatime - tmpfs tmpfs rw,huge=advise\n"
+    "42 22 0:42 / /mnt/never rw,relatime - tmpfs tmpfs rw,huge=never\n"
+    "43 40 0:43 / /mnt/huge/nested rw,relatime - tmpfs tmpfs rw,inode64\n"
+    "44 42 8:1 /data/state /mnt/never/bound rw master:1 - ext4 /dev/sda1 rw\n"
+    "45 22 0:45 / /mnt/with\\040space rw - tmpfs tmpfs rw\n"
+    "46 22 0:46 / /mnt/stacked rw - tmpfs tmpfs rw\n"
+    "47 46 0:47 / /mnt/stacked rw - tmpfs tmpfs rw,huge=always\n";
+  const auto mount_of = [&mountinfo]( const std::string& path )
+  {
+    std::istringstream input( mountinfo );
+    return chainbase::tmpfs_mount_without_huge_pages( input, chainbase::bfs::path( path ) );
+  };
+  const auto none = std::optional< std::string >();
+
+  BOOST_CHECK( mount_of( "/var/lib/hived" ) == none );
+  BOOST_CHECK( mount_of( "/dev/shm/hived" ) == std::optional< std::string >( "/dev/shm" ) );
+  BOOST_CHECK( mount_of( "/dev/shm" ) == std::optional< std::string >( "/dev/shm" ) );
+  BOOST_CHECK( mount_of( "/dev/shmx/hived" ) == none );
+  BOOST_CHECK( mount_of( "/mnt/huge/state" ) == none );
+  BOOST_CHECK( mount_of( "/mnt/advise/state" ) == none );
+  BOOST_CHECK( mount_of( "/mnt/never/state" ) == std::optional< std::string >( "/mnt/never" ) );
+  BOOST_CHECK( mount_of( "/mnt/huge/nested/state" ) == std::optional< std::string >( "/mnt/huge/nested" ) );
+  BOOST_CHECK( mount_of( "/mnt/never/bound/state" ) == none );
+  BOOST_CHECK( mount_of( "/mnt/with space/state" ) == std::optional< std::string >( "/mnt/with space" ) );
+  BOOST_CHECK( mount_of( "/mnt/stacked/state" ) == none );
+
+  std::istringstream empty;
+  BOOST_CHECK( chainbase::tmpfs_mount_without_huge_pages( empty, "/dev/shm/hived" ) == none );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
