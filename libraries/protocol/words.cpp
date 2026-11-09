@@ -44,67 +44,46 @@ hive::words::const_char_ptr word_list_b64 =
 static_assert(sizeof(word_list_b64) != 0);
 #endif // C23_EMBED_SUPPORTED
 
-class word_list_t
+std::string built_in_word_list_zip()
   {
-  public:
-    word_list_t()
-      {
-      initialize();
-      }
-
-    const hive::words::const_char_ptr* get_list() const
-      {
-      return list.data();
-      }
-
-    uint32_t get_list_size() const
-      {
-      return list.size();
-      }
-
-  private:
-    void initialize()
-      {
 #ifdef C23_EMBED_SUPPORTED
-      const std::string word_list_zip((const char*)word_list_zipped, word_list_zipped_size);
+  return std::string((const char*)word_list_zipped, word_list_zipped_size);
 #else
-      const std::string word_list_zip = fc::base64_decode(word_list_b64);
+  return fc::base64_decode(word_list_b64);
 #endif // C23_EMBED_SUPPORTED
-      raw_list = fc::zlib_inflate(word_list_zip);
-
-      for (size_t pos = 0; raw_list[pos] != '\0'; ++pos)
-        {
-        list.push_back(raw_list.data() + pos);
-        pos = raw_list.find('\n', pos);
-        if (pos == std::string::npos)
-          break;
-        raw_list[pos] = '\0';
-        }
-      }
-
-  private:
-    std::vector<hive::words::const_char_ptr>  list;
-    std::string                               raw_list;
-  };
-
-const word_list_t& init_word_list()
-  {
-  static word_list_t  word_list;
-  return word_list;
   }
 
 } // namespace
 
 namespace hive { namespace words {
 
+word_list::word_list(const std::string& deflated_words)
+  : raw_list(fc::zlib_inflate(deflated_words))
+  {
+  for (size_t pos = 0; raw_list[pos] != '\0'; ++pos)
+    {
+    list.push_back(raw_list.data() + pos);
+    pos = raw_list.find('\n', pos);
+    if (pos == std::string::npos)
+      break;
+    raw_list[pos] = '\0';
+    }
+  }
+
+const word_list& get_built_in_word_list()
+  {
+  static const word_list  built_in(built_in_word_list_zip());
+  return built_in;
+  }
+
 const const_char_ptr* get_word_list()
   {
-  return init_word_list().get_list();
+  return get_built_in_word_list().get_list();
   }
 
 uint32_t get_word_list_size()
   {
-  return init_word_list().get_list_size();
+  return get_built_in_word_list().get_list_size();
   }
 
 } } // hive::words
