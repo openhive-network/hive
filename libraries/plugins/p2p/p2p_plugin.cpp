@@ -75,7 +75,7 @@ public:
 
   // node_delegate interface
   virtual bool has_item( const graphene::net::item_id& ) override;
-  virtual bool handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool) override;
+  virtual graphene::net::block_handling_result handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool) override;
   virtual void handle_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction) override;
   virtual void handle_message( const graphene::net::message& ) override;
   virtual std::vector< graphene::net::item_hash_t > get_block_ids( const std::vector< graphene::net::item_hash_t >&, uint32_t&, uint32_t ) override;
@@ -135,7 +135,7 @@ bool p2p_plugin_impl::has_item( const graphene::net::item_id& id )
   FC_CAPTURE_LOG_AND_RETHROW( (id) )
 }
 
-bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool sync_mode)
+graphene::net::block_handling_result p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool sync_mode)
 { try {
   if( shutdown_helper.is_running() )
   {
@@ -161,7 +161,7 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
       // you can help the network code out by throwing a block_older_than_undo_history exception.
       // when the net code sees that, it will stop trying to push blocks from that chain, but
       // leave that peer connected so that they can get sync blocks from us
-      bool result = false;
+      graphene::net::block_handling_result result = graphene::net::block_handling_result::applied;
       {
         uint32_t skip_flags = (block_producer | force_validate) ? chain::database::skip_nothing : chain::database::skip_transaction_signatures;
         std::shared_ptr<chain::p2p_block_flow_control> p2p_block_ctrl;
@@ -169,7 +169,11 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
           p2p_block_ctrl = std::make_shared<chain::sync_block_flow_control>(full_block, skip_flags);
         else
           p2p_block_ctrl = std::make_shared<chain::p2p_block_flow_control>(full_block, skip_flags);
-        result = chain.accept_block(p2p_block_ctrl, sync_mode);
+        const bool switched_forks = chain.accept_block(p2p_block_ctrl, sync_mode);
+        if (p2p_block_ctrl->ignored())
+          result = graphene::net::block_handling_result::ignored;
+        else if (switched_forks)
+          result = graphene::net::block_handling_result::switched_forks;
       }
 
       if (!sync_mode)
@@ -193,6 +197,12 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
       fc_dlog(fc::logger::get("sync"), "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
       FC_THROW_EXCEPTION(graphene::net::unlinkable_block_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
     }
+    catch (const chain::block_body_mismatch_exception& e)
+    {
+      // translate to a graphene::net exception, so the node blames only the peer that sent this copy
+      fc_wlog(fc::logger::get("sync"), "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
+      FC_THROW_EXCEPTION(graphene::net::block_body_mismatch_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
+    }
     catch (const fc::exception& e)
     {
       //fc_elog(fc::logger::get("sync"), "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
@@ -201,6 +211,11 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
       {
         elog("Rethrowing as graphene::net exception");
         FC_THROW_EXCEPTION(graphene::net::unlinkable_block_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
+      }
+      else if (e.code() == chain::block_body_mismatch_exception::code_value)
+      {
+        elog("Rethrowing as graphene::net exception");
+        FC_THROW_EXCEPTION(graphene::net::block_body_mismatch_exception, "Error when pushing block:\n${e}", ("e", e.to_detail_string()));
       }
       else
       {
@@ -213,7 +228,7 @@ bool p2p_plugin_impl::handle_block(const std::shared_ptr<hive::chain::full_block
     dlog("Block ignored due to start p2p_plugin shutdown");
     FC_THROW_EXCEPTION(graphene::net::p2p_node_shutting_down_exception, "Preventing further processing of ignored block...");
   }
-  return false;
+  return graphene::net::block_handling_result::ignored;
 } FC_CAPTURE_AND_RETHROW((sync_mode)) }
 
 void p2p_plugin_impl::handle_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction)
