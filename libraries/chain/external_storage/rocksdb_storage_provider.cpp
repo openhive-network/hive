@@ -15,10 +15,23 @@ namespace hive { namespace chain {
 namespace {
 
 /// Memtable budget per column family handed to OptimizeLevelStyleCompaction: 32 MiB write
-/// buffers (up to 6 of them), 16 MiB SST files, 128 MiB level 1. RocksDB's default budget of
-/// 512 MiB is applied to every column family separately, which would multiply the memory of
-/// every node and test fixture (several of them run in parallel) for little gain.
+/// buffers (up to 6 of them). RocksDB's default budget of 512 MiB is applied to every column
+/// family separately, which would multiply the memory of every node and test fixture (several
+/// of them run in parallel) for little gain.
 constexpr uint64_t MEMTABLE_MEMORY_BUDGET = 128 * 1024 * 1024;
+
+/// OptimizeLevelStyleCompaction also derives the SST file size (budget / 8) and the level 1 size
+/// (budget) from the memtable budget, so the small budget above alone would mean 16 MiB files and
+/// a 128 MiB level 1. Large databases (account history reaches hundreds of GB) would then hold 4x
+/// as many SST files as with RocksDB's defaults, and with max_open_files bounded (issue #869) that
+/// means more table cache evictions and reopens; the smaller level 1 also adds a level and its
+/// write amplification. Keep RocksDB's default 64 MiB files and 256 MiB level 1 instead.
+void tune_level_compaction( ::rocksdb::ColumnFamilyOptions& options )
+{
+  options.OptimizeLevelStyleCompaction( MEMTABLE_MEMORY_BUDGET );
+  options.target_file_size_base    = 64 * 1024 * 1024;
+  options.max_bytes_for_level_base = 256 * 1024 * 1024;
+}
 
 Options make_db_options()
 {
@@ -27,7 +40,7 @@ Options make_db_options()
   options.IncreaseParallelism();
   // Only affects the default column family created together with a new database; the column
   // families passed to DB::Open get the same tuning in prepareTunedColumnDefinitions.
-  options.OptimizeLevelStyleCompaction( MEMTABLE_MEMORY_BUDGET );
+  tune_level_compaction( options );
   // Keep the RocksDB info LOG bounded: defaults never rotate it (max_log_file_size=0,
   // keep_log_file_num=1000, INFO level), so it grows unbounded and can fill a small tmpfs.
   options.info_log_level    = ::rocksdb::WARN_LEVEL;
@@ -268,7 +281,7 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_storage_provider::prepareTun
 {
   auto columnDefs = prepareColumnDefinitions( addDefaultColumn );
   for( auto& columnDef : columnDefs )
-    columnDef.options.OptimizeLevelStyleCompaction( MEMTABLE_MEMORY_BUDGET );
+    tune_level_compaction( columnDef.options );
   return columnDefs;
 }
 
