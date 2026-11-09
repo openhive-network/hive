@@ -64,6 +64,11 @@ labels:
     color: "#0d5c63"
     description: "Read-only diagnosis of a specific problem under the analysis-only contract (#9034/#9056) — investigate and report, mutating nothing. analyze + todo = approved for analyze-run. No promote/deploy lifecycle. Never combined with implement/devops/high-level."
     authority: executive
+  - name: optimization
+    group: type
+    color: "#AD8D43"
+    description: "Performance, bundle-size or API-load improvement."
+    authority: executive
 
 exclusive_groups:
   - name: status
