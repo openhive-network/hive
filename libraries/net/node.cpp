@@ -3687,6 +3687,18 @@ namespace graphene { namespace net {
         return;
       }
 
+      // a connection that is closing keeps delivering what the peer sent before it saw our disconnect, but we
+      // won't send it any request, so its inventory is no source to fetch from
+      const peer_connection_ptr originating_peer_ptr = originating_peer->shared_from_this();
+      if (_closing_connections.find(originating_peer_ptr) != _closing_connections.end() ||
+          _terminating_connections.find(originating_peer_ptr) != _terminating_connections.end())
+      {
+        dlog("ignoring inventory of ${count} items from peer ${endpoint}: its connection is closing",
+             ("count", item_ids_inventory_message_received.item_hashes_available.size())
+             ("endpoint", originating_peer->get_remote_endpoint()));
+        return;
+      }
+
       // expire old inventory so we'll be making decisions our about whether to fetch blocks below based only on recent inventory
       originating_peer->clear_old_inventory();
 
@@ -3709,10 +3721,17 @@ namespace graphene { namespace net {
       process_deferred_transaction_advertisements(originating_peer);
       for (const item_hash_t& item_hash : item_ids_inventory_message_received.item_hashes_available)
       {
-        if (_message_ids_currently_being_processed.find(item_hash) != _message_ids_currently_being_processed.end())
-          // we're in the middle of processing this item, no need to fetch it again
-          continue;
         item_id advertised_item_id(item_ids_inventory_message_received.item_type, item_hash);
+        if (_message_ids_currently_being_processed.find(item_hash) != _message_ids_currently_being_processed.end())
+        {
+          // we're in the middle of processing this item, no need to fetch it again (record_advertised_item() won't).
+          // But if our copy of a block turns out to have a bad body, refetch_block_from_other_peers() has to
+          // know this peer has the block too: it won't advertise it again
+          if (item_ids_inventory_message_received.item_type == graphene::net::block_message_type &&
+              !originating_peer->is_inventory_advertised_to_us_list_full())
+            record_advertised_item(originating_peer, advertised_item_id);
+          continue;
+        }
 
         // do some more checks to find out if we already have this item.  If it's in our cache of recent
         // messages, there's no reason to get it again.
@@ -3796,42 +3815,37 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       const item_hash_t& item_hash = advertised_item_id.item_hash;
-      bool we_requested_this_item_from_a_peer = false;
+      advertised_item_status status;
+      status.is_block = advertised_item_id.item_type == graphene::net::block_message_type;
+      status.being_processed = _message_ids_currently_being_processed.find(item_hash) != _message_ids_currently_being_processed.end();
       for (const peer_connection_ptr& peer : _active_connections)
         if (peer->items_requested_from_peer.find(advertised_item_id) != peer->items_requested_from_peer.end())
         {
-          we_requested_this_item_from_a_peer = true;
+          status.requested = true;
           // don't just continue; we want to record the fact that this peer also offered us the item, so if we fail
           // to get it from `peer`, we can know to ask `originating_peer` instead
           break;
         }
 
-      originating_peer->inventory_peer_advertised_to_us.insert(peer_connection::timestamped_item_id(advertised_item_id, fc::time_point::now()));
-      if (!we_requested_this_item_from_a_peer)
+      status.new_from_this_peer =
+        originating_peer->inventory_peer_advertised_to_us.insert(peer_connection::timestamped_item_id(advertised_item_id, fc::time_point::now())).second;
+      status.recently_failed = _recently_failed_items.find(advertised_item_id) != _recently_failed_items.end();
+      auto items_to_fetch_iter = _items_to_fetch.get<item_id_index>().find(advertised_item_id);
+      status.queued = items_to_fetch_iter != _items_to_fetch.get<item_id_index>().end();
+
+      const advertised_item_fetch_decision decision = decide_advertised_item_fetch(status);
+      if (status.recently_failed && !status.being_processed && !status.requested)
+        dlog("not adding ${item_hash} to our list of items to fetch because we've recently fetched a copy and it failed to push", (item_hash));
+      if (decision.queue)
       {
-        if (_recently_failed_items.find(advertised_item_id) != _recently_failed_items.end())
-        {
-          dlog("not adding ${item_hash} to our list of items to fetch because we've recently fetched a copy and it failed to push", (item_hash));
-        }
-        else
-        {
-          auto items_to_fetch_iter = _items_to_fetch.get<item_id_index>().find(advertised_item_id);
-          if (items_to_fetch_iter == _items_to_fetch.get<item_id_index>().end())
-          {
-            // it's new to us
-            _items_to_fetch.insert(prioritized_item_id(advertised_item_id, _items_to_fetch_sequence_counter++));
-            dlog("adding item ${item_hash} from inventory message to our list of items to fetch", (item_hash));
-            trigger_fetch_items_loop();
-          }
-          else
-          {
-            // another peer has told us about this item already, but this peer just told us it has the item
-            // too, we can expect it to be around in this peer's cache for longer, so update its timestamp
-            _items_to_fetch.get<item_id_index>().modify(items_to_fetch_iter,
-                                                        [](prioritized_item_id& item) { item.timestamp = fc::time_point::now(); });
-          }
-        }
+        _items_to_fetch.insert(prioritized_item_id(advertised_item_id, _items_to_fetch_sequence_counter++));
+        dlog("adding item ${item_hash} from inventory message to our list of items to fetch", (item_hash));
       }
+      if (decision.refresh_timestamp)
+        _items_to_fetch.get<item_id_index>().modify(items_to_fetch_iter,
+                                                    [](prioritized_item_id& item) { item.timestamp = fc::time_point::now(); });
+      if (decision.wake_fetch_loop)
+        trigger_fetch_items_loop();
     }
 
     // move transaction advertisements we deferred while the peer's inventory was full into it, as far
@@ -7420,6 +7434,22 @@ namespace graphene { namespace net {
     if (preferred_source_exists)
       return std::nullopt;
     return first_deprioritized_available;
+  }
+
+  advertised_item_fetch_decision decide_advertised_item_fetch(const advertised_item_status& status)
+  {
+    advertised_item_fetch_decision decision;
+    if (status.being_processed || status.requested || status.recently_failed)
+      return decision;
+    if (!status.queued)
+    {
+      decision.queue = true;
+      decision.wake_fetch_loop = true;
+      return decision;
+    }
+    decision.refresh_timestamp = true;
+    decision.wake_fetch_loop = status.is_block && status.new_from_this_peer;
+    return decision;
   }
 
   peer_connection_ptr find_unclosed_connection_to_endpoint(const fc::ip::endpoint& remote_endpoint,
