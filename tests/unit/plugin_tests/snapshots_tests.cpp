@@ -46,10 +46,9 @@ void modify_snapshot_manifest( const fc::path& manifest_dir, const std::function
     cf_descriptors.emplace_back( name, ::rocksdb::ColumnFamilyOptions() );
 
   std::vector< ::rocksdb::ColumnFamilyHandle* > cf_handles;
-  ::rocksdb::DB* raw_db = nullptr;
-  status = ::rocksdb::DB::Open( ::rocksdb::Options(), manifest_dir.string(), cf_descriptors, &cf_handles, &raw_db );
+  std::unique_ptr< ::rocksdb::DB > manifest_db;
+  status = ::rocksdb::DB::Open( ::rocksdb::Options(), manifest_dir.string(), cf_descriptors, &cf_handles, &manifest_db );
   BOOST_REQUIRE( status.ok() );
-  std::unique_ptr< ::rocksdb::DB > manifest_db( raw_db );
 
   manifest_column_families_t column_families;
   for( size_t i = 0; i < cf_names.size(); ++i )
