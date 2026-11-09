@@ -1,4 +1,5 @@
 #include <chainbase/chainbase.hpp>
+#include <chainbase/huge_pages.hpp>
 #include <boost/array.hpp>
 #include <boost/any.hpp>
 #include <iostream>
@@ -439,6 +440,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       remove_stray_new_state_files( dir );
     }
     if( _data_dir != dir ) close();
+    warn_once_if_on_tmpfs_without_huge_pages( dir );
 
     try
     {
@@ -607,6 +609,8 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}", ( "abs_path",abs_path.generic_string() )(shared_file_size) );
     }
 
+    request_huge_pages();
+
     auto env = _segment_manager->find< environment_check >( "environment" );
     if( environment_extension )
     {
@@ -615,6 +619,23 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     }
 
     _is_open = true;
+  }
+
+  void database::request_huge_pages()
+  {
+    if( !_segment )
+      return;
+    const int error = _advise_huge_pages ? _advise_huge_pages( _segment->get_address(), _segment->get_size() )
+                                         : advise_huge_pages( _segment->get_address(), _segment->get_size() );
+    // Huge pages exist only for files on tmpfs, so elsewhere a failure changes nothing.
+    if( error == 0 || !is_on_tmpfs( _data_dir ) )
+      return;
+    static std::once_flag huge_pages_refused;
+    std::call_once( huge_pages_refused, [&]()
+    {
+      wlog( "Could not request huge pages for the state file in ${dir} (${error}): it is mapped with whatever pages its "
+            "tmpfs gives", ( "dir", _data_dir.generic_string() )( "error", std::strerror( error ) ) );
+    } );
   }
 
   void database::flush() {
