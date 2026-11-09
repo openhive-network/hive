@@ -43,6 +43,13 @@
 #define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT        5
 #define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_WINDOW_SEC   60
 
+// a separate breaker with the same semantics for disconnects over a block whose body doesn't
+// match its header's merkle root.  Such a copy says nothing about the block itself, only about
+// the peer that sent it, so it doesn't count toward the breaker above; and a burst of them
+// (which could be a local decoding bug) stops these disconnects instead of isolating the node
+#define GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_COUNT        5
+#define GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_WINDOW_SEC   60
+
 // how far past our current head an advertised block id may claim to be and still be worth
 // fetching.  Legitimate live adverts are at most a block or two ahead; this allows for
 // generous clock skew and momentary head lag while rejecting fabricated far-future ids

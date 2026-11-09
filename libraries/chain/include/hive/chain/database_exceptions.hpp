@@ -90,6 +90,10 @@ namespace hive { namespace chain {
   FC_DECLARE_DERIVED_EXCEPTION( shm_state_definitions_mismatch_exception,      hive::chain::chain_exception, 4130000, "State objects definitions from shared memory file mismatch current version of app." )
   FC_DECLARE_DERIVED_EXCEPTION( blockchain_config_mismatch_exception, hive::chain::chain_exception, 4130100, "Blockchain config from shared memory file mismatch current version of app." )
 
+  // the block's transactions do not hash to the transaction_merkle_root its header (and therefore its id) commits to:
+  // the id may be genuine, only this copy of the body is wrong, so a correct copy may still arrive from elsewhere
+  FC_DECLARE_DERIVED_EXCEPTION( block_body_mismatch_exception,     hive::chain::block_validate_exception, 4020100, "block body does not match its header" )
+
   FC_DECLARE_DERIVED_EXCEPTION( transaction_expiration_exception,  hive::chain::transaction_check_exception, 4030100, "transaction expiration exception" )
   FC_DECLARE_DERIVED_EXCEPTION( transaction_tapos_exception,       hive::chain::transaction_check_exception, 4030200, "transaction tapos exception" )
 
