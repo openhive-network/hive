@@ -33,6 +33,9 @@
 
 #include <hive/protocol/types.hpp>
 
+#include <fc/time.hpp>
+
+#include <deque>
 #include <list>
 #include <memory>
 #include <unordered_set>
@@ -67,6 +70,14 @@ namespace graphene { namespace net {
     node_id_t originating_peer;
   };
 
+  /// What node_delegate::handle_block() did with a block it did not reject
+  enum class block_handling_result
+  {
+    applied,        ///< the block extended our current chain
+    switched_forks, ///< the block made us switch to the fork it is on
+    ignored         ///< the block was stored on a shorter fork without being validated
+  };
+
    /**
     *  @class node_delegate
     *  @brief used by node reports status to client or fetch data from client
@@ -99,12 +110,15 @@ namespace graphene { namespace net {
           *  @brief Called when a new block comes in from the network
           *
           *  @param sync_mode true if the message was fetched through the sync process, false during normal operation
-          *  @returns true if this message caused the blockchain to switch forks, false if it did not
+          *  @returns whether the block was applied, made the blockchain switch forks, or was only stored
+          *           on a shorter fork (and therefore not validated)
           *
+          *  @throws block_body_mismatch_exception if the block's transactions don't match the merkle root
+          *          in its header (only this copy is bad, the block id itself may be genuine)
           *  @throws exception if error validating the item, otherwise the item is
           *          safe to broadcast on.
           */
-         virtual bool handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) = 0;
+         virtual block_handling_result handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) = 0;
 
          /**
           *  @brief Called when a new transaction comes in from the network
@@ -386,6 +400,24 @@ namespace graphene { namespace net {
    * served: it catches up through normal block propagation.
    */
   bool peer_needs_blocks_we_pruned(uint32_t peers_head_block_num, uint32_t our_tail_block_num);
+
+  /**
+   * Circuit breaker for punitive disconnects: once @p count disconnects have been recorded within
+   * the last @p window, further ones are refused until the oldest recorded one leaves the window.
+   */
+  class disconnect_breaker
+  {
+  public:
+    disconnect_breaker(uint32_t count, fc::microseconds window);
+
+    /// Whether a disconnect at @p now must be refused.  When it is not, it is recorded against the window.
+    bool tripped(fc::time_point now);
+
+  private:
+    const uint32_t _count;
+    const fc::microseconds _window;
+    std::deque<fc::time_point> _recent_disconnect_times;
+  };
 
   /**
    * The connection to @p remote_endpoint that has not finished closing, or null if there is none.

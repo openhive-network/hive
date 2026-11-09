@@ -1,3 +1,5 @@
+#pragma once
+
 #include <hive/protocol/types.hpp>
 
 namespace hive { namespace chain {
@@ -17,6 +19,18 @@ inline static const map< uint32_t, checksum_type >& get_shared_db_merkle()
   };
 
   return shared_db_merkle;
+}
+
+/// True when the merkle root computed from a block's transactions is acceptable for the root in its header:
+/// they are equal, or the computed one is the known bad root recorded for that block number.
+inline bool is_acceptable_merkle_root( uint32_t block_num, const checksum_type& header_merkle_root,
+                                       const checksum_type& computed_merkle_root )
+{
+  if( header_merkle_root == computed_merkle_root )
+    return true;
+  const auto& merkle_map = get_shared_db_merkle();
+  auto itr = merkle_map.find( block_num );
+  return itr != merkle_map.end() && itr->second == computed_merkle_root;
 }
 
 } } //hive::chain

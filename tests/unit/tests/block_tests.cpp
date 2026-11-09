@@ -34,6 +34,7 @@
 #include <hive/chain/sync_block_writer.hpp>
 #include <hive/chain/index.hpp>
 #include <hive/chain/irreversible_block_data.hpp>
+#include <hive/chain/shared_db_merkle.hpp>
 
 #include <hive/protocol/exceptions.hpp>
 
@@ -358,6 +359,173 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
     edump((e.to_detail_string()));
     throw;
   }
+}
+
+namespace
+{
+  /// A copy of @p genuine with the same header, and therefore the same id, but with a body that
+  /// doesn't hash to the header's transaction_merkle_root
+  std::shared_ptr<full_block_type> copy_with_corrupted_body( const std::shared_ptr<full_block_type>& genuine )
+  {
+    signed_block block = genuine->get_block();
+    BOOST_REQUIRE( !block.transactions.empty() );
+    block.transactions.front().ref_block_prefix ^= 1;
+    std::shared_ptr<full_block_type> corrupted = full_block_type::create_from_signed_block( block );
+    BOOST_REQUIRE( corrupted->get_block_id() == genuine->get_block_id() );
+    BOOST_REQUIRE( corrupted->get_merkle_root() != corrupted->get_block_header().transaction_merkle_root );
+    return corrupted;
+  }
+
+  /// Puts into the pending state of @p db a transaction creating account @p name
+  void push_account_create( hive::plugins::chain::chain_plugin& chain, const database& db, const std::string& name,
+                            const fc::ecc::private_key& key )
+  {
+    signed_transaction trx;
+    account_create_operation cop;
+    cop.new_account_name = name;
+    cop.creator = HIVE_INIT_MINER_NAME;
+    cop.owner = authority( 1, key.get_public_key(), 1 );
+    cop.active = cop.owner;
+    trx.operations.push_back( cop );
+    trx.set_expiration( db.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    PUSH_TX( chain, trx, key );
+  }
+
+  /// Both nodes share blocks 1-10, then node 1 alone produces blocks 11 and 12.  Returns node 2's own block 11,
+  /// which carries a transaction creating "alice"; for node 1 it is a block on a shorter side branch.
+  std::shared_ptr<full_block_type> build_side_branch_block( database& db1, witness::block_producer& bp1,
+                                                            database& db2, hive::plugins::chain::chain_plugin& chain_plugin2,
+                                                            witness::block_producer& bp2, const fc::ecc::private_key& key )
+  {
+    for( uint32_t i = 0; i < 10; ++i )
+    {
+      auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1), key, database::skip_nothing );
+      PUSH_BLOCK( chain_plugin2, b );
+    }
+    for( uint32_t i = 0; i < 2; ++i )
+      GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1), key, database::skip_nothing );
+    push_account_create( chain_plugin2, db2, "alice", key );
+    auto side_branch_block = GENERATE_BLOCK( bp2, db2.get_slot_time(3), db2.get_scheduled_witness(3), key, database::skip_nothing );
+    BOOST_REQUIRE_EQUAL( db1.head_block_num(), 12u );
+    BOOST_REQUIRE_EQUAL( side_branch_block->get_block_num(), 11u );
+    BOOST_REQUIRE_EQUAL( side_branch_block->get_full_transactions().size(), 1u );
+    return side_branch_block;
+  }
+}
+
+/// A copy of a side-branch block with a genuine id but a wrong body must not be stored in fork_db: there it
+/// would make the block look known, and the fork switch that later reaches it would fail.  The genuine copy
+/// is still accepted and the switch to its branch succeeds.
+BOOST_AUTO_TEST_CASE( corrupted_side_branch_block_is_rejected_before_fork_db )
+{
+  try {
+    fc::temp_directory data_dir1( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( data_dir1.path().string(), 1, fc::optional< fc::logging_config >() );
+    auto common_logging_config = fixture1.get_logging_config();
+    fc::temp_directory data_dir2( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( data_dir2.path().string(), 2, common_logging_config );
+    witness::block_producer bp1( chain_plugin1 );
+    witness::block_producer bp2( chain_plugin2 );
+    auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
+
+    auto genuine = build_side_branch_block( db1, bp1, db2, chain_plugin2, bp2, init_account_priv_key );
+    const block_id_type db1_tip = db1.head_block_id();
+
+    BOOST_CHECK_THROW( PUSH_BLOCK( chain_plugin1, copy_with_corrupted_body( genuine ) ), block_body_mismatch_exception );
+    BOOST_CHECK( !fixture1.get_block_reader().is_known_block( genuine->get_block_id() ) );
+    BOOST_CHECK_EQUAL( db1.head_block_id(), db1_tip );
+
+    PUSH_BLOCK( chain_plugin1, genuine );
+    BOOST_CHECK( fixture1.get_block_reader().is_known_block( genuine->get_block_id() ) );
+    BOOST_CHECK_EQUAL( db1.head_block_id(), db1_tip );
+
+    for( uint32_t i = 0; i < 2; ++i )
+    {
+      auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing );
+      PUSH_BLOCK( chain_plugin1, b );
+    }
+    BOOST_CHECK_EQUAL( db1.head_block_num(), 13u );
+    BOOST_CHECK_EQUAL( db1.head_block_id(), db2.head_block_id() );
+    BOOST_CHECK_EQUAL( db1.get_account( "alice" ).get_name(), "alice" );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+/// The same check applies to a block that would extend the head: it is rejected and fork_db doesn't change.
+BOOST_AUTO_TEST_CASE( corrupted_block_on_top_of_head_is_rejected )
+{
+  try {
+    fc::temp_directory data_dir1( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( data_dir1.path().string(), 1, fc::optional< fc::logging_config >() );
+    auto common_logging_config = fixture1.get_logging_config();
+    fc::temp_directory data_dir2( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( data_dir2.path().string(), 2, common_logging_config );
+    witness::block_producer bp1( chain_plugin1 );
+    auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
+
+    for( uint32_t i = 0; i < 5; ++i )
+    {
+      auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing );
+      PUSH_BLOCK( chain_plugin2, b );
+    }
+    push_account_create( chain_plugin1, db1, "alice", init_account_priv_key );
+    auto genuine = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1), init_account_priv_key, database::skip_nothing );
+    BOOST_REQUIRE_EQUAL( genuine->get_full_transactions().size(), 1u );
+    const block_id_type db2_head = db2.head_block_id();
+
+    BOOST_CHECK_THROW( PUSH_BLOCK( chain_plugin2, copy_with_corrupted_body( genuine ) ), block_body_mismatch_exception );
+    BOOST_CHECK( !fixture2.get_block_reader().is_known_block( genuine->get_block_id() ) );
+    BOOST_CHECK_EQUAL( db2.head_block_id(), db2_head );
+    BOOST_CHECK_EQUAL( fixture2.get_block_reader().head_block_id(), db2_head );
+
+    PUSH_BLOCK( chain_plugin2, genuine );
+    BOOST_CHECK_EQUAL( db2.head_block_id(), genuine->get_block_id() );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+/// During replay (skip_merkle_check) the body isn't compared with the header before the fork_db insert.
+BOOST_AUTO_TEST_CASE( corrupted_block_is_not_checked_during_replay )
+{
+  try {
+    fc::temp_directory data_dir1( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( data_dir1.path().string(), 1, fc::optional< fc::logging_config >() );
+    auto common_logging_config = fixture1.get_logging_config();
+    fc::temp_directory data_dir2( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( data_dir2.path().string(), 2, common_logging_config );
+    witness::block_producer bp1( chain_plugin1 );
+    witness::block_producer bp2( chain_plugin2 );
+    auto init_account_priv_key = fc::ecc::private_key::regenerate( fc::sha256::hash( string( "init_key" ) ) );
+
+    auto genuine = build_side_branch_block( db1, bp1, db2, chain_plugin2, bp2, init_account_priv_key );
+
+    PUSH_BLOCK( chain_plugin1, copy_with_corrupted_body( genuine ), database::skip_merkle_check );
+    BOOST_CHECK( fixture1.get_block_reader().is_known_block( genuine->get_block_id() ) );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+/// A computed root recorded in get_shared_db_merkle() for its block number is accepted in place of the
+/// header's root, as in database::_apply_block(); nothing else is.
+BOOST_AUTO_TEST_CASE( known_bad_merkle_roots_are_acceptable )
+{
+  const checksum_type header_root( "1111111111111111111111111111111111111111" );
+  const checksum_type other_root( "2222222222222222222222222222222222222222" );
+  BOOST_REQUIRE( !get_shared_db_merkle().empty() );
+  for( const auto& [ block_num, known_bad_root ] : get_shared_db_merkle() )
+  {
+    BOOST_CHECK( is_acceptable_merkle_root( block_num, header_root, known_bad_root ) );
+    BOOST_CHECK( !is_acceptable_merkle_root( block_num, header_root, other_root ) );
+    BOOST_CHECK( !is_acceptable_merkle_root( block_num + 1, header_root, known_bad_root ) );
+  }
+  BOOST_CHECK( is_acceptable_merkle_root( 5, header_root, header_root ) );
+  BOOST_CHECK( !is_acceptable_merkle_root( 5, header_root, other_root ) );
 }
 
 BOOST_AUTO_TEST_CASE( switch_forks_undo_create )

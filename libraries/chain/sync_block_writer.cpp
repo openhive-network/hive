@@ -2,8 +2,10 @@
 
 #include <hive/chain/block_flow_control.hpp>
 #include <hive/chain/block_storage_interface.hpp>
+#include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/fork_database.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/shared_db_merkle.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
 
 #include <boost/scope_exit.hpp>
@@ -72,6 +74,18 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
   apply_block_t apply_block_extended,
   pop_block_t pop_block_extended )
 {
+  // The block id covers only the header, so a copy with a genuine id can still carry a wrong body.  Reject it
+  // before it enters fork_db: once stored, the id counts as known and the genuine copy would never be fetched.
+  // For blocks from p2p the root was already computed by the worker thread pool, so this only reads it.
+  if( !( skip & database::skip_merkle_check ) )
+  {
+    const checksum_type& header_merkle_root = full_block->get_block_header().transaction_merkle_root;
+    const checksum_type& merkle_root = full_block->get_merkle_root();
+    HIVE_ASSERT( is_acceptable_merkle_root( full_block->get_block_num(), header_merkle_root, merkle_root ),
+      block_body_mismatch_exception, "Block body does not match the transaction_merkle_root of its header",
+      ( "block_num", full_block->get_block_num() )( "id", full_block->get_block_id() )( header_merkle_root )( merkle_root ) );
+  }
+
   std::vector<std::shared_ptr<full_block_type>> blocks;
 
   if (true) //if fork checking enabled

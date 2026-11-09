@@ -424,7 +424,7 @@ namespace graphene { namespace net {
       hive::protocol::chain_id_type get_chain_id() const override;
       bool has_item( const net::item_id& id ) override;
       void handle_message( const message& ) override;
-      bool handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) override;
+      block_handling_result handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) override;
       void handle_transaction(const std::shared_ptr<full_transaction_type>& full_transaction) override;
       std::vector<item_hash_t> get_block_ids(const std::vector<item_hash_t>& blockchain_synopsis,
                                              uint32_t& remaining_item_count,
@@ -503,19 +503,26 @@ namespace graphene { namespace net {
 
       active_sync_requests_map              _active_sync_requests; /// list of sync blocks we've asked for from peers but have not yet received
 
-      struct compare_full_blocks_by_block_id
+      struct received_sync_item
+      {
+        std::shared_ptr<full_block_type> full_block;
+        // the peer that delivered this copy, the only one to blame if its body turns out not to match its header
+        // (weak: a block received from a peer that has since disconnected is still worth pushing)
+        std::weak_ptr<peer_connection> delivering_peer;
+      };
+      struct compare_received_sync_items_by_block_id
       {
         typedef const item_hash_t& result_type;
-        const item_hash_t& operator()(const std::shared_ptr<full_block_type>& full_block) const
+        const item_hash_t& operator()(const received_sync_item& item) const
         {
-          return full_block->get_block_id();
+          return item.full_block->get_block_id();
         }
       };
-      typedef boost::multi_index_container<std::shared_ptr<full_block_type>,
-                                           boost::multi_index::indexed_by<boost::multi_index::ordered_unique<compare_full_blocks_by_block_id>>> received_sync_items_by_id;
+      typedef boost::multi_index_container<received_sync_item,
+                                           boost::multi_index::indexed_by<boost::multi_index::ordered_unique<compare_received_sync_items_by_block_id>>> received_sync_items_by_id;
 
       std::set<item_hash_t>  _already_received_sync_item_ids; //set for fast lookup of already received sync items
-      std::list<std::shared_ptr<full_block_type>> _new_received_sync_items; /// list of sync blocks we've just received but haven't yet tried to process
+      std::list<received_sync_item> _new_received_sync_items; /// list of sync blocks we've just received but haven't yet tried to process
       received_sync_items_by_id _received_sync_items; /// set of sync blocks we've received, but can't yet process because we are still missing blocks that come earlier in the chain
       // @}
 
@@ -581,7 +588,10 @@ namespace graphene { namespace net {
       std::unordered_set<peer_connection_ptr>                     _terminating_connections;
 
       boost::circular_buffer<item_hash_t> _most_recent_blocks_accepted; // the /n/ most recent blocks we've accepted (currently tuned to the max number of connections)
-      std::deque<fc::time_point> _recent_invalid_block_disconnect_times; // when we recently disconnected peers over "invalid" blocks (circuit breaker state)
+      disconnect_breaker _invalid_block_disconnect_breaker{GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT,
+                                                           fc::seconds(GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_WINDOW_SEC)};
+      disconnect_breaker _block_body_mismatch_disconnect_breaker{GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_COUNT,
+                                                                 fc::seconds(GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_WINDOW_SEC)};
       // monotone mirrors of the chain state used to judge advertised/queued block ids without a
       // delegate round trip per decision; refreshed on every accepted block (staleness is
       // conservative: at worst we briefly treat a just-dead fork block as still fetchable)
@@ -769,7 +779,9 @@ namespace graphene { namespace net {
       block_id_classification classify_advertised_block_id(const item_hash_t& block_id_hash);
       bool stalled_head_resync_due(peer_connection* peer);
       bool invalid_block_disconnect_breaker_tripped();
-      void send_sync_block_to_node_delegate(const std::shared_ptr<full_block_type>& full_block);
+      bool block_body_mismatch_disconnect_breaker_tripped();
+      void refetch_block_from_other_peers(peer_connection* peer_that_sent_bad_copy, const item_id& block_item_id);
+      void send_sync_block_to_node_delegate(const received_sync_item& item);
       uint32_t get_number_of_handle_message_calls_in_progress();
       void discard_abandoned_sync_blocks();
       void process_backlog_of_sync_blocks();
@@ -3998,22 +4010,43 @@ namespace graphene { namespace net {
     bool node_impl::invalid_block_disconnect_breaker_tripped()
     {
       VERIFY_CORRECT_THREAD();
-      fc::time_point window_start = fc::time_point::now() - fc::seconds(GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_WINDOW_SEC);
-      while (!_recent_invalid_block_disconnect_times.empty() && _recent_invalid_block_disconnect_times.front() < window_start)
-        _recent_invalid_block_disconnect_times.pop_front();
-      if (_recent_invalid_block_disconnect_times.size() >= GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT)
-        return true;
-      _recent_invalid_block_disconnect_times.push_back(fc::time_point::now());
-      return false;
+      return _invalid_block_disconnect_breaker.tripped(fc::time_point::now());
     }
 
-    void node_impl::send_sync_block_to_node_delegate(const std::shared_ptr<full_block_type>& full_block)
+    // Like invalid_block_disconnect_breaker_tripped(), for disconnects over a block copy whose body
+    // doesn't match its header (see the config constants)
+    bool node_impl::block_body_mismatch_disconnect_breaker_tripped()
+    {
+      VERIFY_CORRECT_THREAD();
+      return _block_body_mismatch_disconnect_breaker.tripped(fc::time_point::now());
+    }
+
+    // A peer sent us a copy of a block whose body doesn't match its header.  The block id itself may
+    // be genuine, so queue the block to be fetched again from another peer that advertised it
+    void node_impl::refetch_block_from_other_peers(peer_connection* peer_that_sent_bad_copy, const item_id& block_item_id)
+    {
+      VERIFY_CORRECT_THREAD();
+      peer_that_sent_bad_copy->inventory_peer_advertised_to_us.erase(block_item_id);
+      for (const peer_connection_ptr& peer : _active_connections)
+        if (peer->items_requested_from_peer.find(block_item_id) != peer->items_requested_from_peer.end())
+          return; // another copy is already on its way
+      if (is_item_in_any_peers_inventory(block_item_id) &&
+          _items_to_fetch.get<item_id_index>().find(block_item_id) == _items_to_fetch.get<item_id_index>().end())
+      {
+        _items_to_fetch.insert(prioritized_item_id(block_item_id, _items_to_fetch_sequence_counter++));
+        trigger_fetch_items_loop();
+      }
+    }
+
+    void node_impl::send_sync_block_to_node_delegate(const received_sync_item& item)
     {
       dlog("in send_sync_block_to_node_delegate()");
 
+      const std::shared_ptr<full_block_type>& full_block = item.full_block;
       bool client_accepted_block = false;
       bool discontinue_fetching_blocks_from_peer = false;
       bool sync_block_could_not_link = false;
+      bool sync_block_body_mismatch = false;
       const uint32_t block_number = full_block->get_block_num();
       const block_id_type& block_id = full_block->get_block_id();
 
@@ -4022,12 +4055,15 @@ namespace graphene { namespace net {
       try
       {
         fc_dlog(fc::logger::get("sync"), "p2p pushing sync block #${block_number} ${block_id}", (block_number)(block_id));
-        _delegate->handle_block(full_block, true);
+        const block_handling_result result = _delegate->handle_block(full_block, true);
 
         if (block_number % 1000 == 0)
           ilog("Successfully pushed sync block ${block_number} ${block_id}", (block_number)(block_id));
 
-        _most_recent_blocks_accepted.push_back(block_id);
+        // a block only stored on a shorter fork was not validated, so it isn't recorded as accepted
+        // (later copies are still recognized as known through has_item())
+        if (result != block_handling_result::ignored)
+          _most_recent_blocks_accepted.push_back(block_id);
         refresh_cached_chain_state();
 
         client_accepted_block = true;
@@ -4056,6 +4092,17 @@ namespace graphene { namespace net {
              (block_number)(block_id));
         handle_message_exception = e;
         sync_block_could_not_link = true;
+      }
+      catch (const block_body_mismatch_exception& e)
+      {
+        // the body of this copy doesn't match its header, but the block id may well be genuine: only
+        // the peer that delivered this copy is at fault, every other peer may offer us the correct one
+        fc_wlog(fc::logger::get("sync"), "p2p rejected sync block #${block_number} ${block_id}: its body does not match its header: ${e}",
+                (block_number)(block_id)("e", (fc::exception)e));
+        wlog("Rejected sync block #${block_number} (id:${block_id}): its body does not match its header",
+             (block_number)(block_id));
+        handle_message_exception = e;
+        sync_block_body_mismatch = true;
       }
       catch (const fc::canceled_exception&)
       {
@@ -4172,6 +4219,52 @@ namespace graphene { namespace net {
             peers_to_fetch_ids_from.insert(peer);
         }
       }
+      else if (sync_block_body_mismatch)
+      {
+        // Disconnect only the peer that delivered the bad copy.  The block is still unfetched, so every
+        // other peer that had it queued gets it back at the front of its list of items to get, and the
+        // genuine copy is requested from one of them.  Where that list has moved on in the meantime,
+        // the peer is cleaned up as in the stale-delivery path above, so it offers the block again
+        const peer_connection_ptr delivering_peer = item.delivering_peer.lock();
+        const bool disconnect_delivering_peer = delivering_peer &&
+                                                _active_connections.find(delivering_peer) != _active_connections.end() &&
+                                                !block_body_mismatch_disconnect_breaker_tripped();
+        bool block_requeued = false;
+        for (const peer_connection_ptr& peer : _active_connections)
+        {
+          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
+          if (peer == delivering_peer)
+          {
+            if (disconnect_delivering_peer)
+            {
+              peers_to_disconnect[peer] = std::make_pair(std::string("You sent us a block whose body does not match its header"),
+                                                         fc::oexception(fc::exception(FC_LOG_MESSAGE(error, "You sent us a copy of block number ${block_number} with hash ${block_id} whose body does not match its header",
+                                                                                                     (block_number)(block_id)))));
+              continue;
+            }
+            wlog("block-body-mismatch disconnect circuit breaker tripped: keeping peer ${endpoint} despite rejected sync block #${block_number}",
+                 ("endpoint", peer->get_remote_endpoint())(block_number));
+            peer->block_rejected_while_breaker_tripped = true;
+            if (peer->ids_of_items_being_processed.erase(block_id) > 0 && peer->idle())
+              peers_to_fetch_ids_from.insert(peer);
+            continue;
+          }
+          if (peer->ids_of_items_being_processed.erase(block_id) == 0)
+            continue;
+          if (peer->we_need_sync_items_from_peer &&
+              (peer->ids_of_items_to_get.empty() || peer->first_id_block_number == block_number + 1))
+          {
+            peer->ids_of_items_to_get.push_front(block_id);
+            peer->first_id_block_number = block_number;
+            peer->reset_id_search_for_peer();
+            block_requeued = true;
+          }
+          else if (peer->idle())
+            peers_to_fetch_ids_from.insert(peer);
+        }
+        if (block_requeued)
+          trigger_fetch_sync_items_loop();
+      }
       else //client did not accept block
       {
         fc::exception disconnect_exception(FC_LOG_MESSAGE(error, "You offered us a block that we reject as invalid.  The invalid block was number: ${block_number} with hash ${block_id}",
@@ -4255,7 +4348,7 @@ namespace graphene { namespace net {
       unsigned discarded_count = 0;
       for (auto iter = _received_sync_items.begin(); iter != _received_sync_items.end();)
       {
-        auto block_id = (*iter)->get_block_id();
+        auto block_id = iter->full_block->get_block_id();
         if (block_ids_still_referenced.find(block_id) == block_ids_still_referenced.end())
         {
           _already_received_sync_item_ids.erase(block_id);
@@ -4316,7 +4409,7 @@ namespace graphene { namespace net {
             auto received_block_iter = _received_sync_items.find(peer->ids_of_items_to_get.front());
             if (received_block_iter != _received_sync_items.end())
             {
-              const block_id_type& received_block_id = (*received_block_iter)->get_block_id();
+              const block_id_type& received_block_id = received_block_iter->full_block->get_block_id();
               // remove from front of any other peer's item to get list
               for (const peer_connection_ptr& peer : _active_connections)
               {
@@ -4342,13 +4435,18 @@ namespace graphene { namespace net {
               // block through the sync mechanism.  Further, we must request both blocks because
               // we don't know they're the same (for the peer in normal operation, it has only told us the
               // message id, for the peer in the sync case we only known the block_id).
-              if (std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), received_block_id) == _most_recent_blocks_accepted.end())
+              // As in process_block_during_normal_operation(), the chain is asked as well: blocks it only
+              // stored on a shorter fork are not on the recently-accepted list
+              const bool block_has_been_accepted =
+                std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), received_block_id) != _most_recent_blocks_accepted.end() ||
+                _delegate->has_item(item_id(block_message_type, received_block_id));
+              if (!block_has_been_accepted)
               {
                 // normal case, schedule this block to be sent to blockchain
                 _already_received_sync_item_ids.erase(received_block_id);
 
-                _handle_message_calls_in_progress.push_back(async_task([this, full_block=*received_block_iter](){
-                  send_sync_block_to_node_delegate(full_block);
+                _handle_message_calls_in_progress.push_back(async_task([this, item=*received_block_iter](){
+                  send_sync_block_to_node_delegate(item);
                 }, "send_sync_block_to_node_delegate"));
                 
                 _received_sync_items.erase(received_block_iter);
@@ -4430,7 +4528,7 @@ namespace graphene { namespace net {
       dlog("start process_block_during_sync");
       // add it to the front of _received_sync_items, then process _received_sync_items to try to
       // pass as many messages as possible to the client.
-      _new_received_sync_items.push_front(full_block);
+      _new_received_sync_items.push_front(received_sync_item{full_block, originating_peer->weak_from_this()});
       _already_received_sync_item_ids.insert(full_block->get_block_id());
       trigger_process_backlog_of_sync_blocks();
     }
@@ -4481,10 +4579,13 @@ namespace graphene { namespace net {
           fc_ilog(fc::logger::get("sync"),
                   "p2p pushing block #${block_num} ${block_id} from ${peer} (message_id was ${legacy_block_message_hash})",
                   (block_num)(block_id)("peer", originating_peer->get_remote_endpoint())(legacy_block_message_hash));
-          _delegate->handle_block(full_block, false);
+          const block_handling_result result = _delegate->handle_block(full_block, false);
           message_validated_time = fc::time_point::now();
           ilog("Successfully pushed block ${block_num} (id:${block_id})", (block_num)(block_id));
-          _most_recent_blocks_accepted.push_back(block_id);
+          // a block only stored on a shorter fork was not validated, so it isn't recorded as accepted
+          // (later copies are still recognized as known through has_item())
+          if (result != block_handling_result::ignored)
+            _most_recent_blocks_accepted.push_back(block_id);
 
           // if we were planning on fetching any of the transactions that we just accepted in the block,
           // well, we already got them, so remove those from our items_to_fetch
@@ -4579,6 +4680,27 @@ namespace graphene { namespace net {
       catch (const unlinkable_block_exception& e)
       {
         restart_sync_exception = e;
+      }
+      catch (const block_body_mismatch_exception& e)
+      {
+        // the body of this copy doesn't match its header, but the block id may well be genuine: blame only
+        // the peer that sent it, and fetch the block again from any other peer that advertised it
+        wlog("Rejected block ${num} (id:${id}) sent by peer ${peer}: its body does not match its header",
+             ("num", block_num)("id", block_id)("peer", originating_peer->get_remote_endpoint()));
+        refetch_block_from_other_peers(originating_peer, item_id(block_message_type, block_id));
+        refetch_block_from_other_peers(originating_peer, item_id(block_message_type, legacy_block_message_hash));
+        if (block_body_mismatch_disconnect_breaker_tripped())
+        {
+          wlog("block-body-mismatch disconnect circuit breaker tripped: keeping peer ${peer} despite rejected block ${num} (id:${id})",
+               ("peer", originating_peer->get_remote_endpoint())("num", block_num)("id", block_id));
+          originating_peer->block_rejected_while_breaker_tripped = true;
+        }
+        else
+        {
+          disconnect_exception = e;
+          disconnect_reason = "You sent me a block whose body does not match its header";
+          peers_to_disconnect.insert(originating_peer->shared_from_this());
+        }
       }
       catch (const fc::exception& e)
       {
@@ -7078,7 +7200,7 @@ namespace graphene { namespace net {
       INVOKE_AND_COLLECT_STATISTICS(handle_message, message_to_handle);
     }
 
-    bool statistics_gathering_node_delegate_wrapper::handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode)
+    block_handling_result statistics_gathering_node_delegate_wrapper::handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode)
     {
       INVOKE_AND_COLLECT_STATISTICS(handle_block, full_block, sync_mode);
     }
@@ -7188,6 +7310,22 @@ namespace graphene { namespace net {
   bool peer_needs_blocks_we_pruned(uint32_t peers_head_block_num, uint32_t our_tail_block_num)
   {
     return uint64_t(peers_head_block_num) + GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS < our_tail_block_num;
+  }
+
+  disconnect_breaker::disconnect_breaker(uint32_t count, fc::microseconds window)
+    : _count(count), _window(window)
+  {
+  }
+
+  bool disconnect_breaker::tripped(fc::time_point now)
+  {
+    const fc::time_point window_start = now - _window;
+    while (!_recent_disconnect_times.empty() && _recent_disconnect_times.front() < window_start)
+      _recent_disconnect_times.pop_front();
+    if (_recent_disconnect_times.size() >= _count)
+      return true;
+    _recent_disconnect_times.push_back(now);
+    return false;
   }
 
   peer_connection_ptr find_unclosed_connection_to_endpoint(const fc::ip::endpoint& remote_endpoint,
