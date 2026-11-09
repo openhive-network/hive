@@ -63,6 +63,8 @@ class rocksdb_storage_provider: public external_basic_provider
     std::vector<ColumnFamilyHandle*>  _columnHandles;
 
     virtual ColumnDefinitions prepareColumnDefinitions( bool addDefaultColumn ) = 0;
+    /// prepareColumnDefinitions with the level-style compaction and memtable tuning applied.
+    ColumnDefinitions prepareTunedColumnDefinitions( bool addDefaultColumn );
 
     void cleanupColumnHandles();
 
