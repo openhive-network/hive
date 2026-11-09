@@ -16357,6 +16357,14 @@
                     },
                     "comment_lib_processing": {
                         "$ref": "#/components/schemas/app_status_benchmark_counter"
+                    },
+                    "comment_prefetch_hit": {
+                        "$ref": "#/components/schemas/app_status_benchmark_counter",
+                        "description": "Part of comment_accessed_from_archive served from comments prefetched by the worker threads."
+                    },
+                    "comment_prefetch_miss": {
+                        "$ref": "#/components/schemas/app_status_benchmark_counter",
+                        "description": "Part of comment_accessed_from_archive read from the archive on the spot while the prefetch was enabled."
                     }
                 },
                 "required": [
@@ -16364,7 +16372,9 @@
                     "comment_accessed_from_archive",
                     "comment_not_found",
                     "comment_cashout_processing",
-                    "comment_lib_processing"
+                    "comment_lib_processing",
+                    "comment_prefetch_hit",
+                    "comment_prefetch_miss"
                 ]
             },
             "app_status_benchmark_index_memory_details": {

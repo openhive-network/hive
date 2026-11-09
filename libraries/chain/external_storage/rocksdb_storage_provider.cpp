@@ -375,6 +375,16 @@ bool rocksdb_storage_provider::read( const Slice& key, PinnableSlice& value )
   return s.ok();
 }
 
+void rocksdb_storage_provider::multi_read( const std::vector<Slice>& keys, std::vector<PinnableSlice>& values, std::vector<::rocksdb::Status>& statuses )
+{
+  values = std::vector<PinnableSlice>( keys.size() );
+  statuses.assign( keys.size(), ::rocksdb::Status() );
+  if( keys.empty() )
+    return;
+
+  getStorage()->MultiGet( ReadOptions(), _columnHandles[CommentsColumns::COMMENT], keys.size(), keys.data(), values.data(), statuses.data() );
+}
+
 void rocksdb_storage_provider::load_lib()
 {
   std::string _value;

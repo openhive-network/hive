@@ -44,6 +44,7 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     void save( const Slice& key, const Slice& value ) override;
     bool read( const Slice& key, PinnableSlice& value ) override;
+    void multi_read( const std::vector<Slice>& keys, std::vector<PinnableSlice>& values, std::vector<::rocksdb::Status>& statuses ) override;
 };
 
 }}
