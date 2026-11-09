@@ -500,6 +500,24 @@ namespace graphene { namespace net
       return transaction_fetching_inhibited_until > fc::time_point::now();
     }
 
+    bool peer_connection::is_block_fetching_deprioritized() const
+    {
+      VERIFY_CORRECT_THREAD();
+      return block_fetching_deprioritized_until > fc::time_point::now();
+    }
+
+    void peer_connection::deprioritize_block_fetching()
+    {
+      VERIFY_CORRECT_THREAD();
+      block_fetching_deprioritized_until = fc::time_point::now() + fc::seconds(GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_WINDOW_SEC);
+    }
+
+    void peer_connection::restore_block_fetching_priority()
+    {
+      VERIFY_CORRECT_THREAD();
+      block_fetching_deprioritized_until = fc::time_point();
+    }
+
     fc::sha512 peer_connection::get_shared_secret() const
     {
       VERIFY_CORRECT_THREAD();

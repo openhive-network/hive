@@ -38,7 +38,9 @@
 #include <deque>
 #include <list>
 #include <memory>
+#include <optional>
 #include <unordered_set>
+#include <vector>
 
 namespace appbase {
   class application;
@@ -418,6 +420,21 @@ namespace graphene { namespace net {
     const fc::microseconds _window;
     std::deque<fc::time_point> _recent_disconnect_times;
   };
+
+  /// A peer that advertised a block we want to fetch
+  struct block_source_candidate
+  {
+    bool deprioritized = false;    ///< peer_connection::is_block_fetching_deprioritized()
+    bool can_take_request = false; ///< we may send the peer another request now
+  };
+
+  /**
+   * Which of @p candidates, every peer that advertised a block, to request the block from now; none means wait.
+   * Candidates come in the order we would rather ask them (least loaded first).  A deprioritized peer is
+   * asked only when no other peer advertised the block: while one did but cannot take a request yet, the
+   * block waits for it.  The returned index is always that of a candidate that can take a request.
+   */
+  std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates);
 
   /**
    * The connection to @p remote_endpoint that has not finished closing, or null if there is none.

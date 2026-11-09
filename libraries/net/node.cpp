@@ -1398,9 +1398,34 @@ namespace graphene { namespace net {
             ASSERT_TASK_NOT_PREEMPTED();
             std::set<item_hash_t> sync_items_to_request;
 
+            // as in fetch_items_loop() (see choose_block_source()), a peer kept despite sending us a block whose
+            // body didn't match its header is asked for a block only if no other peer we sync from still has it
+            // to request: those peers go first, and a deprioritized peer leaves them the blocks they offer
+            std::vector<peer_connection_ptr> peers_in_request_order;
+            std::vector<peer_connection_ptr> deprioritized_peers;
+            for (const peer_connection_ptr& peer : _active_connections)
+              (peer->is_block_fetching_deprioritized() ? deprioritized_peers : peers_in_request_order).push_back(peer);
+            const size_t first_deprioritized_peer = peers_in_request_order.size();
+            peers_in_request_order.insert(peers_in_request_order.end(), deprioritized_peers.begin(), deprioritized_peers.end());
+            std::unordered_set<item_hash_t> sync_items_left_to_preferred_peers;
+            if (!deprioritized_peers.empty())
+              for (size_t peer_index = 0; peer_index < first_deprioritized_peer; ++peer_index)
+              {
+                const peer_connection_ptr& peer = peers_in_request_order[peer_index];
+                if (peer->inhibit_fetching_sync_blocks || !peer->we_need_sync_items_from_peer || peer->ids_of_items_to_get.empty())
+                  continue;
+                // blocks before the peer's search position on its fork are ones it will not request again
+                const uint32_t first_to_search = std::max(peer->last_requested_block_number_for_peers_on_this_fork + 1, peer->first_id_block_number) -
+                                                 peer->first_id_block_number;
+                for (size_t i = first_to_search; i < peer->ids_of_items_to_get.size(); ++i)
+                  sync_items_left_to_preferred_peers.insert(peer->ids_of_items_to_get[i]);
+              }
+
             // for each idle peer that we're syncing with
-            for( const peer_connection_ptr& peer : _active_connections )
+            for (size_t peer_index = 0; peer_index < peers_in_request_order.size(); ++peer_index)
             {
+              const peer_connection_ptr& peer = peers_in_request_order[peer_index];
+              const bool peer_is_deprioritized = peer_index >= first_deprioritized_peer;
               if (peer->inhibit_fetching_sync_blocks)
                 dlog("Skipping peer ${peer} because we've inhibited fetching sync blocks from them.  idle: ${idle}, we_need_sync_items_from_peer: ${we_need_sync_items_from_peer}",
                      ("peer", peer->get_remote_endpoint())("idle", peer->idle())("we_need_sync_items_from_peer", peer->we_need_sync_items_from_peer));
@@ -1418,6 +1443,7 @@ namespace graphene { namespace net {
                   {
                     // loop through the items peer has that we don't yet have on our blockchain
                     unsigned i = first_to_get;
+                    bool left_to_preferred_peer = false;
                     for (; i < peer->ids_of_items_to_get.size(); ++i)
                     {
                       const item_hash_t& item_to_potentially_request = peer->ids_of_items_to_get[i];
@@ -1426,6 +1452,11 @@ namespace graphene { namespace net {
                          !have_already_received_sync_item(item_to_potentially_request) && // already received it, but not yet removed from our list of peer items to get
                          sync_items_to_request.find(item_to_potentially_request) == sync_items_to_request.end()) // we have already decided to request it from another peer during this iteration
                       {
+                        if (peer_is_deprioritized && sync_items_left_to_preferred_peers.count(item_to_potentially_request))
+                        {
+                          left_to_preferred_peer = true;
+                          break;
+                        }
                         // then schedule a request from this peer
                         sync_item_requests_to_send[peer].push_back(item_to_potentially_request);
                         sync_items_to_request.insert(item_to_potentially_request);
@@ -1433,12 +1464,17 @@ namespace graphene { namespace net {
                           break;
                       }
                     } //for each item to get
-                    if (i == peer->ids_of_items_to_get.size()) //if we didn't find any items, we only searched one less than i
-                      --i;
-                    uint32_t last_searched_block_number = peer->first_id_block_number + i;
-                    const item_hash_t& last_searched_item_id = peer->ids_of_items_to_get[i];
-                    update_last_requested_block_number_for_peers_on_this_fork(last_searched_block_number, last_searched_item_id);
-                    dlog("searched through ${count} ids from ${total_ids} available ids to find ${n} items to request", ("count", i - first_to_get + 1)("total_ids", peer->ids_of_items_to_get.size())("n", sync_item_requests_to_send[peer].size()));
+                    // the search position is shared by every peer on this fork: it must stay before a block left to
+                    // a preferred peer, or that peer would never request it
+                    if (!(left_to_preferred_peer && i == first_to_get))
+                    {
+                      if (left_to_preferred_peer || i == peer->ids_of_items_to_get.size()) //if we didn't find any items, we only searched one less than i
+                        --i;
+                      uint32_t last_searched_block_number = peer->first_id_block_number + i;
+                      const item_hash_t& last_searched_item_id = peer->ids_of_items_to_get[i];
+                      update_last_requested_block_number_for_peers_on_this_fork(last_searched_block_number, last_searched_item_id);
+                      dlog("searched through ${count} ids from ${total_ids} available ids to find ${n} items to request", ("count", i - first_to_get + 1)("total_ids", peer->ids_of_items_to_get.size())("n", sync_item_requests_to_send[peer].size()));
+                    }
 
                   } //if this peer has items we aren't currently asking for or already received
                 } //if we need sync items from peer
@@ -1533,32 +1569,63 @@ namespace graphene { namespace net {
           }
           else
           {
+            auto& peers_by_load = items_by_peer.get<requested_item_count_index>();
+            auto request_item_from_peer = [&](decltype(peers_by_load.begin()) peer_iter) {
+              //dlog("requesting item ${hash} from peer ${endpoint}",
+              //     ("hash", iter->item.item_hash)("endpoint", peer->get_remote_endpoint()));
+              item_id item_id_to_fetch = item_iter->item;
+              peer_iter->peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(item_id_to_fetch, fc::time_point::now()));
+              item_iter = _items_to_fetch.erase(item_iter);
+              peers_by_load.modify(peer_iter, [&item_id_to_fetch](peer_and_items_to_fetch& peer_and_items) {
+                peer_and_items.item_ids.push_back(item_id_to_fetch);
+              });
+            };
+            auto peer_advertised_item = [&](const peer_connection_ptr& peer) {
+              return peer->inventory_peer_advertised_to_us.find(item_iter->item) != peer->inventory_peer_advertised_to_us.end();
+            };
             // find a peer that has it, we'll use the one who has the least requests going to it to load balance
             bool item_fetched = false;
-            for (auto peer_iter = items_by_peer.get<requested_item_count_index>().begin(); peer_iter != items_by_peer.get<requested_item_count_index>().end(); ++peer_iter)
+            if (item_iter->item.item_type == graphene::net::block_message_type)
             {
-              const peer_connection_ptr& peer = peer_iter->peer;
-              // if they have the item and we haven't already decided to ask them for too many other items
-              if (peer_iter->item_ids.size() < GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION &&
-                  peer->inventory_peer_advertised_to_us.find(item_iter->item) != peer->inventory_peer_advertised_to_us.end())
-              {
-                if (item_iter->item.item_type == graphene::net::trx_message_type && peer->is_transaction_fetching_inhibited())
-                  next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
-                else
+              // a peer kept despite sending us a block whose body didn't match its header is asked only if no
+              // other peer advertised the block, so its next bad copy doesn't delay the genuine one
+              std::vector<block_source_candidate> candidates;
+              std::vector<decltype(peers_by_load.begin())> candidate_peer_iters;
+              for (auto peer_iter = peers_by_load.begin(); peer_iter != peers_by_load.end(); ++peer_iter)
+                if (peer_advertised_item(peer_iter->peer))
                 {
-                  //dlog("requesting item ${hash} from peer ${endpoint}",
-                  //     ("hash", iter->item.item_hash)("endpoint", peer->get_remote_endpoint()));
-                  item_id item_id_to_fetch = item_iter->item;
-                  peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(item_id_to_fetch, fc::time_point::now()));
-                  item_iter = _items_to_fetch.erase(item_iter);
-                  item_fetched = true;
-                  items_by_peer.get<requested_item_count_index>().modify(peer_iter, [&item_id_to_fetch](peer_and_items_to_fetch& peer_and_items) {
-                    peer_and_items.item_ids.push_back(item_id_to_fetch);
-                  });
-                  break;
+                  candidates.push_back({peer_iter->peer->is_block_fetching_deprioritized(),
+                                        peer_iter->item_ids.size() < GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION});
+                  candidate_peer_iters.push_back(peer_iter);
                 }
+              // busy peers can't be asked now, but they count as sources a deprioritized peer must not preempt
+              for (const peer_connection_ptr& peer : _active_connections)
+                if (items_by_peer.find(peer) == items_by_peer.end() && peer_advertised_item(peer))
+                  candidates.push_back({peer->is_block_fetching_deprioritized(), false});
+              if (const std::optional<size_t> chosen = choose_block_source(candidates))
+              {
+                request_item_from_peer(candidate_peer_iters[*chosen]);
+                item_fetched = true;
               }
             }
+            else
+              for (auto peer_iter = peers_by_load.begin(); peer_iter != peers_by_load.end(); ++peer_iter)
+              {
+                const peer_connection_ptr& peer = peer_iter->peer;
+                // if they have the item and we haven't already decided to ask them for too many other items
+                if (peer_iter->item_ids.size() < GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION &&
+                    peer_advertised_item(peer))
+                {
+                  if (item_iter->item.item_type == graphene::net::trx_message_type && peer->is_transaction_fetching_inhibited())
+                    next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
+                  else
+                  {
+                    request_item_from_peer(peer_iter);
+                    item_fetched = true;
+                    break;
+                  }
+                }
+              }
             if (!item_fetched)
               ++item_iter;
           }
@@ -4067,6 +4134,9 @@ namespace graphene { namespace net {
         refresh_cached_chain_state();
 
         client_accepted_block = true;
+        // as in process_block_during_normal_operation(): the delivering peer's copy matched its header
+        if (const peer_connection_ptr delivering_peer = item.delivering_peer.lock())
+          delivering_peer->restore_block_fetching_priority();
       }
       catch (const block_older_than_undo_history& e)
       {
@@ -4245,6 +4315,7 @@ namespace graphene { namespace net {
             wlog("block-body-mismatch disconnect circuit breaker tripped: keeping peer ${endpoint} despite rejected sync block #${block_number}",
                  ("endpoint", peer->get_remote_endpoint())(block_number));
             peer->block_rejected_while_breaker_tripped = true;
+            peer->deprioritize_block_fetching();
             if (peer->ids_of_items_being_processed.erase(block_id) > 0 && peer->idle())
               peers_to_fetch_ids_from.insert(peer);
             continue;
@@ -4581,6 +4652,8 @@ namespace graphene { namespace net {
                   (block_num)(block_id)("peer", originating_peer->get_remote_endpoint())(legacy_block_message_hash));
           const block_handling_result result = _delegate->handle_block(full_block, false);
           message_validated_time = fc::time_point::now();
+          // the peer's copy matched its header, so its earlier bad copy no longer makes it a source of last resort
+          originating_peer->restore_block_fetching_priority();
           ilog("Successfully pushed block ${block_num} (id:${block_id})", (block_num)(block_id));
           // a block only stored on a shorter fork was not validated, so it isn't recorded as accepted
           // (later copies are still recognized as known through has_item())
@@ -4694,6 +4767,7 @@ namespace graphene { namespace net {
           wlog("block-body-mismatch disconnect circuit breaker tripped: keeping peer ${peer} despite rejected block ${num} (id:${id})",
                ("peer", originating_peer->get_remote_endpoint())("num", block_num)("id", block_id));
           originating_peer->block_rejected_while_breaker_tripped = true;
+          originating_peer->deprioritize_block_fetching();
         }
         else
         {
@@ -7326,6 +7400,26 @@ namespace graphene { namespace net {
       return true;
     _recent_disconnect_times.push_back(now);
     return false;
+  }
+
+  std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates)
+  {
+    std::optional<size_t> first_deprioritized_available;
+    bool preferred_source_exists = false;
+    for (size_t i = 0; i < candidates.size(); ++i)
+    {
+      if (!candidates[i].deprioritized)
+      {
+        if (candidates[i].can_take_request)
+          return i;
+        preferred_source_exists = true;
+      }
+      else if (candidates[i].can_take_request && !first_deprioritized_available)
+        first_deprioritized_available = i;
+    }
+    if (preferred_source_exists)
+      return std::nullopt;
+    return first_deprioritized_available;
   }
 
   peer_connection_ptr find_unclosed_connection_to_endpoint(const fc::ip::endpoint& remote_endpoint,

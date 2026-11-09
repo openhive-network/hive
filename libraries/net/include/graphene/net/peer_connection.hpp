@@ -251,6 +251,8 @@ namespace graphene { namespace net
       // breaker was suppressing punitive disconnects.  If the chain later stalls, the
       // inactivity sweep revokes the breaker's deferral and disconnects flagged peers
       bool block_rejected_while_breaker_tripped = false;
+      // see is_block_fetching_deprioritized()
+      fc::time_point block_fetching_deprioritized_until;
       // the last time we restarted sync with this peer because our head was stalled while
       // it advertised blocks far past it (see GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC)
       fc::time_point last_stalled_head_resync_time;
@@ -353,6 +355,14 @@ namespace graphene { namespace net
       bool is_currently_handling_message() const;
 
       bool is_transaction_fetching_inhibited() const;
+      /// Whether we ask this peer for a block only if no other peer offered it (see choose_block_source()):
+      /// it sent us a block copy whose body did not match its header and the block-body-mismatch circuit
+      /// breaker kept it connected.  Lasts until restore_block_fetching_priority() or, if the peer delivers no
+      /// block we accept, for the breaker's window, so a peer corrupted once is not held back forever
+      bool is_block_fetching_deprioritized() const;
+      void deprioritize_block_fetching();
+      /// called once the peer delivered a block we accepted: its copies match their headers again
+      void restore_block_fetching_priority();
       fc::sha512 get_shared_secret() const;
       void clear_old_inventory();
       bool is_inventory_advertised_to_us_list_full_for_transactions() const;
