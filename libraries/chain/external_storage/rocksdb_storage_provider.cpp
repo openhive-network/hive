@@ -12,6 +12,41 @@
 
 namespace hive { namespace chain {
 
+namespace {
+
+/// Memtable budget per column family handed to OptimizeLevelStyleCompaction: 32 MiB write
+/// buffers (up to 6 of them), 16 MiB SST files, 128 MiB level 1. RocksDB's default budget of
+/// 512 MiB is applied to every column family separately, which would multiply the memory of
+/// every node and test fixture (several of them run in parallel) for little gain.
+constexpr uint64_t MEMTABLE_MEMORY_BUDGET = 128 * 1024 * 1024;
+
+Options make_db_options()
+{
+  Options options;
+  /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
+  options.IncreaseParallelism();
+  // Only affects the default column family created together with a new database; the column
+  // families passed to DB::Open get the same tuning in prepareTunedColumnDefinitions.
+  options.OptimizeLevelStyleCompaction( MEMTABLE_MEMORY_BUDGET );
+  // Keep the RocksDB info LOG bounded: defaults never rotate it (max_log_file_size=0,
+  // keep_log_file_num=1000, INFO level), so it grows unbounded and can fill a small tmpfs.
+  options.info_log_level    = ::rocksdb::WARN_LEVEL;
+  options.max_log_file_size = 8 * 1024 * 1024; // 8 MiB per LOG file
+  options.keep_log_file_num = 1;               // retain only the active LOG
+  raise_fd_limit();
+  // Bound on how many SST files this database may keep open at once. With RocksDB's default of
+  // -1 every live SST file is opened on first touch and then never closed, so the descriptor
+  // count grows with the file count while the process limit stays fixed; once the process runs
+  // out of descriptors, writes start failing. With a finite value the open files live in a
+  // bounded table cache (LRU): opening file N+1 closes the least recently used one and drops its
+  // index/filter blocks, so reaching an evicted file costs a reopen - reads get slower - but the
+  // descriptor count stays bounded and correctness is unaffected (issue #869).
+  options.max_open_files = max_open_files_budget();
+  return options;
+}
+
+}
+
 rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, const std::string& name )
   : _storagePath( storage_path ), _blockchainStoragePath( blockchain_storage_path ), theApp( app ), name( name )
 {
@@ -40,28 +75,11 @@ void rocksdb_storage_provider::openDb( uint32_t expected_lib )
   }
 
   ilog("Prepare column definitions." );
-  auto columnDefs = prepareColumnDefinitions(true);
+  auto columnDefs = prepareTunedColumnDefinitions(true);
 
   DB* _db = nullptr;
   auto strPath = _storagePath.string();
-  Options options;
-  /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
-  options.IncreaseParallelism();
-  options.OptimizeLevelStyleCompaction();
-  // Keep the RocksDB info LOG bounded: defaults never rotate it (max_log_file_size=0,
-  // keep_log_file_num=1000, INFO level), so it grows unbounded and can fill a small tmpfs.
-  options.info_log_level    = ::rocksdb::WARN_LEVEL;
-  options.max_log_file_size = 8 * 1024 * 1024; // 8 MiB per LOG file
-  options.keep_log_file_num = 1;               // retain only the active LOG
-  raise_fd_limit();
-  // Bound on how many SST files this database may keep open at once. With RocksDB's default of
-  // -1 every live SST file is opened on first touch and then never closed, so the descriptor
-  // count grows with the file count while the process limit stays fixed; once the process runs
-  // out of descriptors, writes start failing. With a finite value the open files live in a
-  // bounded table cache (LRU): opening file N+1 closes the least recently used one and drops its
-  // index/filter blocks, so reaching an evicted file costs a reopen - reads get slower - but the
-  // descriptor count stays bounded and correctness is unaffected (issue #869).
-  options.max_open_files = max_open_files_budget();
+  Options options = make_db_options();
 
   auto status = DB::Open( DBOptions( options ), strPath, columnDefs, &_columnHandles, &_db );
   ilog( "Database is ${status}.", ("status", status.ok() ? "opened" : "not opened") );
@@ -154,24 +172,7 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
 
   auto strPath = path.string();
 
-  Options options;
-  /// Optimize RocksDB. This is the easiest way to get RocksDB to perform well
-  options.IncreaseParallelism();
-  options.OptimizeLevelStyleCompaction();
-  // Keep the RocksDB info LOG bounded: defaults never rotate it (max_log_file_size=0,
-  // keep_log_file_num=1000, INFO level), so it grows unbounded and can fill a small tmpfs.
-  options.info_log_level    = ::rocksdb::WARN_LEVEL;
-  options.max_log_file_size = 8 * 1024 * 1024; // 8 MiB per LOG file
-  options.keep_log_file_num = 1;               // retain only the active LOG
-  raise_fd_limit();
-  // Bound on how many SST files this database may keep open at once. With RocksDB's default of
-  // -1 every live SST file is opened on first touch and then never closed, so the descriptor
-  // count grows with the file count while the process limit stays fixed; once the process runs
-  // out of descriptors, writes start failing. With a finite value the open files live in a
-  // bounded table cache (LRU): opening file N+1 closes the least recently used one and drops its
-  // index/filter blocks, so reaching an evicted file costs a reopen - reads get slower - but the
-  // descriptor count stays bounded and correctness is unaffected (issue #869).
-  options.max_open_files = max_open_files_budget();
+  Options options = make_db_options();
 
   std::tuple<bool, bool> _result{ false, false };
 
@@ -179,7 +180,7 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
 
   auto open_read_only_db = [&strPath, &options, this]( std::tuple<bool, bool>& result )
   {
-    auto _columnDefs = prepareColumnDefinitions(true);
+    auto _columnDefs = prepareTunedColumnDefinitions(true);
 
     {
       ilog( "Open database in read only mode." );
@@ -218,7 +219,7 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
       getStorage().reset( _db.db );
 
       ilog( "Prepare column definitions." );
-      auto _columnDefs = prepareColumnDefinitions(false);
+      auto _columnDefs = prepareTunedColumnDefinitions(false);
 
       ilog( "Create column families." );
       _status = getStorage()->CreateColumnFamilies( _columnDefs, &_columnHandles );
@@ -261,6 +262,14 @@ std::tuple<bool, bool> rocksdb_storage_provider::createDbSchema( const bfs::path
   ilog( "Schema in `${name}` RocksDB database has been created successfully.", ("name", name) );
 
   return _result;/// { DB does not need data import, an application is closed }
+}
+
+rocksdb_storage_provider::ColumnDefinitions rocksdb_storage_provider::prepareTunedColumnDefinitions( bool addDefaultColumn )
+{
+  auto columnDefs = prepareColumnDefinitions( addDefaultColumn );
+  for( auto& columnDef : columnDefs )
+    columnDef.options.OptimizeLevelStyleCompaction( MEMTABLE_MEMORY_BUDGET );
+  return columnDefs;
 }
 
 void rocksdb_storage_provider::cleanupColumnHandles()

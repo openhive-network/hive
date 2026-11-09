@@ -3,6 +3,7 @@
 
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
+#include <hive/chain/external_storage/types.hpp>
 
 #include <hive/utilities/tempdir.hpp>
 
@@ -10,11 +11,32 @@
 
 #include <fc/filesystem.hpp>
 
+#include <rocksdb/advanced_cache.h>
 #include <rocksdb/db.h>
+#include <rocksdb/filter_policy.h>
+#include <rocksdb/table.h>
 
+#include <map>
 #include <memory>
 
 using namespace hive::chain;
+
+namespace {
+
+/// Exposes the column handles so the effective options of each column family can be read back.
+class inspectable_comment_storage_provider : public rocksdb_comment_storage_provider
+{
+  public:
+    using rocksdb_comment_storage_provider::rocksdb_comment_storage_provider;
+    using rocksdb_storage_provider::getColumnHandles;
+};
+
+std::string comment_key( char seed )
+{
+  return std::string( 20, seed );
+}
+
+}
 
 BOOST_AUTO_TEST_SUITE( rocksdb_storage_provider_tests )
 
@@ -88,6 +110,102 @@ BOOST_AUTO_TEST_CASE( failed_wipe_raises_and_keeps_database )
   open_db.reset();
   BOOST_REQUIRE_NO_THROW( provider.wipeDb() );
   BOOST_REQUIRE( !bfs::exists( storage_path ) );
+}
+
+BOOST_AUTO_TEST_CASE( opened_archive_has_tuned_column_families )
+{
+  fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+  const bfs::path storage_path = temp_dir.path() / "comments-rocksdb-storage";
+  const size_t block_cache_size = 48 * 1024 * 1024;
+
+  appbase::application app;
+  inspectable_comment_storage_provider provider( temp_dir.path(), storage_path, app, block_cache_size );
+  provider.openDb( 0 );
+
+  const auto& handles = provider.getColumnHandles();
+  BOOST_REQUIRE_EQUAL( handles.size(), 2u );
+
+  std::shared_ptr< ::rocksdb::Cache > shared_cache;
+  for( auto* handle : handles )
+  {
+    BOOST_TEST_MESSAGE( "Column family: " << handle->GetName() );
+    const ::rocksdb::Options options = provider.getStorage()->GetOptions( handle );
+
+    BOOST_CHECK_EQUAL( options.write_buffer_size, 32u * 1024 * 1024 );
+    BOOST_CHECK_EQUAL( options.max_write_buffer_number, 6 );
+    BOOST_CHECK_EQUAL( options.min_write_buffer_number_to_merge, 2 );
+    BOOST_CHECK_EQUAL( options.level0_file_num_compaction_trigger, 2 );
+    BOOST_CHECK_EQUAL( options.target_file_size_base, 16u * 1024 * 1024 );
+    BOOST_CHECK_EQUAL( options.max_bytes_for_level_base, 128u * 1024 * 1024 );
+    BOOST_CHECK( options.compaction_style == ::rocksdb::kCompactionStyleLevel );
+
+    BOOST_REQUIRE( options.table_factory );
+    const auto* table_options = options.table_factory->GetOptions< ::rocksdb::BlockBasedTableOptions >();
+    BOOST_REQUIRE( table_options != nullptr );
+    BOOST_REQUIRE( table_options->filter_policy );
+    BOOST_CHECK_EQUAL( std::string( table_options->filter_policy->CompatibilityName() ), "rocksdb.BuiltinBloomFilter" );
+    BOOST_CHECK( table_options->cache_index_and_filter_blocks );
+    BOOST_CHECK( table_options->pin_l0_filter_and_index_blocks_in_cache );
+
+    BOOST_REQUIRE( table_options->block_cache );
+    BOOST_CHECK_EQUAL( table_options->block_cache->GetCapacity(), block_cache_size );
+    if( !shared_cache )
+      shared_cache = table_options->block_cache;
+    BOOST_CHECK( table_options->block_cache == shared_cache );
+  }
+
+  provider.shutdownDb();
+}
+
+BOOST_AUTO_TEST_CASE( archive_written_with_untuned_options_stays_readable )
+{
+  fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+  const bfs::path storage_path = temp_dir.path() / "comments-rocksdb-storage";
+
+  std::map< std::string, std::string > comments;
+  for( char seed = 'a'; seed <= 'z'; ++seed )
+    comments[ comment_key( seed ) ] = std::string( "comment-" ) + seed;
+
+  // Lay out the archive as the code before table options and column family tuning did: default
+  // ColumnFamilyOptions everywhere, so the SST files carry no filter blocks.
+  {
+    ::rocksdb::Options options;
+    options.create_if_missing = true;
+    ::rocksdb::DB* raw_db = nullptr;
+    BOOST_REQUIRE( ::rocksdb::DB::Open( options, storage_path.string(), &raw_db ).ok() );
+    std::unique_ptr< ::rocksdb::DB > db( raw_db );
+
+    ::rocksdb::ColumnFamilyOptions hash_options;
+    hash_options.comparator = by_Hash_Comparator();
+    ::rocksdb::ColumnFamilyHandle* hash_column = nullptr;
+    BOOST_REQUIRE( db->CreateColumnFamily( hash_options, "account_permlink_hash", &hash_column ).ok() );
+
+    ::rocksdb::WriteBatch batch;
+    BOOST_REQUIRE( batch.Put( Slice( "STORE_MAJOR_VERSION" ), PrimitiveTypeSlice< uint32_t >( STORE_MAJOR_VERSION ) ).ok() );
+    BOOST_REQUIRE( batch.Put( Slice( "STORE_MINOR_VERSION" ), PrimitiveTypeSlice< uint32_t >( STORE_MINOR_VERSION ) ).ok() );
+    for( const auto& comment : comments )
+      BOOST_REQUIRE( batch.Put( comment.first, comment.second ).ok() );
+    BOOST_REQUIRE( db->Write( ::rocksdb::WriteOptions(), &batch ).ok() );
+    BOOST_REQUIRE( db->Flush( ::rocksdb::FlushOptions() ).ok() );
+
+    BOOST_REQUIRE( db->DestroyColumnFamilyHandle( hash_column ).ok() );
+    BOOST_REQUIRE( db->Close().ok() );
+  }
+
+  appbase::application app;
+  rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
+  provider.openDb( 0 );
+
+  for( const auto& comment : comments )
+  {
+    PinnableSlice value;
+    BOOST_REQUIRE( provider.read( comment.first, value ) );
+    BOOST_CHECK_EQUAL( value.ToString(), comment.second );
+  }
+  PinnableSlice missing;
+  BOOST_CHECK( !provider.read( comment_key( '0' ), missing ) );
+
+  provider.shutdownDb();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
