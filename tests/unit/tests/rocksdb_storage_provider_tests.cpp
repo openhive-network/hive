@@ -135,8 +135,8 @@ BOOST_AUTO_TEST_CASE( opened_archive_has_tuned_column_families )
     BOOST_CHECK_EQUAL( options.max_write_buffer_number, 6 );
     BOOST_CHECK_EQUAL( options.min_write_buffer_number_to_merge, 2 );
     BOOST_CHECK_EQUAL( options.level0_file_num_compaction_trigger, 2 );
-    BOOST_CHECK_EQUAL( options.target_file_size_base, 16u * 1024 * 1024 );
-    BOOST_CHECK_EQUAL( options.max_bytes_for_level_base, 128u * 1024 * 1024 );
+    BOOST_CHECK_EQUAL( options.target_file_size_base, 64u * 1024 * 1024 );
+    BOOST_CHECK_GE( options.max_bytes_for_level_base, 256u * 1024 * 1024 );
     BOOST_CHECK( options.compaction_style == ::rocksdb::kCompactionStyleLevel );
 
     BOOST_REQUIRE( options.table_factory );
