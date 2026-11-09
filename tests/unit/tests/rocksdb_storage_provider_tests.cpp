@@ -3,6 +3,7 @@
 
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_format.hpp>
 #include <hive/chain/external_storage/types.hpp>
 
 #include <hive/utilities/tempdir.hpp>
@@ -15,6 +16,7 @@
 #include <rocksdb/db.h>
 #include <rocksdb/filter_policy.h>
 #include <rocksdb/table.h>
+#include <rocksdb/table_properties.h>
 
 #include <map>
 #include <memory>
@@ -48,9 +50,8 @@ BOOST_AUTO_TEST_CASE( wipe_destroys_existing_database )
   {
     ::rocksdb::Options options;
     options.create_if_missing = true;
-    ::rocksdb::DB* db = nullptr;
+    std::unique_ptr< ::rocksdb::DB > db;
     BOOST_REQUIRE( ::rocksdb::DB::Open( options, storage_path.string(), &db ).ok() );
-    delete db;
   }
   BOOST_REQUIRE( bfs::exists( storage_path / "CURRENT" ) );
 
@@ -85,9 +86,8 @@ BOOST_AUTO_TEST_CASE( failed_wipe_raises_and_keeps_database )
   // regardless of filesystem permissions (also when running as root).
   ::rocksdb::Options options;
   options.create_if_missing = true;
-  ::rocksdb::DB* raw_db = nullptr;
-  BOOST_REQUIRE( ::rocksdb::DB::Open( options, storage_path.string(), &raw_db ).ok() );
-  std::unique_ptr< ::rocksdb::DB > open_db( raw_db );
+  std::unique_ptr< ::rocksdb::DB > open_db;
+  BOOST_REQUIRE( ::rocksdb::DB::Open( options, storage_path.string(), &open_db ).ok() );
 
   appbase::application app;
   rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
@@ -206,6 +206,58 @@ BOOST_AUTO_TEST_CASE( archive_written_with_untuned_options_stays_readable )
   BOOST_CHECK( !provider.read( comment_key( '0' ), missing ) );
 
   provider.shutdownDb();
+}
+
+BOOST_AUTO_TEST_CASE( written_tables_use_pinned_on_disk_format )
+{
+  fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+  const bfs::path storage_path = temp_dir.path() / "comments-rocksdb-storage";
+
+  {
+    appbase::application app;
+    rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
+    provider.openDb( 0 );
+    for( uint32_t i = 0; i < 100; ++i )
+    {
+      const std::string key = "comment-key-" + std::to_string( i );
+      const std::string value( 512, static_cast< char >( 'a' + i % 26 ) );
+      provider.save( Slice( key ), Slice( value ) );
+    }
+    provider.shutdownDb();
+  }
+
+  std::vector< std::string > cf_names;
+  BOOST_REQUIRE( ::rocksdb::DB::ListColumnFamilies( ::rocksdb::DBOptions(), storage_path.string(), &cf_names ).ok() );
+  BOOST_REQUIRE_EQUAL( cf_names.size(), 2u );
+
+  std::vector< ::rocksdb::ColumnFamilyDescriptor > cf_descriptors;
+  for( const auto& cf_name : cf_names )
+  {
+    cf_descriptors.emplace_back( cf_name, ::rocksdb::ColumnFamilyOptions() );
+    if( cf_name == "account_permlink_hash" )
+      cf_descriptors.back().options.comparator = by_Hash_Comparator();
+  }
+
+  std::vector< ::rocksdb::ColumnFamilyHandle* > cf_handles;
+  std::unique_ptr< ::rocksdb::DB > db;
+  BOOST_REQUIRE( ::rocksdb::DB::OpenForReadOnly( ::rocksdb::DBOptions(), storage_path.string(), cf_descriptors, &cf_handles, &db ).ok() );
+
+  for( auto* cf_handle : cf_handles )
+  {
+    ::rocksdb::TablePropertiesCollection tables;
+    BOOST_REQUIRE( db->GetPropertiesOfAllTables( cf_handle, &tables ).ok() );
+    BOOST_REQUIRE_MESSAGE( !tables.empty(), "no SST file in column family " << cf_handle->GetName() );
+    for( const auto& [ file, properties ] : tables )
+    {
+      BOOST_CHECK_MESSAGE( properties->format_version == ROCKSDB_PINNED_FORMAT_VERSION,
+        file << " has format_version " << properties->format_version );
+      BOOST_CHECK_MESSAGE( properties->compression_name == "Snappy",
+        file << " has compression " << properties->compression_name );
+    }
+  }
+
+  for( auto* cf_handle : cf_handles )
+    BOOST_REQUIRE( db->DestroyColumnFamilyHandle( cf_handle ).ok() );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
