@@ -5,6 +5,7 @@
 
 #include <hive/chain/database.hpp>
 
+#include <rocksdb/cache.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
 
@@ -22,6 +23,11 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     WriteBatch _writeBuffer;
 
+    /// Block cache shared by all column families of the archive.
+    std::shared_ptr<::rocksdb::Cache> _blockCache;
+
+    ColumnFamilyOptions makeColumnOptions() const;
+
     ColumnDefinitions prepareColumnDefinitions(bool addDefaultColumn) override;
 
     WriteBatch& getWriteBuffer() override;
@@ -30,7 +36,10 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     using ptr = std::shared_ptr<rocksdb_comment_storage_provider>;
 
-    rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app );
+    static constexpr size_t DEFAULT_BLOCK_CACHE_SIZE = 1024 * 1024 * 1024;
+
+    rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app,
+      size_t block_cache_size = DEFAULT_BLOCK_CACHE_SIZE );
     ~rocksdb_comment_storage_provider() override{}
 
     void save( const Slice& key, const Slice& value ) override;

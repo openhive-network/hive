@@ -148,6 +148,7 @@ class chain_plugin_impl
     uint32_t                         chainbase_flags = 0;
     bfs::path                        shared_memory_dir;
     bfs::path                        comments_storage_path;
+    uint64_t                         comments_block_cache_size = 0;
     bool                             replay = false;
     bool                             resync   = false;
     bool                             readonly = false;
@@ -856,7 +857,7 @@ void chain_plugin_impl::initial_settings()
     ilog( "'ROCKSDB' - comments will be archived in RocksDB at ${csp}",
       ( "csp", comments_storage_path.c_str() ) );
     comment_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
-      comments_storage_path, theApp );
+      comments_storage_path, theApp, comments_block_cache_size );
     break;
   }
   db.set_comments_handler( comment_archive );
@@ -1718,6 +1719,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("shared-file-dir", bpo::value<bfs::path>()->default_value("blockchain")->value_name("dir"), // NOLINT(clang-analyzer-optin.cplusplus.VirtualCall)
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("7G"), "Size of the shared memory file. Default: 7G. If running with many plugins, increase this value to 11G.")
+      ("comments-rocksdb-block-cache-size", bpo::value<string>()->default_value("1G"), "Capacity of the block cache shared by the column families of the RocksDB comment archive. Memory is taken as blocks are read, up to this limit, not reserved up front. Default: 1G.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
         "A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%)." )
       ("shared-file-scale-rate", bpo::value<uint16_t>()->default_value(0),
@@ -1806,6 +1808,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     else
       my->comments_storage_path = crp;
   }
+
+  my->comments_block_cache_size = fc::parse_size( options.at( "comments-rocksdb-block-cache-size" ).as< string >() );
 
   std::string comment_archive_type_str( "ROCKSDB" );
   if( options.count( "comment-archive" ) )
