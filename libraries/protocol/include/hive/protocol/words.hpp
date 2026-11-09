@@ -24,10 +24,38 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace hive { namespace words {
 
 typedef const char* const_char_ptr;
+
+/// Word list from its deflate compressed text, one word per line (the content of words.deflate).
+class word_list
+  {
+  public:
+    explicit word_list(const std::string& deflated_words);
+    word_list(const word_list&) = delete;
+    word_list& operator=(const word_list&) = delete;
+
+    const const_char_ptr* get_list() const
+      {
+      return list.data();
+      }
+
+    uint32_t get_list_size() const
+      {
+      return list.size();
+      }
+
+  private:
+    std::vector<const_char_ptr>  list;
+    std::string                  raw_list;
+  };
+
+/// The word list built into the library.
+const word_list& get_built_in_word_list();
 const const_char_ptr* get_word_list();
 uint32_t get_word_list_size();
 
