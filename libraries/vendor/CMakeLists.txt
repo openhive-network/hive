@@ -144,6 +144,15 @@ if(NOT _use_preinstalled)
     add_compile_options("SHELL:$<$<COMPILE_LANGUAGE:CXX>:-include cstdint>")
   endif()
   add_subdirectory(rocksdb)
+  # RocksDB 11 compresses Snappy blocks through a local subclass of snappy::Sink. Compiled with RTTI
+  # (USE_RTTI above), that object needs snappy's typeinfo, which upstream snappy builds (-fno-rtti
+  # since 1.1.9, e.g. the static library of the CI base image) do not provide, so linking fails.
+  # Nothing casts or typeid()s the classes of that file, so it alone is compiled without RTTI.
+  if(NOT MSVC)
+    set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/util/compression.cc"
+      DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb"
+      PROPERTIES COMPILE_OPTIONS "-fno-rtti;-UROCKSDB_USE_RTTI")
+  endif()
 endif()
 
 GET_TARGET_PROPERTY( prop Snappy::snappy IMPORTED_LOCATION_RELWITHDEBINFO )
