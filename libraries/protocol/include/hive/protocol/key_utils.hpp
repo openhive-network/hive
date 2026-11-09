@@ -5,6 +5,8 @@
 #include <string>
 #include <utility>
 
+namespace hive { namespace words { class word_list; } }
+
 namespace hive { namespace protocol {
 
   std::pair<public_key_type, std::string> generate_private_key_from_password(const std::string& account, const std::string& role, const std::string& password);
@@ -18,6 +20,9 @@ namespace hive { namespace protocol {
     std::string      wif_priv_key;
   };
 
+  /// Brain key of words from the word list built into the library
   brain_key_info suggest_brain_key();
+  /// Brain key of words from the given word list
+  brain_key_info suggest_brain_key(const hive::words::word_list& words);
 
 }} // namespace hive { namespace protocol

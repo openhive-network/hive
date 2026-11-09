@@ -87,6 +87,11 @@ fc::ecc::private_key derive_private_key(const std::string& prefix_string,
 
 brain_key_info suggest_brain_key()
 {
+  return suggest_brain_key(hive::words::get_built_in_word_list());
+}
+
+brain_key_info suggest_brain_key(const hive::words::word_list& words)
+{
   brain_key_info result;
   // create a private key for secure entropy
   fc::sha256 sha_entropy1 = fc::ecc::private_key::generate().get_secret();
@@ -100,12 +105,12 @@ brain_key_info suggest_brain_key()
 
   for (int i = 0; i < BRAIN_KEY_WORD_COUNT; i++)
   {
-    const auto word_list_size = hive::words::get_word_list_size();
+    const auto word_list_size = words.get_list_size();
     fc::bigint choice = entropy % word_list_size;
     entropy /= word_list_size;
     if (i > 0)
       brain_key += " ";
-    brain_key += hive::words::get_word_list()[choice.to_int64()];
+    brain_key += words.get_list()[choice.to_int64()];
   }
 
   brain_key = normalize_brain_key(brain_key);
