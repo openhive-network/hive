@@ -16,8 +16,10 @@ constexpr uint32_t ROCKSDB_PINNED_FORMAT_VERSION = 6;
 ///   - BlockBasedTableOptions::format_version -> ROCKSDB_PINNED_FORMAT_VERSION (default 7 since 10.11);
 ///   - ColumnFamilyOptions::compression -> kSnappyCompression (default LZ4 since 11.5 when LZ4
 ///     is compiled in, which an older hived build may lack).
-/// Other block-based table options already set in @p options are kept. Per-level compression
-/// (compression_per_level) is left untouched.
+/// Other block-based table options already set in @p options are kept.
+/// compression_per_level is cleared so the base compression applies at every level;
+/// OptimizeLevelStyleCompaction fills it with NoCompression/LZ4 and those entries would
+/// otherwise shadow the base compression pin.
 void pin_rocksdb_on_disk_format( ::rocksdb::ColumnFamilyOptions& options );
 
 } } // hive::chain
