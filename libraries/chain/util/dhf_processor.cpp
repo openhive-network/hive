@@ -199,6 +199,14 @@ void dhf_processor::transfer_payments( const time_point_sec& head_time, HBD_asse
       period_pay = HBD_asset( fc::uint128_to_int64( ratio * _item.daily_pay.amount.value ) / HIVE_100_PERCENT );
     }
 
+    if( db.has_hardfork( HIVE_HARDFORK_1_30_SCALE_DHF_PAYOUT_BY_HBD_PRINT_RATE ) )
+    {
+      const auto& gpo = db.get_dynamic_global_properties();
+      period_pay.amount = ( period_pay.amount * gpo.get_hbd_print_rate() ) / HIVE_100_PERCENT;
+      if( period_pay.amount <= 0 )
+        continue;
+    }
+
     if( period_pay >= maintenance_budget_limit )
     {
       processing( _item, maintenance_budget_limit );
