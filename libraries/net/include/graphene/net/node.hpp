@@ -436,6 +436,32 @@ namespace graphene { namespace net {
    */
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates);
 
+  /// What we know about an item a peer just advertised to us; the peer is recorded as having it in any case
+  struct advertised_item_status
+  {
+    bool is_block = false;
+    bool being_processed = false;    ///< a copy of it is being pushed to the client now
+    bool requested = false;          ///< we requested it from a peer and are waiting for it
+    bool recently_failed = false;    ///< a copy we fetched recently failed to push
+    bool queued = false;             ///< it is in our list of items to fetch, not requested yet
+    bool new_from_this_peer = false; ///< the peer had not advertised it to us before
+  };
+
+  /// How an advertisement described by advertised_item_status bears on fetching the item
+  struct advertised_item_fetch_decision
+  {
+    bool queue = false;             ///< add it to our list of items to fetch
+    bool refresh_timestamp = false; ///< it's queued already; this peer will keep it in its cache longer
+    bool wake_fetch_loop = false;
+  };
+
+  /**
+   * An item being processed, already requested or recently failed is not fetched (again).  A block that is
+   * queued already wakes the fetch loop when the advertisement gives it a new source: the iteration that
+   * queued it may have found no peer it could ask.  A repeated advertisement or a queued transaction does not.
+   */
+  advertised_item_fetch_decision decide_advertised_item_fetch(const advertised_item_status& status);
+
   /**
    * The connection to @p remote_endpoint that has not finished closing, or null if there is none.
    * Connections still closing or terminating count as well as active and handshaking ones: until
