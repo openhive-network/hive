@@ -171,9 +171,8 @@ BOOST_AUTO_TEST_CASE( archive_written_with_untuned_options_stays_readable )
   {
     ::rocksdb::Options options;
     options.create_if_missing = true;
-    ::rocksdb::DB* raw_db = nullptr;
-    BOOST_REQUIRE( ::rocksdb::DB::Open( options, storage_path.string(), &raw_db ).ok() );
-    std::unique_ptr< ::rocksdb::DB > db( raw_db );
+    std::unique_ptr< ::rocksdb::DB > db;
+    BOOST_REQUIRE( ::rocksdb::DB::Open( options, storage_path.string(), &db ).ok() );
 
     ::rocksdb::ColumnFamilyOptions hash_options;
     hash_options.comparator = by_Hash_Comparator();
