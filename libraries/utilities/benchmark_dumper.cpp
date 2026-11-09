@@ -18,6 +18,8 @@ void operator -= ( benchmark_dumper::comment_archive_details_t& current, const b
   current.comment_not_found -= previous.comment_not_found;
   current.comment_cashout_processing -= previous.comment_cashout_processing;
   current.comment_lib_processing -= previous.comment_lib_processing;
+  current.comment_prefetch_hit -= previous.comment_prefetch_hit;
+  current.comment_prefetch_miss -= previous.comment_prefetch_miss;
 }
 
 void benchmark_dumper::initialize( const fc::string& file_name )

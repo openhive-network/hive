@@ -149,6 +149,7 @@ class chain_plugin_impl
     bfs::path                        shared_memory_dir;
     bfs::path                        comments_storage_path;
     uint64_t                         comments_block_cache_size = 0;
+    bool                             comments_prefetch = true;
     bool                             replay = false;
     bool                             resync   = false;
     bool                             readonly = false;
@@ -854,11 +855,16 @@ void chain_plugin_impl::initial_settings()
     break;
   case comment_archive_type::ROCKSDB:
   default:
-    ilog( "'ROCKSDB' - comments will be archived in RocksDB at ${csp}",
-      ( "csp", comments_storage_path.c_str() ) );
-    comment_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
-      comments_storage_path, theApp, comments_block_cache_size );
+  {
+    ilog( "'ROCKSDB' - comments will be archived in RocksDB at ${csp}, prefetch ${p}",
+      ( "csp", comments_storage_path.c_str() )( "p", comments_prefetch ? "on" : "off" ) );
+    auto rocksdb_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
+      comments_storage_path, theApp, comments_block_cache_size, comments_prefetch );
+    if( comments_prefetch )
+      thread_pool.set_comment_prefetcher( rocksdb_archive );
+    comment_archive = rocksdb_archive;
     break;
+  }
   }
   db.set_comments_handler( comment_archive );
 
@@ -1720,6 +1726,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("7G"), "Size of the shared memory file. Default: 7G. If running with many plugins, increase this value to 11G.")
       ("comments-rocksdb-block-cache-size", bpo::value<string>()->default_value("1G"), "Capacity of the block cache shared by the column families of the RocksDB comment archive. Memory is taken as blocks are read, up to this limit, not reserved up front. Default: 1G.")
+      ("comments-rocksdb-prefetch", bpo::value<bool>()->default_value(true), "Let the blockchain worker threads read the archived comments that incoming and replayed blocks and transactions will look up, in batches, before the chain thread applies them. Only affects the ROCKSDB comment archive and never the resulting state. Default: true.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
         "A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%)." )
       ("shared-file-scale-rate", bpo::value<uint16_t>()->default_value(0),
@@ -1810,6 +1817,7 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   }
 
   my->comments_block_cache_size = fc::parse_size( options.at( "comments-rocksdb-block-cache-size" ).as< string >() );
+  my->comments_prefetch = options.at( "comments-rocksdb-prefetch" ).as< bool >();
 
   std::string comment_archive_type_str( "ROCKSDB" );
   if( options.count( "comment-archive" ) )

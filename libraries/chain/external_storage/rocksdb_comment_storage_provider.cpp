@@ -63,4 +63,9 @@ bool rocksdb_comment_storage_provider::read( const Slice& key, PinnableSlice& va
   return rocksdb_storage_provider::read( key, value );
 }
 
+void rocksdb_comment_storage_provider::multi_read( const std::vector<Slice>& keys, std::vector<PinnableSlice>& values, std::vector<::rocksdb::Status>& statuses )
+{
+  rocksdb_storage_provider::multi_read( keys, values, statuses );
+}
+
 }}
