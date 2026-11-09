@@ -40,6 +40,9 @@ public:
     counter_t comment_not_found;
     counter_t comment_cashout_processing;
     counter_t comment_lib_processing;
+    // the part of comment_accessed_from_archive served from prefetched entries, and the part read on the spot
+    counter_t comment_prefetch_hit;
+    counter_t comment_prefetch_miss;
   };
 
   struct index_memory_details_t
@@ -139,7 +142,7 @@ FC_REFLECT( hive::utilities::benchmark_dumper::counter_t,
         (count)(time_ns) )
 FC_REFLECT( hive::utilities::benchmark_dumper::comment_archive_details_t,
         (comment_accessed_from_index)(comment_accessed_from_archive)(comment_not_found)
-        (comment_cashout_processing)(comment_lib_processing) )
+        (comment_cashout_processing)(comment_lib_processing)(comment_prefetch_hit)(comment_prefetch_miss) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::index_memory_details_t,
         (index_name)(index_size)(item_sizeof)(item_additional_allocation)
