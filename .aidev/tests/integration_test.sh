@@ -371,8 +371,10 @@ else
     mkdir -p .aidev
     cat > .aidev/run-checks.sh <<'STUB'
 #!/usr/bin/env bash
-# What the build leaves, then the way the stub was told to end: .aidev/stub-end.
+# What the build leaves, secp256k1-zkp's autogen output among it, then the way the
+# stub was told to end: .aidev/stub-end.
 mkdir -p "test-results/$1/bin" && echo hived > "test-results/$1/bin/hived"
+mkdir libraries/fc/vendor/secp256k1-zkp/autom4te.cache
 case "$(cat .aidev/stub-end)" in
     fail) echo "[609/609] failed" > "test-results/$1/$2.log"; exit 1 ;;
     grow) while :; do echo "[607/609]" >> "test-results/$1/$2.log"; sleep 0.2; done ;;
@@ -381,6 +383,8 @@ esac
 STUB
     chmod +x .aidev/run-checks.sh
     touch .gitlab-ci.yaml
+    mkdir -p libraries/fc/vendor/secp256k1-zkp && echo '#!/bin/sh' > libraries/fc/vendor/secp256k1-zkp/autogen.sh
+    git add libraries/fc/vendor/secp256k1-zkp/autogen.sh
     out="$PWD/test-results/full-integration" step_skipped=77 integration_prefix="hive-integration-test-$$"
     mkdir -p "$out"
     if ! read_host_mountinfo "$runtime" || ! host_sees "$PWD" .aidev/run-checks.sh "$runtime"; then
@@ -398,6 +402,9 @@ STUB
 
         build_ending fail 600; rc=$?
         expect "a failed build: its exit" 1 "$rc"
+        expect "a build: its secp256k1-zkp autogen output stays out of the checkout's" "autogen.sh" \
+            "$(ls -A libraries/fc/vendor/secp256k1-zkp | tr '\n' ' ' | sed 's/ $//')"
+        expect "a build: its copy of secp256k1-zkp removed" "" "$(ls -d "$out"/secp256k1-* 2> /dev/null)"
         expect "a failed build: its output kept" "bin/hived hived-testnet.log" \
             "$(cd "$built" && find . -type f | sed 's|^\./||' | sort | tr '\n' ' ' | sed 's/ $//')"
         expect "a failed build: nothing left to another user" "" "$(not_mine)"

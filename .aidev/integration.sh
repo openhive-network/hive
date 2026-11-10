@@ -410,6 +410,11 @@ hand_back() {  # RUNTIME_IMAGE [DIR...]
         find "$checkout" -xdev -uid 0 -exec chown -h "$owner" {} +' _ "$(id -u):$(id -g)" "$PWD" "$@"
 }
 
+copy_tracked() {  # SUBMODULE DIR: DIR holds SUBMODULE's tracked files, nothing else
+    rm -rf "$2" && mkdir -p "$2" \
+        && git -C "$1" ls-files -z | tar -C "$1" --null -T - -cf - | tar -C "$2" -xf -
+}
+
 # NETWORK's binaries built in the checks' own image, with CI's paths and
 # arguments and the checkout and its git directory at the paths they have here;
 # sccache there probes CI's Redis (HIVE_SCCACHE_REDIS) and else builds cold. Then
@@ -421,13 +426,20 @@ hand_back() {  # RUNTIME_IMAGE [DIR...]
 # own. What it writes is handed back to this user afterwards (hand_back). It is
 # capped at the suite's own container's memory (AIDEV_ENV_CONTAINER_MEMORY_BYTES),
 # when AIDEV gives one, with no swap beyond it, as AIDEV caps its own containers.
+# secp256k1-zkp's build runs its autogen.sh in its source directory, as does the
+# build of `default`, which runs beside this step as another user: one's root-owned
+# autom4te.cache stops the other's. This build gets a copy of its tracked files at
+# that path instead.
 hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
-    local net="$1" built="$out-hived-$1" stage="$out/image-$1" git_dir rc=0 base_arg=() cap=()
+    local net="$1" built="$out-hived-$1" stage="$out/image-$1" secp="$out/secp256k1-$1" git_dir rc=0 base_arg=() cap=()
+    local secp256k1_source=libraries/fc/vendor/secp256k1-zkp
     git_dir="$(realpath "$(git rev-parse --git-common-dir)")"
     [ -n "${AIDEV_ENV_CONTAINER_MEMORY_BYTES:-}" ] && cap=(--memory "$AIDEV_ENV_CONTAINER_MEMORY_BYTES" --memory-swap "$AIDEV_ENV_CONTAINER_MEMORY_BYTES")
     [ "$(remaining)" -gt 0 ] || { out_of_time "the $net binaries' build"; return; }
+    copy_tracked "$secp256k1_source" "$secp" || return 1
     docker run --rm --name "$integration_prefix-build-$net" --network host --user 0 "${cap[@]}" \
         -v "$(on_host "$git_dir"):$git_dir" -v "$(on_host "$PWD"):$PWD" -w "$PWD" \
+        -v "$(on_host "$secp"):$PWD/$secp256k1_source" \
         -e HIVE_SCCACHE_REDIS="$(ci_sccache_redis)" \
         -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
         -e HIVE_BUILD_JOBS -e HIVE_BUILD_JOB_MEMORY_MB "$2" timeout -k 30 "$(remaining)" \
@@ -436,6 +448,7 @@ hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
         echo "cannot hand the build's output in $PWD back to uid $(id -u)"
         [ "$rc" -ne 0 ] || rc=1
     fi
+    rm -rf "$secp"
     timed_out "$rc" && { out_of_time "the $net binaries' build"; return; }
     [ "$rc" -eq 0 ] || return "$rc"
     rm -rf "$stage"

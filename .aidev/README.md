@@ -141,6 +141,9 @@ The suite is `concurrent: true`: when selected, it runs beside `default`'s
 build, chain_test and plugin_test instead of after them. Its own hived images
 build in a separate container while `default` builds, so the two compiles share
 the CPU; the scripts mostly wait on docker and block production and overlap well.
+secp256k1-zkp's autogen writes into its source directory, so the step's builds,
+which run as root, get a copy of its tracked files at that path: a root-owned
+`autom4te.cache` there would fail `default`'s build.
 
 Each build's ninja runs `min(nproc, usable memory / HIVE_BUILD_JOB_MEMORY_MB)`
 jobs (at least 1; 2048 MB per job by default), the usable memory being the
