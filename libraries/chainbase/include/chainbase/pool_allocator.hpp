@@ -62,16 +62,19 @@ namespace chainbase {
         {
         }
 
+      // Arrays (e.g. bucket arrays of hashed indexes) don't fit pool blocks, so they come straight from the segment.
       pointer allocate(size_type n = 1)
         {
-        assert(n == 1);
+        if (n != 1)
+          return base_class_t::allocate(n);
         ++allocated_count;
         return pointer(get_object_memory());
         }
 
       void deallocate(pointer p, size_type n = 1)
         {
-        assert(n == 1);
+        if (n != 1)
+          return base_class_t::deallocate(p, n);
         --allocated_count;
         return_object_memory(&(*p));
         }

@@ -3,10 +3,27 @@
 
 namespace hive { namespace chain {
 
+  struct by_name_hash;
   struct by_proxy;
   struct by_next_vesting_withdrawal;
   struct by_delayed_voting;
   struct by_governance_vote_expiration_ts;
+  /**
+    * Mixes both words of the name, so names sharing a prefix or differing only in their tail spread over buckets.
+    * Deterministic across builds; only used for point lookups, never for iteration.
+    */
+  struct account_name_hash
+  {
+    size_t operator()( const account_name_type& name )const
+    {
+      uint64_t h = name.data.first ^ ( name.data.second * 0x9E3779B97F4A7C15ull );
+      h ^= h >> 32;
+      h *= 0xD6E8FEB86659FD93ull;
+      h ^= h >> 32;
+      return static_cast< size_t >( h );
+    }
+  };
+
   /**
     * @ingroup object_index
     */
@@ -17,6 +34,9 @@ namespace hive { namespace chain {
         const_mem_fun< account_object, account_object::id_type, &account_object::get_id > >,
       ordered_unique< tag< by_name >,
         const_mem_fun< account_object, const account_name_type&, &account_object::get_name > >,
+      // by_name stays for iteration in name order; by_name_hash serves point lookups in O(1)
+      hashed_unique< tag< by_name_hash >,
+        const_mem_fun< account_object, const account_name_type&, &account_object::get_name >, account_name_hash >,
       ordered_unique< tag< by_proxy >,
         composite_key< account_object,
           const_mem_fun< account_object, account_id_type, &account_object::get_proxy >,

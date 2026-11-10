@@ -27,6 +27,7 @@
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
 // Multiindex headers for index type definitions
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/comment_object_multiindex.hpp>
 #include <hive/chain/detail/state/transaction_object_multiindex.hpp>
 #include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
@@ -164,6 +165,70 @@ BOOST_AUTO_TEST_CASE( undo_basic )
 
     udb.undo_end();
     BOOST_REQUIRE( ao.check< account_index >() );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( undo_account_lookup_by_name )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: undo_account_lookup_by_name" );
+    auto time = db->head_block_time();
+
+    const auto& by_name_idx = db->get_index< account_index, by_name >();
+    const auto& by_name_hash_idx = db->get_index< account_index, by_name_hash >();
+    const size_t initial_count = by_name_idx.size();
+    const size_t initial_bucket_count = by_name_hash_idx.bucket_count();
+    BOOST_REQUIRE_EQUAL( by_name_hash_idx.size(), initial_count );
+
+    BOOST_TEST_MESSAGE( "--- Missing name" );
+    BOOST_REQUIRE( db->find_account( "nobody" ) == nullptr );
+    BOOST_CHECK_EXCEPTION( db->get_account( "nobody" ), fc::assert_exception, []( const fc::assert_exception& e )
+    {
+      return e.to_detail_string().find( "Account nobody doesn't exist" ) != std::string::npos;
+    } );
+
+    undo_scenario< account_object > ao( *db );
+    undo_db udb( *db );
+    ao.remember_old_values< account_index >();
+    udb.undo_begin();
+
+    BOOST_TEST_MESSAGE( "--- Many accounts created, so the hashed index grows its bucket array" );
+    std::vector< std::string > names;
+    for( int i = 0; i < 4000; ++i )
+    {
+      names.push_back( "lookup" + std::to_string( i ) );
+      ao.create( names.back(), time );
+    }
+    BOOST_REQUIRE_GT( by_name_hash_idx.bucket_count(), initial_bucket_count );
+    BOOST_REQUIRE_EQUAL( by_name_hash_idx.size(), initial_count + names.size() );
+    for( const auto& name : names )
+    {
+      const account_object* account = db->find_account( name );
+      BOOST_REQUIRE( account != nullptr );
+      BOOST_REQUIRE( account == &( *by_name_idx.find( account_name_type( name ) ) ) );
+      BOOST_REQUIRE( &db->get_account( name ) == account );
+    }
+
+    BOOST_TEST_MESSAGE( "--- Renamed and removed accounts" );
+    const account_object& renamed = *db->find_account( "lookup0" );
+    ao.modify( renamed, [&]( account_object& obj ){ obj.set_name( "lookuprenamed" ); } );
+    BOOST_REQUIRE( db->find_account( "lookup0" ) == nullptr );
+    BOOST_REQUIRE( db->find_account( "lookuprenamed" ) == &renamed );
+    ao.remove( *db->find_account( "lookup1" ) );
+    BOOST_REQUIRE( db->find_account( "lookup1" ) == nullptr );
+
+    udb.undo_end();
+    BOOST_REQUIRE( ao.check< account_index >() );
+
+    BOOST_TEST_MESSAGE( "--- After undo only the initial accounts are found" );
+    BOOST_REQUIRE_EQUAL( by_name_hash_idx.size(), initial_count );
+    for( const auto& name : names )
+      BOOST_REQUIRE( db->find_account( name ) == nullptr );
+    BOOST_REQUIRE( db->find_account( "lookuprenamed" ) == nullptr );
+    for( const auto& account : by_name_idx )
+      BOOST_REQUIRE( db->find_account( account.get_name() ) == &account );
   }
   FC_LOG_AND_RETHROW()
 }

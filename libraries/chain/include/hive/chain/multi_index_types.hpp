@@ -6,6 +6,7 @@
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/tag.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/hashed_index.hpp>
 
 #include <boost/mpl/vector.hpp>
 #include <type_traits>
@@ -16,6 +17,7 @@ namespace hive { namespace chain {
 using boost::multi_index::multi_index_container;
 using boost::multi_index::indexed_by;
 using boost::multi_index::ordered_unique;
+using boost::multi_index::hashed_unique;
 using boost::multi_index::tag;
 using boost::multi_index::member;
 using boost::multi_index::composite_key;

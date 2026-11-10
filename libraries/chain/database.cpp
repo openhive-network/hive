@@ -395,7 +395,7 @@ const account_object& database::get_account( const account_name_type& name )cons
 
 const account_object* database::find_account( const account_name_type& name )const
 {
-  return find< account_object, by_name >( name );
+  return find< account_object, by_name_hash >( name );
 }
 
 comment database::get_comment( const account_id_type& author, const shared_string& permlink )const
