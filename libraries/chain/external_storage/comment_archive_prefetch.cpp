@@ -60,6 +60,23 @@ struct comment_lookup_key_collector
   void operator()( const T& ) const {}
 };
 
+using lookup_path = hive::utilities::benchmark_dumper::comment_lookup_path;
+
+struct evaluator_lookup_path_visitor
+{
+  typedef lookup_path result_type;
+
+  lookup_path operator()( const vote_operation& ) const { return lookup_path::vote_evaluator; }
+  lookup_path operator()( const comment_operation& ) const { return lookup_path::comment_evaluator; }
+  lookup_path operator()( const comment_options_operation& ) const { return lookup_path::comment_options_evaluator; }
+  lookup_path operator()( const delete_comment_operation& ) const { return lookup_path::delete_comment_evaluator; }
+  lookup_path operator()( const create_proposal_operation& ) const { return lookup_path::proposal_evaluator; }
+  lookup_path operator()( const update_proposal_operation& ) const { return lookup_path::proposal_evaluator; }
+
+  template< typename T >
+  lookup_path operator()( const T& ) const { return lookup_path::other_evaluator; }
+};
+
 }
 
 void collect_comment_lookup_keys( const hive::protocol::signed_transaction& transaction, std::vector<comment_lookup_key>& keys )
@@ -67,6 +84,11 @@ void collect_comment_lookup_keys( const hive::protocol::signed_transaction& tran
   comment_lookup_key_collector collector{ keys };
   for( const auto& op : transaction.operations )
     op.visit( collector );
+}
+
+hive::utilities::benchmark_dumper::comment_lookup_path get_evaluator_lookup_path( const hive::protocol::operation& op )
+{
+  return op.visit( evaluator_lookup_path_visitor() );
 }
 
 prefetched_comment_cache::prefetched_comment_cache( size_t capacity ) : capacity( capacity )
