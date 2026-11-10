@@ -587,6 +587,7 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     db1.get(alice_id); /// it should be included in the pending state
     db1.clear_pending(); // clear it so that we can verify it was properly removed from pending state.
     HIVE_REQUIRE_THROW(db1.get(alice_id), std::exception);
+    BOOST_CHECK( db1.find_account( "alice" ) == nullptr );
 
     PUSH_TX( chain_plugin2, trx, init_account_priv_key );
 
@@ -596,6 +597,8 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
 
     BOOST_CHECK_EQUAL( db1.get(alice_id).get_name(), "alice" );
     BOOST_CHECK_EQUAL( db2.get(alice_id).get_name(), "alice" );
+    BOOST_CHECK( db1.get_account( "alice" ).get_id() == alice_id );
+    BOOST_CHECK( db2.get_account( "alice" ).get_id() == alice_id );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;

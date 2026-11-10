@@ -885,7 +885,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   //permanent objects (no operation to remove)
   BOOST_CHECK_EQUAL( alignof( account_object ), 16u );
   BOOST_CHECK_EQUAL( sizeof( account_object ), 480u ); //1.3M+
-  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 672u );
+  BOOST_CHECK_EQUAL( sizeof( account_index::MULTIINDEX_NODE_TYPE ), 688u );
   BOOST_CHECK_EQUAL( sizeof( account_authority_object ), 248u ); //as many as account_object
   BOOST_CHECK_EQUAL( sizeof( account_authority_index::MULTIINDEX_NODE_TYPE ), 312u );
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48u ); //obsolete - only created/modified up to HF12 (683 objects)
