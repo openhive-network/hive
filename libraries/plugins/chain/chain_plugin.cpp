@@ -2,6 +2,7 @@
 
 #include <appbase/application.hpp>
 
+#include <hive/chain/applied_block_releaser.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 #include <hive/chain/block_storage_interface.hpp>
 #include <hive/chain/notifications.hpp>
@@ -1425,6 +1426,8 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
   db.set_tx_status( chain::database::TX_STATUS_BLOCK );
 
   std::shared_ptr<full_block_type> last_applied_block;
+  // drains when this function exits, including on interrupt or exception
+  chain::applied_block_releaser block_releaser;
   const auto process_block = [&](const std::shared_ptr<full_block_type>& full_block) {
     test_checkpoint( full_block );
     const uint32_t current_block_num = full_block->get_block_num();
@@ -1440,6 +1443,8 @@ uint32_t chain_plugin_impl::reindex_internal( const open_args& args,
     }
 
     db.apply_block(full_block, skip_flags);
+    // usually the last reference to the previous block, so freeing it happens on the releaser's thread
+    block_releaser.release( std::move( last_applied_block ) );
     last_applied_block = full_block;
     // as in push_block, between blocks: replay applies them outside any undo session
     db.check_free_memory( false, current_block_num );
