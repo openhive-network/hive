@@ -41,12 +41,14 @@ std::shared_ptr<comment_object> make_archived_comment( const comment_object::aut
 }
 
 rocksdb_comment_archive::rocksdb_comment_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app,
-  size_t block_cache_size, bool enable_prefetch )
+  size_t block_cache_size, bool enable_prefetch, const rocksdb_trace_config& trace_config )
   : db( db ), prefetch_enabled( enable_prefetch ),
     prefetched_comments( PREFETCHED_COMMENTS_CAPACITY ), author_ids( PREFETCH_AUTHORS_CAPACITY )
 {
   HIVE_ADD_PLUGIN_INDEX( db, volatile_comment_index );
   provider = std::make_shared<rocksdb_comment_storage_provider>( blockchain_storage_path, storage_path, app, block_cache_size );
+  if( trace_config.enabled() )
+    provider->enableTrace( trace_config );
   snapshot = std::make_shared<rocksdb_snapshot>( "Comments RocksDB", "comments_rocksdb_data", db, storage_path, provider );
 }
 

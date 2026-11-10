@@ -11,12 +11,15 @@
 #include <appbase/application.hpp>
 
 #include <fc/filesystem.hpp>
+#include <fc/io/json.hpp>
 
 #include <rocksdb/advanced_cache.h>
 #include <rocksdb/db.h>
 #include <rocksdb/filter_policy.h>
 #include <rocksdb/table.h>
 #include <rocksdb/table_properties.h>
+#include <rocksdb/trace_reader_writer.h>
+#include <rocksdb/utilities/replayer.h>
 
 #include <map>
 #include <memory>
@@ -88,6 +91,80 @@ void check_archive_written_by_older_build_stays_readable( const ::rocksdb::Colum
   provider.shutdownDb();
 }
 
+std::string block_comment_key( uint32_t block_num )
+{
+  std::string key = "comment-of-block-" + std::to_string( block_num );
+  key.resize( 20, '.' );
+  return key;
+}
+
+/// Moves the archive through the given irreversible blocks as rocksdb_comment_archive does
+/// (update_lib, then the comments archived in that block), archiving one comment per block and
+/// reading the one of the block before.
+void archive_blocks( rocksdb_comment_storage_provider& provider, uint32_t first_block, uint32_t last_block )
+{
+  for( uint32_t block_num = first_block; block_num <= last_block; ++block_num )
+  {
+    provider.update_lib( block_num );
+    provider.save( block_comment_key( block_num ), "comment-body-" + std::to_string( block_num ) );
+    provider.flushWriteBuffer();
+    PinnableSlice previous;
+    BOOST_REQUIRE( provider.read( block_comment_key( block_num - 1 ), previous ) || block_num == 1 );
+  }
+}
+
+fc::variant_object read_trace_info( const bfs::path& trace_output )
+{
+  return fc::json::from_file( fc::path( trace_output / "trace_info.json" ), fc::json::format_validation_mode::full ).get_object();
+}
+
+/// Opens a copy of the archive (as written by rocksdb_comment_storage_provider) with plain RocksDB.
+struct opened_archive_copy
+{
+  std::unique_ptr< ::rocksdb::DB > db;
+  std::vector< ::rocksdb::ColumnFamilyHandle* > handles;
+
+  explicit opened_archive_copy( const bfs::path& path )
+  {
+    std::vector< ::rocksdb::ColumnFamilyDescriptor > cf_descriptors;
+    cf_descriptors.emplace_back( ::rocksdb::kDefaultColumnFamilyName, ::rocksdb::ColumnFamilyOptions() );
+    cf_descriptors.emplace_back( "account_permlink_hash", ::rocksdb::ColumnFamilyOptions() );
+    cf_descriptors.back().options.comparator = by_Hash_Comparator();
+    BOOST_REQUIRE( ::rocksdb::DB::Open( ::rocksdb::DBOptions(), path.string(), cf_descriptors, &handles, &db ).ok() );
+  }
+
+  ~opened_archive_copy()
+  {
+    for( auto* handle : handles )
+      db->DestroyColumnFamilyHandle( handle );
+  }
+
+  bool has_comment( const std::string& key )
+  {
+    // rocksdb_storage_provider::save writes through column handle CommentsColumns::COMMENT (0), the default one
+    std::string value;
+    return db->Get( ::rocksdb::ReadOptions(), handles[ CommentsColumns::COMMENT ], key, &value ).ok();
+  }
+
+  void replay( const bfs::path& trace_file )
+  {
+    std::unique_ptr< ::rocksdb::TraceReader > reader;
+    BOOST_REQUIRE( ::rocksdb::NewFileTraceReader( db->GetEnv(), ::rocksdb::EnvOptions(), trace_file.string(), &reader ).ok() );
+    std::unique_ptr< ::rocksdb::Replayer > replayer;
+    BOOST_REQUIRE( db->NewDefaultReplayer( handles, std::move( reader ), &replayer ).ok() );
+    BOOST_REQUIRE( replayer->Prepare().ok() );
+    size_t failed = 0;
+    const auto status = replayer->Replay( ::rocksdb::ReplayOptions( 1, 1e9 ),
+      [&failed]( ::rocksdb::Status s, std::unique_ptr< ::rocksdb::TraceRecordResult >&& )
+      {
+        // a Get of a missing comment ends NotFound, as it did when traced
+        if( !s.ok() && !s.IsNotFound() )
+          ++failed;
+      } );
+    BOOST_REQUIRE_MESSAGE( status.ok(), status.ToString() );
+    BOOST_CHECK_EQUAL( failed, 0u );
+  }
+};
 }
 
 BOOST_AUTO_TEST_SUITE( rocksdb_storage_provider_tests )
@@ -284,6 +361,112 @@ BOOST_AUTO_TEST_CASE( written_tables_use_pinned_on_disk_format )
 
   for( auto* cf_handle : cf_handles )
     BOOST_REQUIRE( db->DestroyColumnFamilyHandle( cf_handle ).ok() );
+}
+
+BOOST_AUTO_TEST_CASE( trace_covers_block_range_and_replays_on_its_checkpoint )
+{
+  fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+  const bfs::path storage_path = temp_dir.path() / "comments-rocksdb-storage";
+  const bfs::path trace_output = temp_dir.path() / "traces" / "COMMENT";
+
+  rocksdb_trace_config trace_config;
+  trace_config.dir = temp_dir.path() / "traces";
+  trace_config.first_block = 5;
+  trace_config.last_block = 10;
+
+  appbase::application app;
+  rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
+  provider.enableTrace( trace_config );
+  provider.openDb( 0 );
+
+  archive_blocks( provider, 1, 4 );
+  BOOST_REQUIRE( !bfs::exists( trace_output ) );
+
+  archive_blocks( provider, 5, 7 );
+  BOOST_REQUIRE( bfs::is_directory( trace_output / "checkpoint" ) );
+  BOOST_REQUIRE( bfs::exists( trace_output / "trace" ) );
+  BOOST_CHECK( !read_trace_info( trace_output )[ "ended" ].as_bool() );
+
+  archive_blocks( provider, 8, 12 );
+  const auto info = read_trace_info( trace_output );
+  BOOST_CHECK( info[ "ended" ].as_bool() );
+  BOOST_CHECK_EQUAL( info[ "database" ].as_string(), "COMMENT" );
+  BOOST_CHECK_EQUAL( info[ "start_block" ].as_uint64(), 5u );
+  BOOST_CHECK_EQUAL( info[ "end_block" ].as_uint64(), 10u );
+  BOOST_CHECK_EQUAL( info[ "end_reason" ].as_string(), "end of range" );
+  BOOST_CHECK_GT( bfs::file_size( trace_output / "trace" ), 0u );
+
+  provider.shutdownDb();
+
+  // The checkpoint is the archive before block 5 became irreversible; replaying the trace on it
+  // adds exactly what was written while tracing (blocks 5-9; block 10 came after the trace ended).
+  opened_archive_copy archive( trace_output / "checkpoint" );
+  BOOST_CHECK( archive.has_comment( block_comment_key( 4 ) ) );
+  for( uint32_t block_num = 5; block_num <= 10; ++block_num )
+    BOOST_CHECK( !archive.has_comment( block_comment_key( block_num ) ) );
+
+  archive.replay( trace_output / "trace" );
+
+  for( uint32_t block_num = 5; block_num <= 9; ++block_num )
+    BOOST_CHECK_MESSAGE( archive.has_comment( block_comment_key( block_num ) ), "comment of block " << block_num << " not replayed" );
+  BOOST_CHECK( !archive.has_comment( block_comment_key( 10 ) ) );
+}
+
+BOOST_AUTO_TEST_CASE( trace_ends_cleanly_when_database_closes_inside_range )
+{
+  fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+  const bfs::path storage_path = temp_dir.path() / "comments-rocksdb-storage";
+  const bfs::path trace_output = temp_dir.path() / "traces" / "COMMENT";
+
+  rocksdb_trace_config trace_config;
+  trace_config.dir = temp_dir.path() / "traces";
+  trace_config.first_block = 3;
+  trace_config.last_block = 1000;
+
+  appbase::application app;
+  rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
+  provider.enableTrace( trace_config );
+  provider.openDb( 0 );
+  archive_blocks( provider, 1, 6 );
+  provider.shutdownDb();
+
+  const auto info = read_trace_info( trace_output );
+  BOOST_CHECK( info[ "ended" ].as_bool() );
+  BOOST_CHECK_EQUAL( info[ "start_block" ].as_uint64(), 3u );
+  BOOST_CHECK_EQUAL( info[ "end_block" ].as_uint64(), 6u );
+  BOOST_CHECK_EQUAL( info[ "end_reason" ].as_string(), "database closed" );
+
+  opened_archive_copy archive( trace_output / "checkpoint" );
+  archive.replay( trace_output / "trace" );
+  for( uint32_t block_num = 3; block_num <= 6; ++block_num )
+    BOOST_CHECK_MESSAGE( archive.has_comment( block_comment_key( block_num ) ), "comment of block " << block_num << " not replayed" );
+}
+
+BOOST_AUTO_TEST_CASE( trace_refuses_existing_output_and_traces_nothing_past_its_range )
+{
+  fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+  const bfs::path storage_path = temp_dir.path() / "comments-rocksdb-storage";
+
+  rocksdb_trace_config trace_config;
+  trace_config.dir = temp_dir.path() / "traces";
+  trace_config.first_block = 2;
+  trace_config.last_block = 4;
+
+  appbase::application app;
+  {
+    rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
+    provider.enableTrace( trace_config );
+    provider.openDb( 0 );
+    // The node resumes past the range: the first LIB it reports is already beyond it.
+    provider.update_lib( 7 );
+    provider.flushWriteBuffer();
+    provider.shutdownDb();
+  }
+  BOOST_CHECK( !bfs::exists( trace_config.dir / "COMMENT" ) );
+
+  bfs::create_directories( trace_config.dir / "COMMENT" );
+  rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
+  BOOST_CHECK_THROW( provider.enableTrace( trace_config ), fc::exception );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

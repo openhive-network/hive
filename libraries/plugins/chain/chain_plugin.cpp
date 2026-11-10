@@ -49,6 +49,8 @@
 #include <condition_variable>
 #include <queue>
 #include <algorithm>
+#include <cctype>
+#include <limits>
 
 namespace hive { namespace plugins { namespace chain {
 
@@ -79,6 +81,26 @@ struct write_context
 };
 
 namespace detail {
+
+/// Parses a "<first>-<last>" block range, first below last.
+std::pair< uint32_t, uint32_t > parse_block_range( const std::string& range )
+{
+  auto parse_block = [&range]( const std::string& number ) -> uint32_t
+  {
+    FC_ASSERT( !number.empty() && number.size() <= 10 && std::all_of( number.begin(), number.end(), []( char c ) { return std::isdigit( static_cast< unsigned char >( c ) ); } ),
+      "Block range `${r}` is not <first>-<last>", ("r", range) );
+    const uint64_t block = std::stoull( number );
+    FC_ASSERT( block <= std::numeric_limits< uint32_t >::max(), "Block number ${b} in block range `${r}` is too large", ("b", number)("r", range) );
+    return static_cast< uint32_t >( block );
+  };
+
+  const auto separator = range.find( '-' );
+  FC_ASSERT( separator != std::string::npos, "Block range `${r}` is not <first>-<last>", ("r", range) );
+  const uint32_t first = parse_block( range.substr( 0, separator ) );
+  const uint32_t last = parse_block( range.substr( separator + 1 ) );
+  FC_ASSERT( first < last, "Block range `${r}` must end after it starts", ("r", range) );
+  return { first, last };
+}
 
 class chain_plugin_impl
 {
@@ -151,6 +173,7 @@ class chain_plugin_impl
     bfs::path                        comments_storage_path;
     uint64_t                         comments_block_cache_size = 0;
     bool                             comments_prefetch = false;
+    rocksdb_trace_config             comments_trace;
     bool                             replay = false;
     bool                             resync   = false;
     bool                             readonly = false;
@@ -860,7 +883,7 @@ void chain_plugin_impl::initial_settings()
     ilog( "'ROCKSDB' - comments will be archived in RocksDB at ${csp}, prefetch ${p}",
       ( "csp", comments_storage_path.c_str() )( "p", comments_prefetch ? "on" : "off" ) );
     auto rocksdb_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
-      comments_storage_path, theApp, comments_block_cache_size, comments_prefetch );
+      comments_storage_path, theApp, comments_block_cache_size, comments_prefetch, comments_trace );
     if( comments_prefetch )
       thread_pool.set_comment_prefetcher( rocksdb_archive );
     comment_archive = rocksdb_archive;
@@ -1732,6 +1755,8 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("shared-file-size", bpo::value<string>()->default_value("7G"), "Size of the shared memory file. Default: 7G. If running with many plugins, increase this value to 11G.")
       ("comments-rocksdb-block-cache-size", bpo::value<string>()->default_value("1G"), "Capacity of the block cache shared by the column families of the RocksDB comment archive. Memory is taken as blocks are read, up to this limit, not reserved up front. Default: 1G.")
       ("comments-rocksdb-prefetch", bpo::value<bool>()->default_value(false), "Let the blockchain worker threads read the archived comments that incoming and replayed blocks and transactions will look up, in batches, before the chain thread applies them. Only affects the ROCKSDB comment archive and never the resulting state. Off by default: in a mainnet replay it was not faster than reading the comments on the chain thread. Default: false.")
+      ("comments-rocksdb-trace-dir", bpo::value<bfs::path>()->value_name("dir"), "Record the operations of the RocksDB comment archive with RocksDB's tracing, over the block range of comments-rocksdb-trace-blocks, for replaying them with db_bench (see doc/devs/rocksdb-trace-replay.md). The trace, a checkpoint of the archive where the trace starts and trace_info.json go into <dir>/COMMENT, which must not exist yet. Absolute path or relative to shared-file-dir; keep it on the file system of the archive, so the checkpoint hard links the archive's files instead of copying them. Off by default.")
+      ("comments-rocksdb-trace-blocks", bpo::value<string>()->value_name("first-last"), "Block range traced into comments-rocksdb-trace-dir: the trace starts when the last irreversible block reaches <first> and ends when it reaches <last>, or when the node stops before that.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
         "A 2 precision percentage (0-10000) that defines the threshold for when to autoscale the shared memory file. Setting this to 0 disables autoscaling. Recommended value for consensus node is 9500 (95%)." )
       ("shared-file-scale-rate", bpo::value<uint16_t>()->default_value(0),
@@ -1824,6 +1849,16 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   my->comments_block_cache_size = fc::parse_size( options.at( "comments-rocksdb-block-cache-size" ).as< string >() );
   my->comments_prefetch = options.at( "comments-rocksdb-prefetch" ).as< bool >();
 
+  FC_ASSERT( options.count( "comments-rocksdb-trace-dir" ) == options.count( "comments-rocksdb-trace-blocks" ),
+    "comments-rocksdb-trace-dir and comments-rocksdb-trace-blocks go together: set both or neither" );
+  if( options.count( "comments-rocksdb-trace-dir" ) )
+  {
+    auto trace_dir = options.at( "comments-rocksdb-trace-dir" ).as<bfs::path>();
+    my->comments_trace.dir = trace_dir.is_relative() ? my->shared_memory_dir / trace_dir : trace_dir;
+    std::tie( my->comments_trace.first_block, my->comments_trace.last_block ) =
+      detail::parse_block_range( options.at( "comments-rocksdb-trace-blocks" ).as< string >() );
+  }
+
   std::string comment_archive_type_str( "ROCKSDB" );
   if( options.count( "comment-archive" ) )
     comment_archive_type_str = options.at( "comment-archive" ).as<std::string>();
@@ -1835,6 +1870,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     my->comment_archive_choice = detail::chain_plugin_impl::comment_archive_type::ROCKSDB;
   else
     FC_THROW_EXCEPTION( fc::parse_error_exception, "Unknown comment archive type" );
+  FC_ASSERT( !my->comments_trace.enabled() || my->comment_archive_choice == detail::chain_plugin_impl::comment_archive_type::ROCKSDB,
+    "comments-rocksdb-trace-dir needs the ROCKSDB comment archive" );
 
   my->shared_memory_size = fc::parse_size( options.at( "shared-file-size" ).as< string >() );
 

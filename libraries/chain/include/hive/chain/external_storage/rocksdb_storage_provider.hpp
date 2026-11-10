@@ -3,6 +3,7 @@
 #include <hive/chain/database.hpp>
 
 #include <hive/chain/external_storage/external_basic_provider.hpp>
+#include <hive/chain/external_storage/rocksdb_trace.hpp>
 
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
@@ -13,6 +14,8 @@
 
 #include <fc/crypto/ripemd160.hpp>
 #include <fc/filesystem.hpp>
+
+#include <optional>
 
 namespace hive { namespace chain {
 
@@ -61,6 +64,7 @@ class rocksdb_storage_provider: public external_basic_provider
     std::atomic_uint                  _cached_irreversible_block;
     std::unique_ptr<DB>               _storage;
     std::vector<ColumnFamilyHandle*>  _columnHandles;
+    std::optional<rocksdb_trace>      _trace;
 
     virtual ColumnDefinitions prepareColumnDefinitions( bool addDefaultColumn ) = 0;
     /// prepareColumnDefinitions with the level-style compaction, memtable tuning, and on-disk format pinning applied.
@@ -86,7 +90,7 @@ class rocksdb_storage_provider: public external_basic_provider
   public:
 
     rocksdb_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app, const std::string& name );
-    virtual ~rocksdb_storage_provider(){}
+    virtual ~rocksdb_storage_provider();
 
     std::unique_ptr<DB>& getStorage() override { return _storage; }
 
@@ -106,6 +110,10 @@ class rocksdb_storage_provider: public external_basic_provider
     void multi_read( const std::vector<Slice>& keys, std::vector<PinnableSlice>& values, std::vector<::rocksdb::Status>& statuses );
 
     void finalizeStorage();
+
+    /// Records the operations of this database over a block range (see rocksdb_trace), following
+    /// the last irreversible block passed to update_lib. Call before the database is opened.
+    void enableTrace( const rocksdb_trace_config& config );
 };
 
 }}
