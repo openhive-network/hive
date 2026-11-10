@@ -213,3 +213,15 @@ install( TARGETS
    LIBRARY DESTINATION lib
    ARCHIVE DESTINATION lib
 )
+
+# RocksDB's db_bench for hived's RocksDB databases (libraries/vendor: HIVE_BUILD_DB_BENCH).
+if( HIVE_BUILD_DB_BENCH )
+  add_executable( hive_db_bench hive_db_bench.cpp )
+  target_link_libraries( hive_db_bench
+                         PRIVATE rocksdb_db_bench_tool hive_chain fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+  install( TARGETS
+     hive_db_bench
+
+     RUNTIME DESTINATION bin
+  )
+endif()

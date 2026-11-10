@@ -39,7 +39,8 @@ class rocksdb_comment_archive : public comments_handler, public comment_archive_
   public:
 
     rocksdb_comment_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app,
-      size_t block_cache_size = rocksdb_comment_storage_provider::DEFAULT_BLOCK_CACHE_SIZE, bool enable_prefetch = false );
+      size_t block_cache_size = rocksdb_comment_storage_provider::DEFAULT_BLOCK_CACHE_SIZE, bool enable_prefetch = false,
+      const rocksdb_trace_config& trace_config = rocksdb_trace_config() );
     virtual ~rocksdb_comment_archive();
 
     void on_cashout( uint32_t _block_num, const comment_object& _comment, const comment_cashout_object& _comment_cashout ) override;
