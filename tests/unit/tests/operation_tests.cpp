@@ -1492,6 +1492,60 @@ BOOST_AUTO_TEST_CASE( transfer_apply )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( transfer_insufficient_funds_error_metadata )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: transfer over the balance reports chain/balance metadata" );
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    generate_block();
+    issue_funds( "alice", HIVE_asset( 1'000 ) );
+    issue_funds( "alice", HBD_asset( 1'000 ) );
+
+    const auto check_rejected_transfer = [&]( const asset& amount )
+    {
+      transfer_operation op;
+      op.from = "alice";
+      op.to = "bob";
+      op.amount = amount;
+
+      signed_transaction tx;
+      tx.operations.push_back( op );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+      bool thrown = false;
+      try
+      {
+        push_transaction( tx, alice_private_key );
+      }
+      catch( const fc::assert_exception& e )
+      {
+        thrown = true;
+        const fc::log_message& msg = e.get_log().front();
+        const fc::variant_object& data = msg.get_data();
+        BOOST_REQUIRE_EQUAL( data[ "category" ].as_string(), "chain" );
+        BOOST_REQUIRE_EQUAL( data[ "subject_type" ].as_string(), "balance" );
+        BOOST_REQUIRE_EQUAL( data[ "subject" ].as_string(), "alice" );
+        BOOST_REQUIRE_EQUAL( msg.get_format(),
+          "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}" );
+        BOOST_REQUIRE_EQUAL( data[ "acc" ].as_string(), "alice" );
+      }
+      BOOST_REQUIRE( thrown );
+    };
+
+    BOOST_TEST_MESSAGE( "--- HIVE transfer over the balance" );
+    check_rejected_transfer( ASSET( "2.000 TESTS" ) );
+    BOOST_TEST_MESSAGE( "--- HBD transfer over the balance" );
+    check_rejected_transfer( ASSET( "2.000 TBD" ) );
+
+    BOOST_REQUIRE_EQUAL( get_hive_balance( "alice" ), HIVE_asset( 1'000 ) );
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "alice" ), HBD_asset( 1'000 ) );
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( transfer_to_vesting_validate )
 {
   try

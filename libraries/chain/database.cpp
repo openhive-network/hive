@@ -3195,7 +3195,7 @@ void database::adjust_balance( const account_object& a, temp_HIVE_balance& hive_
 {
   if( delta.amount < 0 )
   {
-    FC_ASSERT( a.get_hive_balance() >= -delta,
+    HIVE_CHAIN_BALANCE_ASSERT( a.get_hive_balance() >= -delta, a.get_name(),
       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
         ("acc", a.get_name())("r", delta)("a", a.get_hive_balance()) );
   }
@@ -3222,7 +3222,7 @@ void database::adjust_balance( const account_object& a, temp_HBD_balance& hbd_ba
 {
   if( delta.amount < 0 )
   {
-    FC_ASSERT( a.get_hbd_balance() >= -delta,
+    HIVE_CHAIN_BALANCE_ASSERT( a.get_hbd_balance() >= -delta, a.get_name(),
       "Account ${acc} does not have sufficient funds for balance adjustment. Required: ${r}, Available: ${a}",
         ("acc", a.get_name())("r", delta)("a", a.get_hbd_balance()) );
   }
