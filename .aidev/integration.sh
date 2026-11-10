@@ -378,13 +378,22 @@ integration_lock() {  # SCRIPT
 }
 
 # The image the scripts run in: the checks' image (bash, the docker CLI, wget,
-# curl) with this host's compose plugin, which test_snapshot_bootstrap.sh uses,
-# and the step's docker shim ahead of the docker CLI.
+# curl, docker compose) and the step's docker shim ahead of the docker CLI. An
+# image older than the compose plugin in .aidev/runtime/Dockerfile gets this
+# host's, which test_snapshot_bootstrap.sh uses, and which runs there only when
+# it is statically linked; when it does not, that script skips its compose cases.
 integration_runner_image() {  # RUNTIME_IMAGE TAG
-    local stage="$out/runner"
-    mkdir -p "$stage" && cp "$(compose_plugin)" "$stage/docker-compose" && cp .aidev/docker-shim/docker "$stage/" || return 1
-    printf 'FROM %s\nCOPY docker-compose /usr/libexec/docker/cli-plugins/docker-compose\nCOPY docker /opt/aidev/bin/docker\nENV PATH=/opt/aidev/bin:$PATH\n' \
-        "$1" > "$stage/Dockerfile"
+    local stage="$out/runner" compose=""
+    mkdir -p "$stage" && cp .aidev/docker-shim/docker "$stage/" || return 1
+    if docker run --rm --entrypoint docker "$1" compose version; then
+        echo "compose: the checks' image's own"
+    else
+        cp "$(compose_plugin)" "$stage/docker-compose" || return 1
+        compose=$'COPY docker-compose /usr/libexec/docker/cli-plugins/docker-compose\n'
+        echo "compose: this host's $(compose_plugin)"
+    fi
+    printf 'FROM %s\n%sCOPY docker /opt/aidev/bin/docker\nENV PATH=/opt/aidev/bin:$PATH\n' \
+        "$1" "$compose" > "$stage/Dockerfile"
     docker build -q -t "$2" "$stage"
 }
 
@@ -401,6 +410,11 @@ hand_back() {  # RUNTIME_IMAGE [DIR...]
         find "$checkout" -xdev -uid 0 -exec chown -h "$owner" {} +' _ "$(id -u):$(id -g)" "$PWD" "$@"
 }
 
+copy_tracked() {  # SUBMODULE DIR: DIR holds SUBMODULE's tracked files, nothing else
+    rm -rf "$2" && mkdir -p "$2" \
+        && git -C "$1" ls-files -z | tar -C "$1" --null -T - -cf - | tar -C "$2" -xf -
+}
+
 # NETWORK's binaries built in the checks' own image, with CI's paths and
 # arguments and the checkout and its git directory at the paths they have here;
 # sccache there probes CI's Redis (HIVE_SCCACHE_REDIS) and else builds cold. Then
@@ -412,13 +426,20 @@ hand_back() {  # RUNTIME_IMAGE [DIR...]
 # own. What it writes is handed back to this user afterwards (hand_back). It is
 # capped at the suite's own container's memory (AIDEV_ENV_CONTAINER_MEMORY_BYTES),
 # when AIDEV gives one, with no swap beyond it, as AIDEV caps its own containers.
+# secp256k1-zkp's build runs its autogen.sh in its source directory, as does the
+# build of `default`, which runs beside this step as another user: one's root-owned
+# autom4te.cache stops the other's. This build gets a copy of its tracked files at
+# that path instead.
 hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
-    local net="$1" built="$out-hived-$1" stage="$out/image-$1" git_dir rc=0 base_arg=() cap=()
+    local net="$1" built="$out-hived-$1" stage="$out/image-$1" secp="$out/secp256k1-$1" git_dir rc=0 base_arg=() cap=()
+    local secp256k1_source=libraries/fc/vendor/secp256k1-zkp
     git_dir="$(realpath "$(git rev-parse --git-common-dir)")"
     [ -n "${AIDEV_ENV_CONTAINER_MEMORY_BYTES:-}" ] && cap=(--memory "$AIDEV_ENV_CONTAINER_MEMORY_BYTES" --memory-swap "$AIDEV_ENV_CONTAINER_MEMORY_BYTES")
     [ "$(remaining)" -gt 0 ] || { out_of_time "the $net binaries' build"; return; }
+    copy_tracked "$secp256k1_source" "$secp" || return 1
     docker run --rm --name "$integration_prefix-build-$net" --network host --user 0 "${cap[@]}" \
         -v "$(on_host "$git_dir"):$git_dir" -v "$(on_host "$PWD"):$PWD" -w "$PWD" \
+        -v "$(on_host "$secp"):$PWD/$secp256k1_source" \
         -e HIVE_SCCACHE_REDIS="$(ci_sccache_redis)" \
         -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
         -e HIVE_BUILD_JOBS -e HIVE_BUILD_JOB_MEMORY_MB "$2" timeout -k 30 "$(remaining)" \
@@ -427,6 +448,7 @@ hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
         echo "cannot hand the build's output in $PWD back to uid $(id -u)"
         [ "$rc" -ne 0 ] || rc=1
     fi
+    rm -rf "$secp"
     timed_out "$rc" && { out_of_time "the $net binaries' build"; return; }
     [ "$rc" -eq 0 ] || return "$rc"
     rm -rf "$stage"
@@ -450,7 +472,9 @@ hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
 # gets CI's timeout or what is left before the deadline, whichever is shorter: a
 # script stopped by CI's is a failure, one stopped by the deadline is skipped. The
 # script is told when it is stopped (HIVE_INTEGRATION_DEADLINE, an epoch second),
-# never later than the deadline, so its steps end before it is.
+# never later than the deadline, so its steps end before it is, and that it runs
+# here (HIVE_AIDEV_INTEGRATION=1). A part of it the script skips, as a line
+# `NAME<tab>REASON` in its work directory's skipped.log, is a skipped case.
 integration_script() {  # SCRIPT IMAGE SECONDS MIN_SECONDS RUNNER_IMAGE
     local dir="$out/${1%.sh}" host checkout rc=0 seconds="$3" left
     mkdir -p "$dir" && host="$(on_host "$dir")" && checkout="$(on_host "$PWD")" || return 1
@@ -464,10 +488,13 @@ integration_script() {  # SCRIPT IMAGE SECONDS MIN_SECONDS RUNNER_IMAGE
     echo "$1: ${seconds}s (CI gives it $3s)"
     docker run --rm --name "$integration_prefix-${1%.sh}" --network host --user 0 \
         -v /var/run/docker.sock:/var/run/docker.sock -v "$checkout:$checkout" -w "$host" \
-        -e AIDEV_ENV_CONTAINER_OWNER -e HIVE_INTEGRATION_DEADLINE="$(( $(date +%s) + seconds ))" "$5" timeout -k 30 "$seconds" "$checkout/tests/integration/$1" "$2" "$host/work" || rc=$?
+        -e AIDEV_ENV_CONTAINER_OWNER -e HIVE_AIDEV_INTEGRATION -e HIVE_INTEGRATION_DEADLINE="$(( $(date +%s) + seconds ))" "$5" timeout -k 30 "$seconds" "$checkout/tests/integration/$1" "$2" "$host/work" || rc=$?
     docker run --rm --user 0 -v "$host:$host" --entrypoint bash "$5" -c \
         'find "$1" -type f ! -name "*.log" -delete; find "$1" -mindepth 1 -depth -type d -empty -delete; chown -R "$2" "$1"' \
         _ "$host" "$(id -u):$(id -g)" || true
+    if [ -f "$dir/work/skipped.log" ]; then
+        while IFS=$'\t' read -r name reason; do skip_case "integration-${1%.sh}-$name" "$reason"; done < "$dir/work/skipped.log"
+    fi
     if timed_out "$rc"; then
         [ "$seconds" -lt "$3" ] && { out_of_time "$1"; return; }
         echo "$1 timed out at CI's ${3}s"
