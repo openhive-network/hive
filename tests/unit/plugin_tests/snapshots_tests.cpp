@@ -3,6 +3,7 @@
 
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/detail/state/account_object.hpp>
+#include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
 #include <hive/chain/irreversible_block_data_fwd.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
@@ -381,6 +382,58 @@ BOOST_AUTO_TEST_CASE( snapshot_load_ignores_memory_layout )
     reset_fixture( false );
     BOOST_REQUIRE_NO_THROW( postponed_init() );
     BOOST_REQUIRE_GE( db()->head_block_num(), head_block_num );
+    generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( account_lookup_by_name_after_snapshot_load )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: account_lookup_by_name_after_snapshot_load" );
+
+    const std::string snapshot_root_dir = "account_lookup_by_name_after_snapshot_load";
+    clear_snapshot( snapshot_root_dir );
+
+    start_node_with_all_witnesses( *this );
+    // names out of name order, so the ordered index has to sort them
+    const std::vector< std::string > created_names{ "zed", "bob", "mallory", "alice", "carol123456789ab" };
+    for( const auto& name : created_names )
+      account_create( name, init_account_pub_key );
+    const uint32_t creation_block_num = db()->head_block_num() + 1;
+    // the dump restarts the node, which drops reversible blocks, so the accounts have to become irreversible first
+    while( db()->get_last_irreversible_block_num() < creation_block_num )
+      generate_block();
+
+    dump_snapshot( snapshot_root_dir );
+
+    std::map< std::string, account_id_type > ids_by_name;
+    for( const auto& account : db()->get_index< account_index, by_name >() )
+      ids_by_name.emplace( account.get_name(), account.get_id() );
+    for( const auto& name : created_names )
+      BOOST_REQUIRE( ids_by_name.count( name ) );
+
+    load_snapshot( snapshot_root_dir );
+
+    const auto& by_name_idx = db()->get_index< account_index, by_name >();
+    const auto& by_name_hash_idx = db()->get_index< account_index, by_name_hash >();
+    BOOST_REQUIRE_EQUAL( by_name_hash_idx.size(), by_name_idx.size() );
+    for( const auto& [ name, id ] : ids_by_name )
+    {
+      const account_object* account = db()->find_account( name );
+      BOOST_REQUIRE( account != nullptr );
+      BOOST_REQUIRE( account->get_id() == id );
+    }
+    BOOST_REQUIRE( db()->find_account( "nobody" ) == nullptr );
+
+    // name order of the ordered index, which list_accounts iterates
+    std::vector< std::string > names_in_index_order;
+    for( const auto& account : by_name_idx )
+      names_in_index_order.emplace_back( account.get_name() );
+    BOOST_REQUIRE( std::is_sorted( names_in_index_order.begin(), names_in_index_order.end() ) );
+    BOOST_REQUIRE_EQUAL( names_in_index_order.size(), ids_by_name.size() );
+
     generate_block();
   }
   FC_LOG_AND_RETHROW()
