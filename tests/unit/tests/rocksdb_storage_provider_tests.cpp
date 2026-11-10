@@ -38,6 +38,56 @@ std::string comment_key( char seed )
   return std::string( 20, seed );
 }
 
+/// Lays out an archive as an older build did, with the given options for both column families,
+/// then checks that the current provider opens it and reads every comment back.
+void check_archive_written_by_older_build_stays_readable( const ::rocksdb::ColumnFamilyOptions& older_options )
+{
+  fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+  const bfs::path storage_path = temp_dir.path() / "comments-rocksdb-storage";
+
+  std::map< std::string, std::string > comments;
+  for( char seed = 'a'; seed <= 'z'; ++seed )
+    comments[ comment_key( seed ) ] = std::string( "comment-" ) + seed;
+
+  {
+    ::rocksdb::Options options( ::rocksdb::DBOptions(), older_options );
+    options.create_if_missing = true;
+    std::unique_ptr< ::rocksdb::DB > db;
+    BOOST_REQUIRE( ::rocksdb::DB::Open( options, storage_path.string(), &db ).ok() );
+
+    ::rocksdb::ColumnFamilyOptions hash_options = older_options;
+    hash_options.comparator = by_Hash_Comparator();
+    ::rocksdb::ColumnFamilyHandle* hash_column = nullptr;
+    BOOST_REQUIRE( db->CreateColumnFamily( hash_options, "account_permlink_hash", &hash_column ).ok() );
+
+    ::rocksdb::WriteBatch batch;
+    BOOST_REQUIRE( batch.Put( Slice( "STORE_MAJOR_VERSION" ), PrimitiveTypeSlice< uint32_t >( STORE_MAJOR_VERSION ) ).ok() );
+    BOOST_REQUIRE( batch.Put( Slice( "STORE_MINOR_VERSION" ), PrimitiveTypeSlice< uint32_t >( STORE_MINOR_VERSION ) ).ok() );
+    for( const auto& comment : comments )
+      BOOST_REQUIRE( batch.Put( comment.first, comment.second ).ok() );
+    BOOST_REQUIRE( db->Write( ::rocksdb::WriteOptions(), &batch ).ok() );
+    BOOST_REQUIRE( db->Flush( ::rocksdb::FlushOptions() ).ok() );
+
+    BOOST_REQUIRE( db->DestroyColumnFamilyHandle( hash_column ).ok() );
+    BOOST_REQUIRE( db->Close().ok() );
+  }
+
+  appbase::application app;
+  rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
+  provider.openDb( 0 );
+
+  for( const auto& comment : comments )
+  {
+    PinnableSlice value;
+    BOOST_REQUIRE( provider.read( comment.first, value ) );
+    BOOST_CHECK_EQUAL( value.ToString(), comment.second );
+  }
+  PinnableSlice missing;
+  BOOST_CHECK( !provider.read( comment_key( '0' ), missing ) );
+
+  provider.shutdownDb();
+}
+
 }
 
 BOOST_AUTO_TEST_SUITE( rocksdb_storage_provider_tests )
@@ -125,6 +175,8 @@ BOOST_AUTO_TEST_CASE( opened_archive_has_tuned_column_families )
   const auto& handles = provider.getColumnHandles();
   BOOST_REQUIRE_EQUAL( handles.size(), 2u );
 
+  BOOST_CHECK_EQUAL( provider.getStorage()->GetDBOptions().max_total_wal_size, 512u * 1024 * 1024 );
+
   std::shared_ptr< ::rocksdb::Cache > shared_cache;
   for( auto* handle : handles )
   {
@@ -146,6 +198,10 @@ BOOST_AUTO_TEST_CASE( opened_archive_has_tuned_column_families )
     BOOST_CHECK_EQUAL( std::string( table_options->filter_policy->CompatibilityName() ), "rocksdb.BuiltinBloomFilter" );
     BOOST_CHECK( table_options->cache_index_and_filter_blocks );
     BOOST_CHECK( table_options->pin_l0_filter_and_index_blocks_in_cache );
+    BOOST_CHECK( table_options->index_type == ::rocksdb::BlockBasedTableOptions::kTwoLevelIndexSearch );
+    BOOST_CHECK( table_options->partition_filters );
+    BOOST_CHECK_EQUAL( table_options->metadata_block_size, 4096u );
+    BOOST_CHECK( table_options->pin_top_level_index_and_filter );
 
     BOOST_REQUIRE( table_options->block_cache );
     BOOST_CHECK_EQUAL( table_options->block_cache->GetCapacity(), block_cache_size );
@@ -159,52 +215,22 @@ BOOST_AUTO_TEST_CASE( opened_archive_has_tuned_column_families )
 
 BOOST_AUTO_TEST_CASE( archive_written_with_untuned_options_stays_readable )
 {
-  fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
-  const bfs::path storage_path = temp_dir.path() / "comments-rocksdb-storage";
+  // As the code before table options and column family tuning: SST files without filter blocks.
+  check_archive_written_by_older_build_stays_readable( ::rocksdb::ColumnFamilyOptions() );
+}
 
-  std::map< std::string, std::string > comments;
-  for( char seed = 'a'; seed <= 'z'; ++seed )
-    comments[ comment_key( seed ) ] = std::string( "comment-" ) + seed;
+BOOST_AUTO_TEST_CASE( archive_written_with_full_filters_stays_readable )
+{
+  // As the code before partitioned index/filters: a binary search index and one full bloom
+  // filter block per SST file.
+  ::rocksdb::BlockBasedTableOptions table_options;
+  table_options.filter_policy.reset( ::rocksdb::NewBloomFilterPolicy( 10 ) );
+  table_options.cache_index_and_filter_blocks = true;
+  table_options.pin_l0_filter_and_index_blocks_in_cache = true;
+  ::rocksdb::ColumnFamilyOptions options;
+  options.table_factory.reset( ::rocksdb::NewBlockBasedTableFactory( table_options ) );
 
-  // Lay out the archive as the code before table options and column family tuning did: default
-  // ColumnFamilyOptions everywhere, so the SST files carry no filter blocks.
-  {
-    ::rocksdb::Options options;
-    options.create_if_missing = true;
-    std::unique_ptr< ::rocksdb::DB > db;
-    BOOST_REQUIRE( ::rocksdb::DB::Open( options, storage_path.string(), &db ).ok() );
-
-    ::rocksdb::ColumnFamilyOptions hash_options;
-    hash_options.comparator = by_Hash_Comparator();
-    ::rocksdb::ColumnFamilyHandle* hash_column = nullptr;
-    BOOST_REQUIRE( db->CreateColumnFamily( hash_options, "account_permlink_hash", &hash_column ).ok() );
-
-    ::rocksdb::WriteBatch batch;
-    BOOST_REQUIRE( batch.Put( Slice( "STORE_MAJOR_VERSION" ), PrimitiveTypeSlice< uint32_t >( STORE_MAJOR_VERSION ) ).ok() );
-    BOOST_REQUIRE( batch.Put( Slice( "STORE_MINOR_VERSION" ), PrimitiveTypeSlice< uint32_t >( STORE_MINOR_VERSION ) ).ok() );
-    for( const auto& comment : comments )
-      BOOST_REQUIRE( batch.Put( comment.first, comment.second ).ok() );
-    BOOST_REQUIRE( db->Write( ::rocksdb::WriteOptions(), &batch ).ok() );
-    BOOST_REQUIRE( db->Flush( ::rocksdb::FlushOptions() ).ok() );
-
-    BOOST_REQUIRE( db->DestroyColumnFamilyHandle( hash_column ).ok() );
-    BOOST_REQUIRE( db->Close().ok() );
-  }
-
-  appbase::application app;
-  rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
-  provider.openDb( 0 );
-
-  for( const auto& comment : comments )
-  {
-    PinnableSlice value;
-    BOOST_REQUIRE( provider.read( comment.first, value ) );
-    BOOST_CHECK_EQUAL( value.ToString(), comment.second );
-  }
-  PinnableSlice missing;
-  BOOST_CHECK( !provider.read( comment_key( '0' ), missing ) );
-
-  provider.shutdownDb();
+  check_archive_written_by_older_build_stays_readable( options );
 }
 
 BOOST_AUTO_TEST_CASE( written_tables_use_pinned_on_disk_format )
@@ -252,6 +278,7 @@ BOOST_AUTO_TEST_CASE( written_tables_use_pinned_on_disk_format )
         file << " has format_version " << properties->format_version );
       BOOST_CHECK_MESSAGE( properties->compression_name == "Snappy",
         file << " has compression " << properties->compression_name );
+      BOOST_CHECK_MESSAGE( properties->index_partitions > 0, file << " has no partitioned index" );
     }
   }
 

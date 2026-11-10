@@ -21,6 +21,16 @@ namespace {
 /// of them run in parallel) for little gain.
 constexpr uint64_t MEMTABLE_MEMORY_BUDGET = 128 * 1024 * 1024;
 
+/// Bound on the live WAL files of a database. A column family written rarely (the LIB marker gets
+/// one tiny write per block) keeps every WAL file since its last flush alive, and RocksDB's
+/// default bound is 4x the memtable capacity of all column families (1.5 GiB for the comment
+/// archive, over 5 GiB for account history). Past this bound RocksDB flushes the column families
+/// that hold data in the oldest WAL file - cheap for the LIB marker. It is 8x the 64 MiB a column
+/// family accumulates before its own flush (two 32 MiB write buffers), so a column family taking
+/// at least 1/8 of the writes always flushes on its own first, and a less written one is forced
+/// to flush at most once per 512 MiB of WAL.
+constexpr uint64_t MAX_TOTAL_WAL_SIZE = 512 * 1024 * 1024;
+
 /// OptimizeLevelStyleCompaction also derives the SST file size (budget / 8) and the level 1 size
 /// (budget) from the memtable budget, so the small budget above alone would mean 16 MiB files and
 /// a 128 MiB level 1. Large databases (account history reaches hundreds of GB) would then hold 4x
@@ -47,6 +57,7 @@ Options make_db_options()
   options.info_log_level    = ::rocksdb::WARN_LEVEL;
   options.max_log_file_size = 8 * 1024 * 1024; // 8 MiB per LOG file
   options.keep_log_file_num = 1;               // retain only the active LOG
+  options.max_total_wal_size = MAX_TOTAL_WAL_SIZE;
   raise_fd_limit();
   // Bound on how many SST files this database may keep open at once. With RocksDB's default of
   // -1 every live SST file is opened on first touch and then never closed, so the descriptor
