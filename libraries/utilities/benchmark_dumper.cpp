@@ -20,6 +20,21 @@ void operator -= ( benchmark_dumper::comment_archive_details_t& current, const b
   current.comment_lib_processing -= previous.comment_lib_processing;
   current.comment_prefetch_hit -= previous.comment_prefetch_hit;
   current.comment_prefetch_miss -= previous.comment_prefetch_miss;
+  for( size_t i = 0; i < current.lookups_by_path.size() && i < previous.lookups_by_path.size(); ++i )
+  {
+    current.lookups_by_path[i].from_index -= previous.lookups_by_path[i].from_index;
+    current.lookups_by_path[i].prefetch_hit -= previous.lookups_by_path[i].prefetch_hit;
+    current.lookups_by_path[i].archive_read -= previous.lookups_by_path[i].archive_read;
+    current.lookups_by_path[i].not_found -= previous.lookups_by_path[i].not_found;
+  }
+}
+
+std::vector<benchmark_dumper::comment_lookup_path_counters_t> benchmark_dumper::comment_archive_details_t::make_lookups_by_path()
+{
+  std::vector<comment_lookup_path_counters_t> result( static_cast<size_t>( comment_lookup_path::count_ ) );
+  for( size_t i = 0; i < result.size(); ++i )
+    result[i].path = static_cast<comment_lookup_path>( i );
+  return result;
 }
 
 void benchmark_dumper::initialize( const fc::string& file_name )

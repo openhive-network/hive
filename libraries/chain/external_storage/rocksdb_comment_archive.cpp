@@ -27,6 +27,12 @@ namespace {
 constexpr size_t PREFETCHED_COMMENTS_CAPACITY = 256 * 1024;
 constexpr size_t PREFETCH_AUTHORS_CAPACITY = 1024 * 1024;
 
+template< typename... Counters >
+void count_lookup( uint64_t time_ns, Counters&... counters )
+{
+  ( ( counters.time_ns += time_ns, ++counters.count ), ... );
+}
+
 std::shared_ptr<comment_object> make_archived_comment( const comment_object::author_and_permlink_hash_type& hash, const rocksdb_comment_object& obj )
 {
   return std::shared_ptr<comment_object>( new comment_object ( obj.comment_id, obj.parent_comment, hash, obj.depth ) );
@@ -75,6 +81,9 @@ void rocksdb_comment_archive::on_cashout( uint32_t _block_num, const comment_obj
     o.block_number    = _block_num;
   });
 
+  if( prefetch_enabled )
+    remember_author( _comment_cashout.get_author_id() );
+
   stats.comment_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++stats.comment_cashout_processing.count;
 }
@@ -114,11 +123,13 @@ std::shared_ptr<comment_object> rocksdb_comment_archive::get_comment_impl( const
   return make_archived_comment( hash, _obj );
 }
 
-std::shared_ptr<comment_object> rocksdb_comment_archive::get_prefetched_comment( const account_id_type& author,
-  const comment_object::author_and_permlink_hash_type& hash ) const
+void rocksdb_comment_archive::remember_author( const account_id_type& author ) const
 {
   author_ids.remember( author, [&]() { return db.get_account( author ).get_name(); } );
+}
 
+std::shared_ptr<comment_object> rocksdb_comment_archive::get_prefetched_comment( const comment_object::author_and_permlink_hash_type& hash ) const
+{
   // Only entries found in the archive are prefetched, never their absence: a comment can move
   // into the archive (on_irreversible_block) after the prefetch looked for it.
   const auto _entry = prefetched_comments.find( hash );
@@ -230,37 +241,45 @@ void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
 comment rocksdb_comment_archive::get_comment( const account_id_type& author, const std::string& permlink, bool comment_is_required ) const
 {
   auto time_start = std::chrono::high_resolution_clock::now();
+  auto elapsed = [&]() -> uint64_t
+  {
+    return std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+  };
+  auto& _path_stats = current_path_stats();
 
   auto _hash = comment_object::compute_author_and_permlink_hash( author, permlink );
   const auto* _comment = db.find< comment_object, by_permlink >( _hash );
   if( _comment )
   {
-    stats.comment_accessed_from_index.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
-    ++stats.comment_accessed_from_index.count;
+    count_lookup( elapsed(), stats.comment_accessed_from_index, _path_stats.from_index );
     return comment( _comment );
   }
   else
   {
-    auto _external_comment = prefetch_enabled ? get_prefetched_comment( author, _hash ) : std::shared_ptr<comment_object>();
+    auto _external_comment = prefetch_enabled ? get_prefetched_comment( _hash ) : std::shared_ptr<comment_object>();
     const bool _prefetched = static_cast<bool>( _external_comment );
     if( !_prefetched )
+    {
       _external_comment = get_comment_impl( _hash );
-    uint64_t time = std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
+      // authors are learned here and on cashout rather than on every lookup, which keeps the far more
+      // frequent lookups of comments that do not exist anywhere free of the prefetch bookkeeping
+      if( _external_comment && prefetch_enabled )
+        remember_author( author );
+    }
+    const uint64_t time = elapsed();
     if( _external_comment )
     {
-      stats.comment_accessed_from_archive.time_ns += time;
-      ++stats.comment_accessed_from_archive.count;
-      if( prefetch_enabled )
-      {
-        auto& _counter = _prefetched ? stats.comment_prefetch_hit : stats.comment_prefetch_miss;
-        _counter.time_ns += time;
-        ++_counter.count;
-      }
+      count_lookup( time, stats.comment_accessed_from_archive );
+      if( _prefetched )
+        count_lookup( time, stats.comment_prefetch_hit, _path_stats.prefetch_hit );
+      else if( prefetch_enabled )
+        count_lookup( time, stats.comment_prefetch_miss, _path_stats.archive_read );
+      else
+        count_lookup( time, _path_stats.archive_read );
     }
     else
     {
-      stats.comment_not_found.time_ns += time;
-      ++stats.comment_not_found.count;
+      count_lookup( time, stats.comment_not_found, _path_stats.not_found );
       FC_ASSERT( !comment_is_required, "Comment with `id`/`permlink` ${author}/${permlink} not found", ( author ) ( permlink ) );
     }
     return comment( _external_comment );

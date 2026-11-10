@@ -32,7 +32,8 @@ class rocksdb_comment_archive : public comments_handler, public comment_archive_
 
     void move_to_external_storage_impl( uint32_t block_num, const volatile_comment_object& volatile_object );
     std::shared_ptr<comment_object> get_comment_impl( const comment_object::author_and_permlink_hash_type& hash ) const;
-    std::shared_ptr<comment_object> get_prefetched_comment( const account_id_type& author, const comment_object::author_and_permlink_hash_type& hash ) const;
+    std::shared_ptr<comment_object> get_prefetched_comment( const comment_object::author_and_permlink_hash_type& hash ) const;
+    void remember_author( const account_id_type& author ) const;
     void clear_prefetched();
 
   public:

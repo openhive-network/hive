@@ -4,6 +4,8 @@
 
 #include <hive/protocol/transaction.hpp>
 
+#include <hive/utilities/benchmark_dumper.hpp>
+
 #include <deque>
 #include <functional>
 #include <mutex>
@@ -22,6 +24,9 @@ struct comment_lookup_key
 
 /// Appends the comments the evaluators of the transaction's operations look up by author and permlink.
 void collect_comment_lookup_keys( const hive::protocol::signed_transaction& transaction, std::vector<comment_lookup_key>& keys );
+
+/// The path the comment lookups made by the evaluator of the operation are counted under in the archive stats.
+hive::utilities::benchmark_dumper::comment_lookup_path get_evaluator_lookup_path( const hive::protocol::operation& op );
 
 /// Archive entries read ahead of their use, keyed by author and permlink hash. Thread safe.
 /// Holds at most `capacity` entries and evicts the ones stored or refreshed longest ago.

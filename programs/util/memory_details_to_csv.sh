@@ -13,7 +13,7 @@ Requires jq.
 
 Commands:
   records              One row per record: block number, summary type (empty for regular measurements), times,
-                       memory and comment archive stats.
+                       memory and comment archive stats, including lookups by path (<path>_<counter> columns).
   indexes              One row per record, one column per index (in natural order) holding selected field.
     --field=FIELD      Index field to show (default: total_index_mem_usage).
   record               One row per index of single record.
@@ -76,13 +76,18 @@ done
 case "$COMMAND" in
   records)
     jq -nr '
+      def counters: to_entries | map( select( .value | type == "object" ) | .key );
       input as $first
-      | ( $first.comment_archive_stats | keys_unsorted ) as $stats
+      | ( $first.comment_archive_stats | counters ) as $stats
+      | ( $first.comment_archive_stats.lookups_by_path // [] | map( .path ) ) as $paths
+      | ( $first.comment_archive_stats.lookups_by_path // [] | first // {} | counters ) as $path_stats
       | ( [ "block_number", "summary", "real_ms", "cpu_ms", "current_mem", "peak_mem", "shm_free" ]
-          + [ $stats[] | ( . + "_count", . + "_time_ns" ) ] | @csv ),
+          + [ $stats[] | ( . + "_count", . + "_time_ns" ) ]
+          + [ $paths[] as $path | $path_stats[] | ( $path + "_" + . + "_count", $path + "_" + . + "_time_ns" ) ] | @csv ),
         ( $first, inputs
           | [ .block_number, .summary // "", .real_ms, .cpu_ms, .current_mem, .peak_mem, .shm_free ]
             + [ .comment_archive_stats[ $stats[] ] | ( .count, .time_ns ) ]
+            + [ .comment_archive_stats.lookups_by_path // [] | .[] | .[ $path_stats[] ] | ( .count, .time_ns ) ]
           | @csv )
     ' ${FILES[@]+"${FILES[@]}"}
     ;;

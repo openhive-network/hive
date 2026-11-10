@@ -33,6 +33,28 @@ public:
     uint64_t count = 0;
     uint64_t time_ns = 0; // cumulative time in ns
   };
+  /// Code that looks a comment up in the comment archive by author and permlink
+  enum class comment_lookup_path
+  {
+    other, // e.g. APIs, hardforks
+    operation_notification, // plugins reacting to operations
+    vote_evaluator,
+    comment_evaluator,
+    comment_options_evaluator,
+    delete_comment_evaluator,
+    proposal_evaluator,
+    other_evaluator,
+    count_
+  };
+  /// Lookups made by one path, by where they were served from (ROCKSDB comment archive only)
+  struct comment_lookup_path_counters_t
+  {
+    comment_lookup_path path = comment_lookup_path::other;
+    counter_t from_index;
+    counter_t prefetch_hit; // served from prefetched entries
+    counter_t archive_read; // found in the archive by a read on the spot
+    counter_t not_found;
+  };
   struct comment_archive_details_t
   {
     counter_t comment_accessed_from_index;
@@ -43,6 +65,10 @@ public:
     // the part of comment_accessed_from_archive served from prefetched entries, and the part read on the spot
     counter_t comment_prefetch_hit;
     counter_t comment_prefetch_miss;
+    /// indexed by comment_lookup_path
+    std::vector<comment_lookup_path_counters_t> lookups_by_path = make_lookups_by_path();
+
+    static std::vector<comment_lookup_path_counters_t> make_lookups_by_path();
   };
 
   struct index_memory_details_t
@@ -140,9 +166,15 @@ FC_REFLECT_ENUM( hive::utilities::benchmark_dumper::summary_type, (initial)(repl
 
 FC_REFLECT( hive::utilities::benchmark_dumper::counter_t,
         (count)(time_ns) )
+FC_REFLECT_ENUM( hive::utilities::benchmark_dumper::comment_lookup_path,
+        (other)(operation_notification)(vote_evaluator)(comment_evaluator)(comment_options_evaluator)
+        (delete_comment_evaluator)(proposal_evaluator)(other_evaluator)(count_) )
+FC_REFLECT( hive::utilities::benchmark_dumper::comment_lookup_path_counters_t,
+        (path)(from_index)(prefetch_hit)(archive_read)(not_found) )
 FC_REFLECT( hive::utilities::benchmark_dumper::comment_archive_details_t,
         (comment_accessed_from_index)(comment_accessed_from_archive)(comment_not_found)
-        (comment_cashout_processing)(comment_lib_processing)(comment_prefetch_hit)(comment_prefetch_miss) )
+        (comment_cashout_processing)(comment_lib_processing)(comment_prefetch_hit)(comment_prefetch_miss)
+        (lookups_by_path) )
 
 FC_REFLECT( hive::utilities::benchmark_dumper::index_memory_details_t,
         (index_name)(index_size)(item_sizeof)(item_additional_allocation)
