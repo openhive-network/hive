@@ -50,11 +50,63 @@ find_package( Snappy CONFIG )
 # RocksDB's approach conflicts with that (double-wrapping the compiler).
 set(CCACHE_FOUND "CCACHE_FOUND-NOTFOUND" CACHE FILEPATH "Disabled: compiler caching handled at top level" FORCE)
 
+# rocksdb_db_bench_tool: RocksDB's db_bench (db_bench_tool() without its main), which
+# programs/util's hive_db_bench wraps with hive's comparators and column families. RocksDB builds
+# db_bench only together with gflags in librocksdb itself (WITH_GFLAGS), so the sources are
+# compiled here instead, with the flags, definitions and include directories of RocksDB's own
+# directory and gflags linked into this library alone: hived never links gflags. A function, so
+# the variables set for gflags' build stay local to it.
+function(hive_add_db_bench_tool)
+  find_package(gflags CONFIG QUIET)
+  if(NOT TARGET gflags::gflags)
+    include(FetchContent)
+    FetchContent_Declare(gflags
+      URL https://github.com/gflags/gflags/archive/refs/tags/v2.2.2.tar.gz
+      URL_HASH SHA256=34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf)
+    FetchContent_GetProperties(gflags)
+    if(NOT gflags_POPULATED)
+      FetchContent_Populate(gflags)
+    endif()
+    set(GFLAGS_IS_SUBPROJECT TRUE)
+    set(BUILD_TESTING OFF)
+    set(BUILD_SHARED_LIBS OFF)
+    set(BUILD_STATIC_LIBS ON)
+    set(BUILD_gflags_LIB ON)
+    set(BUILD_gflags_nothreads_LIB OFF)
+    add_subdirectory("${gflags_SOURCE_DIR}" "${gflags_BINARY_DIR}" EXCLUDE_FROM_ALL)
+  endif()
+
+  set(_rocksdb_dir "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb")
+  # db_bench links the compression managers of these files, which subclass the classes whose
+  # typeinfo compression.cc no longer emits (see the RTTI note below), as sst_dump does with
+  # db_stress_compression_manager.cc; hived does not link them.
+  if(NOT MSVC)
+    set_source_files_properties("${_rocksdb_dir}/util/auto_tune_compressor.cc"
+      "${_rocksdb_dir}/util/simple_mixed_compressor.cc"
+      DIRECTORY "${_rocksdb_dir}"
+      PROPERTIES COMPILE_OPTIONS "-fno-rtti;-UROCKSDB_USE_RTTI")
+  endif()
+  add_library(rocksdb_db_bench_tool STATIC EXCLUDE_FROM_ALL
+    "${_rocksdb_dir}/tools/db_bench_tool.cc"
+    "${_rocksdb_dir}/tools/simulated_hybrid_file_system.cc"
+    "${_rocksdb_dir}/tools/tool_hooks.cc")
+  get_directory_property(_definitions DIRECTORY "${_rocksdb_dir}" COMPILE_DEFINITIONS)
+  get_directory_property(_includes DIRECTORY "${_rocksdb_dir}" INCLUDE_DIRECTORIES)
+  get_directory_property(_cxx_flags DIRECTORY "${_rocksdb_dir}" DEFINITION CMAKE_CXX_FLAGS)
+  separate_arguments(_cxx_flags UNIX_COMMAND "${_cxx_flags}")
+  target_compile_definitions(rocksdb_db_bench_tool PRIVATE ${_definitions} GFLAGS=1)
+  target_include_directories(rocksdb_db_bench_tool PRIVATE ${_includes} "${_rocksdb_dir}")
+  target_compile_options(rocksdb_db_bench_tool PRIVATE ${_cxx_flags})
+  target_link_libraries(rocksdb_db_bench_tool PUBLIC rocksdb gflags::gflags)
+endfunction()
+
 # --- Preinstalled RocksDB detection ---
 set(HIVE_VENDOR_PREINSTALLED_DIR "/opt/hive/vendor" CACHE PATH
     "Base directory for preinstalled vendor libraries")
 option(HIVE_USE_PREINSTALLED_VENDOR
     "Use preinstalled vendor libraries if available (OFF to always build from source)" ON)
+option(HIVE_BUILD_DB_BENCH
+    "Add the hive_db_bench target (RocksDB's db_bench for replaying hived's RocksDB traces, see doc/devs/rocksdb-trace-replay.md). Builds RocksDB from source and fetches gflags when it is not installed" OFF)
 
 # Verify submodule is initialized
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/.git")
@@ -78,7 +130,8 @@ set(_use_preinstalled OFF)
 if(HIVE_USE_PREINSTALLED_VENDOR
    AND _rocksdb_git_result EQUAL 0
    AND EXISTS "${_rocksdb_preinstalled_dir}/lib/librocksdb.a"
-   AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+   AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
+   AND NOT HIVE_BUILD_DB_BENCH)
 
   # Ensure uring::uring is available before find_package(RocksDB).
   # RocksDBConfig.cmake does NOT call find_dependency(uring), but
@@ -127,7 +180,9 @@ if(HIVE_USE_PREINSTALLED_VENDOR
 endif()
 
 if(NOT _use_preinstalled)
-  if(_rocksdb_git_result EQUAL 0 AND HIVE_USE_PREINSTALLED_VENDOR)
+  if(HIVE_BUILD_DB_BENCH)
+    message(STATUS "hive_db_bench compiles RocksDB's own sources, building RocksDB from source")
+  elseif(_rocksdb_git_result EQUAL 0 AND HIVE_USE_PREINSTALLED_VENDOR)
     message(STATUS "No preinstalled RocksDB for commit ${_rocksdb_commit} "
                    "(or Debug build), building from source")
   elseif(NOT HIVE_USE_PREINSTALLED_VENDOR)
@@ -165,6 +220,9 @@ if(NOT _use_preinstalled)
     target_link_libraries(sst_dump rocksdb)
     set_target_properties(sst_dump PROPERTIES
       RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/rocksdb/tools")
+  endif()
+  if(HIVE_BUILD_DB_BENCH)
+    hive_add_db_bench_tool()
   endif()
 endif()
 

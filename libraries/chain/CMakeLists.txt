@@ -98,6 +98,7 @@ set( SOURCES
              external_storage/types.cpp
              external_storage/fd_budget.cpp
              external_storage/rocksdb_format.cpp
+             external_storage/rocksdb_trace.cpp
 
              ${HEADERS}
            )

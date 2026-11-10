@@ -85,6 +85,18 @@ rocksdb_storage_provider::rocksdb_storage_provider( const bfs::path& blockchain_
     bfs::create_directories( _storagePath );
 }
 
+rocksdb_storage_provider::~rocksdb_storage_provider()
+{
+  if( _trace && getStorage() )
+    _trace->stop( *getStorage(), _cached_irreversible_block, "database destroyed" );
+}
+
+void rocksdb_storage_provider::enableTrace( const rocksdb_trace_config& config )
+{
+  FC_ASSERT( !getStorage(), "Tracing of `${name}` RocksDB database must be enabled before the database is opened", ("name", name) );
+  _trace.emplace( config, name );
+}
+
 void rocksdb_storage_provider::openDb( uint32_t expected_lib )
 {
   ilog("Open `${name}` RocksDB database at location: `${p}'.", ("name", name)("p", _storagePath.string()));
@@ -438,12 +450,17 @@ void rocksdb_storage_provider::update_lib( uint32_t lib )
   */
   FC_ASSERT( _initialized, "Trying to update LIB in `${name}` RocksDB database before initialization.", ("name", name) );
   update_lib_internal( lib );
+  // The new LIB is still only in the write buffer, so a trace started here also records writing it.
+  if( _trace )
+    _trace->on_lib( *getStorage(), lib );
 }
 
 void rocksdb_storage_provider::finalizeStorage()
 {
   if( getStorage() )
   {
+    if( _trace )
+      _trace->stop( *getStorage(), _cached_irreversible_block, "database closed" );
     getStorage()->Close();
     getStorage().reset();
   }
