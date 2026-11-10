@@ -6,6 +6,7 @@
 namespace hive { namespace chain {
 
 hive::utilities::benchmark_dumper::comment_archive_details_t comments_handler::stats;
+thread_local comments_handler::lookup_path comments_handler::current_lookup_path = comments_handler::lookup_path::other;
 
 void placeholder_comment_archive::on_cashout( uint32_t _block_num, const comment_object& _comment, const comment_cashout_object& _comment_cashout )
 {

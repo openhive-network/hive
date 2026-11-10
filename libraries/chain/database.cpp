@@ -6,6 +6,7 @@
 #include <hive/protocol/hbd_interest.hpp>
 
 #include <hive/chain/external_storage/comments_handler.hpp>
+#include <hive/chain/external_storage/comment_archive_prefetch.hpp>
 #include <hive/chain/external_storage/fd_budget.hpp>
 #include <hive/chain/notifications.hpp>
 
@@ -803,11 +804,13 @@ void post_push_virtual_operation( database& db, const operation& op, const fc::o
 
 void database::notify_pre_apply_operation( const operation_notification& note )
 {
+  comments_handler::lookup_path_scope lookup_scope( comments_handler::lookup_path::operation_notification );
   HIVE_TRY_NOTIFY( _my->_pre_apply_operation_signal, note )
 }
 
 void database::notify_post_apply_operation( const operation_notification& note )
 {
+  comments_handler::lookup_path_scope lookup_scope( comments_handler::lookup_path::operation_notification );
   HIVE_TRY_NOTIFY( _my->_post_apply_operation_signal, note )
 }
 
@@ -2743,7 +2746,10 @@ void database_impl::apply_operation(const operation& op)
   if( _self.has_hardfork( HIVE_HARDFORK_0_20 ) )
     _self.rc().handle_operation_discount< operation >( op );
 
-  _evaluator_registry.get_evaluator( op ).apply( op );
+  {
+    comments_handler::lookup_path_scope lookup_scope( get_evaluator_lookup_path( op ) );
+    _evaluator_registry.get_evaluator( op ).apply( op );
+  }
 
   benchmark.stop( _evaluator_benchmark_counters, op );
 

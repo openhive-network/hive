@@ -60,7 +60,10 @@ a blocklog, see the third example above using the -n option.
 hived run with `--dump-memory-details` writes `replay_benchmark.jsonl` into its data dir, one json record per line:
 a regular measurement every `--set-benchmark-interval` blocks and a summary (marked with `summary` field: `initial`,
 `replay`, `sync` or `live`) at the end of each phase of work. Each record holds times, memory usage, comment archive
-stats and the number of objects and memory used by every index (in natural order of indexes).
+stats and the number of objects and memory used by every index (in natural order of indexes). The comment archive stats
+include `lookups_by_path`: the lookups by author and permlink split by the code that made them (the evaluator of an
+operation kind, plugins reacting to operations, or other code such as APIs) and by where they were served from
+(state, prefetched entries, a read of the archive on the spot, or not found at all).
 
 The script converts the records into CSV (requires `jq`), e.g. to import into a spreadsheet:
 ```

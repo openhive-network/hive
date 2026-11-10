@@ -426,7 +426,29 @@ struct prefetch_scenario_result
   std::string state;
   uint64_t    prefetch_hits = 0;
   uint64_t    prefetch_misses = 0;
+  // lookups during the fork switch, by path and where they were served from
+  hive::utilities::benchmark_dumper::comment_lookup_path_counters_t vote_lookups;
+  hive::utilities::benchmark_dumper::comment_lookup_path_counters_t comment_lookups;
+  // lookups made by the test itself, outside of any operation
+  hive::utilities::benchmark_dumper::comment_lookup_path_counters_t other_lookups;
 };
+
+hive::utilities::benchmark_dumper::comment_lookup_path_counters_t lookups_since(
+  const hive::utilities::benchmark_dumper::comment_archive_details_t& before, hive::utilities::benchmark_dumper::comment_lookup_path path )
+{
+  auto delta = [&]( hive::utilities::benchmark_dumper::counter_t hive::utilities::benchmark_dumper::comment_lookup_path_counters_t::* counter )
+  {
+    return ( comments_handler::stats.lookups_by_path[ static_cast<size_t>( path ) ].*counter ).count -
+      ( before.lookups_by_path[ static_cast<size_t>( path ) ].*counter ).count;
+  };
+  hive::utilities::benchmark_dumper::comment_lookup_path_counters_t result;
+  result.path = path;
+  result.from_index.count = delta( &hive::utilities::benchmark_dumper::comment_lookup_path_counters_t::from_index );
+  result.prefetch_hit.count = delta( &hive::utilities::benchmark_dumper::comment_lookup_path_counters_t::prefetch_hit );
+  result.archive_read.count = delta( &hive::utilities::benchmark_dumper::comment_lookup_path_counters_t::archive_read );
+  result.not_found.count = delta( &hive::utilities::benchmark_dumper::comment_lookup_path_counters_t::not_found );
+  return result;
+}
 
 prefetch_scenario_result prefetch_scenario( bool prefetch )
 {
@@ -531,6 +553,9 @@ prefetch_scenario_result prefetch_scenario( bool prefetch )
   BOOST_REQUIRE_EQUAL( describe( "alice", "old" ), old_before_archiving );
   BOOST_REQUIRE_EQUAL( describe( "bob", "old-reply" ), old_reply_before_archiving );
 
+  prefetch_scenario_result result;
+  result.vote_lookups = lookups_since( stats_before, comments_handler::lookup_path::vote_evaluator );
+  result.comment_lookups = lookups_since( stats_before, comments_handler::lookup_path::comment_evaluator );
   const auto stats_middle = comments_handler::stats;
 
   BOOST_TEST_MESSAGE( "A vote prefetched while its comment is in state, applied after the comment moved to the archive" );
@@ -557,11 +582,12 @@ prefetch_scenario_result prefetch_scenario( bool prefetch )
   if( prefetch )
     BOOST_REQUIRE_GT( comments_handler::stats.comment_prefetch_miss.count, stats_late.comment_prefetch_miss.count );
 
-  prefetch_scenario_result result;
   result.prefetch_hits = stats_middle.comment_prefetch_hit.count - stats_before.comment_prefetch_hit.count;
   result.prefetch_misses = comments_handler::stats.comment_prefetch_miss.count - stats_before.comment_prefetch_miss.count;
 
+  const auto stats_describe = comments_handler::stats;
   BOOST_REQUIRE_EQUAL( describe( "alice", "late" ), late_before_archiving );
+  result.other_lookups = lookups_since( stats_describe, comments_handler::lookup_path::other );
   result.state = fc::json::to_string( test.db->get_dynamic_global_properties() ) + " " +
     fc::json::to_string( test.db->get_account( "alice" ) ) + " " + fc::json::to_string( test.db->get_account( "bob" ) ) + " " +
     describe( "alice", "old" ) + " " + describe( "bob", "old-reply" ) + " " + describe( "bob", "new-reply" ) + " " + describe( "alice", "late" ) +
@@ -583,6 +609,22 @@ BOOST_FIXTURE_TEST_CASE( prefetch_of_archived_comments, empty_fixture )
     BOOST_CHECK_EQUAL( without_prefetch.prefetch_misses, 0u );
 
     BOOST_CHECK_EQUAL( with_prefetch.state, without_prefetch.state );
+
+    // the votes look up archived comments only, the reply also checks that its own permlink is not taken yet
+    BOOST_CHECK_GE( with_prefetch.vote_lookups.prefetch_hit.count, 2u );
+    BOOST_CHECK_EQUAL( with_prefetch.vote_lookups.archive_read.count, 0u );
+    BOOST_CHECK_EQUAL( with_prefetch.vote_lookups.from_index.count, 0u );
+    BOOST_CHECK_EQUAL( with_prefetch.vote_lookups.not_found.count, 0u );
+    BOOST_CHECK_GE( with_prefetch.comment_lookups.prefetch_hit.count, 1u );
+    BOOST_CHECK_GE( with_prefetch.comment_lookups.not_found.count, 1u );
+    BOOST_CHECK_EQUAL( without_prefetch.vote_lookups.prefetch_hit.count, 0u );
+    BOOST_CHECK_EQUAL( without_prefetch.vote_lookups.archive_read.count, with_prefetch.vote_lookups.prefetch_hit.count );
+    BOOST_CHECK_EQUAL( without_prefetch.comment_lookups.archive_read.count, with_prefetch.comment_lookups.prefetch_hit.count );
+    BOOST_CHECK_EQUAL( without_prefetch.comment_lookups.not_found.count, with_prefetch.comment_lookups.not_found.count );
+
+    // the late comment was archived after its prefetch, so reading it outside of an operation goes to the archive
+    BOOST_CHECK_EQUAL( with_prefetch.other_lookups.archive_read.count, 1u );
+    BOOST_CHECK_EQUAL( without_prefetch.other_lookups.archive_read.count, 1u );
   }
   FC_LOG_AND_RETHROW()
 }
