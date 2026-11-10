@@ -147,11 +147,24 @@ if(NOT _use_preinstalled)
   # RocksDB 11 compresses Snappy blocks through a local subclass of snappy::Sink. Compiled with RTTI
   # (USE_RTTI above), that object needs snappy's typeinfo, which upstream snappy builds (-fno-rtti
   # since 1.1.9, e.g. the static library of the CI base image) do not provide, so linking fails.
-  # Nothing casts or typeid()s the classes of that file, so it alone is compiled without RTTI.
+  # Nothing casts or typeid()s the classes of that file, so it is compiled without RTTI. That leaves
+  # the typeinfo of the classes whose key functions it defines (Decompressor, CompressionManager)
+  # unemitted, so their subclass in db_stress_compression_manager.cc, which sst_dump and ldb link,
+  # is compiled without RTTI too.
   if(NOT MSVC)
     set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/util/compression.cc"
+      "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/db_stress_tool/db_stress_compression_manager.cc"
       DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb"
       PROPERTIES COMPILE_OPTIONS "-fno-rtti;-UROCKSDB_USE_RTTI")
+  endif()
+  # Images ship sst_dump to inspect the RocksDB files hived writes. Without the core tools (mainnet
+  # builds), build just sst_dump - not ldb - into the directory RocksDB's own tools build uses,
+  # where scripts/build.sh picks it up.
+  if(NOT WITH_CORE_TOOLS AND NOT WITH_TOOLS)
+    add_executable(sst_dump "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/tools/sst_dump.cc")
+    target_link_libraries(sst_dump rocksdb)
+    set_target_properties(sst_dump PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/rocksdb/tools")
   endif()
 endif()
 
