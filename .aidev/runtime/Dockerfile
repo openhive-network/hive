@@ -22,6 +22,20 @@ RUN python3 -m venv /opt/test-tools-venv \
     && cd /tmp && /opt/test-tools-venv/bin/python3 -c 'import test_tools' && rm -rf /tmp/generated
 # The import above is not only a check: wax links its extension modules into
 # site-packages on first import, which a suite's unprivileged user cannot.
+
+# The `integration` step's docker compose (test_snapshot_bootstrap.sh). The base
+# brings the docker CLI (29.9.2) and buildx as static release binaries, and
+# Docker's el8 repository stops at docker-compose-plugin 2.27, so this is the
+# static release binary of the compose series current with that CLI. A host's own
+# plugin is no substitute: Ubuntu's packages before noble link glibc 2.32+, and
+# the base (AlmaLinux 8) has 2.28.
+ARG COMPOSE_VERSION=v5.6.1
+ARG COMPOSE_SHA256=47737f4236e6d3ccea7291995203f8f018058783b4c3a9469119811a0b5db8c0
+RUN curl -fsSL -o /usr/libexec/docker/cli-plugins/docker-compose \
+        "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
+    && echo "${COMPOSE_SHA256}  /usr/libexec/docker/cli-plugins/docker-compose" | sha256sum -c - \
+    && chmod 755 /usr/libexec/docker/cli-plugins/docker-compose \
+    && docker compose version
 USER hived
 
 ENTRYPOINT []

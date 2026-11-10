@@ -258,12 +258,18 @@ daemon host's. The step reads the daemon's mount table (through a container in
 the host's PID namespace), maps the checkout from its own mount (the longest
 mount point holding it: device and path within it) to the host's mount of that
 device, and checks that a container given the result sees the checkout. The
-scripts run side by side in the checks' image plus this host's compose plugin,
-with the checkout at its host path; one run per script per host at a time (their
+scripts run side by side in the checks' image, which brings its own compose
+plugin (`.aidev/runtime/Dockerfile`; an older image gets this host's), with the
+checkout at its host path, and `HIVE_AIDEV_INTEGRATION=1`; one run per script per host at a time (their
 container names are fixed), held by a `hive-integration-lock-<script>` docker
 network. `test-results/full-integration/` gets one junit case per image and per
 script, named `integration-<script>`, and each script's `*.log` files; the rest of
-its work directory is deleted.
+its work directory is deleted. A part a script skips, a `NAME<tab>REASON` line in
+its work directory's `skipped.log`, is the skipped case
+`integration-<script>-NAME`: `test_snapshot_bootstrap.sh` skips its compose cases
+as `compose` (`docker_compose_unavailable`) when `docker compose` does not run in
+the runner, which a host's plugin linked against a newer glibc than the image's
+does not; in CI it fails instead.
 
 ## Test unit timeouts
 
