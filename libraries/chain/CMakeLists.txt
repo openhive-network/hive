@@ -35,6 +35,7 @@ set( SOURCES
              full_block.cpp
              full_transaction.cpp
              blockchain_worker_thread_pool.cpp
+             applied_block_releaser.cpp
 
              dhf_evaluator.cpp
 
