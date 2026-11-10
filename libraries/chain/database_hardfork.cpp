@@ -511,12 +511,18 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_29:
     {
       // if any state from before HF29 was not yet stamped and needs to be preserved, you can put publish calls here
-      // clamp pre-existing proposals so the bounded maintenance-payment math holds for all state (return proposal id 0 excluded)
+      // clamp every pre-existing proposal so the bounded maintenance-payment math holds for all state;
+      // no virtual operation is emitted for the rewrite, it is only traced in the node log
       const auto& pidx = get_index< proposal_index, by_proposal_id >();
       for( auto itr = pidx.begin(); itr != pidx.end(); ++itr )
       {
-        if( itr->proposal_id != 0 && itr->daily_pay.amount > HIVE_PROPOSAL_MAX_DAILY_PAY )
+        if( itr->daily_pay.amount > HIVE_PROPOSAL_MAX_DAILY_PAY )
+        {
+          const HBD_asset old_daily_pay = itr->daily_pay;
           modify( *itr, []( proposal_object& p ) { p.daily_pay = HBD_asset( HIVE_PROPOSAL_MAX_DAILY_PAY ); } );
+          ilog( "HF29 clamped daily_pay of proposal ${id} from ${old} to ${new}",
+            ( "id", itr->proposal_id )( "old", old_daily_pay )( "new", itr->daily_pay ) );
+        }
       }
       break;
     }
