@@ -44,10 +44,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-# hived's block cache (comments-rocksdb-block-cache-size default) and cache type
+# hived's block cache: comments-rocksdb-block-cache-size default, cache type, and the high priority
+# pool of RocksDB's NewLRUCache (db_bench's own default is no pool)
 DEFAULT_DB_BENCH_FLAGS = {
     "cache_type": "lru_cache",
     "cache_size": str(1024 * 1024 * 1024),
+    "cache_high_pri_pool_ratio": "0.5",
     "trace_replay_threads": "1",
 }
 
