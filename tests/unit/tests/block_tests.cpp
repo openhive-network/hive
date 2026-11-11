@@ -89,6 +89,7 @@
 #include <fc/scoped_exit.hpp>
 
 #include <atomic>
+#include <limits>
 #include <thread>
 
 #include "../db_fixture/clean_database_fixture.hpp"
@@ -528,6 +529,52 @@ BOOST_AUTO_TEST_CASE( known_bad_merkle_roots_are_acceptable )
   }
   BOOST_CHECK( is_acceptable_merkle_root( 5, header_root, header_root ) );
   BOOST_CHECK( !is_acceptable_merkle_root( 5, header_root, other_root ) );
+}
+
+namespace
+{
+  /// A block in its serialized form: @p header, then the transaction count @p claimed_count, then @p transactions
+  /// (which may be fewer than the count claims)
+  std::shared_ptr<full_block_type> block_claiming_transaction_count( const signed_block_header& header, uint32_t claimed_count,
+                                                                     const std::vector<signed_transaction>& transactions )
+  {
+    std::vector<char> bytes = fc::raw::pack_to_vector( header );
+    const std::vector<char> count = fc::raw::pack_to_vector( fc::unsigned_int( claimed_count ) );
+    bytes.insert( bytes.end(), count.begin(), count.end() );
+    for( const signed_transaction& trx : transactions )
+    {
+      const std::vector<char> packed = fc::raw::pack_to_vector( trx );
+      bytes.insert( bytes.end(), packed.begin(), packed.end() );
+    }
+    std::unique_ptr<char[]> raw_bytes( new char[ bytes.size() ] );
+    memcpy( raw_bytes.get(), bytes.data(), bytes.size() );
+    return full_block_type::create_from_uncompressed_block_data( std::move( raw_bytes ), bytes.size() );
+  }
+}
+
+/// The transaction count of a block is checked against the bytes that follow it before anything is sized from
+/// it; a block made of the smallest possible transactions still decodes.
+BOOST_AUTO_TEST_CASE( transaction_count_is_checked_against_block_size )
+{
+  try {
+    signed_block_header header;
+    header.witness = HIVE_INIT_MINER_NAME;
+    const std::vector<signed_transaction> smallest_transactions( 10 );
+    BOOST_REQUIRE_EQUAL( fc::raw::pack_size( smallest_transactions.front() ), 13u );
+
+    const auto exact = block_claiming_transaction_count( header, 10, smallest_transactions );
+    BOOST_CHECK_EQUAL( exact->get_block().transactions.size(), 10u );
+    BOOST_CHECK_EQUAL( exact->get_full_transactions().size(), 10u );
+
+    const auto one_more_than_fits = block_claiming_transaction_count( header, 11, smallest_transactions );
+    BOOST_CHECK_THROW( one_more_than_fits->get_block(), fc::assert_exception );
+
+    const auto largest_count = block_claiming_transaction_count( header, std::numeric_limits<uint32_t>::max(), {} );
+    BOOST_CHECK_THROW( largest_count->get_block(), fc::assert_exception );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
 }
 
 BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
