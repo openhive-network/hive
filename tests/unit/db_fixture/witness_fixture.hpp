@@ -115,6 +115,21 @@ struct witness_fixture : public hived_fixture
     return num;
   }
 
+  // waits until head block reaches given number (block production timing varies with machine load);
+  // returns head block number; fails when the block does not appear in time
+  uint32_t wait_for_block_num( uint32_t block_num, uint32_t timeout_seconds = 30 )
+  {
+    const fc::time_point deadline = fc::time_point::now() + fc::seconds( timeout_seconds );
+    uint32_t head = get_block_num();
+    while( head < block_num && !theApp.is_interrupt_request() && fc::time_point::now() < deadline )
+    {
+      fc::usleep( fc::milliseconds( 50 ) );
+      head = get_block_num();
+    }
+    BOOST_REQUIRE_MESSAGE( head >= block_num, "Timed out waiting for block #" << block_num << ", head is #" << head );
+    return head;
+  }
+
   template< typename ACTION >
   uint32_t wait_for_block_change( uint32_t block_num, ACTION&& action, uint32_t timeout_seconds = 60 )
   {
