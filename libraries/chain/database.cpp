@@ -6,7 +6,7 @@
 #include <hive/protocol/hbd_interest.hpp>
 
 #include <hive/chain/external_storage/comments_handler.hpp>
-#include <hive/chain/external_storage/comment_archive_prefetch.hpp>
+#include <hive/chain/external_storage/comment_lookup_path.hpp>
 #include <hive/chain/external_storage/fd_budget.hpp>
 #include <hive/chain/notifications.hpp>
 

@@ -3,7 +3,6 @@
 #include <hive/chain/index.hpp>
 #include <chainbase/chainbase.inl>
 #include <hive/chain/detail/state/comment_object_multiindex.hpp>
-#include <hive/chain/detail/state/account_object.hpp>
 
 #include <hive/chain/util/type_registrar_definition.hpp>
 
@@ -22,28 +21,17 @@ namespace hive { namespace chain {
 
 namespace {
 
-/// Replay reads up to 1000 blocks ahead of the one being applied (block_log::for_each_block), and
-/// entries must last until their block is applied; a block rarely needs more than a few hundred.
-constexpr size_t PREFETCHED_COMMENTS_CAPACITY = 256 * 1024;
-constexpr size_t PREFETCH_AUTHORS_CAPACITY = 1024 * 1024;
-
 template< typename... Counters >
 void count_lookup( uint64_t time_ns, Counters&... counters )
 {
   ( ( counters.time_ns += time_ns, ++counters.count ), ... );
 }
 
-std::shared_ptr<comment_object> make_archived_comment( const comment_object::author_and_permlink_hash_type& hash, const rocksdb_comment_object& obj )
-{
-  return std::shared_ptr<comment_object>( new comment_object ( obj.comment_id, obj.parent_comment, hash, obj.depth ) );
-}
-
 }
 
 rocksdb_comment_archive::rocksdb_comment_archive( database& db, const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app,
-  size_t block_cache_size, bool enable_prefetch, const rocksdb_trace_config& trace_config )
-  : db( db ), prefetch_enabled( enable_prefetch ),
-    prefetched_comments( PREFETCHED_COMMENTS_CAPACITY ), author_ids( PREFETCH_AUTHORS_CAPACITY )
+  size_t block_cache_size, const rocksdb_trace_config& trace_config )
+  : db( db )
 {
   HIVE_ADD_PLUGIN_INDEX( db, volatile_comment_index );
   provider = std::make_shared<rocksdb_comment_storage_provider>( blockchain_storage_path, storage_path, app, block_cache_size );
@@ -83,9 +71,6 @@ void rocksdb_comment_archive::on_cashout( uint32_t _block_num, const comment_obj
     o.block_number    = _block_num;
   });
 
-  if( prefetch_enabled )
-    remember_author( _comment_cashout.get_author_id() );
-
   stats.comment_cashout_processing.time_ns += std::chrono::duration_cast< std::chrono::nanoseconds >( std::chrono::high_resolution_clock::now() - time_start ).count();
   ++stats.comment_cashout_processing.count;
 }
@@ -122,79 +107,7 @@ std::shared_ptr<comment_object> rocksdb_comment_archive::get_comment_impl( const
 
   load( _obj, _buffer.data(), _buffer.size() );
 
-  return make_archived_comment( hash, _obj );
-}
-
-void rocksdb_comment_archive::remember_author( const account_id_type& author ) const
-{
-  author_ids.remember( author, [&]() { return db.get_account( author ).get_name(); } );
-}
-
-std::shared_ptr<comment_object> rocksdb_comment_archive::get_prefetched_comment( const comment_object::author_and_permlink_hash_type& hash ) const
-{
-  // Only entries found in the archive are prefetched, never their absence: a comment can move
-  // into the archive (on_irreversible_block) after the prefetch looked for it.
-  const auto _entry = prefetched_comments.find( hash );
-  if( !_entry )
-    return std::shared_ptr<comment_object>();
-  return make_archived_comment( hash, *_entry );
-}
-
-void rocksdb_comment_archive::prefetch_comments( const std::vector<full_transaction_ptr>& transactions )
-{
-  if( !prefetch_enabled )
-    return;
-
-  std::vector<comment_lookup_key> _keys;
-  for( const auto& _transaction : transactions )
-    collect_comment_lookup_keys( _transaction->get_transaction(), _keys );
-
-  std::vector<comment_object::author_and_permlink_hash_type> _hashes;
-  _hashes.reserve( _keys.size() );
-  for( const auto& _key : _keys )
-  {
-    // an author not known yet (also one created in the same block) is left to the normal lookup
-    const auto _author = author_ids.find( _key.author );
-    if( _author )
-      _hashes.push_back( comment_object::compute_author_and_permlink_hash( *_author, _key.permlink ) );
-  }
-  std::sort( _hashes.begin(), _hashes.end() );
-  _hashes.erase( std::unique( _hashes.begin(), _hashes.end() ), _hashes.end() );
-
-  prefetched_comments.keep_missing( _hashes );
-  if( _hashes.empty() )
-    return;
-
-  std::shared_lock<std::shared_mutex> _lock( storage_mutex );
-  if( !provider->getStorage() )
-    return;
-
-  std::vector<Slice> _slices;
-  _slices.reserve( _hashes.size() );
-  for( const auto& _hash : _hashes )
-    _slices.emplace_back( _hash.data(), _hash.data_size() );
-
-  std::vector<PinnableSlice> _values;
-  std::vector<::rocksdb::Status> _statuses;
-  provider->multi_read( _slices, _values, _statuses );
-
-  std::vector<std::pair<comment_object::author_and_permlink_hash_type, rocksdb_comment_object>> _found;
-  for( size_t i = 0; i < _hashes.size(); ++i )
-  {
-    if( !_statuses[i].ok() )
-      continue;
-    rocksdb_comment_object _obj;
-    load( _obj, _values[i].data(), _values[i].size() );
-    _found.emplace_back( _hashes[i], _obj );
-  }
-  // still under the lock, so entries read from a storage that is being replaced cannot outlive clear_prefetched
-  prefetched_comments.store( _found );
-}
-
-void rocksdb_comment_archive::clear_prefetched()
-{
-  prefetched_comments.clear();
-  author_ids.clear();
+  return std::shared_ptr<comment_object>( new comment_object ( _obj.comment_id, _obj.parent_comment, hash, _obj.depth ) );
 }
 
 void rocksdb_comment_archive::on_irreversible_block( uint32_t block_num )
@@ -258,26 +171,11 @@ comment rocksdb_comment_archive::get_comment( const account_id_type& author, con
   }
   else
   {
-    auto _external_comment = prefetch_enabled ? get_prefetched_comment( _hash ) : std::shared_ptr<comment_object>();
-    const bool _prefetched = static_cast<bool>( _external_comment );
-    if( !_prefetched )
-    {
-      _external_comment = get_comment_impl( _hash );
-      // authors are learned here and on cashout rather than on every lookup, which keeps the far more
-      // frequent lookups of comments that do not exist anywhere free of the prefetch bookkeeping
-      if( _external_comment && prefetch_enabled )
-        remember_author( author );
-    }
+    const auto _external_comment = get_comment_impl( _hash );
     const uint64_t time = elapsed();
     if( _external_comment )
     {
-      count_lookup( time, stats.comment_accessed_from_archive );
-      if( _prefetched )
-        count_lookup( time, stats.comment_prefetch_hit, _path_stats.prefetch_hit );
-      else if( prefetch_enabled )
-        count_lookup( time, stats.comment_prefetch_miss, _path_stats.archive_read );
-      else
-        count_lookup( time, _path_stats.archive_read );
+      count_lookup( time, stats.comment_accessed_from_archive, _path_stats.archive_read );
     }
     else
     {
@@ -295,31 +193,23 @@ void rocksdb_comment_archive::save_snapshot( const hive::chain::prepare_snapshot
 
 void rocksdb_comment_archive::load_snapshot( const hive::chain::load_snapshot_supplement_notification& note )
 {
-  std::unique_lock<std::shared_mutex> _lock( storage_mutex );
-  clear_prefetched();
   snapshot->load_snapshot( note );
 }
 
 void rocksdb_comment_archive::open()
 {
-  std::unique_lock<std::shared_mutex> _lock( storage_mutex );
-  clear_prefetched();
   // volatile_comment_index is registered in database, so it is handled automatically
   provider->openDb( db.get_last_irreversible_block_num() );
 }
 
 void rocksdb_comment_archive::close()
 {
-  std::unique_lock<std::shared_mutex> _lock( storage_mutex );
-  clear_prefetched();
   // volatile_comment_index is registered in database, so it is handled automatically
   provider->shutdownDb();
 }
 
 void rocksdb_comment_archive::wipe()
 {
-  std::unique_lock<std::shared_mutex> _lock( storage_mutex );
-  clear_prefetched();
   // volatile_comment_index is registered in database, so it is handled automatically
   provider->wipeDb();
 }

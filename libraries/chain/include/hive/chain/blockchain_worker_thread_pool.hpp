@@ -9,8 +9,6 @@ namespace appbase {
 
 namespace hive { namespace chain {
 
-class comment_archive_prefetcher;
-
 // thread pool for offloading as much work as possible on blocks and transactions.
 // right now, this mostly applies to blocks & transactions coming from the p2p 
 // network.  These threads will handle compressing/decompressing the blocks,
@@ -73,9 +71,6 @@ public:
   void set_validate_during_replay();
   void set_is_block_producer();
   void set_last_checkpoint(uint32_t last_checkpoint);
-  // blocks and transactions from p2p, and blocks being replayed, get their archived comments
-  // prefetched by it; null (the default) turns that off
-  void set_comment_prefetcher(const std::shared_ptr<comment_archive_prefetcher>& prefetcher);
 
   void shutdown();
   void set_thread_pool_size(uint32_t thread_pool_size);
