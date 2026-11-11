@@ -146,12 +146,12 @@ hived's cache: 1 GiB, LRU, and half of it reserved for index and filter blocks (
 pool of RocksDB's `NewLRUCache`, which `db_bench` leaves out unless told).
 
 `scripts/rocksdb_trace_configs/` seeds the comparison. `baseline` is hived's configuration -
-format_version 6, 4 KiB blocks, 10 bit bloom filter, no partitioned index or filters, 1 GiB LRU
+format_version 7, 4 KiB blocks, 10 bit bloom filter, no partitioned index or filters, 1 GiB LRU
 block cache, Snappy - and each other file changes one thing:
 
 | file | change |
 |------|--------|
-| `format_version_7.ini` | format_version 7 |
+| `format_version_6.ini` | format_version 6 (what hived wrote before it moved to 7) |
 | `block_size_16k.ini`, `block_size_32k.ini` | 16 / 32 KiB blocks |
 | `ribbon_filter.ini` | ribbon filter instead of bloom |
 | `partitioned_index_filters.ini` | two level index, partitioned filters in 16 KiB partitions (hived's layout below a 1 GiB cache) |
