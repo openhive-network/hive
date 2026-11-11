@@ -5702,7 +5702,29 @@ namespace graphene { namespace net {
 
     void node_impl::accept_connection_task( const peer_connection_ptr& new_peer )
     {
-      new_peer->accept_connection(); // this blocks until the secure connection is fully negotiated
+      try
+      {
+        new_peer->accept_connection(); // this blocks until the secure connection is fully negotiated
+      }
+      catch (const fc::canceled_exception&)
+      {
+        throw;
+      }
+      catch (...)
+      {
+        // the key exchange failed (accept_connection() has logged why): the remote closed the connection, or we
+        // closed it when the handshake timed out.  The read loop only starts after a successful key exchange, so
+        // on_connection_closed() is never called for this peer; release it here, as connect_to_task() does when
+        // an outbound connection fails
+        _handshaking_connections.erase(new_peer);
+        _terminating_connections.erase(new_peer);
+        assert(_active_connections.find(new_peer) == _active_connections.end());
+        _active_connections.erase(new_peer);
+        assert(_closing_connections.find(new_peer) == _closing_connections.end());
+        _closing_connections.erase(new_peer);
+        schedule_peer_for_deletion(new_peer);
+        return;
+      }
       send_hello_message(new_peer);
     }
 
