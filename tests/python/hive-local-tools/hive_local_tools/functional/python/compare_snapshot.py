@@ -46,16 +46,13 @@ def _find_sst_files_in_directory(directory: Path) -> list[Path]:
 
 
 def _get_path_to_sst_dump() -> Path:
-    path = os.environ.get("SST_DUMP_PATH")
-    if path is None:
-        path = os.environ.get(BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE)
-        if path is not None:
-            path = Path(path) / "libraries" / "vendor" / "rocksdb" / "tools" / "sst_dump"
-    else:
-        path = Path(path)
+    sst_dump_path = os.environ.get("SST_DUMP_PATH")
+    if sst_dump_path is not None:
+        return Path(sst_dump_path)
 
-    assert path is not None, f"SST_DUMP_PATH nor {BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE} is not set"
-    return path
+    build_root = os.environ.get(BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE)
+    assert build_root is not None, f"SST_DUMP_PATH nor {BUILD_ROOT_PATH_ENVIRONMENT_VARIABLE} is not set"
+    return Path(build_root) / "programs" / "util" / "sst_dump"
 
 
 def _extract_data_from_sst_file(sst_file_to_dump: Path) -> dict[str, str]:
