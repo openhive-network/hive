@@ -273,26 +273,11 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
 
     rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles" "$HIVED_INSTALLATION_DIR/cmake_install.cmake"
 
-    # Copy sst_dump tools - check build directory first, then preinstalled path
-    _sst_dump_found=false
-
-    # Source build path (current behavior)
-    if [[ -n "$(shopt -s nullglob; echo "$abs_build_dir/${HAF_BUILD:+"hive/"}libraries/vendor/rocksdb/tools/sst_dum"*)" ]]; then
-        mv "$abs_build_dir/${HAF_BUILD:+"hive/"}libraries/vendor/rocksdb/tools/sst_dum"* \
-            "$HIVED_INSTALLATION_DIR/"
-        _sst_dump_found=true
-    fi
-
-    # Preinstalled path fallback (when using preinstalled RocksDB)
-    if [[ "$_sst_dump_found" == "false" ]]; then
-        _tools_dir_file="$abs_build_dir/${HAF_BUILD:+"hive/"}rocksdb_tools_dir.txt"
-        if [[ -f "$_tools_dir_file" ]]; then
-            _preinstalled_tools=$(cat "$_tools_dir_file")
-            if [[ -n "$_preinstalled_tools" && -n "$(shopt -s nullglob; echo "$_preinstalled_tools/sst_dum"*)" ]]; then
-                # Use cp, not mv - do not modify the preinstalled directory
-                cp "$_preinstalled_tools/sst_dum"* "$HIVED_INSTALLATION_DIR/"
-            fi
-        fi
+    # sst_dump is hive's (programs/util/sst_dump.cpp), moved with programs/util above: RocksDB's
+    # own crashes on the SST files ordered by hive's comparators. The default target builds it.
+    if [[ $# -eq 0 && ! -x "$HIVED_INSTALLATION_DIR/sst_dump" ]]; then
+        echo "ERROR: the build did not produce sst_dump (target hive_sst_dump)"
+        exit 1
     fi
 
 fi

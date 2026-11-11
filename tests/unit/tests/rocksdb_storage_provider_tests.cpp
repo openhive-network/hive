@@ -14,8 +14,12 @@
 #include <fc/io/json.hpp>
 
 #include <rocksdb/advanced_cache.h>
+#include <rocksdb/convenience.h>
 #include <rocksdb/db.h>
 #include <rocksdb/filter_policy.h>
+#include <rocksdb/sst_dump_tool.h>
+#include <rocksdb/sst_file_reader.h>
+#include <rocksdb/sst_file_writer.h>
 #include <rocksdb/table.h>
 #include <rocksdb/table_properties.h>
 #include <rocksdb/trace_reader_writer.h>
@@ -584,6 +588,45 @@ BOOST_AUTO_TEST_CASE( trace_refuses_existing_output_and_traces_nothing_past_its_
   bfs::create_directories( trace_config.dir / "COMMENT" );
   rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app );
   BOOST_CHECK_THROW( provider.enableTrace( trace_config ), fc::exception );
+}
+
+BOOST_AUTO_TEST_CASE( sst_dump_reads_tables_of_every_hive_comparator )
+{
+  registerHiveComparators();
+  fc::temp_directory temp_dir( hive::utilities::temp_directory_path() );
+
+  size_t written = 0;
+  for( const Comparator* comparator : { by_Hash_Comparator(), by_id_Comparator(), op_by_block_num_Comparator(),
+    by_account_name_Comparator(), ah_op_by_id_Comparator(), by_txId_Comparator(), snapshot_index_Comparator() } )
+  {
+    BOOST_TEST_CONTEXT( comparator->Name() )
+    {
+      const std::string file = ( temp_dir.path() / ( std::to_string( written++ ) + ".sst" ) ).string();
+      ::rocksdb::Options options;
+      options.comparator = comparator;
+      ::rocksdb::SstFileWriter writer( ::rocksdb::EnvOptions(), options );
+      BOOST_REQUIRE( writer.Open( file ).ok() );
+      // Keys shorter than the PrimitiveTypeComparatorImpl types compare bytewise.
+      for( const char* key : { "a", "b", "c" } )
+        BOOST_REQUIRE( writer.Put( key, "value" ).ok() );
+      BOOST_REQUIRE( writer.Finish().ok() );
+
+      ::rocksdb::SstFileReader reader( options );
+      BOOST_REQUIRE( reader.Open( file ).ok() );
+      const std::string stored_name = reader.GetTableProperties()->comparator_name;
+      BOOST_REQUIRE_EQUAL( stored_name, comparator->Name() );
+
+      // How sst_dump resolves the comparator an SST names.
+      const Comparator* resolved = nullptr;
+      BOOST_REQUIRE( Comparator::CreateFromString( ::rocksdb::ConfigOptions(), stored_name, &resolved ).ok() );
+      BOOST_REQUIRE( resolved != nullptr );
+      BOOST_CHECK_EQUAL( resolved->Name(), stored_name );
+    }
+  }
+
+  const std::string file_arg = "--file=" + temp_dir.path().string();
+  const char* argv[] = { "sst_dump", file_arg.c_str(), "--show_properties" };
+  BOOST_CHECK_EQUAL( ::rocksdb::SSTDumpTool().Run( 3, argv ), 0 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
