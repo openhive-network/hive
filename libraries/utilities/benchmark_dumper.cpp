@@ -18,12 +18,9 @@ void operator -= ( benchmark_dumper::comment_archive_details_t& current, const b
   current.comment_not_found -= previous.comment_not_found;
   current.comment_cashout_processing -= previous.comment_cashout_processing;
   current.comment_lib_processing -= previous.comment_lib_processing;
-  current.comment_prefetch_hit -= previous.comment_prefetch_hit;
-  current.comment_prefetch_miss -= previous.comment_prefetch_miss;
   for( size_t i = 0; i < current.lookups_by_path.size() && i < previous.lookups_by_path.size(); ++i )
   {
     current.lookups_by_path[i].from_index -= previous.lookups_by_path[i].from_index;
-    current.lookups_by_path[i].prefetch_hit -= previous.lookups_by_path[i].prefetch_hit;
     current.lookups_by_path[i].archive_read -= previous.lookups_by_path[i].archive_read;
     current.lookups_by_path[i].not_found -= previous.lookups_by_path[i].not_found;
   }

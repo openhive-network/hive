@@ -1,5 +1,4 @@
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
-#include <hive/chain/external_storage/comment_archive_prefetcher.hpp>
 
 #include <appbase/application.hpp>
 
@@ -52,8 +51,6 @@ struct blockchain_worker_thread_pool::impl
   bool validate_during_replay = false;
   bool is_block_producer = false;
   std::optional<uint32_t> last_checkpoint;
-  // read and written with std::atomic_load/std::atomic_store, since it can be set while workers run
-  std::shared_ptr<comment_archive_prefetcher> comment_prefetcher;
 
   appbase::application& theApp;
 
@@ -67,7 +64,6 @@ struct blockchain_worker_thread_pool::impl
 
   bool dequeue_work(work_request_type*& work_request_ptr);
 
-  void prefetch_comments(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions);
   void perform_work(const std::weak_ptr<full_block_type>& full_block, data_source_type data_source);
   void perform_work(const work_request_type::transaction_work_request_type& transaction_work_request, data_source_type data_source);
   void thread_function();
@@ -174,26 +170,6 @@ blockchain_worker_thread_pool::~blockchain_worker_thread_pool()
   shutdown();
 }
 
-void blockchain_worker_thread_pool::impl::prefetch_comments(const std::vector<std::shared_ptr<full_transaction_type>>& full_transactions)
-{
-  std::shared_ptr<comment_archive_prefetcher> prefetcher = std::atomic_load(&comment_prefetcher);
-  if (!prefetcher)
-    return;
-  // the prefetch only saves the chain thread some reads, so on failure it falls back to reading them itself
-  try
-  {
-    prefetcher->prefetch_comments(full_transactions);
-  }
-  catch (const fc::exception& e)
-  {
-    wlog("comment prefetch failed, comments will be read when needed: ${e}", ("e", e.to_detail_string()));
-  }
-  catch (const std::exception& e)
-  {
-    wlog("comment prefetch failed, comments will be read when needed: ${what}", ("what", e.what()));
-  }
-}
-
 void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_block_type>& full_block_weak_ptr, data_source_type data_source)
 {
   try
@@ -216,8 +192,6 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
         // precompute some stuff we'll need for validating the block
         full_block->compute_signing_key();
         full_block->compute_merkle_root();
-
-        prefetch_comments(full_block->get_full_transactions());
 
         // compute the legacy block message hash for sharing on the network
         // TODO: remove this after the hardfork
@@ -269,8 +243,6 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
           full_block->compute_signing_key();
           full_block->compute_merkle_root();
         }
-        prefetch_comments(full_block->get_full_transactions());
-        // fall through
       case blockchain_worker_thread_pool::data_source_type::block_log_for_decompressing:
         full_block->decompress_block();
         break;
@@ -393,9 +365,6 @@ void blockchain_worker_thread_pool::impl::perform_work(const work_request_type::
       catch (...)
       {
       }
-
-      if (data_source == blockchain_worker_thread_pool::data_source_type::standalone_transaction_received_from_p2p)
-        prefetch_comments({full_transaction});
 
       try
       {
@@ -535,11 +504,6 @@ void blockchain_worker_thread_pool::set_is_block_producer()
 void blockchain_worker_thread_pool::set_last_checkpoint(uint32_t last_checkpoint)
 {
   my->last_checkpoint = last_checkpoint;
-}
-
-void blockchain_worker_thread_pool::set_comment_prefetcher(const std::shared_ptr<comment_archive_prefetcher>& prefetcher)
-{
-  std::atomic_store(&my->comment_prefetcher, prefetcher);
 }
 
 void blockchain_worker_thread_pool::shutdown()

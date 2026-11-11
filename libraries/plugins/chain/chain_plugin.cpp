@@ -172,7 +172,6 @@ class chain_plugin_impl
     bfs::path                        shared_memory_dir;
     bfs::path                        comments_storage_path;
     uint64_t                         comments_block_cache_size = 0;
-    bool                             comments_prefetch = false;
     rocksdb_trace_config             comments_trace;
     bool                             replay = false;
     bool                             resync   = false;
@@ -879,16 +878,11 @@ void chain_plugin_impl::initial_settings()
     break;
   case comment_archive_type::ROCKSDB:
   default:
-  {
-    ilog( "'ROCKSDB' - comments will be archived in RocksDB at ${csp}, prefetch ${p}",
-      ( "csp", comments_storage_path.c_str() )( "p", comments_prefetch ? "on" : "off" ) );
-    auto rocksdb_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
-      comments_storage_path, theApp, comments_block_cache_size, comments_prefetch, comments_trace );
-    if( comments_prefetch )
-      thread_pool.set_comment_prefetcher( rocksdb_archive );
-    comment_archive = rocksdb_archive;
+    ilog( "'ROCKSDB' - comments will be archived in RocksDB at ${csp}",
+      ( "csp", comments_storage_path.c_str() ) );
+    comment_archive = std::make_shared<rocksdb_comment_archive>( db, shared_memory_dir,
+      comments_storage_path, theApp, comments_block_cache_size, comments_trace );
     break;
-  }
   }
   db.set_comments_handler( comment_archive );
 
@@ -1754,7 +1748,6 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
         "the location of the chain shared memory files (absolute path or relative to application data dir)")
       ("shared-file-size", bpo::value<string>()->default_value("7G"), "Size of the shared memory file. Default: 7G. If running with many plugins, increase this value to 11G.")
       ("comments-rocksdb-block-cache-size", bpo::value<string>()->default_value("1G"), "Capacity of the block cache shared by the column families of the RocksDB comment archive. Memory is taken as blocks are read, up to this limit, not reserved up front. From 1G up the archive keeps one bloom filter and a binary search index per file; smaller caches get partitioned index and filters, which cost more CPU per lookup but are not evicted and re-read as multi-megabyte blocks. Default: 1G.")
-      ("comments-rocksdb-prefetch", bpo::value<bool>()->default_value(false), "Let the blockchain worker threads read the archived comments that incoming and replayed blocks and transactions will look up, in batches, before the chain thread applies them. Only affects the ROCKSDB comment archive and never the resulting state. Off by default: in a mainnet replay it was not faster than reading the comments on the chain thread. Default: false.")
       ("comments-rocksdb-trace-dir", bpo::value<bfs::path>()->value_name("dir"), "Record the operations of the RocksDB comment archive with RocksDB's tracing, over the block range of comments-rocksdb-trace-blocks, for replaying them with db_bench (see doc/devs/rocksdb-trace-replay.md). The trace, a checkpoint of the archive where the trace starts and trace_info.json go into <dir>/COMMENT, which must not exist yet. Absolute path or relative to shared-file-dir; keep it on the file system of the archive, so the checkpoint hard links the archive's files instead of copying them. Off by default.")
       ("comments-rocksdb-trace-blocks", bpo::value<string>()->value_name("first-last"), "Block range traced into comments-rocksdb-trace-dir: the trace starts when the last irreversible block reaches <first> and ends when it reaches <last>, or when the node stops before that.")
       ("shared-file-full-threshold", bpo::value<uint16_t>()->default_value(0),
@@ -1847,7 +1840,6 @@ void chain_plugin::plugin_initialize(const variables_map& options)
   }
 
   my->comments_block_cache_size = fc::parse_size( options.at( "comments-rocksdb-block-cache-size" ).as< string >() );
-  my->comments_prefetch = options.at( "comments-rocksdb-prefetch" ).as< bool >();
 
   FC_ASSERT( options.count( "comments-rocksdb-trace-dir" ) == options.count( "comments-rocksdb-trace-blocks" ),
     "comments-rocksdb-trace-dir and comments-rocksdb-trace-blocks go together: set both or neither" );

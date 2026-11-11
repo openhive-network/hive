@@ -93,7 +93,7 @@ set( SOURCES
              external_storage/rocksdb_storage_provider.cpp
              external_storage/rocksdb_comment_storage_provider.cpp
              external_storage/rocksdb_comment_archive.cpp
-             external_storage/comment_archive_prefetch.cpp
+             external_storage/comment_lookup_path.cpp
              external_storage/rocksdb_snapshot.cpp
              external_storage/types.cpp
              external_storage/fd_budget.cpp
