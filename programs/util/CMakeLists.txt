@@ -214,6 +214,18 @@ install( TARGETS
    ARCHIVE DESTINATION lib
 )
 
+# RocksDB's sst_dump for the SST files hived writes, knowing hive's comparators. Images ship it
+# (scripts/build.sh). The target is not named sst_dump: RocksDB's core tools (testnet) add one.
+add_executable( hive_sst_dump sst_dump.cpp )
+target_link_libraries( hive_sst_dump
+                       PRIVATE hive_chain fc ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+set_target_properties( hive_sst_dump PROPERTIES OUTPUT_NAME sst_dump )
+install( TARGETS
+   hive_sst_dump
+
+   RUNTIME DESTINATION bin
+)
+
 # RocksDB's db_bench for hived's RocksDB databases (libraries/vendor: HIVE_BUILD_DB_BENCH).
 if( HIVE_BUILD_DB_BENCH )
   add_executable( hive_db_bench hive_db_bench.cpp )

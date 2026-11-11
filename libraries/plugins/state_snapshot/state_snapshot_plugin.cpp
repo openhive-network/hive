@@ -274,10 +274,6 @@ namespace {
 class dumping_worker;
 class loading_worker;
 
-typedef hive::chain::PrimitiveTypeComparatorImpl<size_t> size_t_comparator;
-
-size_t_comparator _size_t_comparator;
-
 template <class BaseClass>
 class snapshot_processor_data : public BaseClass
   {
@@ -297,7 +293,7 @@ class snapshot_processor_data : public BaseClass
     ::rocksdb::Options get_storage_config() const
       {
       ::rocksdb::Options opts;
-      opts.comparator = &_size_t_comparator;
+      opts.comparator = hive::chain::snapshot_index_Comparator();
       hive::chain::apply_rocksdb_on_disk_format(opts);
       hive::chain::raise_fd_limit();
 

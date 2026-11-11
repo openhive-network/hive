@@ -89,3 +89,12 @@ advanced_benchmark_to_csv.sh items --sort=time advanced_benchmark.json | head -2
 advanced_benchmark_to_csv.sh names --field=time_per_count advanced_benchmark.json > names.csv
 ```
 Run it with `--help` for the description of commands and options.
+
+## sst_dump: inspects the RocksDB SST files hived writes
+RocksDB's `sst_dump` (its options are RocksDB's), knowing hive's comparators, so it also reads the files ordered by them:
+state snapshot index dumps (`hive::chain::PrimitiveTypeComparatorImpl<unsigned long> const*`), the comment archive's
+`account_permlink_hash` column family and account history's column families. Stock `sst_dump` crashes on those files.
+A file naming a comparator neither RocksDB nor hive knows is reported as an error naming it. Images ship it as
+`/home/hived/bin/sst_dump`.
+
+`docker run --rm -v <dir>:/data --entrypoint /home/hived/bin/sst_dump <image> --file=/data/<file>.sst --show_properties`
