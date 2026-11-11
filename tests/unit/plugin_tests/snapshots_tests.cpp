@@ -5,6 +5,8 @@
 #include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
+#include <hive/chain/external_storage/rocksdb_format.hpp>
+#include <hive/chain/external_storage/types.hpp>
 #include <hive/chain/irreversible_block_data_fwd.hpp>
 #include <hive/chain/util/decoded_types_data_storage.hpp>
 
@@ -19,6 +21,10 @@
 #include <fc/io/json.hpp>
 
 #include <rocksdb/db.h>
+#include <rocksdb/sst_file_reader.h>
+#include <rocksdb/sst_file_writer.h>
+#include <rocksdb/table.h>
+#include <rocksdb/table_properties.h>
 
 #include <algorithm>
 #include <fstream>
@@ -160,6 +166,102 @@ std::string read_state_serialization_from_snapshot( const fc::path& manifest_dir
     state_serialization = get_manifest_entry( manifest_db, column_families, "STATE_DEFINITIONS_DATA", "STATE_SERIALIZATION_DATA" );
   } );
   return state_serialization;
+}
+
+/// compression_name table property of an SST file written with Snappy: from format_version 7 it
+/// names the compression manager and, in hex, the compression types its blocks are stored with -
+/// Snappy, or none when no block compressed well enough to be stored compressed.
+const std::string SNAPPY_COMPRESSION_NAME = "BuiltinV2;01;";
+const std::string NOTHING_COMPRESSED_NAME = "BuiltinV2;;";
+
+/// Orders the keys of index dumps as the state_snapshot plugin writes them (object ids).
+PrimitiveTypeComparatorImpl< size_t > index_dump_comparator;
+
+/// SST files the snapshot holds the indices in (its manifest database and the external data backups aside).
+std::vector< fc::path > index_dump_files( const fc::path& snapshot_dir )
+{
+  std::vector< fc::path > files;
+  for( fc::recursive_directory_iterator it( snapshot_dir ), end; it != end; ++it )
+  {
+    const std::string file = ( *it ).string();
+    if( fc::is_regular_file( *it ) && fc::path( file ).extension().string() == ".sst" &&
+      file.find( "/snapshot-manifest/" ) == std::string::npos && file.find( "/ext_data/" ) == std::string::npos )
+      files.emplace_back( file );
+  }
+  return files;
+}
+
+::rocksdb::Options index_dump_options()
+{
+  ::rocksdb::Options options;
+  options.comparator = &index_dump_comparator;
+  return options;
+}
+
+std::shared_ptr< const ::rocksdb::TableProperties > read_table_properties( const fc::path& file )
+{
+  ::rocksdb::SstFileReader reader( index_dump_options() );
+  BOOST_REQUIRE_MESSAGE( reader.Open( file.string() ).ok(), "cannot open " << file.string() );
+  return reader.GetTableProperties();
+}
+
+/// Options of the SST files hived wrote before it moved to ROCKSDB_FORMAT_VERSION.
+void apply_format_6( ::rocksdb::ColumnFamilyOptions& options )
+{
+  ::rocksdb::BlockBasedTableOptions table_options;
+  table_options.format_version = 6;
+  options.table_factory.reset( ::rocksdb::NewBlockBasedTableFactory( table_options ) );
+  options.compression = ::rocksdb::kSnappyCompression;
+}
+
+/// Rewrites every SST file of the snapshot (index dumps and manifest database) with format_version 6,
+/// as a build before ROCKSDB_FORMAT_VERSION 7 wrote it.
+void rewrite_snapshot_in_format_6( const fc::path& snapshot_dir )
+{
+  for( const fc::path& file : index_dump_files( snapshot_dir ) )
+  {
+    ::rocksdb::SstFileReader reader( index_dump_options() );
+    BOOST_REQUIRE( reader.Open( file.string() ).ok() );
+    ::rocksdb::Options writer_options = index_dump_options();
+    apply_format_6( writer_options );
+    const fc::path rewritten( file.string() + ".format6" );
+    ::rocksdb::SstFileWriter writer( ::rocksdb::EnvOptions(), writer_options );
+    BOOST_REQUIRE( writer.Open( rewritten.string() ).ok() );
+    std::unique_ptr< ::rocksdb::Iterator > it( reader.NewIterator( ::rocksdb::ReadOptions() ) );
+    for( it->SeekToFirst(); it->Valid(); it->Next() )
+      BOOST_REQUIRE( writer.Put( it->key(), it->value() ).ok() );
+    BOOST_REQUIRE( it->status().ok() );
+    BOOST_REQUIRE( writer.Finish().ok() );
+    fc::rename( rewritten, file );
+    BOOST_REQUIRE_EQUAL( read_table_properties( file )->format_version, 6u );
+  }
+
+  const fc::path manifest_dir = snapshot_dir / "snapshot-manifest";
+  std::vector< std::string > cf_names;
+  BOOST_REQUIRE( ::rocksdb::DB::ListColumnFamilies( ::rocksdb::DBOptions(), manifest_dir.string(), &cf_names ).ok() );
+  std::vector< ::rocksdb::ColumnFamilyDescriptor > cf_descriptors;
+  for( const auto& name : cf_names )
+  {
+    cf_descriptors.emplace_back( name, ::rocksdb::ColumnFamilyOptions() );
+    apply_format_6( cf_descriptors.back().options );
+  }
+  std::vector< ::rocksdb::ColumnFamilyHandle* > cf_handles;
+  std::unique_ptr< ::rocksdb::DB > manifest_db;
+  BOOST_REQUIRE( ::rocksdb::DB::Open( ::rocksdb::Options(), manifest_dir.string(), cf_descriptors, &cf_handles, &manifest_db ).ok() );
+  ::rocksdb::CompactRangeOptions compact_options;
+  compact_options.bottommost_level_compaction = ::rocksdb::BottommostLevelCompaction::kForce;
+  for( auto* cf_handle : cf_handles )
+  {
+    BOOST_REQUIRE( manifest_db->Flush( ::rocksdb::FlushOptions(), cf_handle ).ok() );
+    BOOST_REQUIRE( manifest_db->CompactRange( compact_options, cf_handle, nullptr, nullptr ).ok() );
+    ::rocksdb::TablePropertiesCollection tables;
+    BOOST_REQUIRE( manifest_db->GetPropertiesOfAllTables( cf_handle, &tables ).ok() );
+    for( const auto& [ file, properties ] : tables )
+      BOOST_REQUIRE_MESSAGE( properties->format_version == 6u, file << " has format_version " << properties->format_version );
+  }
+  for( auto* cf_handle : cf_handles )
+    BOOST_REQUIRE( manifest_db->DestroyColumnFamilyHandle( cf_handle ).ok() );
+  BOOST_REQUIRE( manifest_db->Close().ok() );
 }
 
 /// Starts the node with all witnesses and produces enough blocks to make some of them irreversible, so they reach the block log (replayed after a snapshot load).
@@ -464,6 +566,75 @@ BOOST_AUTO_TEST_CASE( layout_only_snapshot_is_checked_by_memory_layout )
       {
         return e.to_detail_string().find( altered_type ) != std::string::npos;
       } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( snapshot_is_written_in_current_on_disk_format )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: snapshot_is_written_in_current_on_disk_format" );
+
+    const std::string snapshot_root_dir = "snapshot_is_written_in_current_on_disk_format";
+    clear_snapshot( snapshot_root_dir );
+
+    start_node_with_all_witnesses( *this );
+    dump_snapshot( snapshot_root_dir );
+    const uint32_t head_block_num = db()->head_block_num();
+
+    const auto files = index_dump_files( hive::utilities::temp_directory_path() / snapshot_root_dir / "snap" );
+    BOOST_REQUIRE( !files.empty() );
+    size_t snappy_compressed = 0;
+    for( const fc::path& file : files )
+    {
+      const auto properties = read_table_properties( file );
+      BOOST_CHECK_MESSAGE( properties->format_version == ROCKSDB_FORMAT_VERSION,
+        file.string() << " has format_version " << properties->format_version );
+      BOOST_CHECK_MESSAGE( properties->compression_name == SNAPPY_COMPRESSION_NAME ||
+        properties->compression_name == NOTHING_COMPRESSED_NAME,
+        file.string() << " has compression " << properties->compression_name );
+      if( properties->compression_name == SNAPPY_COMPRESSION_NAME )
+        ++snappy_compressed;
+    }
+    BOOST_CHECK_GT( snappy_compressed, 0u );
+
+    BOOST_REQUIRE_NO_THROW( load_snapshot( snapshot_root_dir ) );
+    BOOST_REQUIRE_GE( db()->head_block_num(), head_block_num );
+    generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( snapshot_written_in_format_6_loads )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: snapshot_written_in_format_6_loads" );
+
+    const std::string snapshot_root_dir = "snapshot_written_in_format_6_loads";
+    clear_snapshot( snapshot_root_dir );
+
+    start_node_with_all_witnesses( *this );
+    std::map< std::string, account_id_type > ids_by_name;
+    for( const auto& account : db()->get_index< account_index, by_name >() )
+      ids_by_name.emplace( account.get_name(), account.get_id() );
+    dump_snapshot( snapshot_root_dir );
+    const uint32_t head_block_num = db()->head_block_num();
+
+    rewrite_snapshot_in_format_6( hive::utilities::temp_directory_path() / snapshot_root_dir / "snap" );
+
+    BOOST_REQUIRE_NO_THROW( load_snapshot( snapshot_root_dir ) );
+    BOOST_REQUIRE_GE( db()->head_block_num(), head_block_num );
+    const auto& by_name_idx = db()->get_index< account_index, by_name >();
+    BOOST_REQUIRE_EQUAL( by_name_idx.size(), ids_by_name.size() );
+    for( const auto& [ name, id ] : ids_by_name )
+    {
+      const account_object* account = db()->find_account( name );
+      BOOST_REQUIRE( account != nullptr );
+      BOOST_REQUIRE( account->get_id() == id );
+    }
+    generate_block();
   }
   FC_LOG_AND_RETHROW()
 }

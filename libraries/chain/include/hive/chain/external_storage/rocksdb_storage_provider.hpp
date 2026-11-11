@@ -67,7 +67,7 @@ class rocksdb_storage_provider: public external_basic_provider
     std::optional<rocksdb_trace>      _trace;
 
     virtual ColumnDefinitions prepareColumnDefinitions( bool addDefaultColumn ) = 0;
-    /// prepareColumnDefinitions with the level-style compaction, memtable tuning, and on-disk format pinning applied.
+    /// prepareColumnDefinitions with the level-style compaction, memtable tuning, and on-disk format applied.
     ColumnDefinitions prepareTunedColumnDefinitions( bool addDefaultColumn );
 
     void cleanupColumnHandles();

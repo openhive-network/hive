@@ -67,7 +67,7 @@ Options make_db_options()
   // index/filter blocks, so reaching an evicted file costs a reopen - reads get slower - but the
   // descriptor count stays bounded and correctness is unaffected (issue #869).
   options.max_open_files = max_open_files_budget();
-  pin_rocksdb_on_disk_format( options );
+  apply_rocksdb_on_disk_format( options );
   return options;
 }
 
@@ -308,7 +308,7 @@ rocksdb_storage_provider::ColumnDefinitions rocksdb_storage_provider::prepareTun
   for( auto& columnDef : columnDefs )
   {
     tune_level_compaction( columnDef.options );
-    pin_rocksdb_on_disk_format( columnDef.options );
+    apply_rocksdb_on_disk_format( columnDef.options );
   }
   return columnDefs;
 }

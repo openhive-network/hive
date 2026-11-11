@@ -156,9 +156,9 @@ rocksdb_cleanup_helper rocksdb_cleanup_helper::open(const ::rocksdb::Options& op
   {
   rocksdb_cleanup_helper retVal;
 
-  ::rocksdb::Options pinnedOpts(opts);
-  hive::chain::pin_rocksdb_on_disk_format(pinnedOpts);
-  auto status = ::rocksdb::DB::Open(pinnedOpts, path.string(), &retVal._db);
+  ::rocksdb::Options formatOpts(opts);
+  hive::chain::apply_rocksdb_on_disk_format(formatOpts);
+  auto status = ::rocksdb::DB::Open(formatOpts, path.string(), &retVal._db);
   if(status.ok())
     {
     ilog("Successfully opened db at path: `${p}'", ("p", path.string()));
@@ -184,7 +184,7 @@ void rocksdb_cleanup_helper::close()
 
   if(cfOptions != nullptr)
     actualOptions = *cfOptions;
-  hive::chain::pin_rocksdb_on_disk_format(actualOptions);
+  hive::chain::apply_rocksdb_on_disk_format(actualOptions);
 
   ::rocksdb::ColumnFamilyHandle* cf = nullptr;
   auto status = _db->CreateColumnFamily(actualOptions, name, &cf);
@@ -298,7 +298,7 @@ class snapshot_processor_data : public BaseClass
       {
       ::rocksdb::Options opts;
       opts.comparator = &_size_t_comparator;
-      hive::chain::pin_rocksdb_on_disk_format(opts);
+      hive::chain::apply_rocksdb_on_disk_format(opts);
       hive::chain::raise_fd_limit();
 
       return opts;
