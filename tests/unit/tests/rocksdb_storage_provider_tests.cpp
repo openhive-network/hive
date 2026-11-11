@@ -36,14 +36,47 @@ class inspectable_comment_storage_provider : public rocksdb_comment_storage_prov
     using rocksdb_storage_provider::getColumnHandles;
 };
 
+/// compression_name table property of an SST file written with Snappy: from format_version 7 it
+/// names the compression manager and, in hex, the compression types its blocks are stored with -
+/// Snappy, or none when no block compressed well enough to be stored compressed.
+const std::string SNAPPY_COMPRESSION_NAME = "BuiltinV2;01;";
+const std::string NOTHING_COMPRESSED_NAME = "BuiltinV2;;";
+
+/// format_version of the SST files hived wrote before it moved to ROCKSDB_FORMAT_VERSION.
+constexpr uint32_t OLDER_FORMAT_VERSION = 6;
+
 std::string comment_key( char seed )
 {
   return std::string( 20, seed );
 }
 
+/// Checks that every SST file of the column family has the current on-disk format, and a
+/// partitioned index exactly when @p partitioned. Returns how many of them hold Snappy compressed blocks.
+size_t check_tables_of_column_family( ::rocksdb::DB& db, ::rocksdb::ColumnFamilyHandle* cf_handle, bool partitioned )
+{
+  size_t snappy_compressed = 0;
+  ::rocksdb::TablePropertiesCollection tables;
+  BOOST_REQUIRE( db.GetPropertiesOfAllTables( cf_handle, &tables ).ok() );
+  BOOST_REQUIRE_MESSAGE( !tables.empty(), "no SST file in column family " << cf_handle->GetName() );
+  for( const auto& [ file, properties ] : tables )
+  {
+    BOOST_CHECK_MESSAGE( properties->format_version == ROCKSDB_FORMAT_VERSION,
+      file << " has format_version " << properties->format_version );
+    BOOST_CHECK_MESSAGE( properties->compression_name == SNAPPY_COMPRESSION_NAME ||
+      properties->compression_name == NOTHING_COMPRESSED_NAME,
+      file << " has compression " << properties->compression_name );
+    if( properties->compression_name == SNAPPY_COMPRESSION_NAME )
+      ++snappy_compressed;
+    BOOST_CHECK_MESSAGE( properties->filter_size > 0, file << " has no filter" );
+    BOOST_CHECK_MESSAGE( ( properties->index_partitions > 0 ) == partitioned,
+      file << " has " << properties->index_partitions << " index partitions" );
+  }
+  return snappy_compressed;
+}
+
 /// Lays out an archive as an older build did, with the given options for both column families,
 /// then checks that the current provider (with the given block cache) opens it and reads every
-/// comment back.
+/// comment back, and that a compaction rewrites the files in the current format and layout.
 void check_archive_written_by_older_build_stays_readable( const ::rocksdb::ColumnFamilyOptions& older_options,
   size_t block_cache_size = rocksdb_comment_storage_provider::DEFAULT_BLOCK_CACHE_SIZE )
 {
@@ -73,12 +106,19 @@ void check_archive_written_by_older_build_stays_readable( const ::rocksdb::Colum
     BOOST_REQUIRE( db->Write( ::rocksdb::WriteOptions(), &batch ).ok() );
     BOOST_REQUIRE( db->Flush( ::rocksdb::FlushOptions() ).ok() );
 
+    ::rocksdb::TablePropertiesCollection tables;
+    BOOST_REQUIRE( db->GetPropertiesOfAllTables( &tables ).ok() );
+    BOOST_REQUIRE( !tables.empty() );
+    for( const auto& [ file, properties ] : tables )
+      BOOST_REQUIRE_MESSAGE( properties->format_version == OLDER_FORMAT_VERSION,
+        file << " has format_version " << properties->format_version );
+
     BOOST_REQUIRE( db->DestroyColumnFamilyHandle( hash_column ).ok() );
     BOOST_REQUIRE( db->Close().ok() );
   }
 
   appbase::application app;
-  rocksdb_comment_storage_provider provider( temp_dir.path(), storage_path, app, block_cache_size );
+  inspectable_comment_storage_provider provider( temp_dir.path(), storage_path, app, block_cache_size );
   provider.openDb( 0 );
 
   for( const auto& comment : comments )
@@ -90,7 +130,34 @@ void check_archive_written_by_older_build_stays_readable( const ::rocksdb::Colum
   PinnableSlice missing;
   BOOST_CHECK( !provider.read( comment_key( '0' ), missing ) );
 
+  ::rocksdb::DB& db = *provider.getStorage();
+  ::rocksdb::ColumnFamilyHandle* comment_column = provider.getColumnHandles()[ CommentsColumns::COMMENT ];
+  ::rocksdb::CompactRangeOptions compact_options;
+  compact_options.bottommost_level_compaction = ::rocksdb::BottommostLevelCompaction::kForce;
+  BOOST_REQUIRE( db.CompactRange( compact_options, comment_column, nullptr, nullptr ).ok() );
+  BOOST_CHECK_GT( check_tables_of_column_family( db, comment_column,
+    block_cache_size < rocksdb_comment_storage_provider::PARTITIONED_METADATA_CACHE_LIMIT ), 0u );
+
+  for( const auto& comment : comments )
+  {
+    PinnableSlice value;
+    BOOST_REQUIRE( provider.read( comment.first, value ) );
+    BOOST_CHECK_EQUAL( value.ToString(), comment.second );
+  }
+
   provider.shutdownDb();
+}
+
+/// Column family options of the archive as written before hived wrote format_version 7, without
+/// table options of its own (before table options and column family tuning).
+::rocksdb::ColumnFamilyOptions older_untuned_layout()
+{
+  ::rocksdb::BlockBasedTableOptions table_options;
+  table_options.format_version = OLDER_FORMAT_VERSION;
+  ::rocksdb::ColumnFamilyOptions options;
+  options.table_factory.reset( ::rocksdb::NewBlockBasedTableFactory( table_options ) );
+  options.compression = ::rocksdb::kSnappyCompression;
+  return options;
 }
 
 /// Column family options of the archive as written with full filters and a binary search index
@@ -98,6 +165,7 @@ void check_archive_written_by_older_build_stays_readable( const ::rocksdb::Colum
 ::rocksdb::ColumnFamilyOptions older_table_layout( bool partitioned )
 {
   ::rocksdb::BlockBasedTableOptions table_options;
+  table_options.format_version = OLDER_FORMAT_VERSION;
   table_options.filter_policy.reset( ::rocksdb::NewBloomFilterPolicy( 10 ) );
   table_options.cache_index_and_filter_blocks = true;
   table_options.pin_l0_filter_and_index_blocks_in_cache = true;
@@ -108,6 +176,7 @@ void check_archive_written_by_older_build_stays_readable( const ::rocksdb::Colum
   }
   ::rocksdb::ColumnFamilyOptions options;
   options.table_factory.reset( ::rocksdb::NewBlockBasedTableFactory( table_options ) );
+  options.compression = ::rocksdb::kSnappyCompression;
   return options;
 }
 
@@ -141,11 +210,13 @@ void check_opened_archive_options( size_t block_cache_size, bool partitioned )
     BOOST_CHECK_EQUAL( options.target_file_size_base, 64u * 1024 * 1024 );
     BOOST_CHECK_GE( options.max_bytes_for_level_base, 256u * 1024 * 1024 );
     BOOST_CHECK( options.compaction_style == ::rocksdb::kCompactionStyleLevel );
+    BOOST_CHECK( options.compression == ::rocksdb::kSnappyCompression );
+    BOOST_CHECK( options.compression_per_level.empty() );
 
     BOOST_REQUIRE( options.table_factory );
     const auto* table_options = options.table_factory->GetOptions< ::rocksdb::BlockBasedTableOptions >();
     BOOST_REQUIRE( table_options != nullptr );
-    BOOST_CHECK_EQUAL( table_options->format_version, ROCKSDB_PINNED_FORMAT_VERSION );
+    BOOST_CHECK_EQUAL( table_options->format_version, ROCKSDB_FORMAT_VERSION );
     BOOST_REQUIRE( table_options->filter_policy );
     BOOST_CHECK_EQUAL( std::string( table_options->filter_policy->CompatibilityName() ), "rocksdb.BuiltinBloomFilter" );
     BOOST_CHECK( table_options->cache_index_and_filter_blocks );
@@ -175,7 +246,7 @@ void check_opened_archive_options( size_t block_cache_size, bool partitioned )
 }
 
 /// Writes comments through a provider with a block cache of the given size, then checks with
-/// plain RocksDB that every SST file has the pinned on-disk format, and a partitioned index
+/// plain RocksDB that every SST file has the current on-disk format, and a partitioned index
 /// exactly when @p partitioned.
 void check_written_tables( size_t block_cache_size, bool partitioned )
 {
@@ -211,22 +282,11 @@ void check_written_tables( size_t block_cache_size, bool partitioned )
   std::unique_ptr< ::rocksdb::DB > db;
   BOOST_REQUIRE( ::rocksdb::DB::OpenForReadOnly( ::rocksdb::DBOptions(), storage_path.string(), cf_descriptors, &cf_handles, &db ).ok() );
 
+  // the comments (repeated characters) compress, unlike the hashes of account_permlink_hash
+  size_t snappy_compressed = 0;
   for( auto* cf_handle : cf_handles )
-  {
-    ::rocksdb::TablePropertiesCollection tables;
-    BOOST_REQUIRE( db->GetPropertiesOfAllTables( cf_handle, &tables ).ok() );
-    BOOST_REQUIRE_MESSAGE( !tables.empty(), "no SST file in column family " << cf_handle->GetName() );
-    for( const auto& [ file, properties ] : tables )
-    {
-      BOOST_CHECK_MESSAGE( properties->format_version == ROCKSDB_PINNED_FORMAT_VERSION,
-        file << " has format_version " << properties->format_version );
-      BOOST_CHECK_MESSAGE( properties->compression_name == "Snappy",
-        file << " has compression " << properties->compression_name );
-      BOOST_CHECK_MESSAGE( properties->filter_size > 0, file << " has no filter" );
-      BOOST_CHECK_MESSAGE( ( properties->index_partitions > 0 ) == partitioned,
-        file << " has " << properties->index_partitions << " index partitions" );
-    }
-  }
+    snappy_compressed += check_tables_of_column_family( *db, cf_handle, partitioned );
+  BOOST_CHECK_GT( snappy_compressed, 0u );
 
   for( auto* cf_handle : cf_handles )
     BOOST_REQUIRE( db->DestroyColumnFamilyHandle( cf_handle ).ok() );
@@ -396,7 +456,7 @@ BOOST_AUTO_TEST_CASE( opened_archive_partitions_index_and_filters_below_cache_li
 BOOST_AUTO_TEST_CASE( archive_written_with_untuned_options_stays_readable )
 {
   // As the code before table options and column family tuning: SST files without filter blocks.
-  check_archive_written_by_older_build_stays_readable( ::rocksdb::ColumnFamilyOptions() );
+  check_archive_written_by_older_build_stays_readable( older_untuned_layout() );
 }
 
 BOOST_AUTO_TEST_CASE( archive_written_with_full_filters_stays_readable )
@@ -414,7 +474,7 @@ BOOST_AUTO_TEST_CASE( archive_written_with_partitioned_index_and_filters_stays_r
   check_archive_written_by_older_build_stays_readable( older_table_layout( true ), 48 * 1024 * 1024 );
 }
 
-BOOST_AUTO_TEST_CASE( written_tables_use_pinned_on_disk_format )
+BOOST_AUTO_TEST_CASE( written_tables_use_current_on_disk_format )
 {
   check_written_tables( rocksdb_comment_storage_provider::DEFAULT_BLOCK_CACHE_SIZE, false );
   check_written_tables( 48 * 1024 * 1024, true );
