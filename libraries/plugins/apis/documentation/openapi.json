@@ -3099,6 +3099,7 @@
                                     "HIVE_PROPOSAL_FUND_PERCENT_HF21": 1000,
                                     "HIVE_PROPOSAL_MAINTENANCE_CLEANUP": 86400,
                                     "HIVE_PROPOSAL_MAINTENANCE_PERIOD": 3600,
+                                    "HIVE_PROPOSAL_MAX_DAILY_PAY": 292471208677,
                                     "HIVE_PROPOSAL_MAX_IDS_NUMBER": 5,
                                     "HIVE_PROPOSAL_SUBJECT_MAX_LENGTH": 80,
                                     "HIVE_PROXY_TO_SELF_ACCOUNT": "",
@@ -7875,6 +7876,7 @@
                                     "HIVE_PROPOSAL_MAINTENANCE_CLEANUP": 86400,
                                     "HIVE_PROPOSAL_SUBJECT_MAX_LENGTH": 80,
                                     "HIVE_PROPOSAL_MAX_IDS_NUMBER": 5,
+                                    "HIVE_PROPOSAL_MAX_DAILY_PAY": "292471208677",
                                     "HIVE_1_BASIS_POINT": 1,
                                     "HIVE_COLLATERALIZED_CONVERSION_DELAY": 302400000000,
                                     "HIVE_COLLATERALIZED_CONVERSION_FEE": 500,
@@ -24048,6 +24050,10 @@
                         "type": "integer",
                         "description": "Proposal max IDs number."
                     },
+                    "HIVE_PROPOSAL_MAX_DAILY_PAY": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "Proposal max daily pay (HBD satoshis)."
+                    },
                     "HIVE_1_BASIS_POINT": {
                         "type": "integer",
                         "description": "One basis point in HIVE."
@@ -24416,6 +24422,7 @@
                     "HIVE_PROPOSAL_MAINTENANCE_CLEANUP",
                     "HIVE_PROPOSAL_SUBJECT_MAX_LENGTH",
                     "HIVE_PROPOSAL_MAX_IDS_NUMBER",
+                    "HIVE_PROPOSAL_MAX_DAILY_PAY",
                     "HIVE_1_BASIS_POINT",
                     "HIVE_COLLATERALIZED_CONVERSION_DELAY",
                     "HIVE_COLLATERALIZED_CONVERSION_FEE",

@@ -10,6 +10,7 @@
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
+#include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
 #include <hive/chain/witness_schedule.hpp>
 
 #include <hive/chain/rc/rc_objects_multiindex.hpp>
@@ -510,6 +511,19 @@ void database::apply_hardfork( uint32_t hardfork )
     case HIVE_HARDFORK_1_29:
     {
       // if any state from before HF29 was not yet stamped and needs to be preserved, you can put publish calls here
+      // clamp every pre-existing proposal so the bounded maintenance-payment math holds for all state;
+      // no virtual operation is emitted for the rewrite, it is only traced in the node log
+      const auto& pidx = get_index< proposal_index, by_proposal_id >();
+      for( auto itr = pidx.begin(); itr != pidx.end(); ++itr )
+      {
+        if( itr->daily_pay.amount > HIVE_PROPOSAL_MAX_DAILY_PAY )
+        {
+          const HBD_asset old_daily_pay = itr->daily_pay;
+          modify( *itr, []( proposal_object& p ) { p.daily_pay = HBD_asset( HIVE_PROPOSAL_MAX_DAILY_PAY ); } );
+          ilog( "HF29 clamped daily_pay of proposal ${id} from ${old} to ${new}",
+            ( "id", itr->proposal_id )( "old", old_daily_pay )( "new", itr->daily_pay ) );
+        }
+      }
       break;
     }
     default:
