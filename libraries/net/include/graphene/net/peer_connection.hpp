@@ -43,6 +43,7 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 
+#include <deque>
 #include <queue>
 #include <boost/container/deque.hpp>
 #include <fc/thread/future.hpp>
@@ -72,6 +73,9 @@ namespace graphene { namespace net
                               const message& received_message) = 0;
       virtual void on_connection_closed(peer_connection* originating_peer) = 0;
       virtual std::shared_ptr<full_block_type> get_full_block_by_block_id(const block_id_type& block_id) = 0;
+      /// Looks up the block @p peer asked for as @p requested_item (a block id or a legacy block message hash),
+      /// when its turn to be sent is close (see virtual_queued_block_message); null when we don't have it
+      virtual std::shared_ptr<full_block_type> get_block_to_send(peer_connection* peer, const item_hash_t& requested_item) = 0;
     };
 
     class peer_connection;
@@ -127,8 +131,12 @@ namespace graphene { namespace net
         {}
 
         virtual message get_message(peer_connection_delegate* node, peer_connection* peer) = 0;
+        /** called by the send task while the message is one of the next few to be sent, so whatever it needs
+         * before it can be sent can start before its turn comes; may be called more than once
+         */
+        virtual void prepare(peer_connection_delegate* /* node */, peer_connection* /* peer */) {}
         /** returns roughly the number of bytes of memory the message is consuming while
-         * it is sitting on the queue
+         * it is sitting on the queue; the same value for the whole time it is queued
          */
         virtual size_t get_size_in_queue() = 0;
         virtual ~queued_message() {}
@@ -152,25 +160,31 @@ namespace graphene { namespace net
         size_t get_size_in_queue() override;
       };
 
-      /* when you queue up a 'virtual_queued_block_message', we just queue up the hash of the
-       * item we want to send.  When it reaches the top of the queue, we make a callback
-       * to the node to generate the message.
+      /* when you queue up a 'virtual_queued_block_message', we just queue up the id of the block the
+       * peer asked for.  The block is looked up through the node only when it is one of the next
+       * GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD messages to be sent (prepare()), so a request for
+       * many blocks holds their ids, not the blocks.  If we don't have the block then, the peer gets
+       * an item_not_available_message in its place.
        */
       struct virtual_queued_block_message : queued_message
       {
+        item_hash_t requested_item;
+        bool looked_up = false;
         std::shared_ptr<full_block_type> full_block;
 
-        virtual_queued_block_message(const std::shared_ptr<full_block_type>& full_block) :
-          full_block(full_block)
+        virtual_queued_block_message(const item_hash_t& requested_item) :
+          requested_item(requested_item)
         {}
 
         message get_message(peer_connection_delegate* node, peer_connection* peer) override;
+        void prepare(peer_connection_delegate* node, peer_connection* peer) override;
         size_t get_size_in_queue() override;
       };
 
 
       size_t _total_queued_messages_size = 0;
-      std::queue<std::unique_ptr<queued_message>, std::list<std::unique_ptr<queued_message>>> _queued_messages;
+      std::deque<std::unique_ptr<queued_message>> _queued_messages;
+      bool _send_queue_limit_exceeded = false; // set once the queue would have grown over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES
       fc::future<void> _send_queued_messages_done;
     public:
       fc::time_point connection_initiation_time;
@@ -325,7 +339,8 @@ namespace graphene { namespace net
       void on_connection_closed(message_oriented_connection* originating_connection) override;
 
       void send_queueable_message(std::unique_ptr<queued_message>&& message_to_send);
-      void send_block_message(const std::shared_ptr<full_block_type>& full_block);
+      /// queues the block the peer asked for as @p requested_item; it is looked up shortly before it is sent
+      void send_block_message(const item_hash_t& requested_item);
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);
       void send_item(const item_id& item_to_send);
       void close_connection();

@@ -3,6 +3,7 @@
 
 #include "../db_fixture/witness_fixture.hpp"
 
+#include <hive/chain/full_block.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 
@@ -29,6 +30,7 @@ const uint32_t inventory_limit = GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GR
 /// A p2p peer driven by the test rather than by a node. It completes the handshake as a node that is
 /// in sync with the one under test, advertises the transaction hashes it is told to, delivers the
 /// transactions it was given and either withholds or reports as unavailable anything else it is asked for.
+/// It can also ask the node for blocks, and records the blocks it receives and the ones reported unavailable.
 /// Its connection lives on @p thread, like a node's connections live on the p2p thread.
 class test_peer final : public graphene::net::peer_connection_delegate
 {
@@ -92,6 +94,28 @@ public:
     } ).wait();
   }
 
+  void request_blocks( const std::vector< item_hash_t >& ids )
+  {
+    _thread.async( [&]()
+    {
+      _connection->send_message( graphene::net::fetch_items_message( graphene::net::block_message_type, ids ) );
+    } ).wait();
+  }
+
+  /// ids of the blocks received so far, in the order they arrived
+  std::vector< block_id_type > blocks_received() const
+  {
+    std::lock_guard< std::mutex > guard( _blocks_mutex );
+    return _blocks_received;
+  }
+
+  /// the requested block ids the node reported as not available, in the order it did
+  std::vector< item_hash_t > blocks_not_available() const
+  {
+    std::lock_guard< std::mutex > guard( _blocks_mutex );
+    return _blocks_not_available;
+  }
+
   /// from now on requests for items we can't deliver are answered right away (as unavailable),
   /// including the ones held so far
   void stop_withholding()
@@ -137,6 +161,24 @@ public:
     case core_message_type_enum::fetch_items_message_type:
       on_fetch_items( received_message.as< fetch_items_message >() );
       break;
+    case core_message_type_enum::block_message_type:
+    case core_message_type_enum::compressed_block_message_type:
+    {
+      const block_id_type id = id_of_received_block( received_message );
+      std::lock_guard< std::mutex > guard( _blocks_mutex );
+      _blocks_received.push_back( id );
+      break;
+    }
+    case core_message_type_enum::item_not_available_message_type:
+    {
+      const item_not_available_message reply = received_message.as< item_not_available_message >();
+      if( reply.requested_item.item_type == block_message_type )
+      {
+        std::lock_guard< std::mutex > guard( _blocks_mutex );
+        _blocks_not_available.push_back( reply.requested_item.item_hash );
+      }
+      break;
+    }
     case core_message_type_enum::connection_rejected_message_type:
     case core_message_type_enum::closing_connection_message_type:
       _closed = true;
@@ -150,8 +192,32 @@ public:
   void on_connection_closed( graphene::net::peer_connection* ) override { _closed = true; }
 
   std::shared_ptr< full_block_type > get_full_block_by_block_id( const block_id_type& ) override { return {}; }
+  std::shared_ptr< full_block_type > get_block_to_send( graphene::net::peer_connection*, const item_hash_t& ) override { return {}; }
 
 private:
+  /// the id of the block in a block message, in either form the node sends (see core_messages.cpp)
+  static block_id_type id_of_received_block( const graphene::net::message& received_message )
+  {
+    if( received_message.msg_type == graphene::net::core_message_type_enum::block_message_type )
+    {
+      // the serialized block followed by its id
+      block_id_type id;
+      BOOST_REQUIRE_GT( received_message.data.size(), sizeof( id ) );
+      memcpy( id.data(), received_message.data.data() + received_message.data.size() - sizeof( id ), sizeof( id ) );
+      return id;
+    }
+    // two bytes of compression flags followed by the compressed block
+    BOOST_REQUIRE_GT( received_message.data.size(), 2u );
+    hive::chain::block_attributes_t attributes;
+    attributes.flags = ( received_message.data[0] & 0x80 ) ? hive::chain::block_flags::zstd : hive::chain::block_flags::uncompressed;
+    if( received_message.data[0] & 0x40 )
+      attributes.dictionary_number = received_message.data[1];
+    const size_t compressed_size = received_message.data.size() - 2;
+    std::unique_ptr< char[] > compressed_bytes( new char[ compressed_size ] );
+    memcpy( compressed_bytes.get(), received_message.data.data() + 2, compressed_size );
+    return full_block_type::create_from_compressed_block_data( std::move( compressed_bytes ), compressed_size, attributes )->get_block_id();
+  }
+
   void send_hello()
   {
     fc::sha256::encoder shared_secret_encoder;
@@ -192,6 +258,9 @@ private:
   std::map< item_hash_t, full_transaction_ptr > _deliverable;
   bool _withholding = true;
   std::vector< graphene::net::item_id > _withheld;
+  mutable std::mutex _blocks_mutex;
+  std::vector< block_id_type > _blocks_received;
+  std::vector< item_hash_t > _blocks_not_available;
 };
 
 struct inventory_limit_report
@@ -429,6 +498,116 @@ BOOST_AUTO_TEST_CASE( inventory_limit_deferral_test )
         BOOST_CHECK_EQUAL( reports.back().still_deferred, 0u );
         BOOST_CHECK( !flooding_peer->closed() );
         BOOST_CHECK( !honest_peer.closed() );
+
+        ilog( "'API' thread finished" );
+        test_passed = !theApp.is_interrupt_request();
+      }
+      CATCH( "API" )
+    } );
+
+    _future.wait();
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Peers ask the node for blocks the way a syncing node does. One request names blocks in order with an id
+/// repeated and an id the node doesn't have among them: each block arrives once, in the order asked, and the
+/// unknown id is reported unavailable in its place. A peer that asks for more blocks than its send queue holds
+/// (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES) is disconnected, and the node keeps serving the first peer.
+BOOST_AUTO_TEST_CASE( block_request_test )
+{
+  try
+  {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
+    const std::string p2p_parameters = R"({"listen_endpoint":"127.0.0.1:0","accept_incoming_connections":true})";
+    initialize( 3, {}, { "initminer" }, { config_line_t( { "p2p-parameters", { p2p_parameters } } ) } );
+    bool test_passed = false;
+    fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
+
+    fc::thread api_thread;
+    auto _future = api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ )
+      {
+        this_->theApp.generate_interrupt_request();
+      } BOOST_SCOPE_EXIT_END
+
+      const auto wait_until = [&]( const std::function< bool() >& condition, fc::time_point deadline )
+      {
+        while( !condition() )
+        {
+          if( fc::time_point::now() >= deadline || theApp.is_interrupt_request() )
+            return false;
+          fc::usleep( fc::milliseconds( 100 ) );
+        }
+        return true;
+      };
+
+      try
+      {
+        const uint32_t block_count = 10;
+        BOOST_REQUIRE( wait_until( [&]() { return get_block_num() >= block_count; },
+                                   get_genesis_time() + ( block_count + 5 ) * HIVE_BLOCK_INTERVAL ) );
+        std::vector< block_id_type > block_ids;
+        for( uint32_t block_num = 1; block_num <= block_count; ++block_num )
+          block_ids.push_back( get_block_reader().find_block_id_for_num( block_num ) );
+
+        const fc::ip::endpoint node_endpoint =
+          theApp.get_plugin< hive::plugins::p2p::p2p_plugin >().get_info()[ "listening_on" ].as< fc::ip::endpoint >();
+        fc::thread peer_thread( "test_peers" );
+        test_peer syncing_peer( peer_thread, db->get_chain_id(), "syncing peer" );
+        syncing_peer.connect( node_endpoint );
+        BOOST_REQUIRE( wait_until( [&]() { return syncing_peer.in_sync(); }, fc::time_point::now() + fc::seconds( 10 ) ) );
+
+        const item_hash_t unknown_id = fc::ripemd160::hash( std::string( "no such block" ) );
+        std::vector< item_hash_t > request( block_ids.begin(), block_ids.begin() + 5 );
+        request.push_back( block_ids[ 2 ] );
+        request.push_back( unknown_id );
+        request.insert( request.end(), block_ids.begin() + 5, block_ids.end() );
+        request.push_back( block_ids[ 0 ] );
+        syncing_peer.request_blocks( request );
+
+        BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return syncing_peer.blocks_received().size() >= block_count &&
+                                                          syncing_peer.blocks_not_available().size() >= 1; },
+                                           fc::time_point::now() + fc::seconds( 10 ) ),
+                               "the node did not send the requested blocks" );
+        fc::usleep( fc::seconds( 1 ) ); // anything sent for the repeated ids would have arrived by now
+        BOOST_CHECK( syncing_peer.blocks_received() == block_ids );
+        BOOST_REQUIRE_EQUAL( syncing_peer.blocks_not_available().size(), 1u );
+        BOOST_CHECK( syncing_peer.blocks_not_available().front() == unknown_id );
+
+        // more ids than the send queue of one peer holds: a queued block request takes more than the 35 bytes
+        // GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / greedy_count allows for each, while the request itself
+        // (20 bytes per id) fits in one message and in the greedy peer's own send queue
+        test_peer greedy_peer( peer_thread, db->get_chain_id(), "greedy peer" );
+        greedy_peer.connect( node_endpoint );
+        BOOST_REQUIRE( wait_until( [&]() { return greedy_peer.in_sync(); }, fc::time_point::now() + fc::seconds( 10 ) ) );
+        std::vector< item_hash_t > greedy_request;
+        const size_t greedy_count = 30000;
+        for( size_t i = 0; i < greedy_count; ++i )
+          greedy_request.push_back( fc::ripemd160::hash( "unknown block " + std::to_string( i ) ) );
+        greedy_request.front() = block_ids.front();
+        greedy_peer.request_blocks( greedy_request );
+        BOOST_CHECK_MESSAGE( wait_until( [&]() { return greedy_peer.closed(); }, fc::time_point::now() + fc::seconds( 10 ) ),
+                             "the node kept the connection of a peer that asked for more blocks than its send queue holds" );
+        BOOST_CHECK_LT( greedy_peer.blocks_received().size() + greedy_peer.blocks_not_available().size(), greedy_count );
+
+        syncing_peer.request_blocks( { block_ids.back() } );
+        BOOST_CHECK_MESSAGE( wait_until( [&]() { return syncing_peer.blocks_received().size() == block_count + 1; },
+                                         fc::time_point::now() + fc::seconds( 10 ) ),
+                             "the node stopped serving the syncing peer" );
+        BOOST_CHECK( !syncing_peer.closed() );
 
         ilog( "'API' thread finished" );
         test_passed = !theApp.is_interrupt_request();

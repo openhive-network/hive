@@ -65,6 +65,9 @@ namespace graphene { namespace net
     }
     message peer_connection::virtual_queued_block_message::get_message(peer_connection_delegate* node, peer_connection* peer)
     {
+      prepare(node, peer);
+      if (!full_block)
+        return item_not_available_message(item_id(block_message_type, requested_item));
       if (peer->supports_compressed_blocks())
       {
         // the peer can handle some form of compressed data.
@@ -80,9 +83,35 @@ namespace graphene { namespace net
         return block_message(full_block);
     }
 
+    void peer_connection::virtual_queued_block_message::prepare(peer_connection_delegate* node, peer_connection* peer)
+    {
+      if (looked_up)
+        return;
+      looked_up = true;
+      try
+      {
+        full_block = node->get_block_to_send(peer, requested_item);
+      }
+      catch (const fc::canceled_exception&)
+      {
+        throw;
+      }
+      catch (const fc::exception& e)
+      {
+        // the peer is told we don't have the block, rather than the send queue stopping at this message
+        wlog("Unable to look up block ${id} requested by peer ${peer}: ${e}",
+             ("id", requested_item)("peer", peer->get_remote_endpoint())("e", e.to_string()));
+      }
+      catch (const std::exception& e)
+      {
+        wlog("Unable to look up block ${id} requested by peer ${peer}: ${e}",
+             ("id", requested_item)("peer", peer->get_remote_endpoint())("e", e.what()));
+      }
+    }
+
     size_t peer_connection::virtual_queued_block_message::get_size_in_queue()
     {
-      return sizeof(full_block);
+      return sizeof(*this);
     }
 
     peer_connection::peer_connection(peer_connection_delegate* delegate) :
@@ -304,6 +333,9 @@ namespace graphene { namespace net
 #endif
       while (!_queued_messages.empty())
       {
+        // only this task removes messages from the queue, so the ones prepared here stay in it
+        for (size_t i = 0; i < _queued_messages.size() && i < GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD; ++i)
+          _queued_messages[i]->prepare(_node, this);
         _queued_messages.front()->transmission_start_time = fc::time_point::now();
         message message_to_send = _queued_messages.front()->get_message(_node, this);
         try
@@ -343,7 +375,7 @@ namespace graphene { namespace net
         }
         _queued_messages.front()->transmission_finish_time = fc::time_point::now();
         _total_queued_messages_size -= _queued_messages.front()->get_size_in_queue();
-        _queued_messages.pop();
+        _queued_messages.pop_front();
       }
       //dlog("leaving peer_connection::send_queued_messages_task() due to queue exhaustion");
     }
@@ -351,12 +383,16 @@ namespace graphene { namespace net
     void peer_connection::send_queueable_message(std::unique_ptr<queued_message>&& message_to_send)
     {
       VERIFY_CORRECT_THREAD();
-      _total_queued_messages_size += message_to_send->get_size_in_queue();
-      _queued_messages.emplace(std::move(message_to_send));
-      if (_total_queued_messages_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
+      // once the queue has reached its limit the connection is closed, so nothing queued after that would ever
+      // be sent: it isn't queued at all, however much the peer's last request asked for
+      if (_send_queue_limit_exceeded)
+        return;
+      const size_t message_size = message_to_send->get_size_in_queue();
+      if (_total_queued_messages_size + message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
       {
+        _send_queue_limit_exceeded = true;
         elog("send queue exceeded maximum size of ${max} bytes (current size ${current} bytes)",
-             ("max", GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)("current", _total_queued_messages_size));
+             ("max", GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)("current", _total_queued_messages_size + message_size));
         try
         {
           close_connection();
@@ -367,6 +403,8 @@ namespace graphene { namespace net
         }
         return;
       }
+      _total_queued_messages_size += message_size;
+      _queued_messages.emplace_back(std::move(message_to_send));
 
       if( _send_queued_messages_done.valid() && _send_queued_messages_done.canceled() )
         FC_THROW_EXCEPTION(fc::exception, "Attempting to send a message on a connection that is being shut down");
@@ -389,10 +427,10 @@ namespace graphene { namespace net
       send_queueable_message(std::move(message_to_enqueue));
     }
 
-    void peer_connection::send_block_message(const std::shared_ptr<full_block_type>& full_block)
+    void peer_connection::send_block_message(const item_hash_t& requested_item)
     {
       VERIFY_CORRECT_THREAD();
-      send_queueable_message(std::make_unique<virtual_queued_block_message>(full_block));
+      send_queueable_message(std::make_unique<virtual_queued_block_message>(requested_item));
     }
 
     void peer_connection::close_connection()
