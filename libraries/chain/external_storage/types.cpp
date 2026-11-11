@@ -44,6 +44,12 @@ const Comparator* by_txId_Comparator()
   return &c;
 }
 
+const Comparator* snapshot_index_Comparator()
+{
+  static snapshot_index_ComparatorImpl c;
+  return &c;
+}
+
 bool CachableWriteBatch::getAHInfo(const account_name_type& name, account_history_info* ahInfo) const
 {
   auto fi = _ahInfoCache.find(name);
@@ -81,71 +87,24 @@ void CachableWriteBatch::Clear()
   WriteBatch::Clear();
 }
 
-void registerSnapshotComparators() {
-  static std::once_flag registered;
-  std::call_once(registered, []() {
-    auto snapshotLibrary = std::make_shared<::rocksdb::ObjectLibrary>("snapshot");
-
-    ilog("Registering snapshot comparators with RocksDB ObjectLibrary");
-
-    snapshotLibrary->AddFactory<const ::rocksdb::Comparator>(
-        "hive::chain::HashComparator const*",
-        [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
-          return by_Hash_Comparator();
-        });
-
-    ::rocksdb::ObjectRegistry::Default()->AddLibrary(snapshotLibrary);
-
-    ilog("Successfully registered snapshot comparators with RocksDB ObjectLibrary");
-  });
-}
-
-void registerAccountHistoryComparators() {
-  static std::once_flag registered;
-  std::call_once(registered, []() {
-    auto accountHistoryLibrary = std::make_shared<::rocksdb::ObjectLibrary>("account_history");
-
-    ilog("Registering account history comparators with RocksDB ObjectLibrary");
-
-    accountHistoryLibrary->AddFactory<const ::rocksdb::Comparator>(
-        "hive::chain::by_id_ComparatorImpl const*",
-        [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
-          return by_id_Comparator();
-        });
-
-    accountHistoryLibrary->AddFactory<const ::rocksdb::Comparator>(
-        "hive::chain::op_by_block_num_ComparatorImpl const*",
-        [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
-          return op_by_block_num_Comparator();
-        });
-
-    accountHistoryLibrary->AddFactory<const ::rocksdb::Comparator>(
-        "hive::chain::by_account_name_ComparatorImpl const*",
-        [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
-          return by_account_name_Comparator();
-        });
-
-    accountHistoryLibrary->AddFactory<const ::rocksdb::Comparator>(
-        "hive::chain::ah_op_by_id_ComparatorImpl const*",
-        [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
-          return ah_op_by_id_Comparator();
-        });
-
-    accountHistoryLibrary->AddFactory<const ::rocksdb::Comparator>(
-        "hive::chain::TransactionIdComparator const*",
-        [](const std::string& /*uri*/, std::unique_ptr<const ::rocksdb::Comparator>* /*guard*/, std::string* /*errmsg*/) {
-          return by_txId_Comparator();
-        });
-
-    ::rocksdb::ObjectRegistry::Default()->AddLibrary(accountHistoryLibrary);
-
-    ilog("Successfully registered account history comparators with RocksDB ObjectLibrary");
-  });
-}
-
 void registerHiveComparators() {
-  registerSnapshotComparators();
-  registerAccountHistoryComparators();
+  static std::once_flag registered;
+  std::call_once(registered, []() {
+    auto library = std::make_shared<::rocksdb::ObjectLibrary>("hive");
+
+    // RocksDB stores Name() in every SST and OPTIONS file it writes, and looks the comparator up
+    // by that name when it reads them back without one given (sst_dump, LoadLatestOptions).
+    for(const Comparator* comparator : { by_Hash_Comparator(), by_id_Comparator(), op_by_block_num_Comparator(),
+      by_account_name_Comparator(), ah_op_by_id_Comparator(), by_txId_Comparator(), snapshot_index_Comparator() })
+    {
+      library->AddFactory<const Comparator>( comparator->Name(),
+        [comparator](const std::string& /*uri*/, std::unique_ptr<const Comparator>* /*guard*/, std::string* /*errmsg*/) {
+          return comparator;
+        });
+    }
+
+    ::rocksdb::ObjectRegistry::Default()->AddLibrary(library);
+  });
 }
 
 } } // hive::chain

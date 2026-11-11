@@ -168,12 +168,6 @@ if(HIVE_USE_PREINSTALLED_VENDOR
       "${_rocksdb_preinstalled_dir}/include")
 
     set(_use_preinstalled ON)
-
-    # Expose sst_dump path for build.sh.
-    # Use PROJECT_BINARY_DIR (not CMAKE_BINARY_DIR) so the file lands in the
-    # hive subdirectory of the build tree when built from HAF via add_subdirectory(hive).
-    file(WRITE "${PROJECT_BINARY_DIR}/rocksdb_tools_dir.txt"
-         "${_rocksdb_preinstalled_dir}/bin")
   else()
     message(STATUS "Preinstalled RocksDB found but find_package failed, building from source")
   endif()
@@ -204,22 +198,13 @@ if(NOT _use_preinstalled)
   # since 1.1.9, e.g. the static library of the CI base image) do not provide, so linking fails.
   # Nothing casts or typeid()s the classes of that file, so it is compiled without RTTI. That leaves
   # the typeinfo of the classes whose key functions it defines (Decompressor, CompressionManager)
-  # unemitted, so their subclass in db_stress_compression_manager.cc, which sst_dump and ldb link,
-  # is compiled without RTTI too.
+  # unemitted, so their subclass in db_stress_compression_manager.cc, which sst_dump (hive's,
+  # programs/util) and ldb link, is compiled without RTTI too.
   if(NOT MSVC)
     set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/util/compression.cc"
       "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/db_stress_tool/db_stress_compression_manager.cc"
       DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb"
       PROPERTIES COMPILE_OPTIONS "-fno-rtti;-UROCKSDB_USE_RTTI")
-  endif()
-  # Images ship sst_dump to inspect the RocksDB files hived writes. Without the core tools (mainnet
-  # builds), build just sst_dump - not ldb - into the directory RocksDB's own tools build uses,
-  # where scripts/build.sh picks it up.
-  if(NOT WITH_CORE_TOOLS AND NOT WITH_TOOLS)
-    add_executable(sst_dump "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/tools/sst_dump.cc")
-    target_link_libraries(sst_dump rocksdb)
-    set_target_properties(sst_dump PROPERTIES
-      RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/rocksdb/tools")
   endif()
   if(HIVE_BUILD_DB_BENCH)
     hive_add_db_bench_tool()
