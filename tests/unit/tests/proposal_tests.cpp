@@ -50,10 +50,12 @@
 
 #include <fc/macros.hpp>
 #include <fc/crypto/digest.hpp>
+#include <fc/log/appender.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
 #include <cmath>
+#include <cstring>
 #include <iostream>
 #include <stdexcept>
 
@@ -4454,6 +4456,250 @@ BOOST_AUTO_TEST_CASE( update_proposal_006 )
 
     validate_database();
   } FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( proposal_daily_pay_overflow_bound )
+{
+  // daily_pay above the cap must be rejected (would overflow the maintenance payment - chain halt)
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: proposal_daily_pay_overflow_bound (DHF daily_pay chain-halt)" );
+
+    ACTORS( DEFAULT_VESTING, (alice) );
+    generate_block();
+
+    std::string permlink = "proposalpermlink";
+    post_comment_with_block_generation( "alice", permlink, "title", "body", "test", alice_post_key );
+
+    ISSUE_FUNDS( "alice", HBD_asset( 100'000 ) ); // plenty for the proposal fee
+    generate_block();
+
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 10 );
+
+    const auto build_op = [&]( const asset& daily_pay )
+    {
+      create_proposal_operation op;
+      op.creator = "alice";
+      op.receiver = "alice";
+      op.start_date = start_date;
+      op.end_date = end_date;
+      op.daily_pay = daily_pay;
+      op.subject = "subject";
+      op.permlink = permlink;
+      return op;
+    };
+
+    { // over the cap -> rejected
+      signed_transaction tx;
+      tx.operations.push_back( build_op( asset( HIVE_PROPOSAL_MAX_DAILY_PAY + 1, HBD_SYMBOL ) ) );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_private_key ), "o.daily_pay.amount <= HIVE_PROPOSAL_MAX_DAILY_PAY" );
+    }
+
+    { // at the cap -> accepted
+      signed_transaction tx;
+      tx.operations.push_back( build_op( asset( HIVE_PROPOSAL_MAX_DAILY_PAY, HBD_SYMBOL ) ) );
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      push_transaction( tx, alice_private_key );
+    }
+    generate_block();
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_creator >();
+    auto proposal = proposal_idx.find( account_name_type( "alice" ) );
+    BOOST_REQUIRE( proposal != proposal_idx.end() );
+    BOOST_REQUIRE_EQUAL( proposal->daily_pay.amount.value, HIVE_PROPOSAL_MAX_DAILY_PAY );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( proposal_daily_pay_cap_long_maintenance_gap )
+{
+  // a proposal at the cap must not overflow the maintenance payment even after a long catch-up period
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: proposal_daily_pay_cap_long_maintenance_gap" );
+
+    const uint32_t one_year = 365 * 86400;
+    BOOST_REQUIRE_NO_THROW( share_type( one_year ) * HBD_asset( HIVE_PROPOSAL_MAX_DAILY_PAY ) );
+    BOOST_REQUIRE_THROW( share_type( one_year ) * HBD_asset( HIVE_PROPOSAL_MAX_DAILY_PAY + 1 ), fc::overflow_exception );
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol) );
+    generate_block();
+
+    set_price_feed( HBD_price( 1000, 1000 ) );
+    generate_block();
+
+    ISSUE_FUNDS( "alice", HBD_asset( 100'000 ) );
+    ISSUE_FUNDS( db->get_treasury_name(), HBD_asset( 5'000'000 ) );
+    vest( "carol", HIVE_asset( 1'000 ) );
+
+    // let carol's vote power mature (see HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS)
+    generate_blocks( db->head_block_time() + fc::seconds( HIVE_DELAYED_VOTING_TOTAL_INTERVAL_SECONDS ) );
+
+    // proposal becomes active right after the next regular maintenance, so its first payment is the one
+    // that catches up the whole gap below (keep that maintenance away from blocks generated while creating it)
+    if( get_nr_blocks_until_proposal_maintenance_block() < 20 )
+      generate_blocks( get_nr_blocks_until_proposal_maintenance_block() );
+    const auto& dgpo = db->get_dynamic_global_properties();
+    auto start_date = dgpo.get_next_maintenance_time() + fc::minutes( 1 );
+    auto end_date = start_date + fc::days( 40 );
+    int64_t proposal_id = create_proposal( "alice", "bob", start_date, end_date,
+      HBD_asset( HIVE_PROPOSAL_MAX_DAILY_PAY ), alice_private_key, alice_post_key );
+    vote_proposal( "carol", { proposal_id }, true, carol_private_key );
+    generate_block();
+
+    generate_blocks( get_nr_blocks_until_proposal_maintenance_block() );
+    BOOST_REQUIRE( dgpo.get_last_budget_time() < start_date );
+
+    const auto last_budget_time = dgpo.get_last_budget_time();
+    const share_type treasury_before = db->get_treasury().get_hbd_balance().amount;
+    BOOST_REQUIRE_EQUAL( get_hbd_balance( "bob" ).amount.value, 0 );
+
+    BOOST_TEST_MESSAGE( "Skip 30 days of blocks - next maintenance has to catch up whole period at once" );
+    generate_blocks( last_budget_time + fc::days( 30 ) );
+
+    BOOST_REQUIRE( dgpo.get_last_budget_time() == db->head_block_time() );
+    const int64_t passed_time = ( db->head_block_time() - last_budget_time ).to_seconds();
+    BOOST_REQUIRE_GE( passed_time, fc::days( 30 ).to_seconds() );
+
+    const share_type paid = get_hbd_balance( "bob" ).amount;
+    const share_type treasury_after = db->get_treasury().get_hbd_balance().amount;
+    const share_type treasury_income = treasury_after + paid - treasury_before;
+    BOOST_REQUIRE_GE( treasury_income.value, 0 );
+
+    // single voted proposal at the cap asks for more than the budget, so it gets exactly the budget limit,
+    // computed from treasury balance that is somewhere between before and before + income of that block
+    const auto budget_limit = [&]( share_type treasury )
+    {
+      return ( passed_time * ( treasury.value / 100 ) ) / 86400;
+    };
+    BOOST_REQUIRE_LT( paid.value, ( share_type( passed_time ) * HBD_asset( HIVE_PROPOSAL_MAX_DAILY_PAY ) ).amount.value / 86400 );
+    BOOST_REQUIRE_GE( paid.value, budget_limit( treasury_before ) );
+    BOOST_REQUIRE_LE( paid.value, budget_limit( treasury_before + treasury_income ) );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+struct hf28_dhf_database_fixture : public clean_database_fixture
+{
+  hf28_dhf_database_fixture() : clean_database_fixture( shared_file_size_big, HIVE_HARDFORK_1_28 ) {}
+};
+
+BOOST_FIXTURE_TEST_CASE( proposal_daily_pay_clamped_at_hf29, hf28_dhf_database_fixture )
+{
+  // proposals created before HF29 with daily_pay above the cap are clamped when HF29 activates
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: proposal_daily_pay_clamped_at_hf29" );
+    BOOST_REQUIRE( !db->has_hardfork( HIVE_HARDFORK_1_29 ) );
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    generate_block();
+
+    std::string permlink = "proposalpermlink";
+    post_comment_with_block_generation( "alice", permlink, "title", "body", "test", alice_post_key );
+
+    ISSUE_FUNDS( "alice", HBD_asset( 100'000 ) );
+    generate_block();
+
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date   = start_date + fc::days( 10 );
+
+    const auto build_op = [&]( share_type daily_pay )
+    {
+      create_proposal_operation op;
+      op.creator = "alice";
+      op.receiver = "bob";
+      op.start_date = start_date;
+      op.end_date = end_date;
+      op.daily_pay = asset( daily_pay, HBD_SYMBOL );
+      op.subject = "subject";
+      op.permlink = permlink;
+      return op;
+    };
+
+    // creates proposal through a block, bypassing the is_in_control() part of the create-time check
+    const auto create_in_block = [&]( share_type daily_pay )
+    {
+      create_proposal_operation op = build_op( daily_pay );
+      HIVE_REQUIRE_ASSERT( push_transaction( op, alice_private_key ), "o.daily_pay.amount <= HIVE_PROPOSAL_MAX_DAILY_PAY" );
+      db_plugin->debug_push_pending_transaction( build_transaction( op, alice_private_key ) );
+      generate_block_from_pending();
+    };
+
+    const share_type above_cap = HIVE_PROPOSAL_MAX_DAILY_PAY + 1;
+    const share_type mainnet_extreme = 999'999'999'999'999'000ll; // daily_pay of mainnet proposals #116 and #117
+    const share_type below_cap = 100'000;
+
+    create_in_block( above_cap );
+    push_transaction( build_op( HIVE_PROPOSAL_MAX_DAILY_PAY ), alice_private_key );
+    generate_block();
+    push_transaction( build_op( below_cap ), alice_private_key );
+    generate_block();
+    create_in_block( mainnet_extreme );
+
+    const auto& pidx = db->get_index< proposal_index, by_proposal_id >();
+    BOOST_REQUIRE_EQUAL( pidx.size(), 4u );
+    const std::vector< share_type > expected_before = { above_cap, HIVE_PROPOSAL_MAX_DAILY_PAY, below_cap, mainnet_extreme };
+    std::vector< uint32_t > ids;
+    for( const auto& p : pidx )
+    {
+      BOOST_REQUIRE_EQUAL( p.daily_pay.amount.value, expected_before[ ids.size() ].value );
+      ids.push_back( p.proposal_id );
+    }
+    BOOST_REQUIRE_EQUAL( ids[0], 0u );
+
+    struct clamp_catcher : public fc::appender
+    {
+      std::vector< fc::variant_object > clamps;
+      virtual void log( const fc::log_message& m )
+      {
+        const char* CLAMP_MSG = "HF29 clamped daily_pay of proposal";
+        if( m.get_message().compare( 0, std::strlen( CLAMP_MSG ), CLAMP_MSG ) == 0 )
+          clamps.push_back( m.get_data() );
+      }
+    };
+    BOOST_REQUIRE( fc::logger::get( DEFAULT_LOGGER ).is_enabled( fc::log_level::info ) );
+    auto catcher = fc::shared_ptr< clamp_catcher >( new clamp_catcher() );
+    {
+      autoscope auto_reset( [&]() { fc::logger::get( DEFAULT_LOGGER ).remove_appender( catcher ); } );
+      fc::logger::get( DEFAULT_LOGGER ).add_appender( catcher );
+      inject_hardfork( HIVE_HARDFORK_1_29 );
+    }
+    BOOST_REQUIRE( db->has_hardfork( HIVE_HARDFORK_1_29 ) );
+
+    const std::vector< share_type > expected_after = { HIVE_PROPOSAL_MAX_DAILY_PAY, HIVE_PROPOSAL_MAX_DAILY_PAY, below_cap, HIVE_PROPOSAL_MAX_DAILY_PAY };
+    size_t i = 0;
+    for( const auto& p : pidx )
+      BOOST_REQUIRE_EQUAL( p.daily_pay.amount.value, expected_after[ i++ ].value );
+
+    BOOST_REQUIRE_EQUAL( catcher->clamps.size(), 2u );
+    const std::vector< std::pair< uint32_t, share_type > > expected_clamps = { { ids[0], above_cap }, { ids[3], mainnet_extreme } };
+    for( size_t c = 0; c < expected_clamps.size(); ++c )
+    {
+      const auto& data = catcher->clamps[c];
+      BOOST_REQUIRE_EQUAL( data[ "id" ].as_uint64(), expected_clamps[c].first );
+      BOOST_REQUIRE_EQUAL( data[ "old" ].as< asset >().amount.value, expected_clamps[c].second.value );
+      BOOST_REQUIRE_EQUAL( data[ "new" ].as< asset >().amount.value, HIVE_PROPOSAL_MAX_DAILY_PAY );
+    }
+
+    // after HF29 the cap is enforced in blocks too
+    {
+      create_proposal_operation op = build_op( above_cap );
+      db_plugin->debug_push_pending_transaction( build_transaction( op, alice_private_key ) );
+      HIVE_REQUIRE_ASSERT( generate_block_from_pending(), "o.daily_pay.amount <= HIVE_PROPOSAL_MAX_DAILY_PAY" );
+      db->clear_pending();
+    }
+    generate_block();
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
 }
 
 BOOST_AUTO_TEST_SUITE_END()
