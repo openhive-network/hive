@@ -5001,8 +5001,12 @@ namespace graphene { namespace net {
         {
           dlog("passing message containing transaction ${trx} to client", ("trx", full_transaction->get_transaction_id()));
           _message_ids_currently_being_processed.insert(message_hash);
+          // erase it however handle_transaction() ends, as the block path does: an id left in the set makes us
+          // skip every later advertisement of that transaction until restart
+          BOOST_SCOPE_EXIT(this_, &message_hash) {
+            this_->_message_ids_currently_being_processed.erase(message_hash);
+          } BOOST_SCOPE_EXIT_END
           _delegate->handle_transaction(full_transaction);
-          _message_ids_currently_being_processed.erase(message_hash);
           message_validated_time = fc::time_point::now();
         }
         catch (const fc::canceled_exception&)
