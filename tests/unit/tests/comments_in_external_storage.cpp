@@ -49,7 +49,6 @@
 #include <hive/chain/detail/state/hardfork_property_object.hpp>
 #include <hive/chain/detail/state/global_property_object.hpp>
 
-#include <hive/chain/external_storage/comment_archive_prefetcher.hpp>
 #include <hive/chain/external_storage/comments_handler.hpp>
 
 #include <fc/crypto/digest.hpp>
@@ -421,18 +420,6 @@ BOOST_FIXTURE_TEST_CASE( fork_reverts_cashout, empty_fixture )
   fork_reverts_cashout_scanario( "ROCKSDB", true, true, "!comment_is_required" );
 }
 
-struct prefetch_scenario_result
-{
-  std::string state;
-  uint64_t    prefetch_hits = 0;
-  uint64_t    prefetch_misses = 0;
-  // lookups during the fork switch, by path and where they were served from
-  hive::utilities::benchmark_dumper::comment_lookup_path_counters_t vote_lookups;
-  hive::utilities::benchmark_dumper::comment_lookup_path_counters_t comment_lookups;
-  // lookups made by the test itself, outside of any operation
-  hive::utilities::benchmark_dumper::comment_lookup_path_counters_t other_lookups;
-};
-
 hive::utilities::benchmark_dumper::comment_lookup_path_counters_t lookups_since(
   const hive::utilities::benchmark_dumper::comment_archive_details_t& before, hive::utilities::benchmark_dumper::comment_lookup_path path )
 {
@@ -444,187 +431,140 @@ hive::utilities::benchmark_dumper::comment_lookup_path_counters_t lookups_since(
   hive::utilities::benchmark_dumper::comment_lookup_path_counters_t result;
   result.path = path;
   result.from_index.count = delta( &hive::utilities::benchmark_dumper::comment_lookup_path_counters_t::from_index );
-  result.prefetch_hit.count = delta( &hive::utilities::benchmark_dumper::comment_lookup_path_counters_t::prefetch_hit );
   result.archive_read.count = delta( &hive::utilities::benchmark_dumper::comment_lookup_path_counters_t::archive_read );
   result.not_found.count = delta( &hive::utilities::benchmark_dumper::comment_lookup_path_counters_t::not_found );
   return result;
 }
 
-prefetch_scenario_result prefetch_scenario( bool prefetch )
-{
-  BOOST_TEST_MESSAGE( std::string( "Prefetch of archived comments " ) + ( prefetch ? "on" : "off" ) );
-
-  configuration_data = configuration(); // start with fresh configuration
-  configuration_data.set_cashout_related_values( 0, 9, 9 * 2, 9 * 7, 3 );
-  autoscope( []() { configuration_data.reset_cashout_values(); } );
-
-  hived_fixture test;
-  test.postponed_init( {
-    hived_fixture::config_line_t( { "comment-archive", { "ROCKSDB" } } ),
-    hived_fixture::config_line_t( { "comments-rocksdb-prefetch", { prefetch ? "true" : "false" } } )
-  } );
-  test.generate_block();
-  test.db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
-  test.generate_block();
-
-  test.vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
-  // with a full witness schedule LIB lags behind head, so a block can be popped
-  for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
-  {
-    test.account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), test.init_account_pub_key );
-    test.fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
-    test.witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), test.init_account_priv_key, "foo.bar", test.init_account_pub_key, HIVE_MIN_PRODUCER_REWARD );
-  }
-  test.witness_plugin->disable_fast_confirm();
-
-  fc::ecc::private_key alice_post_key = test.generate_private_key( "alice_post" );
-  fc::ecc::private_key bob_post_key = test.generate_private_key( "bob_post" );
-  test.account_create( "alice", test.generate_private_key( "alice" ).get_public_key(), alice_post_key.get_public_key(), DEFAULT_VESTING );
-  test.account_create( "bob", test.generate_private_key( "bob" ).get_public_key(), bob_post_key.get_public_key(), DEFAULT_VESTING );
-  test.generate_block();
-
-  auto is_archived = [&]( const std::string& author, const std::string& permlink )
-  {
-    auto hash = comment_object::compute_author_and_permlink_hash( test.db->get_account( author ).get_id(), permlink );
-    return test.db->find< comment_object, by_permlink >( hash ) == nullptr;
-  };
-  auto archive = [&]( const std::string& author, const std::string& permlink )
-  {
-    test.generate_blocks( test.db->find_comment_cashout( *test.get_comment( author, permlink ) )->get_cashout_time(), false );
-    test.generate_until_irreversible_block( test.db->head_block_num() );
-    BOOST_REQUIRE( is_archived( author, permlink ) );
-  };
-  auto describe = [&]( const std::string& author, const std::string& permlink )
-  {
-    const auto c = test.get_comment( author, permlink );
-    return author + "/" + permlink + ":" + std::to_string( c->get_id().get_value() ) + "," +
-      std::to_string( c->get_parent_id().get_value() ) + "," + std::to_string( c->get_depth() );
-  };
-
-  test.post_comment( "alice", "old", "old", "archived before it is voted on", "test", alice_post_key );
-  test.post_comment_to_comment( "bob", "old-reply", "re", "archived reply", "alice", "old", bob_post_key );
-  test.generate_block();
-  const std::string old_before_archiving = describe( "alice", "old" );
-  const std::string old_reply_before_archiving = describe( "bob", "old-reply" );
-  archive( "alice", "old" );
-  BOOST_REQUIRE( is_archived( "bob", "old-reply" ) );
-
-  test.post_comment( "alice", "late", "late", "archived after its vote is prefetched", "test", alice_post_key );
-  test.generate_block();
-
-  auto* prefetcher = dynamic_cast< comment_archive_prefetcher* >( &test.db->get_comments_handler() );
-  BOOST_REQUIRE( prefetcher != nullptr );
-
-  // the prefetch learns the ids of authors whose comments the chain looks up in the archive
-  BOOST_REQUIRE_EQUAL( describe( "alice", "old" ), old_before_archiving );
-  BOOST_REQUIRE_EQUAL( describe( "bob", "old-reply" ), old_reply_before_archiving );
-
-  const auto stats_before = comments_handler::stats;
-
-  BOOST_TEST_MESSAGE( "Votes and a reply referencing archived comments, prefetched and applied across a fork switch" );
-  signed_transaction tx;
-  tx.set_expiration( test.db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-  vote_operation vote;
-  vote.voter = "bob";
-  vote.author = "alice";
-  vote.permlink = "old";
-  vote.weight = HIVE_100_PERCENT;
-  tx.operations.push_back( vote );
-  vote.voter = "alice";
-  vote.author = "bob";
-  vote.permlink = "old-reply";
-  tx.operations.push_back( vote );
-  comment_operation reply;
-  reply.author = "bob";
-  reply.permlink = "new-reply";
-  reply.parent_author = "alice";
-  reply.parent_permlink = "old";
-  reply.title = "re";
-  reply.body = "reply to an archived comment";
-  tx.operations.push_back( reply );
-  full_transaction_ptr archived_references = test.build_transaction( tx, std::vector< fc::ecc::private_key >{ alice_post_key, bob_post_key } );
-  prefetcher->prefetch_comments( std::vector< full_transaction_ptr >{ archived_references } );
-  test.get_chain_plugin().push_transaction( archived_references, 0 );
-  test.generate_block();
-  test.db->pop_block();
-  test.generate_block( database::skip_nothing, HIVE_INIT_PRIVATE_KEY, 1 );
-  test.generate_block();
-  // served from the prefetch, the comments are the same as before they were archived
-  BOOST_REQUIRE_EQUAL( describe( "alice", "old" ), old_before_archiving );
-  BOOST_REQUIRE_EQUAL( describe( "bob", "old-reply" ), old_reply_before_archiving );
-
-  prefetch_scenario_result result;
-  result.vote_lookups = lookups_since( stats_before, comments_handler::lookup_path::vote_evaluator );
-  result.comment_lookups = lookups_since( stats_before, comments_handler::lookup_path::comment_evaluator );
-  const auto stats_middle = comments_handler::stats;
-
-  BOOST_TEST_MESSAGE( "A vote prefetched while its comment is in state, applied after the comment moved to the archive" );
-  vote.voter = "bob";
-  vote.author = "alice";
-  vote.permlink = "late";
-  auto build_late_reference = [&]()
-  {
-    signed_transaction late_tx;
-    late_tx.set_expiration( test.db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
-    late_tx.operations.push_back( vote );
-    return test.build_transaction( late_tx, std::vector< fc::ecc::private_key >{ bob_post_key } );
-  };
-  BOOST_REQUIRE( !is_archived( "alice", "late" ) );
-  const std::string late_before_archiving = describe( "alice", "late" );
-  prefetcher->prefetch_comments( std::vector< full_transaction_ptr >{ build_late_reference() } );
-  archive( "alice", "late" );
-  const auto stats_late = comments_handler::stats;
-  // archiving takes longer than a transaction may live, so the same vote is signed again;
-  // what was prefetched is keyed by the comment, not by the transaction
-  test.get_chain_plugin().push_transaction( build_late_reference(), 0 );
-  test.generate_block();
-  BOOST_REQUIRE_EQUAL( comments_handler::stats.comment_prefetch_hit.count, stats_late.comment_prefetch_hit.count );
-  if( prefetch )
-    BOOST_REQUIRE_GT( comments_handler::stats.comment_prefetch_miss.count, stats_late.comment_prefetch_miss.count );
-
-  result.prefetch_hits = stats_middle.comment_prefetch_hit.count - stats_before.comment_prefetch_hit.count;
-  result.prefetch_misses = comments_handler::stats.comment_prefetch_miss.count - stats_before.comment_prefetch_miss.count;
-
-  const auto stats_describe = comments_handler::stats;
-  BOOST_REQUIRE_EQUAL( describe( "alice", "late" ), late_before_archiving );
-  result.other_lookups = lookups_since( stats_describe, comments_handler::lookup_path::other );
-  result.state = fc::json::to_string( test.db->get_dynamic_global_properties() ) + " " +
-    fc::json::to_string( test.db->get_account( "alice" ) ) + " " + fc::json::to_string( test.db->get_account( "bob" ) ) + " " +
-    describe( "alice", "old" ) + " " + describe( "bob", "old-reply" ) + " " + describe( "bob", "new-reply" ) + " " + describe( "alice", "late" ) +
-    " votes: " + std::to_string( test.db->get_index< comment_vote_index >().indices().size() );
-  return result;
-}
-
-BOOST_FIXTURE_TEST_CASE( prefetch_of_archived_comments, empty_fixture )
+BOOST_FIXTURE_TEST_CASE( lookups_of_archived_comments, empty_fixture )
 {
   try
   {
-    const auto with_prefetch = prefetch_scenario( true );
-    const auto without_prefetch = prefetch_scenario( false );
+    configuration_data = configuration(); // start with fresh configuration
+    configuration_data.set_cashout_related_values( 0, 9, 9 * 2, 9 * 7, 3 );
+    autoscope( []() { configuration_data.reset_cashout_values(); } );
 
-    // both votes and the reply's parent are served from the prefetch every time the transaction is applied
-    BOOST_CHECK_GE( with_prefetch.prefetch_hits, 3u );
-    BOOST_CHECK_GE( with_prefetch.prefetch_misses, 1u );
-    BOOST_CHECK_EQUAL( without_prefetch.prefetch_hits, 0u );
-    BOOST_CHECK_EQUAL( without_prefetch.prefetch_misses, 0u );
+    hived_fixture test;
+    test.postponed_init( { hived_fixture::config_line_t( { "comment-archive", { "ROCKSDB" } } ) } );
+    test.generate_block();
+    test.db->set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+    test.generate_block();
 
-    BOOST_CHECK_EQUAL( with_prefetch.state, without_prefetch.state );
+    test.vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
+    // with a full witness schedule LIB lags behind head, so a block can be popped
+    for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; i++ )
+    {
+      test.account_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), test.init_account_pub_key );
+      test.fund( HIVE_INIT_MINER_NAME + fc::to_string( i ), HIVE_MIN_PRODUCER_REWARD );
+      test.witness_create( HIVE_INIT_MINER_NAME + fc::to_string( i ), test.init_account_priv_key, "foo.bar", test.init_account_pub_key, HIVE_MIN_PRODUCER_REWARD );
+    }
+    test.witness_plugin->disable_fast_confirm();
+
+    fc::ecc::private_key alice_post_key = test.generate_private_key( "alice_post" );
+    fc::ecc::private_key bob_post_key = test.generate_private_key( "bob_post" );
+    test.account_create( "alice", test.generate_private_key( "alice" ).get_public_key(), alice_post_key.get_public_key(), DEFAULT_VESTING );
+    test.account_create( "bob", test.generate_private_key( "bob" ).get_public_key(), bob_post_key.get_public_key(), DEFAULT_VESTING );
+    test.generate_block();
+
+    auto is_archived = [&]( const std::string& author, const std::string& permlink )
+    {
+      auto hash = comment_object::compute_author_and_permlink_hash( test.db->get_account( author ).get_id(), permlink );
+      return test.db->find< comment_object, by_permlink >( hash ) == nullptr;
+    };
+    auto archive = [&]( const std::string& author, const std::string& permlink )
+    {
+      test.generate_blocks( test.db->find_comment_cashout( *test.get_comment( author, permlink ) )->get_cashout_time(), false );
+      test.generate_until_irreversible_block( test.db->head_block_num() );
+      BOOST_REQUIRE( is_archived( author, permlink ) );
+    };
+    auto describe = [&]( const std::string& author, const std::string& permlink )
+    {
+      const auto c = test.get_comment( author, permlink );
+      return author + "/" + permlink + ":" + std::to_string( c->get_id().get_value() ) + "," +
+        std::to_string( c->get_parent_id().get_value() ) + "," + std::to_string( c->get_depth() );
+    };
+
+    test.post_comment( "alice", "old", "old", "archived before it is voted on", "test", alice_post_key );
+    test.post_comment_to_comment( "bob", "old-reply", "re", "archived reply", "alice", "old", bob_post_key );
+    test.generate_block();
+    const std::string old_before_archiving = describe( "alice", "old" );
+    const std::string old_reply_before_archiving = describe( "bob", "old-reply" );
+    archive( "alice", "old" );
+    BOOST_REQUIRE( is_archived( "bob", "old-reply" ) );
+
+    test.post_comment( "alice", "late", "late", "archived after the others", "test", alice_post_key );
+    test.generate_block();
+
+    BOOST_REQUIRE_EQUAL( describe( "alice", "old" ), old_before_archiving );
+    BOOST_REQUIRE_EQUAL( describe( "bob", "old-reply" ), old_reply_before_archiving );
+
+    const auto stats_before = comments_handler::stats;
+
+    BOOST_TEST_MESSAGE( "Votes and a reply referencing archived comments, applied across a fork switch" );
+    signed_transaction tx;
+    tx.set_expiration( test.db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    vote_operation vote;
+    vote.voter = "bob";
+    vote.author = "alice";
+    vote.permlink = "old";
+    vote.weight = HIVE_100_PERCENT;
+    tx.operations.push_back( vote );
+    vote.voter = "alice";
+    vote.author = "bob";
+    vote.permlink = "old-reply";
+    tx.operations.push_back( vote );
+    comment_operation reply;
+    reply.author = "bob";
+    reply.permlink = "new-reply";
+    reply.parent_author = "alice";
+    reply.parent_permlink = "old";
+    reply.title = "re";
+    reply.body = "reply to an archived comment";
+    tx.operations.push_back( reply );
+    test.get_chain_plugin().push_transaction(
+      test.build_transaction( tx, std::vector< fc::ecc::private_key >{ alice_post_key, bob_post_key } ), 0 );
+    test.generate_block();
+    test.db->pop_block();
+    test.generate_block( database::skip_nothing, HIVE_INIT_PRIVATE_KEY, 1 );
+    test.generate_block();
+    // read back from the archive, the comments are the same as before they were archived
+    BOOST_REQUIRE_EQUAL( describe( "alice", "old" ), old_before_archiving );
+    BOOST_REQUIRE_EQUAL( describe( "bob", "old-reply" ), old_reply_before_archiving );
+    BOOST_REQUIRE( !is_archived( "bob", "new-reply" ) );
+    BOOST_REQUIRE_EQUAL( test.get_comment( "bob", "new-reply" )->get_parent_id().get_value(), test.get_comment( "alice", "old" )->get_id().get_value() );
 
     // the votes look up archived comments only, the reply also checks that its own permlink is not taken yet
-    BOOST_CHECK_GE( with_prefetch.vote_lookups.prefetch_hit.count, 2u );
-    BOOST_CHECK_EQUAL( with_prefetch.vote_lookups.archive_read.count, 0u );
-    BOOST_CHECK_EQUAL( with_prefetch.vote_lookups.from_index.count, 0u );
-    BOOST_CHECK_EQUAL( with_prefetch.vote_lookups.not_found.count, 0u );
-    BOOST_CHECK_GE( with_prefetch.comment_lookups.prefetch_hit.count, 1u );
-    BOOST_CHECK_GE( with_prefetch.comment_lookups.not_found.count, 1u );
-    BOOST_CHECK_EQUAL( without_prefetch.vote_lookups.prefetch_hit.count, 0u );
-    BOOST_CHECK_EQUAL( without_prefetch.vote_lookups.archive_read.count, with_prefetch.vote_lookups.prefetch_hit.count );
-    BOOST_CHECK_EQUAL( without_prefetch.comment_lookups.archive_read.count, with_prefetch.comment_lookups.prefetch_hit.count );
-    BOOST_CHECK_EQUAL( without_prefetch.comment_lookups.not_found.count, with_prefetch.comment_lookups.not_found.count );
+    const auto vote_lookups = lookups_since( stats_before, comments_handler::lookup_path::vote_evaluator );
+    const auto comment_lookups = lookups_since( stats_before, comments_handler::lookup_path::comment_evaluator );
+    BOOST_CHECK_GE( vote_lookups.archive_read.count, 2u );
+    BOOST_CHECK_EQUAL( vote_lookups.from_index.count, 0u );
+    BOOST_CHECK_EQUAL( vote_lookups.not_found.count, 0u );
+    BOOST_CHECK_GE( comment_lookups.archive_read.count, 1u );
+    BOOST_CHECK_GE( comment_lookups.not_found.count, 1u );
 
-    // the late comment was archived after its prefetch, so reading it outside of an operation goes to the archive
-    BOOST_CHECK_EQUAL( with_prefetch.other_lookups.archive_read.count, 1u );
-    BOOST_CHECK_EQUAL( without_prefetch.other_lookups.archive_read.count, 1u );
+    BOOST_TEST_MESSAGE( "A vote on a comment that was in state when the votes above were applied and is archived now" );
+    BOOST_REQUIRE( !is_archived( "alice", "late" ) );
+    const std::string late_before_archiving = describe( "alice", "late" );
+    archive( "alice", "late" );
+    const auto stats_late = comments_handler::stats;
+    signed_transaction late_tx;
+    late_tx.set_expiration( test.db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    vote.voter = "bob";
+    vote.author = "alice";
+    vote.permlink = "late";
+    late_tx.operations.push_back( vote );
+    test.get_chain_plugin().push_transaction( test.build_transaction( late_tx, std::vector< fc::ecc::private_key >{ bob_post_key } ), 0 );
+    test.generate_block();
+    BOOST_CHECK_GE( lookups_since( stats_late, comments_handler::lookup_path::vote_evaluator ).archive_read.count, 1u );
+    BOOST_CHECK_EQUAL( lookups_since( stats_late, comments_handler::lookup_path::vote_evaluator ).not_found.count, 0u );
+
+    // a lookup made outside of any operation is counted under "other"
+    const auto stats_describe = comments_handler::stats;
+    BOOST_REQUIRE_EQUAL( describe( "alice", "late" ), late_before_archiving );
+    const auto other_lookups = lookups_since( stats_describe, comments_handler::lookup_path::other );
+    BOOST_CHECK_EQUAL( other_lookups.archive_read.count, 1u );
+    BOOST_CHECK_EQUAL( other_lookups.from_index.count, 0u );
+    BOOST_CHECK_EQUAL( other_lookups.not_found.count, 0u );
   }
   FC_LOG_AND_RETHROW()
 }

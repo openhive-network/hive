@@ -107,7 +107,6 @@ class rocksdb_storage_provider: public external_basic_provider
 
     void save( const Slice& key, const Slice& value );
     bool read( const Slice& key, PinnableSlice& value );
-    void multi_read( const std::vector<Slice>& keys, std::vector<PinnableSlice>& values, std::vector<::rocksdb::Status>& statuses );
 
     void finalizeStorage();
 

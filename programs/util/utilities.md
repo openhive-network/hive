@@ -63,7 +63,7 @@ a regular measurement every `--set-benchmark-interval` blocks and a summary (mar
 stats and the number of objects and memory used by every index (in natural order of indexes). The comment archive stats
 include `lookups_by_path`: the lookups by author and permlink split by the code that made them (the evaluator of an
 operation kind, plugins reacting to operations, or other code such as APIs) and by where they were served from
-(state, prefetched entries, a read of the archive on the spot, or not found at all).
+(`from_index`: state, `archive_read`: the archive, or `not_found` at all).
 
 The script converts the records into CSV (requires `jq`), e.g. to import into a spreadsheet:
 ```
