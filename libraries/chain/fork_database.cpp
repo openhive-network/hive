@@ -1,6 +1,7 @@
 #include <hive/chain/fork_database.hpp>
 
 #include <hive/chain/database_exceptions.hpp>
+#include <hive/protocol/config.hpp>
 #include <boost/range/algorithm/reverse.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
@@ -41,6 +42,14 @@ void fork_database::start_block(const std::shared_ptr<full_block_type>& full_blo
   */
 shared_ptr<fork_item> fork_database::push_block(const std::shared_ptr<full_block_type>& full_block)
 {
+  // A block whose producer name is longer than any account name can never be applied.  Refuse it before it is
+  // stored, linked or not: the walks over stored blocks (get_last_block_generated_by_each_witness() and the
+  // block number collision log of sync_block_writer) read that name as an account name.
+  const size_t witness_name_length = full_block->get_block_header().witness.size();
+  HIVE_ASSERT(witness_name_length <= HIVE_MAX_ACCOUNT_NAME_LENGTH, block_validate_exception,
+              "Block producer name is ${witness_name_length} bytes long, longer than any account name",
+              (witness_name_length)("block_num", full_block->get_block_num())("block_id", full_block->get_block_id()));
+
   auto item = std::make_shared<fork_item>(full_block);
   return with_write_lock([&]() {
     try 
@@ -267,7 +276,13 @@ std::map<account_name_type, block_id_type> fork_database::get_last_block_generat
 
     const auto& block_num_idx = _index.get<block_num>();
     for (const item_ptr& fork_item : block_num_idx)
-      result[fork_item->get_block_header().witness] = fork_item->get_block_id();
+    {
+      // push_block() refuses longer names; skip one rather than throw on stored data, since this walk is part of
+      // every irreversibility computation
+      const std::string& witness = fork_item->get_block_header().witness;
+      if (witness.size() <= HIVE_MAX_ACCOUNT_NAME_LENGTH)
+        result[witness] = fork_item->get_block_id();
+    }
 
     return result;
   });

@@ -366,6 +366,51 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
 
 namespace
 {
+  /// An empty block on top of @p previous, produced by @p witness
+  std::shared_ptr<full_block_type> empty_block_on( const block_id_type& previous, const std::string& witness )
+  {
+    signed_block block;
+    block.previous = previous;
+    block.witness = witness;
+    return full_block_type::create_from_signed_block( block );
+  }
+}
+
+/// A block whose producer name is longer than any account name is refused before the fork database stores it,
+/// whether it links or not, so the walk over the stored blocks never meets such a name.
+BOOST_AUTO_TEST_CASE( fork_database_refuses_overlong_producer_name )
+{
+  try {
+    fork_database fork_db;
+    const auto first = empty_block_on( block_id_type(), HIVE_INIT_MINER_NAME );
+    fork_db.start_block( first );
+    const std::string longest_name( HIVE_MAX_ACCOUNT_NAME_LENGTH, 'a' );
+    const std::string overlong_name( HIVE_MAX_ACCOUNT_NAME_LENGTH + 1, 'a' );
+
+    const auto linked = empty_block_on( first->get_block_id(), overlong_name );
+    BOOST_CHECK_THROW( fork_db.push_block( linked ), block_validate_exception );
+    BOOST_CHECK( !fork_db.is_known_block( linked->get_block_id() ) );
+
+    // its parent is not stored, so this one would be kept among the blocks that don't link yet
+    const auto unlinked = empty_block_on( linked->get_block_id(), overlong_name );
+    BOOST_CHECK_THROW( fork_db.push_block( unlinked ), block_validate_exception );
+    BOOST_CHECK( !fork_db.is_known_block( unlinked->get_block_id() ) );
+
+    const auto sibling = empty_block_on( first->get_block_id(), longest_name );
+    fork_db.push_block( sibling );
+    BOOST_CHECK( fork_db.is_known_block( sibling->get_block_id() ) );
+
+    const auto last_block_by_witness = fork_db.get_last_block_generated_by_each_witness();
+    BOOST_CHECK_EQUAL( last_block_by_witness.size(), 2u );
+    BOOST_CHECK( last_block_by_witness.at( account_name_type( longest_name ) ) == sibling->get_block_id() );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+namespace
+{
   /// A copy of @p genuine with the same header, and therefore the same id, but with a body that
   /// doesn't hash to the header's transaction_merkle_root
   std::shared_ptr<full_block_type> copy_with_corrupted_body( const std::shared_ptr<full_block_type>& genuine )

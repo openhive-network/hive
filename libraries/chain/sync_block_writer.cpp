@@ -98,7 +98,8 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
       const auto blocks = _fork_db.fetch_block_by_number(height);
       if (blocks.size() > 1)
       {
-        vector<std::pair<account_name_type, fc::time_point_sec>> witness_time_pairs;
+        // the names are logged as stored, without a conversion that could throw here
+        vector<std::pair<std::string, fc::time_point_sec>> witness_time_pairs;
         witness_time_pairs.reserve(blocks.size());
         for (const auto& b : blocks)
           witness_time_pairs.push_back(std::make_pair(b->get_block_header().witness, b->get_block_header().timestamp));
