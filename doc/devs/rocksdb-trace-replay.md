@@ -92,7 +92,8 @@ under the configuration:
 
 ```
 hive_db_bench -benchmarks=compact -use_existing_db=true -db=<copy> -options_file=<options> \
-  -num_column_families=<N> -cache_type=lru_cache -cache_size=1073741824 [<[db_bench] flags>]
+  -num_column_families=<N> -cache_type=lru_cache -cache_size=1073741824 \
+  -cache_high_pri_pool_ratio=0.5 [<[db_bench] flags>]
 ```
 
 `compact` rewrites the default column family, the one the comment archive keeps its comments in,
@@ -105,7 +106,8 @@ stored in files (the block cache), follow the configuration. Then, in a second `
 ```
 hive_db_bench -benchmarks=replay -use_existing_db=true -db=<copy> -trace_file=<trace> \
   -options_file=<options> -num_column_families=<N> -trace_replay_fast_forward=1e9 \
-  -trace_replay_threads=1 -statistics=true -cache_type=lru_cache -cache_size=1073741824 [<[db_bench] flags>]
+  -trace_replay_threads=1 -statistics=true -cache_type=lru_cache -cache_size=1073741824 \
+  -cache_high_pri_pool_ratio=0.5 [<[db_bench] flags>]
 ```
 
 and reports the time of the rewrite, the replay time (`db_bench`'s own, without opening the database; `wall s` includes it),
@@ -138,8 +140,10 @@ cache_size = 4294967296
 
 `[CFOptions]` and `[TableOptions/BlockBasedTable]` without a name apply to every column family,
 `[CFOptions "default"]` to one; `[DBOptions]` to the database. `[db_bench]` sets `db_bench` flags;
-the block cache is set there (`cache_size`, `cache_type`) because `db_bench` replaces the block
-cache of the options file with its own.
+the block cache is set there (`cache_size`, `cache_type`, `cache_high_pri_pool_ratio`) because
+`db_bench` replaces the block cache of the options file with its own. The harness defaults model
+hived's cache: 1 GiB, LRU, and half of it reserved for index and filter blocks (the high priority
+pool of RocksDB's `NewLRUCache`, which `db_bench` leaves out unless told).
 
 `scripts/rocksdb_trace_configs/` seeds the comparison. `baseline` is hived's configuration -
 format_version 6, 4 KiB blocks, 10 bit bloom filter, no partitioned index or filters, 1 GiB LRU
@@ -150,7 +154,7 @@ block cache, Snappy - and each other file changes one thing:
 | `format_version_7.ini` | format_version 7 |
 | `block_size_16k.ini`, `block_size_32k.ini` | 16 / 32 KiB blocks |
 | `ribbon_filter.ini` | ribbon filter instead of bloom |
-| `partitioned_index_filters.ini` | two level index, partitioned filters |
+| `partitioned_index_filters.ini` | two level index, partitioned filters in 16 KiB partitions (hived's layout below a 1 GiB cache) |
 | `block_cache_256m.ini`, `block_cache_4g.ini` | 256 MiB / 4 GiB block cache |
 | `compression_none.ini`, `compression_lz4.ini` | no compression / LZ4 (fails where RocksDB is built without LZ4, as hive's is) |
 
