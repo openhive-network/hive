@@ -38,6 +38,10 @@ class rocksdb_comment_storage_provider: public rocksdb_storage_provider, public 
 
     static constexpr size_t DEFAULT_BLOCK_CACHE_SIZE = 1024 * 1024 * 1024;
 
+    /// Block caches of at least this size get full filters and a binary search index, smaller
+    /// ones partitioned index and filters.
+    static constexpr size_t PARTITIONED_METADATA_CACHE_LIMIT = 1024 * 1024 * 1024;
+
     rocksdb_comment_storage_provider( const bfs::path& blockchain_storage_path, const bfs::path& storage_path, appbase::application& app,
       size_t block_cache_size = DEFAULT_BLOCK_CACHE_SIZE );
     ~rocksdb_comment_storage_provider() override{}

@@ -2,6 +2,7 @@
 #include <hive/chain/external_storage/types.hpp>
 #include <hive/chain/external_storage/rocksdb_comment_storage_provider.hpp>
 
+#include <rocksdb/advanced_cache.h>
 #include <rocksdb/filter_policy.h>
 #include <rocksdb/table.h>
 
@@ -23,21 +24,28 @@ ColumnFamilyOptions rocksdb_comment_storage_provider::makeColumnOptions() const
   // from the table cache, while cached ones survive the reopen. Filters are not required to
   // read existing SST files; files written before they were enabled get them on compaction.
   //
-  // Index and filter are partitioned into 4 KiB blocks: a 64 MiB file's full filter is one ~2.4 MB
-  // block, large against a single cache shard, so it kept being evicted and re-read as a whole
-  // (hive#1024). Only the small top-level index of each file is pinned; the partitions compete
-  // in the cache like data blocks. Files written with full filters or a binary search index stay
-  // readable and are rewritten with partitions by compaction.
+  // The layout of index and filters follows the cache size. A 64 MiB file's full filter is one
+  // ~2.4 MB block; the cache has 64 shards, each with half of it for index and filter blocks, so
+  // in a 256 MiB cache (2 MiB of a shard) the filters kept being evicted and re-read as a whole
+  // (hive#1024). Below PARTITIONED_METADATA_CACHE_LIMIT index and filters are therefore
+  // partitioned into 16 KiB blocks, only the top-level index of each file pinned and the
+  // partitions competing in the cache like data blocks. From the limit up the full filters stay
+  // cached, and a lookup through a full filter and a binary search index takes ~20% less time
+  // than through partitions (hive#1032). Either layout reads files written in the other (or by
+  // older builds) as they are; compaction rewrites them in the configured one.
   ::rocksdb::BlockBasedTableOptions tableOptions;
   tableOptions.filter_policy.reset( ::rocksdb::NewBloomFilterPolicy( 10 ) );
   tableOptions.block_cache = _blockCache;
   tableOptions.cache_index_and_filter_blocks = true;
   tableOptions.cache_index_and_filter_blocks_with_high_priority = true;
   tableOptions.pin_l0_filter_and_index_blocks_in_cache = true;
-  tableOptions.index_type = ::rocksdb::BlockBasedTableOptions::kTwoLevelIndexSearch;
-  tableOptions.partition_filters = true;
-  tableOptions.metadata_block_size = 4 * 1024;
-  tableOptions.pin_top_level_index_and_filter = true;
+  if( _blockCache->GetCapacity() < PARTITIONED_METADATA_CACHE_LIMIT )
+  {
+    tableOptions.index_type = ::rocksdb::BlockBasedTableOptions::kTwoLevelIndexSearch;
+    tableOptions.partition_filters = true;
+    tableOptions.metadata_block_size = 16 * 1024;
+    tableOptions.pin_top_level_index_and_filter = true;
+  }
 
   ColumnFamilyOptions options;
   options.table_factory.reset( ::rocksdb::NewBlockBasedTableFactory( tableOptions ) );
