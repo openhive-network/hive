@@ -2104,6 +2104,16 @@ void database::apply_block( const std::shared_ptr<full_block_type>& full_block, 
 { try {
   //fc::time_point begin_time = fc::time_point::now();
 
+  // Skipping the duplicate check (replay, blocks under a checkpoint) also skips the records the check relies on later,
+  // so a node that has just replayed or synced under a checkpoint would take a transaction that is already in a block
+  // while every live node refuses it until it expires.  Keep the check, and so the records, for blocks whose
+  // transactions can still be unexpired: a transaction expires at most HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION
+  // after its block (one more hour of margin for the clock).  Valid history never fails the check.
+  if( ( skip & skip_transaction_dupe_check ) &&
+      fc::time_point( full_block->get_block_header().timestamp ) >
+        fc::time_point::now() - fc::seconds( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION + HIVE_MAX_TIME_UNTIL_EXPIRATION ) )
+    skip &= ~skip_transaction_dupe_check;
+
   detail::with_skip_flags( *this, skip, [&]()
   {
     _apply_block( full_block, block_ctrl );
