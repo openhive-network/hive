@@ -1515,6 +1515,140 @@ BOOST_AUTO_TEST_CASE( different_behaviour_for_nonexistent_proposals )
   FC_LOG_AND_RETHROW()
 }
 
+/// Before HF29 the owner check of remove_proposal_operation was skipped for the ids that came after the removal
+/// budget was spent, and an id was looked up by its low 32 bits. Now every id is checked: one that names another
+/// owner's proposal or lies outside the range of proposal ids fails the whole operation.
+BOOST_AUTO_TEST_CASE( remove_proposal_checks_every_id )
+{
+  try
+  {
+    auto _content = []( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
+      executor->generate_block();
+      executor->vest( "alice", HIVE_asset( 100'000 ) );
+      executor->vest( "bob", HIVE_asset( 100'000 ) );
+      executor->issue_funds( "alice", HBD_asset( 200'000 ) );
+      executor->issue_funds( "bob", HBD_asset( 200'000 ) );
+      executor->generate_block();
+
+      dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
+      const int64_t alice_proposal = executor->create_proposal( "alice", cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key, false/*with_block_generation*/ );
+      const int64_t bob_proposal = executor->create_proposal( "bob", cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, bob_private_key, bob_post_key, false/*with_block_generation*/ );
+      executor->generate_block();
+      BOOST_REQUIRE_LT( alice_proposal, bob_proposal ); // ids are processed in ascending order: alice's first
+
+      const auto& proposal_idx = executor->db->get_index< proposal_index, by_proposal_id >();
+      const auto proposal_exists = [&]( int64_t id ) { return proposal_idx.find( id ) != proposal_idx.end(); };
+
+      // a budget of one removed object: removing alice's own proposal spends it before bob's id comes up
+      executor->db_plugin->debug_update( []( database& db ) { db.set_remove_threshold( 1 ); } );
+      executor->generate_block();
+
+      HIVE_REQUIRE_ASSERT( executor->remove_proposal( "alice", { alice_proposal, bob_proposal }, alice_private_key ),
+                           "found_proposal->creator == op.proposal_owner" );
+      // an id that names bob's proposal by its low 32 bits, and a negative one
+      HIVE_REQUIRE_ASSERT( executor->remove_proposal( "alice", { alice_proposal, bob_proposal + ( int64_t( 1 ) << 32 ) }, alice_private_key ),
+                           "id_in_range && \"proposal id out of range\"" );
+      HIVE_REQUIRE_ASSERT( executor->remove_proposal( "alice", { -1 }, alice_private_key ),
+                           "id_in_range && \"proposal id out of range\"" );
+      executor->generate_block();
+      BOOST_REQUIRE( proposal_exists( alice_proposal ) );
+      BOOST_REQUIRE( proposal_exists( bob_proposal ) );
+
+      // the owners can still remove their own proposals
+      executor->remove_proposal( "alice", { alice_proposal }, alice_private_key );
+      executor->remove_proposal( "bob", { bob_proposal }, bob_private_key );
+      executor->generate_block();
+      BOOST_REQUIRE( !proposal_exists( alice_proposal ) );
+      BOOST_REQUIRE( !proposal_exists( bob_proposal ) );
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// In blocks the same checks apply only while at least 17 of the 21 scheduled witnesses run 1.28.9 or newer
+/// (majority_version of the witness schedule); with fewer, a block with such an operation is valid as before, so a
+/// node with the check never refuses a block that the older nodes accept. The node refuses the operation itself
+/// (is_in_control()) either way.
+BOOST_AUTO_TEST_CASE( remove_proposal_checks_in_blocks_follow_majority_version )
+{
+  try
+  {
+    auto _content = []( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob) );
+      executor->generate_block();
+      executor->vest( "alice", HIVE_asset( 100'000 ) );
+      executor->vest( "bob", HIVE_asset( 100'000 ) );
+      executor->issue_funds( "alice", HBD_asset( 200'000 ) );
+      executor->issue_funds( "bob", HBD_asset( 200'000 ) );
+      executor->generate_block();
+
+      dhf_database::create_proposal_data cpd( executor->db->head_block_time() );
+      const int64_t alice_proposal = executor->create_proposal( "alice", cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, alice_private_key, alice_post_key, false/*with_block_generation*/ );
+      const int64_t bob_proposal = executor->create_proposal( "bob", cpd.receiver, cpd.start_date, cpd.end_date, cpd.daily_pay, bob_private_key, bob_post_key, false/*with_block_generation*/ );
+      executor->generate_block();
+      BOOST_REQUIRE_LT( alice_proposal, bob_proposal ); // ids are processed in ascending order: alice's first
+
+      const auto& proposal_idx = executor->db->get_index< proposal_index, by_proposal_id >();
+      const auto proposal_exists = [&]( int64_t id ) { return proposal_idx.find( id ) != proposal_idx.end(); };
+
+      // a budget of one removed object: removing alice's own proposal spends it before bob's id comes up
+      executor->db_plugin->debug_update( []( database& db ) { db.set_remove_threshold( 1 ); } );
+      executor->generate_block();
+
+      const auto set_majority_version = [&]( const version& v )
+      {
+        executor->db_plugin->debug_update( [v]( database& db )
+        {
+          db.modify( db.get_witness_schedule_object(), [&]( witness_schedule_object& wso ) { wso.majority_version = v; } );
+          db.modify( db.get_future_witness_schedule_object(), [&]( witness_schedule_object& wso ) { wso.majority_version = v; } );
+        } );
+        executor->generate_block();
+        BOOST_REQUIRE( executor->db->get_witness_schedule_object().majority_version == v );
+      };
+      // the operation in a block from another producer: added to pending without the node's own check
+      const auto remove_in_block = [&]( const flat_set< int64_t >& ids )
+      {
+        remove_proposal_operation op;
+        op.proposal_owner = "alice";
+        op.proposal_ids = ids;
+        executor->db_plugin->debug_push_pending_transaction( executor->build_transaction( op, alice_private_key ) );
+        executor->generate_block_from_pending();
+      };
+
+      // 17 or more of the scheduled witnesses on 1.28.9: such a block is refused
+      set_majority_version( version( 1, 28, 9 ) );
+      HIVE_REQUIRE_ASSERT( remove_in_block( { alice_proposal, bob_proposal } ), "found_proposal->creator == op.proposal_owner" );
+      executor->db->clear_pending();
+      HIVE_REQUIRE_ASSERT( remove_in_block( { alice_proposal, bob_proposal + ( int64_t( 1 ) << 32 ) } ),
+                           "id_in_range && \"proposal id out of range\"" );
+      executor->db->clear_pending();
+      BOOST_REQUIRE( proposal_exists( alice_proposal ) );
+      BOOST_REQUIRE( proposal_exists( bob_proposal ) );
+
+      // fewer: the node still refuses the operation itself, but a block with it is valid, as on older nodes
+      set_majority_version( version( 1, 28, 8 ) );
+      HIVE_REQUIRE_ASSERT( executor->remove_proposal( "alice", { alice_proposal, bob_proposal }, alice_private_key ),
+                           "found_proposal->creator == op.proposal_owner" );
+      remove_in_block( { alice_proposal, bob_proposal } );
+      BOOST_REQUIRE( !proposal_exists( alice_proposal ) );
+      // bob's proposal is removed (or flagged for removal) by alice's operation: the behaviour the check stops
+      BOOST_REQUIRE( !proposal_exists( bob_proposal ) || proposal_idx.find( bob_proposal )->removed );
+    };
+
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_FIXTURE_TEST_SUITE( hf28_tests2, genesis_database_fixture )
