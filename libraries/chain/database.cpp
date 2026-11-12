@@ -2971,6 +2971,16 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   }
 
   const uint32_t new_approved_block_number = block_header::num_from_id( block_approve_op.block_id );
+  // An approval is counted only for a block this node holds.  One for a block it doesn't hold is kept only if the
+  // block can be just about to arrive (a few blocks above our head); any other is refused, so it is neither stored,
+  // where it would stand for the witness's vote until the last irreversible block passes its number, nor relayed.
+  constexpr uint32_t max_blocks_ahead_of_unknown_approved_block = 3;
+  if (new_approved_block_number > head_block_num() + max_blocks_ahead_of_unknown_approved_block)
+    FC_ASSERT(_block_writer->get_block_reader().is_known_block(block_approve_op.block_id),
+              "Fast-confirm from witness ${witness} for block #${new_approved_block_number}, which this node doesn't have, "
+              "more than ${max_blocks_ahead_of_unknown_approved_block} blocks above its head #${head}",
+              ("witness", block_approve_op.witness)(new_approved_block_number)(max_blocks_ahead_of_unknown_approved_block)
+              ("head", head_block_num()));
   if (auto iter = _my->_last_fast_approved_block_by_witness.find(block_approve_op.witness);
       iter != _my->_last_fast_approved_block_by_witness.end())
   {
