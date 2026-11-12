@@ -2261,7 +2261,7 @@
                     "condenser_api"
                 ],
                 "summary": "Returns accounts, queried by name.",
-                "description": "Parameters:\n\n- `account`: An array of strings representing account names to query.\n\n- `delayed_votes_active`: A boolean indicating whether to include only accounts with active delayed votes.\n\nExamples:\n\n- `account = [\"hiveio\"]`, `delayed_votes_active = true` \u2014 queries for account named \"hiveio\".\n\n- `account = [\"hiveio\", \"alice\"]`, `delayed_votes_active = false` \u2014 queries for accounts \"hiveio\" and \"alice\" with delayed votes hidden.",
+                "description": "Parameters:\n\n- `account`: An array of strings representing account names to query.\n\n- `delayed_votes_active` (optional, default `true`): When `true`, each account object includes its `delayed_votes` array; when `false`, that field is omitted. It does not filter which accounts are returned.\n\nExamples:\n\n- `account = [\"hiveio\"]`, `delayed_votes_active = true` \u2014 queries for account named \"hiveio\".\n\n- `account = [\"hiveio\", \"alice\"]`, `delayed_votes_active = false` \u2014 queries for accounts \"hiveio\" and \"alice\" with delayed votes hidden.",
                 "operationId": "condenser_get_accounts",
                 "requestBody": {
                     "content": {
@@ -6499,7 +6499,7 @@
                     "database_api"
                 ],
                 "summary": "Returns accounts, queried by name.",
-                "description": "Parameters:\n\n- `accounts`: An array of strings representing account names to query. Example:\n  - `[\"hiveio\"]` \u2014 queries for the account named \"hiveio\".\n  - `[\"hiveio\", \"alice\"]` \u2014 queries for accounts \"hiveio\" and \"alice\".\n\n- `delayed_votes_active`: A boolean indicating whether to include only accounts with active delayed votes. Defaults to false if not specified.\n",
+                "description": "Parameters:\n\n- `accounts`: An array of strings representing account names to query. Example:\n  - `[\"hiveio\"]` \u2014 queries for the account named \"hiveio\".\n  - `[\"hiveio\", \"alice\"]` \u2014 queries for accounts \"hiveio\" and \"alice\".\n\n- `delayed_votes_active` (optional, default `true`): When `true`, each account object includes its `delayed_votes` array; when `false`, that field is omitted. It does not filter which accounts are returned.\n",
                 "operationId": "find_accounts",
                 "requestBody": {
                     "content": {
@@ -8636,7 +8636,7 @@
                     "database_api"
                 ],
                 "summary": "List accounts ordered by specified key.",
-                "description": "Parameters:\n\n- `start`: An object indicating the starting point for listing accounts.\n\n- `limit`: An integer specifying the maximum number of accounts to return; default is 1000.\n\n- `order`: A string defining the sorting order. Possible values:\n  - `by_name` \u2014 order by account name\n  - `by_proxy` \u2014 order by proxy\n  - `by_next_vesting_withdrawal` \u2014 order by next vesting withdrawal\n\n- `delayed_votes_active`: A boolean indicating whether to filter for active delayed votes. Defaults to true (optional).\n",
+                "description": "Parameters:\n\n- `start`: An object indicating the starting point for listing accounts.\n\n- `limit`: An integer specifying the maximum number of accounts to return; default is 1000.\n\n- `order`: A string defining the sorting order. Possible values:\n  - `by_name` \u2014 order by account name\n  - `by_proxy` \u2014 order by proxy\n  - `by_next_vesting_withdrawal` \u2014 order by next vesting withdrawal\n\n- `delayed_votes_active` (optional, default `true`): When `true`, each account object includes its `delayed_votes` array; when `false`, that field is omitted. It does not filter which accounts are returned.\n",
                 "operationId": "list_accounts",
                 "requestBody": {
                     "content": {
@@ -20641,7 +20641,14 @@
             "condenser_lookup_account_names_response": {
                 "type": "array",
                 "items": {
-                    "$ref": "#/components/schemas/account_condenser_api"
+                    "oneOf": [
+                        {
+                            "$ref": "#/components/schemas/account_condenser_api"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
                 }
             },
             "condenser_lookup_accounts": {
