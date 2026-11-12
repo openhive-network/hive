@@ -2038,6 +2038,12 @@ void chain_plugin::plugin_initialize(const variables_map& options)
     if ( alternate_chain_spec.get_object().contains( "hf_21_stall_block" ) )
       configuration_data.hf_21_stall_block = alternate_chain_spec[ "hf_21_stall_block" ].as< uint32_t >();
 
+#ifdef IS_TEST_NET
+    // limit of the price feed check, fixed in code on mainnet (see hive_evaluator.cpp), settable here for tests
+    if( alternate_chain_spec.get_object().contains( "max_feed_deviation_from_median" ) )
+      configuration_data.set_max_feed_deviation_from_median( alternate_chain_spec[ "max_feed_deviation_from_median" ].as< uint32_t >() );
+#endif
+
     std::vector< string > init_witnesses;
     if( alternate_chain_spec.get_object().contains("init_witnesses") )
       init_witnesses = alternate_chain_spec["init_witnesses"].as< std::vector< string > >();

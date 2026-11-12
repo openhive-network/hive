@@ -46,7 +46,7 @@ class configuration
   // time before feed expires
   uint32_t hive_max_feed_age_seconds = 60*24*7; // originally 60*60*24*7, see comment to set_feed_related_values
   // how many times above or below the market median a price feed taken in by the node may be (0: no limit);
-  // off by default on testnet, where the genesis median is an arbitrary 1:1
+  // off by default on testnet, where the genesis median is an arbitrary 1:1 (mainnet: 100, see hive_evaluator.cpp)
   uint32_t hive_max_feed_deviation_from_median = 0;
   // time before savings are withdrawn
   uint32_t hive_savings_withdraw_time = 60*60*24*3; // seconds, originally 3 days
@@ -184,7 +184,7 @@ class configuration
       set_feed_related_values( clear.get_hive_feed_interval_blocks(), clear.get_hive_max_feed_age_seconds() );
     }
 
-    /** see HIVE_MAX_FEED_DEVIATION_FROM_MEDIAN; 0 turns the check off */
+    /** limit of the price feed check of hive_evaluator.cpp; 0 turns the check off */
     void set_max_feed_deviation_from_median( uint32_t max_deviation )
     {
       hive_max_feed_deviation_from_median = max_deviation;

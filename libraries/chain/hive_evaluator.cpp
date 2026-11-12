@@ -27,13 +27,19 @@ namespace hive { namespace chain {
 
 namespace
 {
-  /// A price feed this node takes in or produces itself is refused when it is more than HIVE_MAX_FEED_DEVIATION_FROM_MEDIAN
-  /// times above or below the market median of the feed history: most likely a wrong source or a typo.  It is not a rule
+  /// A price feed this node takes in or produces itself is refused when it is more than 100 times (mainnet) above or
+  /// below the market median of the feed history: most likely a wrong source or a typo.  It is not a rule
   /// for blocks of other producers (is_in_control()), so which blocks are valid does not change, but a node that runs it
   /// neither relays such a feed nor puts it into a block it produces, and the publisher gets the error back.
+  /// The limit is kept out of config.hpp on purpose: every define there is part of the blockchain configuration that
+  /// is stored in the state and compared at startup, so a new or changed value there would make every node replay.
   void check_feed_near_median( const database& db, const price& feed )
   {
-    const uint32_t max_deviation = HIVE_MAX_FEED_DEVIATION_FROM_MEDIAN;
+#ifdef IS_TEST_NET
+    const uint32_t max_deviation = configuration_data.get_hive_max_feed_deviation_from_median(); // 0 (off) by default
+#else
+    const uint32_t max_deviation = 100;
+#endif
     if( max_deviation == 0 || !db.is_in_control() )
       return;
     const HBD_price& median_feed = db.get_feed_history().market_median_history;
