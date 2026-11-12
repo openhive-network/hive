@@ -108,6 +108,7 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_FEED_HISTORY_WINDOW_PRE_HF_16    (24*7) /// expressed in number of intervals
 #define HIVE_FEED_HISTORY_WINDOW              (12*7) /// expressed in number of intervals
 #define HIVE_MAX_FEED_AGE_SECONDS             (configuration_data.get_hive_max_feed_age_seconds())
+#define HIVE_MAX_FEED_DEVIATION_FROM_MEDIAN   (configuration_data.get_hive_max_feed_deviation_from_median())
 #define HIVE_MIN_FEEDS                        (HIVE_MAX_WITNESSES/3) /// protects the network from conversions before price has been established
 
 #define HIVE_CONVERSION_DELAY_PRE_HF_16       (fc::seconds(2 * HIVE_FEED_HISTORY_WINDOW * HIVE_FEED_INTERVAL_BLOCKS * HIVE_BLOCK_INTERVAL)) //7 days conversion
@@ -186,6 +187,9 @@ using namespace hive::protocol::testnet_blockchain_configuration;
 #define HIVE_FEED_HISTORY_WINDOW_PRE_HF_16    (24*7) /// 7 days * 24 hours per day
 #define HIVE_FEED_HISTORY_WINDOW              (12*7) // 3.5 days
 #define HIVE_MAX_FEED_AGE_SECONDS             (60*60*24*7) // 7 days
+// a price feed the node takes in or produces itself (not one inside another producer's block) more than this many
+// times above or below the market median is refused: most likely a wrong source or a typo (0: no limit)
+#define HIVE_MAX_FEED_DEVIATION_FROM_MEDIAN   100
 #define HIVE_MIN_FEEDS                        (HIVE_MAX_WITNESSES/3) /// protects the network from conversions before price has been established
 
 #define HIVE_CONVERSION_DELAY_PRE_HF_16       (fc::seconds(2 * HIVE_FEED_HISTORY_WINDOW * HIVE_FEED_INTERVAL_BLOCKS * HIVE_BLOCK_INTERVAL)) //7 days conversion

@@ -9,6 +9,7 @@
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/global_property_object_multiindex.hpp>
 #include <hive/chain/detail/state/block_summary_object.hpp>
+#include <hive/chain/detail/state/feed_history_object.hpp>
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 #include <hive/chain/evaluator_registry.hpp>
 
@@ -23,6 +24,33 @@
 #include <limits>
 
 namespace hive { namespace chain {
+
+namespace
+{
+  /// A price feed this node takes in or produces itself is refused when it is more than HIVE_MAX_FEED_DEVIATION_FROM_MEDIAN
+  /// times above or below the market median of the feed history: most likely a wrong source or a typo.  It is not a rule
+  /// for blocks of other producers (is_in_control()), so which blocks are valid does not change, but a node that runs it
+  /// neither relays such a feed nor puts it into a block it produces, and the publisher gets the error back.
+  void check_feed_near_median( const database& db, const price& feed )
+  {
+    const uint32_t max_deviation = HIVE_MAX_FEED_DEVIATION_FROM_MEDIAN;
+    if( max_deviation == 0 || !db.is_in_control() )
+      return;
+    const HBD_price& median_feed = db.get_feed_history().market_median_history;
+    if( median_feed.is_null() )
+      return;
+    const price median = median_feed.to_price();
+    // both are HBD per HIVE with positive amounts (checked before this point); compare feed / median through
+    // cross products, which fit in 128 bits
+    const fc::uint128_t feed_times_median = fc::uint128_t( feed.base.amount.value ) * median.quote.amount.value;
+    const fc::uint128_t median_times_feed = fc::uint128_t( median.base.amount.value ) * feed.quote.amount.value;
+    FC_ASSERT( feed_times_median / max_deviation <= median_times_feed && median_times_feed / max_deviation <= feed_times_median,
+               "Price feed ${feed} is more than ${max_deviation} times above or below the market median ${median}; "
+               "this node does not take it (a check of this node, not a rule for blocks)",
+               (feed)(max_deviation)(median) );
+  }
+}
+
   using fc::uint128_t;
 
 HIVE_DEFINE_EVALUATOR( witness_update )
@@ -176,6 +204,7 @@ void witness_set_properties_evaluator::do_apply( const witness_set_properties_op
   {
     fc::raw::unpack_from_vector( itr->second, hbd_exchange_rate );
     last_hbd_exchange_update = _db.head_block_time();
+    check_feed_near_median( _db, hbd_exchange_rate );
   }
 
   itr = o.props.find( "url" );
@@ -603,6 +632,8 @@ void feed_publish_evaluator::do_apply( const feed_publish_operation& o )
     HIVE_CHAIN_ASSET_ASSERT( is_asset_type( o.exchange_rate.base, HBD_SYMBOL ) && is_asset_type( o.exchange_rate.quote, HIVE_SYMBOL ),
       o.exchange_rate, "Price feed must be a HBD/HIVE price" );
   }
+
+  check_feed_near_median( _db, o.exchange_rate );
 
   const auto& witness = _db.get_witness( o.publisher );
   _db.modify( witness, [&]( witness_object& w )
