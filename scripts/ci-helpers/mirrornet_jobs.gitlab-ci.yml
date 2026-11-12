@@ -1,5 +1,4 @@
 variables:
-  BLOCK_LOG_SOURCE_DIR: "/cache/blockchain"
   BLOCK_LOG_OUTPUT_DIR: "/cache/block_log_mirrornet"
   MIRRORNET_CHAIN_ID: 42
   MIRRORNET_IMAGE: $CI_REGISTRY_IMAGE/mirrornet:mirrornet-$CI_COMMIT_SHORT_SHA
@@ -33,6 +32,7 @@ include:
   variables:
     GIT_STRATEGY: none
     NUMBER_OF_BLOCKS: 5000000
+    BLOCK_LOG_SOURCE_DIR: "/cache/blockchain"
 
   script:
     - |
