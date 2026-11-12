@@ -2825,13 +2825,9 @@ namespace graphene { namespace net {
                                                                                       ("code", connection_rejected_message_received.reason_code))),
                                                          rejection_is_failure(connection_rejected_message_received.reason_code));
 
-        // the rejecting peer reports the endpoint it sees us connecting from; outbound connections
-        // are bound to our listening port, so when the port matches that is an address peers know us by
-        const fc::ip::endpoint& endpoint_seen_by_peer = connection_rejected_message_received.remote_endpoint;
-        if (_actual_listening_endpoint.port() != 0 &&
-            endpoint_seen_by_peer.port() == _actual_listening_endpoint.port() &&
-            !is_wildcard_address(endpoint_seen_by_peer.get_address()))
-          remember_own_endpoint(endpoint_seen_by_peer);
+        // the endpoint the rejecting peer reports seeing us at is not taken as one of our own: it is only the
+        // peer's word, and an address we remember as ours is erased from the peer database and never dialed.
+        // An address of ours that peers pass around is learned when dialing it ends in connected_to_self below
 
         if (connection_rejected_message_received.reason_code == rejection_reason_code::connected_to_self)
         {
@@ -5259,7 +5255,7 @@ namespace graphene { namespace net {
         {
           _is_firewalled = firewalled_state::not_firewalled;
           _publicly_visible_listening_endpoint = check_firewall_reply_message_received.endpoint_checked;
-          remember_own_endpoint(*_publicly_visible_listening_endpoint);
+          // not remembered as one of our own addresses (it is the replying peer's word, see on_connection_rejected_message)
         }
         else if (check_firewall_reply_message_received.result == firewall_check_result::unable_to_connect)
         {
