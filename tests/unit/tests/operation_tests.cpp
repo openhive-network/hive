@@ -3284,6 +3284,86 @@ BOOST_AUTO_TEST_CASE( feed_far_from_median_is_refused )
   FC_LOG_AND_RETHROW()
 }
 
+/// The price feed check compares the ratio of the feed (HBD per HIVE) with the market median, so the sizes of base and
+/// quote do not matter (a quote other than 1.000 HIVE, a "bias", is just another price), the limit is K times in either
+/// direction and inclusive, and both operations that carry a feed take the same check. A feed in the other orientation
+/// (HIVE per HBD) is refused before the check by the existing rules of both operations.
+BOOST_AUTO_TEST_CASE( feed_check_against_a_market_median )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: the price feed check against a market median of 0.250 TBD per TESTS" );
+    autoscope reset( []() { configuration_data.reset_max_feed_deviation_from_median(); } );
+    configuration_data.set_max_feed_deviation_from_median( 100 );
+
+    ACTORS( DEFAULT_VESTING, (alice) );
+    fund( "alice", HIVE_asset( 10'000 ) );
+    witness_create( "alice", alice_private_key, "foo.bar", alice_private_key.get_public_key(), HIVE_asset( 1000 ) );
+    witness_plugin->add_signing_key( alice_private_key );
+
+    // the median is recomputed at the end of every HIVE_FEED_INTERVAL_BLOCKS-th block: set it in a block that is not one
+    while( ( db->head_block_num() + 1 ) % HIVE_FEED_INTERVAL_BLOCKS == 0 )
+      generate_block();
+    db_plugin->debug_update( []( database& db )
+    {
+      db.modify( db.get_feed_history(), []( feed_history_object& fho ) { fho.market_median_history = HBD_price( 250, 1000 ); } );
+    } );
+    generate_block();
+    BOOST_REQUIRE( db->get_feed_history().market_median_history.to_price() == price( ASSET( "0.250 TBD" ), ASSET( "1.000 TESTS" ) ) );
+
+    // no blocks below this point, so the median stays as set
+    const auto publish = [&]( const price& exchange_rate )
+    {
+      feed_publish_operation op;
+      op.publisher = "alice";
+      op.exchange_rate = exchange_rate;
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( op );
+      push_transaction( tx, alice_private_key );
+    };
+    const auto set_props = [&]( const price& exchange_rate )
+    {
+      flat_map< string, vector< char > > props;
+      props[ "hbd_exchange_rate" ] = fc::raw::pack_to_vector( exchange_rate );
+      set_witness_props( props, false );
+    };
+    const auto both = [&]( const price& exchange_rate )
+    {
+      publish( exchange_rate );
+      set_props( exchange_rate );
+    };
+
+    BOOST_TEST_MESSAGE( "--- the median price in other sizes of base and quote, with a 10 percent bias, and large amounts: taken" );
+    both( price( ASSET( "0.250 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    both( price( ASSET( "1.000 TBD" ), ASSET( "4.000 TESTS" ) ) );
+    both( price( ASSET( "0.250 TBD" ), ASSET( "1.100 TESTS" ) ) );
+    both( price( ASSET( "1000000000.000 TBD" ), ASSET( "4000000000.000 TESTS" ) ) );
+
+    BOOST_TEST_MESSAGE( "--- exactly 100 times above and below the median: taken by both operations" );
+    both( price( ASSET( "25.000 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    both( price( ASSET( "0.001 TBD" ), ASSET( "0.400 TESTS" ) ) );
+
+    BOOST_TEST_MESSAGE( "--- just beyond in either direction: refused by both operations" );
+    HIVE_REQUIRE_THROW( publish( price( ASSET( "25.001 TBD" ), ASSET( "1.000 TESTS" ) ) ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( set_props( price( ASSET( "25.001 TBD" ), ASSET( "1.000 TESTS" ) ) ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( publish( price( ASSET( "0.001 TBD" ), ASSET( "0.401 TESTS" ) ) ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( set_props( price( ASSET( "0.001 TBD" ), ASSET( "0.401 TESTS" ) ) ), fc::assert_exception );
+
+    BOOST_TEST_MESSAGE( "--- large amounts with an extreme ratio: refused (the comparison does not overflow)" );
+    HIVE_REQUIRE_THROW( publish( price( ASSET( "1000000000.000 TBD" ), ASSET( "0.001 TESTS" ) ) ), fc::assert_exception );
+    HIVE_REQUIRE_THROW( set_props( price( ASSET( "0.001 TBD" ), ASSET( "1000000000.000 TESTS" ) ) ), fc::assert_exception );
+
+    BOOST_TEST_MESSAGE( "--- the other orientation (TESTS per TBD): refused by the existing rules of both operations" );
+    HIVE_REQUIRE_THROW( publish( price( ASSET( "4.000 TESTS" ), ASSET( "1.000 TBD" ) ) ), fc::exception );
+    HIVE_REQUIRE_THROW( set_props( price( ASSET( "4.000 TESTS" ), ASSET( "1.000 TBD" ) ) ), fc::exception );
+
+    BOOST_REQUIRE( db->get_feed_history().market_median_history.to_price() == price( ASSET( "0.250 TBD" ), ASSET( "1.000 TESTS" ) ) );
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( convert_validate )
 {
   try
