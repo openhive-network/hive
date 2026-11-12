@@ -1,6 +1,4 @@
 variables:
-  BLOCK_LOG_SOURCE_DIR: "/cache/blockchain"
-  BLOCK_LOG_OUTPUT_DIR: "/cache/block_log_mirrornet"
   MIRRORNET_CHAIN_ID: 42
   MIRRORNET_IMAGE: $CI_REGISTRY_IMAGE/mirrornet:mirrornet-$CI_COMMIT_SHORT_SHA
   MIRRORNET_SKELETON_KEY: "5JNHfZYKGaomSFvd4NUdQ9qMcEAC43kujbfjueTHpVapX1Kzq2n"
@@ -17,6 +15,13 @@ include:
   stage: deploy
   timeout: 2 weeks
   resource_group: mirrornet-job
+  variables:
+    # Paths on the mirrornet-runner host: a full mainnet block_log provisioned there,
+    # and the output area for converted block_logs. Kept job-scoped: as globals they
+    # leaked into every job and service of the main pipeline, where
+    # BLOCK_LOG_SOURCE_DIR is read by common-ci scripts (e.g. copy_datadir.sh).
+    BLOCK_LOG_SOURCE_DIR: "/cache/blockchain"
+    BLOCK_LOG_OUTPUT_DIR: "/cache/block_log_mirrornet"
   tags:
     - mirrornet-runner
 
