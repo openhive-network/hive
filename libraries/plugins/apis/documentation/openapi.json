@@ -31618,7 +31618,7 @@
                                 "type": "null"
                             }
                         ],
-                        "description": "The observer's vote on the post, or null when no observer is given or the observer has not voted on it."
+                        "description": "The observer's vote on the post, or null when no observer is given or the observer has not voted on it. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "top_votes": {
                         "type": "array",
@@ -31652,8 +31652,7 @@
                     "stats",
                     "payout",
                     "author_reputation",
-                    "blacklists",
-                    "observer_vote"
+                    "blacklists"
                 ],
                 "not": {
                     "required": [
@@ -32487,42 +32486,42 @@
                             "string",
                             "null"
                         ],
-                        "description": "The account the action targeted."
+                        "description": "The account the action targeted. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "target_post_author": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The author of the post the action targeted; null for an action on no post."
+                        "description": "The author of the post the action targeted; null for an action on no post. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "target_post_permlink": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The permlink of the post the action targeted; null for an action on no post."
+                        "description": "The permlink of the post the action targeted; null for an action on no post. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "old_value": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The value before the action (e.g. the previous role or title, `muted`, `pinned`)."
+                        "description": "The value before the action (e.g. the previous role or title, `muted`, `pinned`). Hivemind always returns this key, with `null` when there is no value."
                     },
                     "new_value": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The value after the action."
+                        "description": "The value after the action. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "notes": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The notes given with the action."
+                        "description": "The notes given with the action. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "date": {
                         "type": "string",
@@ -32535,12 +32534,6 @@
                     "id",
                     "action",
                     "actor",
-                    "target_account",
-                    "target_post_author",
-                    "target_post_permlink",
-                    "old_value",
-                    "new_value",
-                    "notes",
                     "date"
                 ]
             },
@@ -32578,42 +32571,42 @@
                             "string",
                             "null"
                         ],
-                        "description": "The account the action targeted."
+                        "description": "The account the action targeted. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "target_post_author": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The author of the post the action targeted; null for an action on no post."
+                        "description": "The author of the post the action targeted; null for an action on no post. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "target_post_permlink": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The permlink of the post the action targeted; null for an action on no post."
+                        "description": "The permlink of the post the action targeted; null for an action on no post. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "old_value": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The value before the action (e.g. the previous role or title, `muted`, `pinned`)."
+                        "description": "The value before the action (e.g. the previous role or title, `muted`, `pinned`). Hivemind always returns this key, with `null` when there is no value."
                     },
                     "new_value": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The value after the action."
+                        "description": "The value after the action. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "notes": {
                         "type": [
                             "string",
                             "null"
                         ],
-                        "description": "The notes given with the action."
+                        "description": "The notes given with the action. Hivemind always returns this key, with `null` when there is no value."
                     },
                     "date": {
                         "type": "string",
@@ -32627,12 +32620,6 @@
                     "action",
                     "community",
                     "community_title",
-                    "target_account",
-                    "target_post_author",
-                    "target_post_permlink",
-                    "old_value",
-                    "new_value",
-                    "notes",
                     "date"
                 ]
             },
@@ -32681,7 +32668,7 @@
                             "string",
                             "null"
                         ],
-                        "description": "The notes given with the action."
+                        "description": "The notes given with the action. Hivemind always returns this key, with `null` when there is no value."
                     }
                 },
                 "required": [
@@ -32690,8 +32677,7 @@
                     "community",
                     "community_title",
                     "actor",
-                    "date",
-                    "notes"
+                    "date"
                 ]
             },
             "get_account_moderation_stats_response": {
