@@ -27,6 +27,8 @@ On either path, a change that alters a state object (anything stored in `shared_
 
 Regular (non-AIDEV) merge requests follow `doc/git-guidelines.md`. On the AIDEV path, history and commit messages are produced by AIDEV itself.
 
+In text that goes to GitLab (issues, merge requests, notes, commit messages), a bare `#123` links issue 123 and `!123` links merge request 123. Use them only for real references; write block numbers as `b#123`.
+
 ## Build Commands
 
 ### Building from Source (Ubuntu 24.04 LTS)
