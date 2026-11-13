@@ -69,7 +69,7 @@
         },
         {
             "name": "search_api",
-            "description": "Allows to perform full-text searches across root posts, retrieving relevant content based on keywords and phrases."
+            "description": "Allows to perform full-text searches across root posts, retrieving relevant content based on keywords and phrases. Hivemind serves these methods under both the `search_api` and the `search-api` prefix; its own documentation uses `search-api`."
         },
         {
             "name": "tags_api",
@@ -626,7 +626,7 @@
                     "bridge"
                 ],
                 "summary": "Lists posts related to a given account. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- `sort`: A string indicating the type of posts to retrieve. Supported values:\n  - `blog`: Top posts authored by the specified account (excluding community posts unless reblogged), plus reblogs ranked by creation or reblog time.\n  - `feed`: Top posts from blogs of accounts followed by the specified account, ranked by creation or reblog time, not older than the last month.\n  - `posts`: Posts authored by the specified account, sorted by newest first.\n  - `replies`: Replies authored by the specified account, sorted by newest first.\n  - `payout`: All posts authored by the specified account that have not yet been cashed out.\n\n- `account`: The account name (string) to retrieve related posts for; must be a valid account.\n\n- `start_author`: The author account name to start from when paginating; optional and used together with `start_permlink`.\n\n- `start_permlink`: The permlink of the post corresponding to `start_author`, used as a paging mechanism; optional.\n\n- `limit`: The maximum number of posts to retrieve. If omitted, defaults to 20.\n\n- `observer`: (Optional) For `blog`, `feed`, and `replies` sorts, this parameter is ignored. Otherwise, when provided, it must point to a valid account used to populate blacklist stats and mark posts from blacklisted authors. Currently, this parameter is ignored.\n",
+                "description": "Parameters:\n\n- `sort`: A string indicating the type of posts to retrieve. Supported values:\n  - `blog`: Top posts authored by the specified account (excluding community posts unless reblogged), plus reblogs ranked by creation or reblog time.\n  - `feed`: Top posts from blogs of accounts followed by the specified account, ranked by creation or reblog time, not older than the last month.\n  - `posts`: Posts authored by the specified account, sorted by newest first.\n  - `replies`: Replies authored by the specified account, sorted by newest first.\n  - `payout`: All posts authored by the specified account that have not yet been cashed out.\n\n- `account`: The account name (string) to retrieve related posts for; must be a valid account.\n\n- `start_author`: The author account name to start from when paginating; optional and used together with `start_permlink`.\n\n- `start_permlink`: The permlink of the post corresponding to `start_author`, used as a paging mechanism; optional.\n\n- `limit`: The maximum number of posts to retrieve. If omitted, defaults to 20.\n\n- `observer`: (Optional) For `blog`, `feed`, and `replies` sorts, this parameter is ignored. Otherwise, when provided, it must point to a valid account used to populate blacklist stats and mark posts from blacklisted authors. Currently, this parameter is ignored.\n\n- `truncate_body`: If greater than 0, post bodies are cut to this many characters (optional, default 0).\n\n- `include_own`: Only with sort `feed`: when true, the account's own blog is included in the feed (optional, default false).\n\n- `community`: Only with sort `posts` or `comments`: an existing community; only the account's posts or comments in it are returned (optional).\n\nSort `comments` (replies authored by the account, newest first) is also supported.\n",
                 "operationId": "get_account_posts",
                 "requestBody": {
                     "content": {
@@ -707,6 +707,268 @@
                                         "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
                                         "updated": "2025-03-20T16:39:33",
                                         "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_account_posts_v2": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Lists posts related to a given account, without embedded votes. (Supported by Hivemind)",
+                "description": "Same parameters and posts as `bridge.get_account_posts`, plus `top_votes` (positionally between `observer` and `truncate_body`).\n\n- `top_votes`: Number of the largest votes to include in each post's `top_votes` (0-10, optional, default 0).\n\nEach returned post has the vote-free shape (`post_bridge_api_v2`): it has no `active_votes`; `observer_vote` is the observer's `{rshares, percent}` vote on the post or `null`; and `top_votes`, present only when the `top_votes` parameter is greater than 0, lists up to that many `{voter, rshares, percent}` votes with the largest absolute rshares, leaving out voters the observer muted. `stats.total_votes` is still the vote count. Use `bridge.list_votes` to page through all votes of a post.\n",
+                "operationId": "get_account_posts_v2",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_account_posts_v2"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_account_posts_v2_response"
+                                },
+                                "example": [
+                                    {
+                                        "author": "steemit",
+                                        "author_payout_value": "0.000 HBD",
+                                        "author_reputation": 35.01,
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "My role do not change",
+                                        "category": "hive-198723",
+                                        "children": 0,
+                                        "created": "2016-09-15T18:01:36",
+                                        "curator_payout_value": "0.000 HBD",
+                                        "depth": 0,
+                                        "is_paidout": false,
+                                        "json_metadata": {},
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 0,
+                                        "payout": 0.0,
+                                        "payout_at": "2016-09-22T18:01:36",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "muted-in-this-community",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 0.0,
+                                            "gray": true,
+                                            "hide": false,
+                                            "muted_reasons": [
+                                                4
+                                            ],
+                                            "total_votes": 0
+                                        },
+                                        "title": "i am muted in this community",
+                                        "updated": "2016-09-15T18:01:36",
+                                        "url": "/hive-198723/@steemit/muted-in-this-community",
+                                        "observer_vote": null
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_account_posts_by_tag": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Lists posts of an account in a community or with a tag. (Supported by Hivemind)",
+                "description": "Returns the posts authored by `account` that belong to `tag`, newest first, or `[]` when there are none.\n\nParameters:\n\n- `account`: The author (string, required).\n\n- `tag`: A community name (`hive-NNNNNN`), meaning the account's posts in that community, or any other tag, meaning the account's posts tagged with it (string, required).\n\n- `start_author`, `start_permlink`: The last post of the previous page, for paging (optional).\n\n- `limit`: The maximum number of posts to return, 1-100 (`max_posts_per_call`). If omitted, defaults to 20.\n\n- `observer`: An account (optional); when it mutes `account`, the posts come back grayed.\n\n- `truncate_body`: If greater than 0, post bodies are cut to this many characters (optional, default 0).\n",
+                "operationId": "get_account_posts_by_tag",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_account_posts_by_tag"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_account_posts_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [],
+                                        "author": "jouchelle",
+                                        "author_payout_value": "0.000 HBD",
+                                        "author_reputation": 25,
+                                        "beneficiaries": [
+                                            {
+                                                "account": "amering",
+                                                "weight": 400
+                                            },
+                                            {
+                                                "account": "batel1",
+                                                "weight": 6800
+                                            },
+                                            {
+                                                "account": "cloop3",
+                                                "weight": 2000
+                                            },
+                                            {
+                                                "account": "faddy3",
+                                                "weight": 600
+                                            },
+                                            {
+                                                "account": "fminerten5",
+                                                "weight": 200
+                                            }
+                                        ],
+                                        "blacklists": [],
+                                        "body": "Much testing",
+                                        "category": "tag",
+                                        "children": 0,
+                                        "created": "2016-09-15T06:49:42",
+                                        "curator_payout_value": "0.000 HBD",
+                                        "depth": 0,
+                                        "is_paidout": false,
+                                        "json_metadata": {
+                                            "tags": [
+                                                "taverntest",
+                                                "TavernTest",
+                                                "# TavernTest",
+                                                "taverntest"
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 0,
+                                        "payout": 29.016,
+                                        "payout_at": "2016-09-22T06:49:42",
+                                        "pending_payout_value": "29.016 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "test-beneficiaries",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 0.0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 0
+                                        },
+                                        "title": "Testing",
+                                        "updated": "2016-09-15T06:49:45",
+                                        "url": "/tag/@jouchelle/test-beneficiaries"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_account_posts_by_tag_v2": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Lists posts of an account in a community or with a tag, without embedded votes. (Supported by Hivemind)",
+                "description": "Same parameters and posts as `bridge.get_account_posts_by_tag`, plus `top_votes`.\n\n- `top_votes`: Number of the largest votes to include in each post's `top_votes` (0-10, optional, default 0).\n\nEach returned post has the vote-free shape (`post_bridge_api_v2`): it has no `active_votes`; `observer_vote` is the observer's `{rshares, percent}` vote on the post or `null`; and `top_votes`, present only when the `top_votes` parameter is greater than 0, lists up to that many `{voter, rshares, percent}` votes with the largest absolute rshares, leaving out voters the observer muted. `stats.total_votes` is still the vote count. Use `bridge.list_votes` to page through all votes of a post.\n",
+                "operationId": "get_account_posts_by_tag_v2",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_account_posts_by_tag_v2"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_account_posts_by_tag_v2_response"
+                                },
+                                "example": [
+                                    {
+                                        "author": "gtg",
+                                        "author_payout_value": "0.000 HBD",
+                                        "author_reputation": 57.34,
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "As you know, witness nodes are an essential part of the STEEM universe.\n\nIf I have a witness node with as much as (or as little as) 3% of witness approval, I ca...",
+                                        "category": "witness-category",
+                                        "children": 14,
+                                        "created": "2016-08-16T18:11:03",
+                                        "curator_payout_value": "0.000 HBD",
+                                        "depth": 0,
+                                        "is_paidout": false,
+                                        "json_metadata": {
+                                            "links": [
+                                                "https://steemit.com/witness-category/@gtg/witness-gtg"
+                                            ],
+                                            "tags": [
+                                                "witness-category",
+                                                "security",
+                                                "steem",
+                                                "steemit"
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 80964590737004,
+                                        "observer_vote": null,
+                                        "payout": 988.456,
+                                        "payout_at": "2016-08-23T18:11:03",
+                                        "pending_payout_value": "988.456 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "heavy-duty-witness-node-infrastructure",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 0.0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 177
+                                        },
+                                        "title": "Heavy duty witness node infrastructure",
+                                        "top_votes": [
+                                            {
+                                                "percent": 10000,
+                                                "rshares": 37843185317140,
+                                                "voter": "blocktrades"
+                                            },
+                                            {
+                                                "percent": 5500,
+                                                "rshares": 15699644918310,
+                                                "voter": "dantheman"
+                                            },
+                                            {
+                                                "percent": 5000,
+                                                "rshares": 8484864209575,
+                                                "voter": "rainman"
+                                            }
+                                        ],
+                                        "updated": "2016-08-16T18:11:03",
+                                        "url": "/witness-category/@gtg/heavy-duty-witness-node-infrastructure"
                                     }
                                 ]
                             }
@@ -827,6 +1089,350 @@
                 }
             }
         },
+        "bridge.get_community_moderation_log": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gives the moderation log of a community. (Supported by Hivemind)",
+                "description": "Parameters:\n\n- `community`: The community name (required).\n\n- `action_type`: Only entries of this action: `set_role`, `set_title`, `mute_post`, `unmute_post`, `pin_post`, `unpin_post` or `flag_post` (optional).\n\n- `last_id`: Id of the last entry of the previous page (optional).\n\n- `limit`: The maximum number of entries to return, 1-1000. If omitted, defaults to 100.\n\nEntries are returned newest first, ordered by (date, id).\n",
+                "operationId": "get_community_moderation_log",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_community_moderation_log"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_community_moderation_log_response"
+                                },
+                                "example": [
+                                    {
+                                        "action": "mute_post",
+                                        "actor": "blocktrades",
+                                        "date": "2016-09-15T18:02:00",
+                                        "id": "102",
+                                        "new_value": "muted",
+                                        "notes": "I hate crocodiles 03",
+                                        "old_value": "unmuted",
+                                        "target_account": "blocktrades",
+                                        "target_post_author": "blocktrades",
+                                        "target_post_permlink": "crocodile03"
+                                    },
+                                    {
+                                        "action": "mute_post",
+                                        "actor": "blocktrades",
+                                        "date": "2016-09-15T18:02:00",
+                                        "id": "101",
+                                        "new_value": "muted",
+                                        "notes": "I hate crocodiles 02",
+                                        "old_value": "unmuted",
+                                        "target_account": "blocktrades",
+                                        "target_post_author": "blocktrades",
+                                        "target_post_permlink": "crocodile02"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_account_moderation_stats": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gives the moderation actions that targeted an account. (Supported by Hivemind)",
+                "description": "Parameters:\n\n- `account`: The targeted account (required).\n\n- `community`: Only actions in this community (optional).\n\n- `last_id`: Id of the last entry of `actions` on the previous page (optional).\n\n- `limit`: The maximum number of `actions` to return, 1-1000. If omitted, defaults to 100.\n\n`stats` counts every matching action; `actions` is one page of them, newest first.\n",
+                "operationId": "get_account_moderation_stats",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_account_moderation_stats"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_account_moderation_stats_response"
+                                },
+                                "example": {
+                                    "account": "alice",
+                                    "actions": [
+                                        {
+                                            "action": "unmute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:02:09",
+                                            "id": "123",
+                                            "notes": "hive1 Unmute first post"
+                                        },
+                                        {
+                                            "action": "unmute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:02:09",
+                                            "id": "120",
+                                            "notes": "hive1 Unmute first comment"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:02:06",
+                                            "id": "117",
+                                            "notes": "hive1 I hate second posts too!"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:02:06",
+                                            "id": "114",
+                                            "notes": "hive1 I hate first posts!"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:02:06",
+                                            "id": "111",
+                                            "notes": "I hate second comments too hive1-!"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:02:06",
+                                            "id": "108",
+                                            "notes": "I hate first comments hive1-!"
+                                        },
+                                        {
+                                            "action": "set_role",
+                                            "actor": "hive-171487",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:02:00",
+                                            "id": "23",
+                                            "notes": null
+                                        },
+                                        {
+                                            "action": "unmute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:57",
+                                            "id": "92",
+                                            "notes": "Unmute first post hive1"
+                                        },
+                                        {
+                                            "action": "unmute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:57",
+                                            "id": "89",
+                                            "notes": "Unmute first comment hive1"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:54",
+                                            "id": "84",
+                                            "notes": "I hate second posts too-hive1!"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:54",
+                                            "id": "81",
+                                            "notes": "I hate first posts-hive1!"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:54",
+                                            "id": "78",
+                                            "notes": "I hate second comments too-hive1!"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:54",
+                                            "id": "75",
+                                            "notes": "I hate first comments-hive1!"
+                                        },
+                                        {
+                                            "action": "unmute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:45",
+                                            "id": "58",
+                                            "notes": "Unmuted her first post-hive-1"
+                                        },
+                                        {
+                                            "action": "unmute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:45",
+                                            "id": "53",
+                                            "notes": "Unmuted her first comment-hive1"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:42",
+                                            "id": "48",
+                                            "notes": "second muted post-01"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:42",
+                                            "id": "45",
+                                            "notes": "first muted post-1"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:42",
+                                            "id": "40",
+                                            "notes": "first muted comment01"
+                                        },
+                                        {
+                                            "action": "mute_post",
+                                            "actor": "test-safari",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:42",
+                                            "id": "37",
+                                            "notes": "first muted comment"
+                                        },
+                                        {
+                                            "action": "set_role",
+                                            "actor": "hive-171487",
+                                            "community": "hive-171487",
+                                            "community_title": "Banana",
+                                            "date": "2016-09-15T18:01:33",
+                                            "id": "10",
+                                            "notes": null
+                                        }
+                                    ],
+                                    "stats": {
+                                        "posts_pinned": 0,
+                                        "posts_unpinned": 0,
+                                        "role_changes": 2,
+                                        "times_flagged": 0,
+                                        "times_muted": 12,
+                                        "times_unmuted": 6,
+                                        "title_changes": 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_moderator_activity": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gives the moderation actions an account performed. (Supported by Hivemind)",
+                "description": "Parameters:\n\n- `account`: The moderator (required).\n\n- `community`: Only actions in this community (optional).\n\n- `last_id`: Id of the last entry of the previous page (optional).\n\n- `limit`: The maximum number of entries to return, 1-1000. If omitted, defaults to 100.\n\nEntries are returned newest first, ordered by (date, id).\n",
+                "operationId": "get_moderator_activity",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_moderator_activity"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_moderator_activity_response"
+                                },
+                                "example": [
+                                    {
+                                        "action": "unmute_post",
+                                        "community": "hive-198723",
+                                        "community_title": "",
+                                        "date": "2016-09-15T18:02:09",
+                                        "id": "125",
+                                        "new_value": "unmuted",
+                                        "notes": "hive3 Unmute first post",
+                                        "old_value": "muted",
+                                        "target_account": "alice",
+                                        "target_post_author": "alice",
+                                        "target_post_permlink": "First-after-member-post-hive3"
+                                    },
+                                    {
+                                        "action": "unmute_post",
+                                        "community": "hive-157439",
+                                        "community_title": "",
+                                        "date": "2016-09-15T18:02:09",
+                                        "id": "124",
+                                        "new_value": "unmuted",
+                                        "notes": "hive2 Unmute first post",
+                                        "old_value": "muted",
+                                        "target_account": "alice",
+                                        "target_post_author": "alice",
+                                        "target_post_permlink": "First-after-member-post-hive2"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "bridge.get_discussion": {
             "post": {
                 "tags": [
@@ -906,6 +1512,79 @@
                                         "title": "RE: Around the Hive: Reflections",
                                         "updated": "2021-02-14T11:07:15",
                                         "url": "/hiveecosystem/@hiveio/around-the-hive-reflections#@steevc/re-hiveio-qoimw3"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_discussion_v2": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gives a flattened discussion tree starting at given post, without embedded votes. (Supported by Hivemind)",
+                "description": "Same parameters and posts as `bridge.get_discussion`, plus `top_votes`.\n\n- `top_votes`: Number of the largest votes to include in each post's `top_votes` (0-10, optional, default 0).\n\nEach returned post has the vote-free shape (`post_bridge_api_v2`): it has no `active_votes`; `observer_vote` is the observer's `{rshares, percent}` vote on the post or `null`; and `top_votes`, present only when the `top_votes` parameter is greater than 0, lists up to that many `{voter, rshares, percent}` votes with the largest absolute rshares, leaving out voters the observer muted. `stats.total_votes` is still the vote count. Use `bridge.list_votes` to page through all votes of a post.\n",
+                "operationId": "get_discussion_v2",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_discussion_v2"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_discussion_v2_response"
+                                },
+                                "example": {
+                                    "test-creator/pinpost11": {
+                                        "author": "test-creator",
+                                        "author_payout_value": "0.000 HBD",
+                                        "author_reputation": 25.0,
+                                        "author_role": "guest",
+                                        "author_title": "",
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "hello from pinned post 11",
+                                        "category": "hive-135485",
+                                        "children": 0,
+                                        "community": "hive-135485",
+                                        "community_title": "World News",
+                                        "created": "2016-09-15T18:01:51",
+                                        "curator_payout_value": "0.000 HBD",
+                                        "depth": 0,
+                                        "is_paidout": false,
+                                        "json_metadata": {},
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 50000000,
+                                        "payout": 0.005,
+                                        "payout_at": "2016-09-22T18:01:51",
+                                        "pending_payout_value": "0.005 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "pinpost11",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 0.0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "is_pinned": true,
+                                            "total_votes": 1
+                                        },
+                                        "title": "Pinpost 11",
+                                        "updated": "2016-09-15T18:01:51",
+                                        "url": "/hive-135485/@test-creator/pinpost11",
+                                        "observer_vote": null
                                     }
                                 }
                             }
@@ -1084,6 +1763,242 @@
                 }
             }
         },
+        "bridge.get_post_v2": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gives single selected post, without embedded votes. (Supported by Hivemind)",
+                "description": "Same parameters and post as `bridge.get_post`, plus `top_votes`.\n\n- `top_votes`: Number of the largest votes to include in each post's `top_votes` (0-10, optional, default 0).\n\nEach returned post has the vote-free shape (`post_bridge_api_v2`): it has no `active_votes`; `observer_vote` is the observer's `{rshares, percent}` vote on the post or `null`; and `top_votes`, present only when the `top_votes` parameter is greater than 0, lists up to that many `{voter, rshares, percent}` votes with the largest absolute rshares, leaving out voters the observer muted. `stats.total_votes` is still the vote count. Use `bridge.list_votes` to page through all votes of a post.\n",
+                "operationId": "get_post_v2",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_post_v2"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_post_v2_response"
+                                },
+                                "example": {
+                                    "author": "xeroc",
+                                    "author_payout_value": "44529.188 HBD",
+                                    "author_reputation": 69.63,
+                                    "beneficiaries": [],
+                                    "blacklists": [],
+                                    "body": "![](https://i.imgsafe.org/2411b61f27.png)\n\n# Piston.web - Standalone User Interface\n\nMany may already know `piston` as a tool that simplifies interaction with S...",
+                                    "category": "piston",
+                                    "children": 369,
+                                    "created": "2016-07-22T16:14:09",
+                                    "curator_payout_value": "2444.671 HBD",
+                                    "depth": 0,
+                                    "is_paidout": true,
+                                    "json_metadata": {},
+                                    "max_accepted_payout": "1000000.000 HBD",
+                                    "net_rshares": 390122583822342,
+                                    "observer_vote": null,
+                                    "payout": 46973.859,
+                                    "payout_at": "2016-08-24T14:49:30",
+                                    "pending_payout_value": "0.000 HBD",
+                                    "percent_hbd": 10000,
+                                    "permlink": "piston-web-first-open-source-steem-gui---searching-for-alpha-testers",
+                                    "reblogs": 0,
+                                    "replies": [],
+                                    "stats": {
+                                        "flag_weight": 1.0,
+                                        "gray": false,
+                                        "hide": false,
+                                        "total_votes": 1565
+                                    },
+                                    "title": "[piston.web] First Open Source Steem GUI - Searching for alpha testers",
+                                    "top_votes": [
+                                        {
+                                            "percent": 10000,
+                                            "rshares": 65406341911263,
+                                            "voter": "ned"
+                                        },
+                                        {
+                                            "percent": 10000,
+                                            "rshares": 44623728822570,
+                                            "voter": "dan"
+                                        },
+                                        {
+                                            "percent": 10000,
+                                            "rshares": 42611500394872,
+                                            "voter": "blocktrades"
+                                        }
+                                    ],
+                                    "updated": "2016-07-23T12:19:12",
+                                    "url": "/piston/@xeroc/piston-web-first-open-source-steem-gui---searching-for-alpha-testers"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_posts": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Gives many selected posts in one call, without embedded votes. (Supported by Hivemind)",
+                "description": "Parameters:\n\n- `posts`: An array of 1-100 `[author, permlink]` pairs (required). A pair may repeat.\n\n- `observer`: A valid account name used as the observer (optional).\n\n- `top_votes`: Number of the largest votes to include in each post's `top_votes` (0-10, optional, default 0).\n\nThe result has the same length and order as `posts`. Each entry is what `bridge.get_post_v2` returns for that pair with the same `observer` and `top_votes`, or `null` where the post does not exist or is deleted.\n",
+                "operationId": "get_posts",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_posts"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_posts_response"
+                                },
+                                "example": [
+                                    {
+                                        "author": "xeroc",
+                                        "author_payout_value": "44529.188 HBD",
+                                        "author_reputation": 69.63,
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "![](https://i.imgsafe.org/2411b61f27.png)\n\n# Piston.web - Standalone User Interface\n\nMany may already know `piston` as a tool that simplifies interaction with S...",
+                                        "category": "piston",
+                                        "children": 369,
+                                        "created": "2016-07-22T16:14:09",
+                                        "curator_payout_value": "2444.671 HBD",
+                                        "depth": 0,
+                                        "is_paidout": true,
+                                        "json_metadata": {},
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 390122583822342,
+                                        "observer_vote": null,
+                                        "payout": 46973.859,
+                                        "payout_at": "2016-08-24T14:49:30",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "piston-web-first-open-source-steem-gui---searching-for-alpha-testers",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 1.0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 1565
+                                        },
+                                        "title": "[piston.web] First Open Source Steem GUI - Searching for alpha testers",
+                                        "top_votes": [
+                                            {
+                                                "percent": 10000,
+                                                "rshares": 65406341911263,
+                                                "voter": "ned"
+                                            },
+                                            {
+                                                "percent": 10000,
+                                                "rshares": 44623728822570,
+                                                "voter": "dan"
+                                            }
+                                        ],
+                                        "updated": "2016-07-23T12:19:12",
+                                        "url": "/piston/@xeroc/piston-web-first-open-source-steem-gui---searching-for-alpha-testers"
+                                    },
+                                    {
+                                        "author": "dollarvigilante",
+                                        "author_payout_value": "0.000 HBD",
+                                        "author_reputation": 68.46,
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "<center>https://dollarvigilante.com/wp-content/uploads/2016/09/Jubilee-Jolt-Dow-Down-400-Stocks-Smashed-In-Biggest-Drop-Since-Brexit.jpg</center>\n\nIt was just t...",
+                                        "category": "money",
+                                        "children": 35,
+                                        "created": "2016-09-10T04:33:42",
+                                        "curator_payout_value": "0.000 HBD",
+                                        "depth": 0,
+                                        "is_paidout": false,
+                                        "json_metadata": {
+                                            "image": [
+                                                "https://dollarvigilante.com/wp-content/uploads/2016/09/Jubilee-Jolt-Dow-Down-400-Stocks-Smashed-In-Biggest-Drop-Since-Brexit.jpg",
+                                                "https://dollarvigilante.com/wp-content/uploads/2016/09/Gold-One-Year-Chart.jpg",
+                                                "https://dollarvigilante.com/wp-content/uploads/2016/09/bitcoin-1-month-chart-The-Dollar-Vigilante.jpg",
+                                                "https://dollarvigilante.com/wp-content/uploads/2016/09/Testimonials-18-The-Dollar-Vigilante.jpg",
+                                                "https://img1.steemit.com/0x0/https://www.dollarvigilante.com/wp-content/uploads/2016/08/Jeff-Berwick-The-Dollar-Vigilante-Steemit-Bio-1024x221.jpg"
+                                            ],
+                                            "links": [
+                                                "https://dollarvigilante.com/blog/2016/09/07/gold-biggest-one-day-rally-since-brexit-elites-rush-gold.html",
+                                                "https://dollarvigilante.com/blog/2015/09/13/eurozone-collapses-borders-erected-across-europe-on-shemitah-end-day.html",
+                                                "http://dollarvigilante.com/subscribe"
+                                            ],
+                                            "tags": [
+                                                "money",
+                                                "stocks",
+                                                "gold",
+                                                "silver",
+                                                "bitcoin"
+                                            ],
+                                            "users": [
+                                                "dollarvigilante"
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 98702780120460,
+                                        "observer_vote": {
+                                            "percent": 10000,
+                                            "rshares": 31585416159994
+                                        },
+                                        "payout": 914.41,
+                                        "payout_at": "2016-09-17T04:33:42",
+                                        "pending_payout_value": "914.410 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "jubilee-jolt-dow-down-400-stocks-smashed-in-biggest-drop-since-brexit",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 0.0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 525
+                                        },
+                                        "title": "JUBILEE JOLT: Dow Down 400, Stocks Smashed In Biggest Drop Since Brexit",
+                                        "top_votes": [
+                                            {
+                                                "percent": 10000,
+                                                "rshares": 31585416159994,
+                                                "voter": "smooth"
+                                            },
+                                            {
+                                                "percent": 10000,
+                                                "rshares": 7126422138279,
+                                                "voter": "xeldal"
+                                            }
+                                        ],
+                                        "updated": "2016-09-10T16:50:39",
+                                        "url": "/money/@dollarvigilante/jubilee-jolt-dow-down-400-stocks-smashed-in-biggest-drop-since-brexit"
+                                    },
+                                    null
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "bridge.get_post_header": {
             "post": {
                 "tags": [
@@ -1254,7 +2169,7 @@
                     "bridge"
                 ],
                 "summary": "Get ranked posts. (Supported by Hivemind)",
-                "description": "Parameters:\n\n- `sort`: A string indicating the sorting method. Supported values:\n  - `trending`\n  - `hot`\n  - `created`\n  - `promoted`\n  - `payout`\n  - `payout_comments`\n  - `muted`\n\n- `start_author`, `start_permlink`: The last post of the previous page, for paging (optional).\n\n- `limit`: The maximum number of posts to retrieve. If omitted, defaults to 20.\n\n- `tag`: A string representing any valid tag (optional).\n\n- `observer`: A string representing any valid account or an empty string (optional).\n\n- `muted_reasons_filter`: An array of muted reason ids (see `bridge.list_muted_reasons_enum`); posts muted for any of them are excluded (optional).\n",
+                "description": "Parameters:\n\n- `sort`: A string indicating the sorting method. Supported values:\n  - `trending`\n  - `hot`\n  - `created`\n  - `promoted`\n  - `payout`\n  - `payout_comments`\n  - `muted`\n\n- `start_author`, `start_permlink`: The last post of the previous page, for paging (optional).\n\n- `limit`: The maximum number of posts to retrieve. If omitted, defaults to 20.\n\n- `tag`: A string representing any valid tag (optional).\n\n- `observer`: A string representing any valid account or an empty string (optional).\n\n- `muted_reasons_filter`: An array of muted reason ids (see `bridge.list_muted_reasons_enum`); posts muted for any of them are excluded (optional).\n\n- `truncate_body`: If greater than 0, post bodies are cut to this many characters (optional, default 0).\n",
                 "operationId": "get_ranked_posts",
                 "requestBody": {
                     "content": {
@@ -1335,6 +2250,79 @@
                                         "title": "Hive 5: Celebrating our 5th Anniversary as Hive",
                                         "updated": "2025-03-20T16:39:33",
                                         "url": "/hive5/@hiveio/hive-5-celebrating-our-5th-anniversary-as-hive"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.get_ranked_posts_v2": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Get ranked posts, without embedded votes. (Supported by Hivemind)",
+                "description": "Same parameters and posts as `bridge.get_ranked_posts`, plus `top_votes` (positionally between `muted_reasons_filter` and `truncate_body`).\n\n- `top_votes`: Number of the largest votes to include in each post's `top_votes` (0-10, optional, default 0).\n\nEach returned post has the vote-free shape (`post_bridge_api_v2`): it has no `active_votes`; `observer_vote` is the observer's `{rshares, percent}` vote on the post or `null`; and `top_votes`, present only when the `top_votes` parameter is greater than 0, lists up to that many `{voter, rshares, percent}` votes with the largest absolute rshares, leaving out voters the observer muted. `stats.total_votes` is still the vote count. Use `bridge.list_votes` to page through all votes of a post.\n",
+                "operationId": "get_ranked_posts_v2",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/get_ranked_posts_v2"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/get_ranked_posts_v2_response"
+                                },
+                                "example": [
+                                    {
+                                        "author": "test-creator",
+                                        "author_payout_value": "0.000 HBD",
+                                        "author_reputation": 25.0,
+                                        "author_role": "guest",
+                                        "author_title": "",
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "hello from pinned post 9",
+                                        "category": "hive-135485",
+                                        "children": 0,
+                                        "community": "hive-135485",
+                                        "community_title": "World News",
+                                        "created": "2016-09-15T18:01:51",
+                                        "curator_payout_value": "0.000 HBD",
+                                        "depth": 0,
+                                        "is_paidout": false,
+                                        "json_metadata": {},
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 0,
+                                        "payout": 0.0,
+                                        "payout_at": "2016-09-22T18:01:51",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "pinpost9",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 0.0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "is_pinned": true,
+                                            "total_votes": 0
+                                        },
+                                        "title": "Pinpost 9",
+                                        "updated": "2016-09-15T18:01:51",
+                                        "url": "/hive-135485/@test-creator/pinpost9",
+                                        "observer_vote": null
                                     }
                                 ]
                             }
@@ -1720,6 +2708,64 @@
                 }
             }
         },
+        "bridge.list_votes": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Pages through the votes of a post. (Supported by Hivemind)",
+                "description": "Parameters:\n\n- `author`, `permlink`: The post (required).\n\n- `start`: Voter name; the page starts after this voter (optional).\n\n- `limit`: The maximum number of votes to return, 1-1000. If omitted, defaults to 100.\n\n- `observer`: An account (optional); votes of accounts it muted are left out.\n\nVotes are ordered by voter account id. Pass the last returned `voter` as `start` to get the next page; each voter appears once across pages, and an empty array means there are no more votes.\n",
+                "operationId": "bridge_list_votes",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/bridge_list_votes"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/bridge_list_votes_response"
+                                },
+                                "example": [
+                                    {
+                                        "percent": 10000,
+                                        "reputation": 71.46,
+                                        "rshares": 30137301806887,
+                                        "time": "2016-07-22T23:00:36",
+                                        "voter": "dantheman",
+                                        "weight": "17412903474494492"
+                                    },
+                                    {
+                                        "percent": 10000,
+                                        "reputation": 45.53,
+                                        "rshares": 785653864312,
+                                        "time": "2016-07-22T17:32:48",
+                                        "voter": "mr11acdee",
+                                        "weight": 1499241661750225
+                                    },
+                                    {
+                                        "percent": 10000,
+                                        "reputation": 25,
+                                        "rshares": 200133072703,
+                                        "time": "2016-07-22T17:32:57",
+                                        "voter": "mr11acdee1",
+                                        "weight": 379999622075636
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "bridge.normalize_post": {
             "post": {
                 "tags": [
@@ -1848,6 +2894,41 @@
                                         "type": "vote",
                                         "url": "@ertytux/hivecash-monedero-offline-first-para-hbd"
                                     }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "bridge.query_json_metadata": {
+            "post": {
+                "tags": [
+                    "bridge"
+                ],
+                "summary": "Lists accounts whose metadata has a given value under a given key. (Supported by Hivemind)",
+                "description": "Parameters:\n\n- `key`: One top-level key, or a list of keys naming a nested value (e.g. `[\"profile\", \"location\"]`) (required).\n\n- `value`: The value to match: a JSON string equal to it and, when it reads as a number or boolean, also that JSON number or boolean (required).\n\n- `type`: `posting` (posting_json_metadata), `active` (json_metadata) or a list of them (optional, default both).\n\n- `last`: The last account of the previous page (optional).\n\n- `limit`: The maximum number of accounts to return, 1-100. If omitted, defaults to 100.\n\nAccounts are returned in creation order. No index covers an arbitrary key, so a value nobody has set reads every account.\n",
+                "operationId": "query_json_metadata",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/query_json_metadata"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/query_json_metadata_response"
+                                },
+                                "example": [
+                                    "nulltester"
                                 ]
                             }
                         }
@@ -12130,6 +13211,351 @@
                 }
             }
         },
+        "search_api.find_text_v2": {
+            "post": {
+                "tags": [
+                    "search_api"
+                ],
+                "summary": "Finds posts related to entry pattern, without embedded votes. (Supported by Hivemind)",
+                "description": "Same parameters and posts as `search_api.find_text`, plus `top_votes` (positionally between `observer` and `truncate_body`).\n\n- `top_votes`: Number of the largest votes to include in each post's `top_votes` (0-10, optional, default 0).\n\nEach returned post has the vote-free shape (`post_bridge_api_v2`): it has no `active_votes`; `observer_vote` is the observer's `{rshares, percent}` vote on the post or `null`; and `top_votes`, present only when the `top_votes` parameter is greater than 0, lists up to that many `{voter, rshares, percent}` votes with the largest absolute rshares, leaving out voters the observer muted. `stats.total_votes` is still the vote count. Use `bridge.list_votes` to page through all votes of a post.\n\nHivemind accepts this method under both the `search_api` and the `search-api` prefix.\n",
+                "operationId": "find_text_v2",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/find_text_v2"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/find_text_v2_response"
+                                },
+                                "example": [
+                                    {
+                                        "author": "gtg",
+                                        "author_payout_value": "254.288 HBD",
+                                        "author_reputation": 57.34,
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "I'm G",
+                                        "category": "introduceyourself",
+                                        "children": 3,
+                                        "created": "2016-07-03T16:35:03",
+                                        "curator_payout_value": "16.244 HBD",
+                                        "depth": 0,
+                                        "is_paidout": true,
+                                        "json_metadata": {
+                                            "image": [
+                                                "https://grey.house/img/niunia.jpg"
+                                            ],
+                                            "tags": [
+                                                "introduceyourself",
+                                                "cats"
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": 92822975251510,
+                                        "observer_vote": null,
+                                        "payout": 270.532,
+                                        "payout_at": "2016-08-13T21:04:45",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "hello-world",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 0.0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 44
+                                        },
+                                        "title": "Hello, World!",
+                                        "top_votes": [
+                                            {
+                                                "percent": 10000,
+                                                "rshares": 45883600000000,
+                                                "voter": "ned"
+                                            },
+                                            {
+                                                "percent": 10000,
+                                                "rshares": 38083585540686,
+                                                "voter": "blocktrades"
+                                            },
+                                            {
+                                                "percent": 10000,
+                                                "rshares": 4594552295389,
+                                                "voter": "kushed"
+                                            }
+                                        ],
+                                        "updated": "2016-07-10T12:39:42",
+                                        "url": "/introduceyourself/@gtg/hello-world"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "search_api.find_similar": {
+            "post": {
+                "tags": [
+                    "search_api"
+                ],
+                "summary": "Finds root posts similar in wording to a given post. (Supported by Hivemind)",
+                "description": "Parameters:\n\n- `author`, `permlink`: The post to compare with (required). The post itself is never in the result; a comment, or a post with no distinctive terms, gives `[]`.\n\n- `limit`: The maximum number of posts to return, 1-100. If omitted, defaults to 20.\n\n- `observer`: An account (optional); posts of authors it muted are left out and blacklist stats are filled.\n\n- `truncate_body`: If greater than 0, post bodies are cut to this many characters (optional, default 0).\n\nSimilarity is BM25 more-like-this over title and body; it needs the pg_search extension, without which the call fails.\n\nHivemind accepts this method under both the `search_api` and the `search-api` prefix.\n",
+                "operationId": "find_similar",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/find_similar"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/find_similar_response"
+                                },
+                                "example": [
+                                    {
+                                        "active_votes": [
+                                            {
+                                                "rshares": -864498292406,
+                                                "voter": "liondani"
+                                            },
+                                            {
+                                                "rshares": -1911946532824,
+                                                "voter": "xeroc"
+                                            },
+                                            {
+                                                "rshares": 22645392645,
+                                                "voter": "yefet"
+                                            },
+                                            {
+                                                "rshares": -457602975116,
+                                                "voter": "cryptogee"
+                                            },
+                                            {
+                                                "rshares": 1032033214,
+                                                "voter": "allyourbase"
+                                            },
+                                            {
+                                                "rshares": -151304222639,
+                                                "voter": "repholder"
+                                            },
+                                            {
+                                                "rshares": 219488181,
+                                                "voter": "eduardf"
+                                            },
+                                            {
+                                                "rshares": 3461074214,
+                                                "voter": "karen13"
+                                            },
+                                            {
+                                                "rshares": 206294417,
+                                                "voter": "fiona777"
+                                            },
+                                            {
+                                                "rshares": 2012690785,
+                                                "voter": "jayjustmay"
+                                            },
+                                            {
+                                                "rshares": 90692976938,
+                                                "voter": "jl777"
+                                            },
+                                            {
+                                                "rshares": 18828721486,
+                                                "voter": "proto"
+                                            },
+                                            {
+                                                "rshares": 5885675419,
+                                                "voter": "taker"
+                                            },
+                                            {
+                                                "rshares": 1251336,
+                                                "voter": "softpunk"
+                                            },
+                                            {
+                                                "rshares": 61515602,
+                                                "voter": "beautiful.girls"
+                                            }
+                                        ],
+                                        "author": "beautiful.girls",
+                                        "author_payout_value": "0.000 HBD",
+                                        "author_reputation": 8.89,
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "<p>\u00a0<img src=\"https://img1.steemit.com/0x0/https://i.imgsafe.org/2411b61f27.png\" /></p>\n<h1>Piston.web - Standalone User Interface</h1>\n<p>Many may already know...",
+                                        "category": "piston",
+                                        "children": 7,
+                                        "created": "2016-08-01T19:13:33",
+                                        "curator_payout_value": "0.000 HBD",
+                                        "depth": 0,
+                                        "is_paidout": true,
+                                        "json_metadata": {
+                                            "image": [
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/2411b61f27.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c17ace1.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c1dbdc5.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c2ae8a0.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c26f1d0.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c2e7b58.png"
+                                            ],
+                                            "links": [
+                                                "https://github.com/xeroc/piston/issues"
+                                            ],
+                                            "tags": [
+                                                "piston",
+                                                "opensource",
+                                                "steemit",
+                                                "tester",
+                                                ""
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": -3240304908748,
+                                        "payout": 0.0,
+                                        "payout_at": "2016-09-01T07:33:45",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "piston-web-first-open-source-steem-gui-searching-for-alpha-testers",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 3.0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 15
+                                        },
+                                        "title": "[piston.web] First Open Source Steem GUI - Searching for alpha testers",
+                                        "updated": "2016-08-01T19:13:33",
+                                        "url": "/piston/@beautiful.girls/piston-web-first-open-source-steem-gui-searching-for-alpha-testers"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "search_api.find_similar_v2": {
+            "post": {
+                "tags": [
+                    "search_api"
+                ],
+                "summary": "Finds root posts similar in wording to a given post, without embedded votes. (Supported by Hivemind)",
+                "description": "Same parameters and posts as `search_api.find_similar`, plus `top_votes` (positionally between `observer` and `truncate_body`).\n\n- `top_votes`: Number of the largest votes to include in each post's `top_votes` (0-10, optional, default 0).\n\nEach returned post has the vote-free shape (`post_bridge_api_v2`): it has no `active_votes`; `observer_vote` is the observer's `{rshares, percent}` vote on the post or `null`; and `top_votes`, present only when the `top_votes` parameter is greater than 0, lists up to that many `{voter, rshares, percent}` votes with the largest absolute rshares, leaving out voters the observer muted. `stats.total_votes` is still the vote count. Use `bridge.list_votes` to page through all votes of a post.\n\nHivemind accepts this method under both the `search_api` and the `search-api` prefix.\n",
+                "operationId": "find_similar_v2",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/find_similar_v2"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/find_similar_v2_response"
+                                },
+                                "example": [
+                                    {
+                                        "author": "beautiful.girls",
+                                        "author_payout_value": "0.000 HBD",
+                                        "author_reputation": 8.89,
+                                        "beneficiaries": [],
+                                        "blacklists": [],
+                                        "body": "<p>\u00a0<img src=\"https://img1.steemit.com/0x0/https://i.imgsafe.org/2411b61f27.png\" /></p>\n<h1>Piston.web - Standalone User Interface</h1>\n<p>Many may already know...",
+                                        "category": "piston",
+                                        "children": 7,
+                                        "created": "2016-08-01T19:13:33",
+                                        "curator_payout_value": "0.000 HBD",
+                                        "depth": 0,
+                                        "is_paidout": true,
+                                        "json_metadata": {
+                                            "image": [
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/2411b61f27.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c17ace1.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c1dbdc5.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c2ae8a0.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c26f1d0.png",
+                                                "https://img1.steemit.com/0x0/https://i.imgsafe.org/219c2e7b58.png"
+                                            ],
+                                            "links": [
+                                                "https://github.com/xeroc/piston/issues"
+                                            ],
+                                            "tags": [
+                                                "piston",
+                                                "opensource",
+                                                "steemit",
+                                                "tester",
+                                                ""
+                                            ]
+                                        },
+                                        "max_accepted_payout": "1000000.000 HBD",
+                                        "net_rshares": -3240304908748,
+                                        "observer_vote": null,
+                                        "payout": 0.0,
+                                        "payout_at": "2016-09-01T07:33:45",
+                                        "pending_payout_value": "0.000 HBD",
+                                        "percent_hbd": 10000,
+                                        "permlink": "piston-web-first-open-source-steem-gui-searching-for-alpha-testers",
+                                        "reblogs": 0,
+                                        "replies": [],
+                                        "stats": {
+                                            "flag_weight": 3.0,
+                                            "gray": false,
+                                            "hide": false,
+                                            "total_votes": 15
+                                        },
+                                        "title": "[piston.web] First Open Source Steem GUI - Searching for alpha testers",
+                                        "top_votes": [
+                                            {
+                                                "percent": -10000,
+                                                "rshares": -1911946532824,
+                                                "voter": "xeroc"
+                                            },
+                                            {
+                                                "percent": -10000,
+                                                "rshares": -864498292406,
+                                                "voter": "liondani"
+                                            },
+                                            {
+                                                "percent": -10000,
+                                                "rshares": -457602975116,
+                                                "voter": "cryptogee"
+                                            }
+                                        ],
+                                        "updated": "2016-08-01T19:13:33",
+                                        "url": "/piston/@beautiful.girls/piston-web-first-open-source-steem-gui-searching-for-alpha-testers"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "tags_api.get_comment_discussions_by_payout": {
             "post": {
                 "tags": [
@@ -18031,6 +19457,41 @@
                         "type": "integer",
                         "example": 100,
                         "description": "The maximum number of notifications to return (1-100). If omitted, defaults to 100."
+                    },
+                    "type": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "new_community",
+                                "set_role",
+                                "set_props",
+                                "set_title",
+                                "mute_post",
+                                "unmute_post",
+                                "pin_post",
+                                "unpin_post",
+                                "flag_post",
+                                "error",
+                                "subscribe",
+                                "reply",
+                                "reply_comment",
+                                "reblog",
+                                "follow",
+                                "mention",
+                                "vote"
+                            ]
+                        },
+                        "example": [
+                            "vote",
+                            "reply"
+                        ],
+                        "description": "Only notifications of these types. If omitted, null or empty, all types are returned; unknown names are rejected."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "",
+                        "description": "An existing community name; only notifications concerning that community, plus notifications tied to no post or community (e.g. follow), are returned (optional)."
                     }
                 },
                 "required": [
@@ -23138,6 +24599,23 @@
                         "type": "string",
                         "example": "hiveio",
                         "description": "The observer account to use for the query."
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "example": 0,
+                        "description": "If greater than 0, each post's body is cut to this many characters. If omitted, defaults to 0 (no truncation)."
+                    },
+                    "include_own": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Only with sort `feed`: when true, the account's own blog (posts and reblogs) is included in the feed. If omitted, defaults to false."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Only with sort `posts` or `comments`: an existing community name; only the account's posts or comments in that community are returned (optional)."
                     }
                 },
                 "required": [
@@ -25064,6 +26542,13 @@
                             3
                         ],
                         "description": "Excludes posts muted for any of the listed reasons (ids from bridge.list_muted_reasons_enum: 0 MUTED_COMMUNITY_MODERATION, 1 MUTED_COMMUNITY_TYPE, 2 MUTED_PARENT, 3 MUTED_REPUTATION, 4 MUTED_ROLE_COMMUNITY). If omitted or empty, no posts are excluded."
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "example": 0,
+                        "description": "If greater than 0, each post's body is cut to this many characters. If omitted, defaults to 0 (no truncation)."
                     }
                 },
                 "required": [
@@ -25315,6 +26800,11 @@
                     "observer": {
                         "type": "string",
                         "example": "hiveio"
+                    },
+                    "debug": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Accepted for compatibility; it does not change the result (optional)."
                     }
                 },
                 "required": [
@@ -26661,6 +28151,11 @@
                     "url": {
                         "type": "string",
                         "description": "The URL associated with the notification."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "hive-123456",
+                        "description": "The community the notification concerns; present only on notifications concerning a community."
                     }
                 },
                 "required": [
@@ -29853,6 +31348,1416 @@
                 "required": [
                     "extensions"
                 ]
+            },
+            "observer_vote_bridge_api": {
+                "type": "object",
+                "properties": {
+                    "rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The rshares of the observer's vote; 0 for a removed vote."
+                    },
+                    "percent": {
+                        "type": "integer",
+                        "example": 10000,
+                        "description": "The vote weight in basis points (-10000 to 10000); 0 for a removed vote."
+                    }
+                },
+                "required": [
+                    "rshares",
+                    "percent"
+                ]
+            },
+            "top_vote_bridge_api": {
+                "type": "object",
+                "properties": {
+                    "voter": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the voter."
+                    },
+                    "rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The rshares of the vote."
+                    },
+                    "percent": {
+                        "type": "integer",
+                        "example": 10000,
+                        "description": "The vote weight in basis points (-10000 to 10000)."
+                    }
+                },
+                "required": [
+                    "voter",
+                    "rshares",
+                    "percent"
+                ]
+            },
+            "post_bridge_api_v2": {
+                "type": "object",
+                "description": "A post as returned by the vote-free (`_v2`) bridge and search_api calls and by `bridge.get_posts`: the fields of `post_bridge_api` without `active_votes`, plus `observer_vote` and, on request, `top_votes`.",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the account that created the post."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "my-first-post",
+                        "description": "The permanent link to the post."
+                    },
+                    "category": {
+                        "type": "string",
+                        "example": "hive",
+                        "description": "The category under which the post is classified."
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "My First Post",
+                        "description": "The title of the post."
+                    },
+                    "body": {
+                        "type": "string",
+                        "example": "This is the content of my first post.",
+                        "description": "The body content of the post."
+                    },
+                    "created": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-16T11:40:09",
+                        "description": "The date and time when the post was created."
+                    },
+                    "updated": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-16T12:00:00",
+                        "description": "The date and time when the post was last updated."
+                    },
+                    "depth": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "The depth of the post in the comment hierarchy."
+                    },
+                    "children": {
+                        "type": "integer",
+                        "example": 5,
+                        "description": "The number of direct replies (children) to the post."
+                    },
+                    "net_rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "example": 1000,
+                        "description": "The net rshares (relative shares) of the post, indicating its popularity."
+                    },
+                    "is_paidout": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Indicates whether the post has been paid out."
+                    },
+                    "payout_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-20T00:00:00",
+                        "description": "The date and time when the payout for the post will occur."
+                    },
+                    "replies": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "reply1",
+                            "reply2"
+                        ],
+                        "description": "An array of replies to the post."
+                    },
+                    "reblogs": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "The number of times the post has been reblogged."
+                    },
+                    "url": {
+                        "type": "string",
+                        "example": "https://hive.blog/@alice/my-first-post",
+                        "description": "The URL of the post."
+                    },
+                    "beneficiaries": {
+                        "$ref": "#/components/schemas/beneficiaries",
+                        "description": "An array of beneficiary objects associated with the post."
+                    },
+                    "max_accepted_payout": {
+                        "x-hive-type": "LegacyAssetHbd",
+                        "type": "string",
+                        "example": "1000.000 HBD",
+                        "description": "The maximum accepted payout for the post."
+                    },
+                    "percent_hbd": {
+                        "type": "integer",
+                        "example": 10000,
+                        "description": "The percentage of the payout that will be in HBD (Hive Backed Dollars)."
+                    },
+                    "json_metadata": {
+                        "type": "object",
+                        "example": {
+                            "tags": [
+                                "hive",
+                                "blockchain"
+                            ],
+                            "app": "hive/0.1"
+                        },
+                        "description": "JSON metadata associated with the post, containing additional information like tags and application used."
+                    },
+                    "stats": {
+                        "$ref": "#/components/schemas/stats",
+                        "description": "Statistics object containing various metrics related to the post."
+                    },
+                    "payout": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 5000.75,
+                        "description": "The payout amount for the post, in HIVE."
+                    },
+                    "author_reputation": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 69.25,
+                        "description": "The reputation score of the author, indicating their standing in the Hive community."
+                    },
+                    "blacklists": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "blacklist1",
+                            "blacklist2"
+                        ],
+                        "description": "An array of blacklists associated with the post, indicating accounts that have blacklisted it."
+                    },
+                    "reblogged_by": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "bob",
+                            "charlie"
+                        ],
+                        "description": "An array of accounts that have reblogged the post."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "hive-101145",
+                        "description": "The community to which the post belongs, if applicable."
+                    },
+                    "community_title": {
+                        "type": "string",
+                        "example": "Hive Community",
+                        "description": "The title of the community associated with the post."
+                    },
+                    "author_title": {
+                        "type": "string",
+                        "example": "Blockchain Enthusiast",
+                        "description": "The title of the author, if applicable."
+                    },
+                    "author_role": {
+                        "type": "string",
+                        "example": "content_creator",
+                        "description": "The role of the author in the Hive ecosystem."
+                    },
+                    "curator_payout_value": {
+                        "x-hive-type": "LegacyAssetHbd",
+                        "type": "string",
+                        "example": "50.000 HBD",
+                        "description": "The value of the curator payout for the post."
+                    },
+                    "author_payout_value": {
+                        "x-hive-type": "LegacyAssetHbd",
+                        "type": "string",
+                        "example": "950.000 HBD",
+                        "description": "The value of the author payout for the post."
+                    },
+                    "pending_payout_value": {
+                        "x-hive-type": "LegacyAssetHbd",
+                        "type": "string",
+                        "example": "1000.000 HBD",
+                        "description": "The pending payout value for the post, which is the total payout that has not yet been processed."
+                    },
+                    "parent_author": {
+                        "type": "string",
+                        "example": "parent_author_name",
+                        "description": "The author of the parent post, if this post is a reply."
+                    },
+                    "parent_permlink": {
+                        "type": "string",
+                        "example": "parent-permlink",
+                        "description": "The permlink of the parent post, if this post is a reply."
+                    },
+                    "observer_vote": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/observer_vote_bridge_api"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "The observer's vote on the post, or null when no observer is given or the observer has not voted on it."
+                    },
+                    "top_votes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/top_vote_bridge_api"
+                        },
+                        "maxItems": 10,
+                        "description": "Present only when the call's `top_votes` parameter is greater than 0: up to that many votes, largest absolute rshares first (ties by voter account id), leaving out voters muted by the observer."
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink",
+                    "category",
+                    "title",
+                    "body",
+                    "created",
+                    "updated",
+                    "depth",
+                    "children",
+                    "net_rshares",
+                    "is_paidout",
+                    "payout_at",
+                    "replies",
+                    "reblogs",
+                    "url",
+                    "beneficiaries",
+                    "max_accepted_payout",
+                    "percent_hbd",
+                    "json_metadata",
+                    "stats",
+                    "payout",
+                    "author_reputation",
+                    "blacklists",
+                    "observer_vote"
+                ],
+                "not": {
+                    "required": [
+                        "active_votes"
+                    ]
+                }
+            },
+            "get_account_posts_by_tag": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "steemit",
+                        "description": "The author of the posts."
+                    },
+                    "tag": {
+                        "type": "string",
+                        "example": "steemit",
+                        "description": "A community name (`hive-NNNNNN`), for the account's posts in that community, or any other tag, for the account's posts tagged with it."
+                    },
+                    "start_author": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Author of the last post of the previous page, for paging; use together with start_permlink."
+                    },
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Permlink of the last post of the previous page, for paging."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The maximum number of posts to return (1-100). If omitted, defaults to 20."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "",
+                        "description": "An account whose mutes are applied: posts are grayed when the observer muted the account (optional)."
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "example": 0,
+                        "description": "If greater than 0, each post's body is cut to this many characters. If omitted, defaults to 0 (no truncation)."
+                    }
+                },
+                "required": [
+                    "account",
+                    "tag"
+                ]
+            },
+            "get_account_posts_by_tag_v2": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "steemit",
+                        "description": "The author of the posts."
+                    },
+                    "tag": {
+                        "type": "string",
+                        "example": "steemit",
+                        "description": "A community name (`hive-NNNNNN`), for the account's posts in that community, or any other tag, for the account's posts tagged with it."
+                    },
+                    "start_author": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Author of the last post of the previous page, for paging; use together with start_permlink."
+                    },
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Permlink of the last post of the previous page, for paging."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The maximum number of posts to return (1-100). If omitted, defaults to 20."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "",
+                        "description": "An account whose mutes are applied: posts are grayed when the observer muted the account (optional)."
+                    },
+                    "top_votes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10,
+                        "default": 0,
+                        "example": 3,
+                        "description": "Number of the post's largest votes (by absolute rshares) to return in each post's `top_votes` (0-10). If omitted or 0, `top_votes` is left out of the posts."
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "example": 0,
+                        "description": "If greater than 0, each post's body is cut to this many characters. If omitted, defaults to 0 (no truncation)."
+                    }
+                },
+                "required": [
+                    "account",
+                    "tag"
+                ]
+            },
+            "get_account_posts_v2": {
+                "type": "object",
+                "properties": {
+                    "sort": {
+                        "type": "string",
+                        "example": "blog",
+                        "description": "The sorting method for the posts, e.g., \"blog\", \"feed\", \"posts\"."
+                    },
+                    "account": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The name of the account to query."
+                    },
+                    "start_author": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The author to start from, used for pagination."
+                    },
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The permlink to start from, used for pagination."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "The maximum number of posts to return."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The observer account to use for the query."
+                    },
+                    "top_votes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10,
+                        "default": 0,
+                        "example": 3,
+                        "description": "Number of the post's largest votes (by absolute rshares) to return in each post's `top_votes` (0-10). If omitted or 0, `top_votes` is left out of the posts."
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "example": 0,
+                        "description": "If greater than 0, each post's body is cut to this many characters. If omitted, defaults to 0 (no truncation)."
+                    },
+                    "include_own": {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Only with sort `feed`: when true, the account's own blog (posts and reblogs) is included in the feed. If omitted, defaults to false."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Only with sort `posts` or `comments`: an existing community name; only the account's posts or comments in that community are returned (optional)."
+                    }
+                },
+                "required": [
+                    "sort",
+                    "account"
+                ]
+            },
+            "get_ranked_posts_v2": {
+                "type": "object",
+                "properties": {
+                    "sort": {
+                        "type": "string",
+                        "example": "trending",
+                        "description": "The sorting method for the posts (e.g., trending, hot, new)."
+                    },
+                    "start_author": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Author of the last post of the previous page, for paging; use together with start_permlink."
+                    },
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Permlink of the last post of the previous page, for paging."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "The maximum number of posts to retrieve. If omitted, defaults to 20."
+                    },
+                    "tag": {
+                        "type": "string",
+                        "example": "hive",
+                        "description": "The tag to filter posts by."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "user123",
+                        "description": "The user observing the posts."
+                    },
+                    "muted_reasons_filter": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 4
+                        },
+                        "example": [
+                            0,
+                            3
+                        ],
+                        "description": "Excludes posts muted for any of the listed reasons (ids from bridge.list_muted_reasons_enum: 0 MUTED_COMMUNITY_MODERATION, 1 MUTED_COMMUNITY_TYPE, 2 MUTED_PARENT, 3 MUTED_REPUTATION, 4 MUTED_ROLE_COMMUNITY). If omitted or empty, no posts are excluded."
+                    },
+                    "top_votes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10,
+                        "default": 0,
+                        "example": 3,
+                        "description": "Number of the post's largest votes (by absolute rshares) to return in each post's `top_votes` (0-10). If omitted or 0, `top_votes` is left out of the posts."
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "example": 0,
+                        "description": "If greater than 0, each post's body is cut to this many characters. If omitted, defaults to 0 (no truncation)."
+                    }
+                },
+                "required": [
+                    "sort"
+                ]
+            },
+            "get_post_v2": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "hiveio",
+                        "description": "The author of the post."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "hive-12345",
+                        "description": "The unique identifier for the post."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "gtg",
+                        "description": "The observer of the post."
+                    },
+                    "top_votes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10,
+                        "default": 0,
+                        "example": 3,
+                        "description": "Number of the post's largest votes (by absolute rshares) to return in each post's `top_votes` (0-10). If omitted or 0, `top_votes` is left out of the posts."
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ]
+            },
+            "get_discussion_v2": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "description": "The author of the discussion."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "description": "The unique identifier for the discussion, typically a permalink."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "description": "The observer's account name, used to track who is viewing the discussion."
+                    },
+                    "muted_reasons_filter": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 4
+                        },
+                        "example": [
+                            0,
+                            3
+                        ],
+                        "description": "Excludes posts muted for any of the listed reasons (ids from bridge.list_muted_reasons_enum: 0 MUTED_COMMUNITY_MODERATION, 1 MUTED_COMMUNITY_TYPE, 2 MUTED_PARENT, 3 MUTED_REPUTATION, 4 MUTED_ROLE_COMMUNITY). If omitted or empty, no posts are excluded."
+                    },
+                    "top_votes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10,
+                        "default": 0,
+                        "example": 3,
+                        "description": "Number of the post's largest votes (by absolute rshares) to return in each post's `top_votes` (0-10). If omitted or 0, `top_votes` is left out of the posts."
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ]
+            },
+            "bridge_list_votes": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "steemit",
+                        "description": "The author of the post."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "firstpost",
+                        "description": "The permlink of the post."
+                    },
+                    "start": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Voter name; the page starts after this voter. Pass the last `voter` of the previous page to get the next one (optional)."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "default": 100,
+                        "example": 100,
+                        "description": "The maximum number of votes to return (1-1000). If omitted, defaults to 100."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "",
+                        "description": "An account whose mutes are applied: votes of accounts the observer muted are left out (optional)."
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ]
+            },
+            "get_posts": {
+                "type": "object",
+                "properties": {
+                    "posts": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                        },
+                        "minItems": 1,
+                        "maxItems": 100,
+                        "example": [
+                            [
+                                "steemit",
+                                "firstpost"
+                            ],
+                            [
+                                "gtg",
+                                "heavy-duty-witness-node-infrastructure"
+                            ]
+                        ],
+                        "description": "1-100 `[author, permlink]` pairs. A pair may repeat; each occurrence gets its own entry in the result."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "",
+                        "description": "An account used as the observer, as in `bridge.get_post_v2` (optional)."
+                    },
+                    "top_votes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10,
+                        "default": 0,
+                        "example": 3,
+                        "description": "Number of the post's largest votes (by absolute rshares) to return in each post's `top_votes` (0-10). If omitted or 0, `top_votes` is left out of the posts."
+                    }
+                },
+                "required": [
+                    "posts"
+                ]
+            },
+            "query_json_metadata": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "oneOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 1
+                            }
+                        ],
+                        "example": [
+                            "profile",
+                            "location"
+                        ],
+                        "description": "One top-level key of the account metadata, or a list of keys naming a nested value."
+                    },
+                    "value": {
+                        "oneOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "boolean"
+                            }
+                        ],
+                        "example": "Poland",
+                        "description": "The value to match. It matches a JSON string equal to it and, when it reads as a number or boolean, also that JSON number or boolean."
+                    },
+                    "type": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "posting",
+                                    "active"
+                                ]
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "enum": [
+                                        "posting",
+                                        "active"
+                                    ]
+                                },
+                                "minItems": 1
+                            }
+                        ],
+                        "example": "posting",
+                        "description": "Which metadata to search: `posting` (posting_json_metadata), `active` (json_metadata), or a list of them. If omitted, both are searched."
+                    },
+                    "last": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The last account of the previous page; only accounts created after it are returned (optional)."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100,
+                        "default": 100,
+                        "example": 100,
+                        "description": "The maximum number of accounts to return (1-100). If omitted, defaults to 100."
+                    }
+                },
+                "required": [
+                    "key",
+                    "value"
+                ]
+            },
+            "get_community_moderation_log": {
+                "type": "object",
+                "properties": {
+                    "community": {
+                        "type": "string",
+                        "example": "hive-135485",
+                        "description": "The community name."
+                    },
+                    "action_type": {
+                        "type": "string",
+                        "example": "mute_post",
+                        "description": "Only entries of this action (optional).",
+                        "enum": [
+                            "set_role",
+                            "set_title",
+                            "mute_post",
+                            "unmute_post",
+                            "pin_post",
+                            "unpin_post",
+                            "flag_post"
+                        ]
+                    },
+                    "last_id": {
+                        "type": "integer",
+                        "example": 105,
+                        "description": "Id of the last entry of the previous page (the `id` of that entry, as a number); only the entries after it, in (date, id) descending order, are returned (optional). An id that does not exist is rejected."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "default": 100,
+                        "example": 100,
+                        "description": "The maximum number of entries to return (1-1000). If omitted, defaults to 100."
+                    }
+                },
+                "required": [
+                    "community"
+                ]
+            },
+            "get_account_moderation_stats": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The account the moderation actions targeted."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Only actions in this community (optional)."
+                    },
+                    "last_id": {
+                        "type": "integer",
+                        "example": 105,
+                        "description": "Id of the last entry of the previous page (the `id` of that entry, as a number); only the entries after it, in (date, id) descending order, are returned (optional). An id that does not exist is rejected."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "default": 100,
+                        "example": 100,
+                        "description": "The maximum number of entries of `actions` to return (1-1000). If omitted, defaults to 100."
+                    }
+                },
+                "required": [
+                    "account"
+                ]
+            },
+            "get_moderator_activity": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "test-safari",
+                        "description": "The moderator: the account that performed the actions."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Only actions in this community (optional)."
+                    },
+                    "last_id": {
+                        "type": "integer",
+                        "example": 105,
+                        "description": "Id of the last entry of the previous page (the `id` of that entry, as a number); only the entries after it, in (date, id) descending order, are returned (optional). An id that does not exist is rejected."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000,
+                        "default": 100,
+                        "example": 100,
+                        "description": "The maximum number of entries to return (1-1000). If omitted, defaults to 100."
+                    }
+                },
+                "required": [
+                    "account"
+                ]
+            },
+            "find_similar": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "xeroc",
+                        "description": "The author of the post to find similar posts to."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "piston-web-first-open-source-steem-gui---searching-for-alpha-testers",
+                        "description": "The permlink of the post to find similar posts to."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "The maximum number of posts to return (1-100). If omitted, defaults to 20."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "",
+                        "description": "An account used as the observer: posts of authors it muted are left out and blacklist stats are filled (optional)."
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "example": 0,
+                        "description": "If greater than 0, each post's body is cut to this many characters. If omitted, defaults to 0 (no truncation)."
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ]
+            },
+            "find_similar_v2": {
+                "type": "object",
+                "properties": {
+                    "author": {
+                        "type": "string",
+                        "example": "xeroc",
+                        "description": "The author of the post to find similar posts to."
+                    },
+                    "permlink": {
+                        "type": "string",
+                        "example": "piston-web-first-open-source-steem-gui---searching-for-alpha-testers",
+                        "description": "The permlink of the post to find similar posts to."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "The maximum number of posts to return (1-100). If omitted, defaults to 20."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "",
+                        "description": "An account used as the observer: posts of authors it muted are left out and blacklist stats are filled (optional)."
+                    },
+                    "top_votes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10,
+                        "default": 0,
+                        "example": 3,
+                        "description": "Number of the post's largest votes (by absolute rshares) to return in each post's `top_votes` (0-10). If omitted or 0, `top_votes` is left out of the posts."
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 0,
+                        "example": 0,
+                        "description": "If greater than 0, each post's body is cut to this many characters. If omitted, defaults to 0 (no truncation)."
+                    }
+                },
+                "required": [
+                    "author",
+                    "permlink"
+                ]
+            },
+            "find_text_v2": {
+                "type": "object",
+                "properties": {
+                    "pattern": {
+                        "type": "string",
+                        "example": "hive",
+                        "description": "The search pattern to look for in posts."
+                    },
+                    "sort": {
+                        "type": "string",
+                        "example": "relevance",
+                        "description": "The sorting method for the results, e.g., \"relevance\", \"trending\", \"created\"."
+                    },
+                    "author": {
+                        "type": "string",
+                        "example": "",
+                        "description": "Filter results by author name."
+                    },
+                    "start_author": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The author to start from, used for pagination."
+                    },
+                    "start_permlink": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The permlink to start from, used for pagination."
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "The maximum number of posts to return."
+                    },
+                    "observer": {
+                        "type": "string",
+                        "example": "",
+                        "description": "The observer account to use for the query."
+                    },
+                    "top_votes": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 10,
+                        "default": 0,
+                        "example": 3,
+                        "description": "Number of the post's largest votes (by absolute rshares) to return in each post's `top_votes` (0-10). If omitted or 0, `top_votes` is left out of the posts."
+                    },
+                    "truncate_body": {
+                        "type": "integer",
+                        "example": 0,
+                        "description": "If greater than 0, truncates the body of the post to this length."
+                    }
+                },
+                "required": [
+                    "pattern",
+                    "sort"
+                ]
+            },
+            "get_account_posts_by_tag_v2_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/post_bridge_api_v2"
+                }
+            },
+            "get_account_posts_v2_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/post_bridge_api_v2"
+                }
+            },
+            "get_ranked_posts_v2_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/post_bridge_api_v2"
+                }
+            },
+            "get_post_v2_response": {
+                "$ref": "#/components/schemas/post_bridge_api_v2"
+            },
+            "get_discussion_v2_response": {
+                "type": "object",
+                "description": "Map of \"author/permlink\" of every post in the discussion tree to the post.",
+                "additionalProperties": {
+                    "$ref": "#/components/schemas/post_bridge_api_v2"
+                }
+            },
+            "get_posts_response": {
+                "type": "array",
+                "description": "One entry per requested pair, in request order; null where the post does not exist or is deleted.",
+                "items": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/components/schemas/post_bridge_api_v2"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "bridge_vote": {
+                "type": "object",
+                "properties": {
+                    "voter": {
+                        "type": "string",
+                        "example": "dantheman",
+                        "description": "The name of the voter."
+                    },
+                    "rshares": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The rshares of the vote."
+                    },
+                    "percent": {
+                        "type": "integer",
+                        "example": 10000,
+                        "description": "The vote weight in basis points (-10000 to 10000)."
+                    },
+                    "weight": {
+                        "$ref": "#/components/schemas/hive_int",
+                        "description": "The curation weight of the vote."
+                    },
+                    "time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-07-22T23:00:36",
+                        "description": "The time of the vote's last change."
+                    },
+                    "reputation": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 71.46,
+                        "description": "The voter's reputation (log10 score, as in other bridge objects)."
+                    }
+                },
+                "required": [
+                    "voter",
+                    "rshares",
+                    "percent",
+                    "weight",
+                    "time",
+                    "reputation"
+                ]
+            },
+            "bridge_list_votes_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/bridge_vote"
+                }
+            },
+            "query_json_metadata_response": {
+                "type": "array",
+                "description": "Names of the matching accounts, in account creation order.",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "moderation_log_entry": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "107",
+                        "description": "The id of the log entry, serialized as a string. Pass it as `last_id` to get the next page."
+                    },
+                    "action": {
+                        "type": "string",
+                        "example": "pin_post",
+                        "description": "The moderation action: `set_role`, `set_title`, `mute_post`, `unmute_post`, `pin_post`, `unpin_post` or `flag_post`."
+                    },
+                    "actor": {
+                        "type": "string",
+                        "example": "blocktrades",
+                        "description": "The account that performed the action."
+                    },
+                    "target_account": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The account the action targeted."
+                    },
+                    "target_post_author": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The author of the post the action targeted; null for an action on no post."
+                    },
+                    "target_post_permlink": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The permlink of the post the action targeted; null for an action on no post."
+                    },
+                    "old_value": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The value before the action (e.g. the previous role or title, `muted`, `pinned`)."
+                    },
+                    "new_value": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The value after the action."
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The notes given with the action."
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-09-15T18:02:03",
+                        "description": "The time of the action."
+                    }
+                },
+                "required": [
+                    "id",
+                    "action",
+                    "actor",
+                    "target_account",
+                    "target_post_author",
+                    "target_post_permlink",
+                    "old_value",
+                    "new_value",
+                    "notes",
+                    "date"
+                ]
+            },
+            "get_community_moderation_log_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/moderation_log_entry"
+                }
+            },
+            "moderator_activity_entry": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "107",
+                        "description": "The id of the log entry, serialized as a string. Pass it as `last_id` to get the next page."
+                    },
+                    "action": {
+                        "type": "string",
+                        "example": "pin_post",
+                        "description": "The moderation action: `set_role`, `set_title`, `mute_post`, `unmute_post`, `pin_post`, `unpin_post` or `flag_post`."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "hive-135485",
+                        "description": "The community the action was taken in."
+                    },
+                    "community_title": {
+                        "type": "string",
+                        "example": "Test Community",
+                        "description": "The title of that community."
+                    },
+                    "target_account": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The account the action targeted."
+                    },
+                    "target_post_author": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The author of the post the action targeted; null for an action on no post."
+                    },
+                    "target_post_permlink": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The permlink of the post the action targeted; null for an action on no post."
+                    },
+                    "old_value": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The value before the action (e.g. the previous role or title, `muted`, `pinned`)."
+                    },
+                    "new_value": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The value after the action."
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The notes given with the action."
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-09-15T18:02:03",
+                        "description": "The time of the action."
+                    }
+                },
+                "required": [
+                    "id",
+                    "action",
+                    "community",
+                    "community_title",
+                    "target_account",
+                    "target_post_author",
+                    "target_post_permlink",
+                    "old_value",
+                    "new_value",
+                    "notes",
+                    "date"
+                ]
+            },
+            "get_moderator_activity_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/moderator_activity_entry"
+                }
+            },
+            "account_moderation_action": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "example": "107",
+                        "description": "The id of the log entry, serialized as a string. Pass it as `last_id` to get the next page."
+                    },
+                    "action": {
+                        "type": "string",
+                        "example": "pin_post",
+                        "description": "The moderation action: `set_role`, `set_title`, `mute_post`, `unmute_post`, `pin_post`, `unpin_post` or `flag_post`."
+                    },
+                    "community": {
+                        "type": "string",
+                        "example": "hive-135485",
+                        "description": "The community the action was taken in."
+                    },
+                    "community_title": {
+                        "type": "string",
+                        "example": "Test Community",
+                        "description": "The title of that community."
+                    },
+                    "actor": {
+                        "type": "string",
+                        "example": "blocktrades",
+                        "description": "The account that performed the action."
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2016-09-15T18:02:03",
+                        "description": "The time of the action."
+                    },
+                    "notes": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "The notes given with the action."
+                    }
+                },
+                "required": [
+                    "id",
+                    "action",
+                    "community",
+                    "community_title",
+                    "actor",
+                    "date",
+                    "notes"
+                ]
+            },
+            "get_account_moderation_stats_response": {
+                "type": "object",
+                "properties": {
+                    "account": {
+                        "type": "string",
+                        "example": "alice",
+                        "description": "The queried account."
+                    },
+                    "stats": {
+                        "type": "object",
+                        "description": "Counts of the actions that targeted the account (in the given community, if any), over the whole log.",
+                        "properties": {
+                            "times_muted": {
+                                "type": "integer",
+                                "description": "Number of `mute_post` actions."
+                            },
+                            "times_unmuted": {
+                                "type": "integer",
+                                "description": "Number of `unmute_post` actions."
+                            },
+                            "times_flagged": {
+                                "type": "integer",
+                                "description": "Number of `flag_post` actions."
+                            },
+                            "posts_pinned": {
+                                "type": "integer",
+                                "description": "Number of `pin_post` actions."
+                            },
+                            "posts_unpinned": {
+                                "type": "integer",
+                                "description": "Number of `unpin_post` actions."
+                            },
+                            "role_changes": {
+                                "type": "integer",
+                                "description": "Number of `set_role` actions."
+                            },
+                            "title_changes": {
+                                "type": "integer",
+                                "description": "Number of `set_title` actions."
+                            }
+                        },
+                        "required": [
+                            "times_muted",
+                            "times_unmuted",
+                            "times_flagged",
+                            "posts_pinned",
+                            "posts_unpinned",
+                            "role_changes",
+                            "title_changes"
+                        ]
+                    },
+                    "actions": {
+                        "type": "array",
+                        "description": "One page of the actions that targeted the account, newest first.",
+                        "items": {
+                            "$ref": "#/components/schemas/account_moderation_action"
+                        }
+                    }
+                },
+                "required": [
+                    "account",
+                    "stats",
+                    "actions"
+                ]
+            },
+            "find_similar_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/post_bridge_api"
+                }
+            },
+            "find_similar_v2_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/post_bridge_api_v2"
+                }
+            },
+            "find_text_v2_response": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/post_bridge_api_v2"
+                }
             }
         }
     },
