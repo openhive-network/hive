@@ -4,9 +4,10 @@
 # `environment.image`, the seed pin (AIDEV builds the image the suites run in on
 # the followed base itself). See .aidev/README.md.
 #
-# The tag is `aidev-<hash>`, the hash of the image inputs (the Dockerfile,
-# hive-local-tools' pyproject.toml and poetry.lock, and the followed base's current
-# digest); the registry cleanup policy keeps `aidev-*` tags. When
+# The tag is `aidev-<hash>`, the hash of the image inputs (project.yaml's
+# `environment.inputs`: the Dockerfile and its .dockerignore, hive-local-tools' and
+# the API generator's pyproject.toml and poetry.lock, the generated package's
+# pyproject.toml; and the followed base's current digest); the registry cleanup policy keeps `aidev-*` tags. When
 # <repository>:aidev-<hash> is already in the registry nothing is built: the script
 # prints that image's digest.
 #
@@ -19,7 +20,17 @@ cd "$(dirname "$0")/../.."
 
 REPOSITORY="${AIDEV_RUNTIME_REPOSITORY:-registry.gitlab.syncad.com/hive/hive/aidev-tests}"
 
-CONTEXT=tests/python/hive-local-tools
+# The checkout; .aidev/runtime/Dockerfile.dockerignore admits only what the Dockerfile copies.
+CONTEXT=.
+INPUTS=(
+    .aidev/runtime/Dockerfile
+    .aidev/runtime/Dockerfile.dockerignore
+    tests/python/hive-local-tools/pyproject.toml
+    tests/python/hive-local-tools/poetry.lock
+    libraries/plugins/apis/api_generation/api_generation/pyproject.toml
+    libraries/plugins/apis/api_generation/api_generation/poetry.lock
+    libraries/plugins/apis/api_generation/python_api_package/pyproject.toml
+)
 
 # The tag project.yaml's `environment.base` follows, pinned to the digest it names now.
 BASE_TAG="$(grep -o 'base: {image: "[^"]*"' .aidev/project.yaml | cut -d'"' -f2)"
@@ -28,7 +39,7 @@ BASE_DIGEST="$(docker buildx imagetools inspect "$BASE_TAG" --format '{{json .Ma
 BASE_IMAGE="${BASE_TAG%:*}@${BASE_DIGEST:?cannot resolve the followed base $BASE_TAG}"
 
 input_hash() {
-    { sha256sum .aidev/runtime/Dockerfile "$CONTEXT/pyproject.toml" "$CONTEXT/poetry.lock"; echo "$BASE_IMAGE"; } \
+    { sha256sum "${INPUTS[@]}"; echo "$BASE_IMAGE"; } \
         | sha256sum | cut -c1-16
 }
 TAG="aidev-$(input_hash)"

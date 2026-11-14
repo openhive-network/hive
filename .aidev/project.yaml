@@ -31,8 +31,13 @@ environment:
   # The seed pin (read before a slot resolves); suites run in AIDEV's build of
   # .aidev/runtime/Dockerfile on the followed base below (.aidev/README.md).
   image: "registry.gitlab.syncad.com/hive/hive/aidev-tests@sha256:d7b08a2a52a97a8fa4b5e806c9fe2b856cf71db2b56ad1c5846767cb2d8c6c5a"
-  inputs: [".aidev/runtime/Dockerfile", "tests/python/hive-local-tools/pyproject.toml", "tests/python/hive-local-tools/poetry.lock"]
-  build: {dockerfile: ".aidev/runtime/Dockerfile", context: "tests/python/hive-local-tools"}
+  inputs: [".aidev/runtime/Dockerfile", ".aidev/runtime/Dockerfile.dockerignore",
+           "tests/python/hive-local-tools/pyproject.toml", "tests/python/hive-local-tools/poetry.lock",
+           "libraries/plugins/apis/api_generation/api_generation/pyproject.toml",
+           "libraries/plugins/apis/api_generation/api_generation/poetry.lock",
+           "libraries/plugins/apis/api_generation/python_api_package/pyproject.toml"]
+  # The checkout, of which Dockerfile.dockerignore admits only the files the Dockerfile copies.
+  build: {dockerfile: ".aidev/runtime/Dockerfile", context: "."}
   # CI's build image at CI_BASE_IMAGE_TAG (scripts/ci-helpers/ci_image_tag_vars.yml)
   base: {image: "registry.gitlab.syncad.com/hive/common-ci-configuration/ci-base-image:pypa_2_28-pg18-6", follow: true}
 
@@ -84,10 +89,14 @@ verification:
     suites:
       # One build, then chain_test and plugin_test at the same time, each split
       # into parallel processes sharing HIVE_TEST_JOBS (run-checks.sh); witness_tests
-      # (~15 min serially, aidev#15546) runs one process per case.
+      # (~15 min serially, aidev#15546) runs one process per case. Beside them,
+      # hiveio-api generates and tests the hiveio_api package (CI's
+      # hiveio_api_package, ~30 s) from the build's operations_description.json when
+      # the diff changes the openapi documentation or the generator, and is skipped
+      # otherwise (.aidev/README.md).
       - name: default
         adapter: command
-        args: [".aidev/run-checks.sh", "full", "build", "chain-tests,plugin-tests"]
+        args: [".aidev/run-checks.sh", "full", "build", "chain-tests,plugin-tests,hiveio-api"]
         artifacts: ["test-results/full/"]
         timeout: 1500
         memory: 40g
@@ -138,7 +147,7 @@ verification:
     suites:
       - name: default
         adapter: command
-        args: [".aidev/run-checks.sh", "baseline", "build", "chain-tests,plugin-tests"]
+        args: [".aidev/run-checks.sh", "baseline", "build", "chain-tests,plugin-tests,hiveio-api"]
         artifacts: ["test-results/baseline/"]
         memory: 40g
   # The promote gate: the merged candidate builds and its quick tests pass;

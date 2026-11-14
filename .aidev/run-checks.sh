@@ -11,9 +11,10 @@
 # when one of them ends, its share goes to those still running.
 #
 #   - build           configure and build the testnet chain_test and plugin_test,
-#                     exactly as CI's testnet_node_build compiles them, and
+#                     exactly as CI's testnet_node_build compiles them,
 #                     assertion_id_verifier, which fails when two FC_ASSERT
-#                     conditions in protocol or chain sources share an assertion ID
+#                     conditions in protocol or chain sources share an assertion ID,
+#                     and operations_description.json (what `hiveio-api` generates from)
 #   - chain-smoke     chain_test basic_tests
 #   - chain-tests     every chain_test suite, in parallel (scripts/run_chain_tests_parallel.sh)
 #   - plugin-api      plugin_test without witness_tests (CI's plugin_test_api)
@@ -30,6 +31,11 @@
 #   - wallet-patterns the cli_wallet Python pattern tests (CI's python_pattern_testnet_tests)
 #                     against a testnet hived and cli_wallet it builds, in the image's
 #                     test-tools environment; skipped when that environment is missing
+#   - hiveio-api      CI's hiveio_api_package offline: generate the hiveio_api package
+#                     from openapi.json and the build's operations_description.json, run
+#                     the generator tests and build the wheel, in the image's generator
+#                     environment; skipped unless the diff changes the openapi
+#                     documentation or the generator, or when an input is missing
 #
 # The build's ninja runs as many jobs as the memory left to it allows, 2 GB each
 # (.aidev/build-jobs.sh); HIVE_BUILD_JOBS overrides that.
@@ -315,7 +321,7 @@ build() (  # a subshell: the `cd` below must not move the steps that follow
     local rc=0 started="$bld/.ninja-started"
     touch "$started" || return 1
     sccache --zero-stats > /dev/null 2>&1 || true
-    build_ninja chain_test plugin_test assertion_id_verifier || rc=$?
+    build_ninja chain_test plugin_test assertion_id_verifier operations_description || rc=$?
     sccache_hits
     [ "$rc" -eq 0 ] || duplicate_assertion_ids "$bld/generated_assert_id" "$started"
     return "$rc"
@@ -382,6 +388,49 @@ wallet_patterns() (  # a subshell, as build's: it moves into the copy
         -m "not testnet and not mainnet_5m and not live_mainnet" cli_wallet_tests
 )
 
+# CI's hiveio_api_package (scripts/ci-helpers/hiveio_api_package.sh) without the
+# network the suite lacks: generate the package, run the generator tests (CI's
+# junit report) and build the wheel without build isolation, in the image's
+# generator environment (.aidev/runtime/Dockerfile), HIVE_API_GENERATION_VENV
+# overriding it. Installing the wheel with its dependencies, importing the
+# published dependents and deploying stay in CI. The package is generated where
+# CI generates it, in the checkout's gitignored python_api_package/hiveio_api.
+hiveio_api() (  # a subshell, as build's: it exports the generator environment
+    local venv="${HIVE_API_GENERATION_VENV:-/opt/api-generation-venv}" base changed missing
+    local gen="$PWD/libraries/plugins/apis/api_generation" ops="$bld/bin/operations_description.json"
+    # what the package is generated from: the API documentation and the generator
+    # (with its templates and the package's hand-written modules)
+    local paths=(libraries/plugins/apis/documentation/ libraries/plugins/apis/api_generation/)
+    if ! base="$(diff_base)"; then
+        echo "no_diff_base: none of AIDEV_BASE_REF, AIDEV_IMPLEMENT_BASE_SHA or a merge base with the integration branch resolves"
+        return "$step_skipped"
+    fi
+    changed="$({ git diff --name-only "${base#*=}" -- "${paths[@]}"
+        git ls-files --others --exclude-standard -- "${paths[@]}"; } | sort -u)"
+    if [ -z "$changed" ]; then
+        echo "not_selected: the diff from $base changes none of ${paths[*]}"
+        return "$step_skipped"
+    fi
+    echo "selected by: ${changed//$'\n'/ }"
+    if [ ! -s "$ops" ]; then
+        echo "operations_description_unavailable: no $ops (the build step builds it)"
+        return "$step_skipped"
+    fi
+    # generate_api_packages.sh runs the generator through `poetry run`, which the
+    # image has only for its own user (under /home/hived)
+    if ! missing="$("$venv/bin/python3" -c 'import api_client_generator, jinja2, pytest, poetry_dynamic_versioning' 2>&1 \
+            && command -v poetry 2>&1)"; then
+        echo "$missing"
+        echo "api_generation_unavailable: $venv/bin/python3 cannot import the generator, pytest and the wheel's build backend, or uid $(id -u) has no poetry (.aidev/runtime/Dockerfile)"
+        return "$step_skipped"
+    fi
+    export VIRTUAL_ENV="$venv" PATH="$venv/bin:$PATH" PYTHONDONTWRITEBYTECODE=1
+    "$gen/generate_api_packages.sh" "--operations-description=$ops" || return 1
+    (cd "$gen/api_generation" && HIVEIO_API_REQUIRE_GENERATED_PACKAGE=1 python3 -m pytest -p no:cacheprovider tests \
+        --junitxml="$out/hiveio-api.xml") || return 1
+    python3 -m pip wheel --no-build-isolation --no-deps --no-index -w "$out/hiveio-api-dist" "$gen/python_api_package"
+)
+
 bin() {  # NAME: the built test binary
     find "$bld/tests" -name "$1" -type f -perm -u+x -print -quit 2>/dev/null
 }
@@ -438,6 +487,7 @@ run() {  # STEP
         hived-testnet) step hived-testnet hived_binaries ON ;;
         hived-mainnet) step hived-mainnet hived_binaries OFF ;;
         wallet-patterns) step wallet-patterns wallet_patterns ;;
+        hiveio-api) step hiveio-api hiveio_api ;;
     esac
 }
 
@@ -491,7 +541,7 @@ for group in "$@"; do
     IFS=, read -ra group_steps <<< "$group"
     for s in "${group_steps[@]}"; do
         case "$s" in
-            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet|wallet-patterns) ;;
+            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet|wallet-patterns|hiveio-api) ;;
             *) echo "unknown step: $s" >&2; exit 2 ;;
         esac
     done
