@@ -23,7 +23,7 @@ every step still running and the test processes under it.
 
 | Step | What |
 |---|---|
-| `build` | configure and build the testnet `chain_test` and `plugin_test` with CI's cmake arguments |
+| `build` | configure and build the testnet `chain_test` and `plugin_test` with CI's cmake arguments, and `operations_description.json` (`<build>/bin`, as CI's `testnet_node_build` exports it) |
 | `chain-smoke` | `chain_test --run_test=basic_tests` (includes the state-definition tests) |
 | `chain-tests` | every `chain_test` suite in parallel (`scripts/run_chain_tests_parallel.sh`, CI's `chain_test`) |
 | `plugin-api` | `plugin_test` without `witness_tests` (CI's `plugin_test_api`) |
@@ -31,12 +31,13 @@ every step still running and the test processes under it.
 | `integration` | off unless `HIVE_AIDEV_INTEGRATION=1`; the `tests/integration` scripts the diff selects, each against a hived image built from the checkout (below) |
 | `hived-testnet`, `hived-mainnet` | `hived`, `cli_wallet` and `shared_memory_file_util` with CI's arguments, into `<report dir>/bin` (what `integration` builds an image from) |
 | `wallet-patterns` | the cli_wallet Python pattern tests (CI's `python_pattern_testnet_tests`) against the testnet `hived`, `cli_wallet` and `get_dev_key` it builds as `hived-testnet` does (below) |
+| `hiveio-api` | when the diff changes the openapi documentation or the generator: generate the hiveio_api package, run the generator tests and build the wheel (CI's `hiveio_api_package`, offline; below) |
 
 | Slot | Steps |
 |---|---|
 | quick | build, chain-smoke, plugin-api |
-| full | suite `default`: build, then chain-tests and plugin-tests at the same time; suite `integration`: integration (off; below); suite `wallet_patterns`: wallet-patterns, when the diff reaches the wallet (below) |
-| baseline | build, then chain-tests and plugin-tests at the same time |
+| full | suite `default`: build, then chain-tests, plugin-tests and hiveio-api at the same time; suite `integration`: integration (off; below); suite `wallet_patterns`: wallet-patterns, when the diff reaches the wallet (below) |
+| baseline | build, then chain-tests, plugin-tests and hiveio-api at the same time |
 | canary | build, chain-smoke, plugin-api |
 
 Each suite of `full` and `baseline` declares `memory:`, what AIDEV reserves on the
@@ -105,6 +106,46 @@ worker per `HIVE_TEST_JOBS`, junit in
 
 To run it by hand, in the checks' image as in "The compiler cache" below:
 `.aidev/run-checks.sh full-wallet-patterns wallet-patterns`.
+
+## The hiveio_api package
+
+GitLab CI's `hiveio_api_package` (`scripts/ci-helpers/hiveio_api_package.sh`)
+generates the hiveio_api client from `libraries/plugins/apis/documentation/openapi.json`
+and hived's `operations_description.json`, tests it and builds its wheel. A spec
+change the generated client cannot take (a property both required and nullable, as
+#878 made) fails there, in `tests/test_generated_package.py`. `full`'s `default`
+suite (and `baseline`) runs the same in its `hiveio-api` step, beside chain-tests
+and plugin-tests, sharing their test processes:
+
+- **Change-scoped.** The step runs only when the diff changes
+  `libraries/plugins/apis/documentation/` or `libraries/plugins/apis/api_generation/`
+  (the diff base as for the integration scripts below: `AIDEV_BASE_REF`, else
+  `AIDEV_IMPLEMENT_BASE_SHA`, else the merge base with `origin/aidev/integration`);
+  else it is skipped as `not_selected`, in under a second, and its test processes
+  go to the steps beside it.
+- **The suite's own build.** `build` builds the `operations_description` target
+  (an `ALL` target, so CI's `testnet_node_build` exports it too) into
+  `<build>/bin/operations_description.json`; without it the step is skipped as
+  `operations_description_unavailable`.
+- **The image's generator environment.** The suite has no network, so
+  `.aidev/runtime/Dockerfile` installs, into `/opt/api-generation-venv`, the main
+  group of `libraries/plugins/apis/api_generation/api_generation/poetry.lock`, the
+  pytest of the test-tools lock (CI installs python-test-tools' constraints) and the
+  build backend `python_api_package/pyproject.toml` requires. Where
+  `$HIVE_API_GENERATION_VENV/bin/python3` (`/opt/api-generation-venv` by default)
+  cannot import them, or the suite's user has no `poetry` (the image's is under
+  `/home/hived`), the step is skipped as `api_generation_unavailable`.
+- **What runs.** `generate_api_packages.sh` into the checkout's gitignored
+  `python_api_package/hiveio_api` (where CI generates it), the generator tests
+  with `HIVEIO_API_REQUIRE_GENERATED_PACKAGE=1` (junit report
+  `test-results/<suite>/hiveio-api.xml`), and the wheel, built without build
+  isolation into `test-results/<suite>/hiveio-api-dist/`. Installing the wheel
+  with its dependencies, importing the published hiveio-test-tools with it,
+  the registry check and deploying need the network and stay in CI. The step
+  takes ~30 s.
+
+To run it by hand, in the checks' image as in "The compiler cache" below, after a
+`build`: `.aidev/run-checks.sh full hiveio-api`.
 
 ## Integration scripts
 
@@ -365,14 +406,22 @@ docker run --rm --network hive-checks --user "$(id -u):$(id -g)" -v "$PWD:/work"
 
 ## The test runtime image (`runtime/`)
 
-CI's build image, `ci-base-image`, with its entrypoint cleared and the main group
-of `tests/python/hive-local-tools/poetry.lock` installed in `/opt/test-tools-venv`.
+CI's build image, `ci-base-image`, with its entrypoint cleared, the main group
+of `tests/python/hive-local-tools/poetry.lock` installed in `/opt/test-tools-venv`
+and the API generator's environment in `/opt/api-generation-venv` (above).
 `project.yaml`'s `environment.base` follows the `ci-base-image` tag CI uses
 (`CI_BASE_IMAGE_TAG` in `scripts/ci-helpers/ci_image_tag_vars.yml`; keep the two
 equal): before each run AIDEV resolves that tag to its digest and builds the
-Dockerfile on it (context `tests/python/hive-local-tools`), rebuilding when the tag
-moves or the Dockerfile, `pyproject.toml` or `poetry.lock` changes, so none of
-them needs a re-pin commit. `environment.image` is only the seed pin AIDEV reads
+Dockerfile on it (context the checkout, of which `runtime/Dockerfile.dockerignore`
+admits only the files the Dockerfile copies), rebuilding when the tag moves or one
+of `environment.inputs` changes (the Dockerfile and its `.dockerignore`, the
+`pyproject.toml` and `poetry.lock` of hive-local-tools and of the API generator,
+the generated package's `pyproject.toml`), so none of them needs a re-pin commit.
+The Dockerfile reads its context through a bind mount, so it also builds on
+`tests/python/hive-local-tools`, the context approved before, which AIDEV keeps
+until a maintainer approves the change of `environment.build`. Such an image (or
+an older seed) has no generator environment and skips `hiveio-api` as
+`api_generation_unavailable`. `environment.image` is only the seed pin AIDEV reads
 before a slot resolves (and the image the snippet above and `integration.sh`
 name); it does not have to move. `build.sh` builds and pushes a seed when one is
 needed:

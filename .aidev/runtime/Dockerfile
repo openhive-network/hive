@@ -6,7 +6,13 @@
 # shares CI's compiler cache. Only the entrypoint is cleared, so AIDEV's argv
 # (.aidev/run-checks.sh ...) runs as given.
 #
-# The build context is tests/python/hive-local-tools (`environment.build`).
+# The build context is the checkout (`environment.build`), of which
+# Dockerfile.dockerignore beside this file admits only the files read below. The
+# steps below read it through a bind mount, not COPY, so that this file also builds
+# on tests/python/hive-local-tools, the context approved before: AIDEV keeps an
+# approved `environment.build` until a maintainer approves its change. That context
+# holds no API generator, so the generator environment is then left out and the
+# `hiveio-api` step is skipped as api_generation_unavailable.
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
@@ -15,13 +21,35 @@ FROM ${BASE_IMAGE}
 # installed here, at the lock's versions; the checkout's own hive_local_tools and
 # tests_api come from PYTHONPATH.
 USER root
-COPY pyproject.toml poetry.lock /opt/hive-local-tools/
-COPY tests_api /opt/hive-local-tools/tests_api
-RUN python3 -m venv /opt/test-tools-venv \
+RUN --mount=type=bind,target=/context \
+    tools=/context/tests/python/hive-local-tools \
+    && { [ -f "$tools/poetry.lock" ] || tools=/context; } \
+    && mkdir -p /opt/hive-local-tools \
+    && cp -r "$tools/pyproject.toml" "$tools/poetry.lock" "$tools/tests_api" /opt/hive-local-tools/ \
+    && python3 -m venv /opt/test-tools-venv \
     && VIRTUAL_ENV=/opt/test-tools-venv poetry -C /opt/hive-local-tools install --only main --no-root --no-interaction \
     && cd /tmp && /opt/test-tools-venv/bin/python3 -c 'import test_tools' && rm -rf /tmp/generated
 # The import above is not only a check: wax links its extension modules into
 # site-packages on first import, which a suite's unprivileged user cannot.
+
+# The `hiveio-api` step's generator environment (.aidev/README.md), for the same
+# reason: the main group of the generator's poetry.lock, the pytest of the
+# test-tools lock above (CI takes python-test-tools' constraints), and the build
+# backend the generated package's pyproject.toml requires, so that its wheel builds
+# without build isolation.
+RUN --mount=type=bind,target=/context \
+    gen=/context/libraries/plugins/apis/api_generation \
+    && if [ ! -f "$gen/api_generation/poetry.lock" ]; then \
+        echo "the build context holds no API generator: /opt/api-generation-venv is left out"; exit 0; fi \
+    && mkdir -p /opt/api-generation/python_api_package \
+    && cp "$gen/api_generation/pyproject.toml" "$gen/api_generation/poetry.lock" /opt/api-generation/ \
+    && cp "$gen/python_api_package/pyproject.toml" /opt/api-generation/python_api_package/ \
+    && python3 -m venv /opt/api-generation-venv \
+    && VIRTUAL_ENV=/opt/api-generation-venv poetry -C /opt/api-generation install --only main --no-root --no-interaction \
+    && /opt/api-generation-venv/bin/python3 -m pip install --no-cache-dir \
+        "$(/opt/test-tools-venv/bin/python3 -m pip freeze | grep '^pytest==')" \
+        $(/opt/api-generation-venv/bin/python3 -c 'import tomllib; print(*tomllib.load(open("/opt/api-generation/python_api_package/pyproject.toml", "rb"))["build-system"]["requires"])') \
+    && /opt/api-generation-venv/bin/python3 -c 'import api_client_generator, jinja2, pytest, poetry_dynamic_versioning'
 
 # The `integration` step's docker compose (test_snapshot_bootstrap.sh). The base
 # brings the docker CLI (29.9.2) and buildx as static release binaries, and
