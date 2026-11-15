@@ -906,10 +906,11 @@ void resource_credits::set_pool_params( const witness_schedule_object& wso ) con
   }
 }
 
-void resource_credits::reset_tx_info( const protocol::signed_transaction& tx )
+void resource_credits::reset_tx_info( const full_transaction_type& full_tx )
 {
+  const protocol::signed_transaction& tx = full_tx.get_transaction();
   tx_info = rc_transaction_info{};
-  tx_info.payer = get_resource_user( tx );
+  tx_info.payer = full_tx.get_rc_payer();
   if( tx.operations.size() == 1 )
     tx_info.op = tx.operations.front().which();
 }

@@ -968,7 +968,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( rc_usage_bucket_object ), 48u ); //always HIVE_RC_WINDOW_BUCKET_COUNT objects
   BOOST_CHECK_EQUAL( sizeof( rc_usage_bucket_index::MULTIINDEX_NODE_TYPE ), 112u );
 
-  BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 464 ); //not a chain object but potentially very numerous
+  BOOST_CHECK_EQUAL( sizeof( full_transaction_type ), 480 ); //not a chain object but potentially very numerous
 
 }
 
