@@ -1363,6 +1363,10 @@ namespace chainbase {
       /// into the segment held outside the index containers must be acquired again here.
       virtual void on_segment_remapped() {}
 
+      /// Called by undo and undo_all before they change the state: an undone create erases its object and an undone
+      /// remove recreates it at a new address, so pointers to objects held outside the index containers are stale.
+      virtual void on_undo() {}
+
     private:
       template<typename MultiIndexType>
       void add_index_helper() {

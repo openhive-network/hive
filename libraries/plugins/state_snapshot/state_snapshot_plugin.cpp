@@ -1769,6 +1769,8 @@ void state_snapshot_plugin::impl::load_snapshot_impl(const std::string& snapshot
     }
   }
 
+  _mainDb.reset_singleton_cache();
+
   auto last_irr_block = std::get<4>( snapshotManifest );
 
   _mainDb.set_last_irreversible_block_num( last_irr_block );

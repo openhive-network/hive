@@ -745,6 +745,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::undo( bool keep_alive )
   {
+    on_undo();
     for( auto& item : _index_list )
     {
       item->undo( keep_alive );
@@ -769,6 +770,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
   void database::undo_all()
   {
+    on_undo();
     for( auto& item : _index_list )
     {
       item->undo_all();

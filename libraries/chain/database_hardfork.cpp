@@ -570,7 +570,7 @@ void database::apply_hardfork( uint32_t hardfork )
 
 const hardfork_property_object& database::get_hardfork_property_object()const
 { try {
-  return get< hardfork_property_object >();
+  return get_singleton( _singletons.hardfork_properties, [&]() -> const auto& { return get< hardfork_property_object >(); } );
 } FC_CAPTURE_AND_RETHROW() }
 
 void database::gather_balance( const std::string& name, const HIVE_asset& hive_balance, const HBD_asset& hbd_balance )

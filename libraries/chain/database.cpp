@@ -45,6 +45,7 @@
 #include <hive/chain/util/impacted.hpp>
 
 #include <hive/chain/rc/rc_objects.hpp>
+#include <hive/chain/rc/rc_objects_multiindex.hpp>
 
 #include <fc/uint128.hpp>
 
@@ -163,6 +164,7 @@ void database::pre_open( const open_args& args )
                                               );
     ilog("Opening/creating shared memory from ${path}", ("path", args.shared_mem_dir.generic_string()));
     chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
+    reset_singleton_cache();
     initialize_irreversible_storage();
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
@@ -284,6 +286,7 @@ void database::wipe(const fc::path& shared_mem_dir)
   notify_wipe();
 
   chainbase::database::wipe( shared_mem_dir );
+  reset_singleton_cache();
 }
 
 void database::close()
@@ -308,6 +311,7 @@ void database::close()
     ilog("Database flushed at last irreversible block: ${b}", ("b", lib));
 
     chainbase::database::close();
+    reset_singleton_cache();
 
     ilog( "Database is closed" );
   }
@@ -452,7 +456,7 @@ comment database::find_comment( const account_name_type& author, const string& p
 
 const dynamic_global_property_object&database::get_dynamic_global_properties() const
 { try {
-  return get< dynamic_global_property_object >();
+  return get_singleton( _singletons.dynamic_global_properties, [&]() -> const auto& { return get< dynamic_global_property_object >(); } );
 } FC_CAPTURE_AND_RETHROW() }
 
 const state_stamp_data_object& database::get_state_stamp_data() const
@@ -485,7 +489,7 @@ void database::set_node_skip_flags( uint32_t skip_flags )
 
 const feed_history_object& database::get_feed_history()const
 { try {
-  return get< feed_history_object >();
+  return get_singleton( _singletons.feed_history, [&]() -> const auto& { return get< feed_history_object >(); } );
 } FC_CAPTURE_AND_RETHROW() }
 
 const HBD_price& database::get_hbd_price()const
@@ -524,7 +528,48 @@ const time_point_sec database::calculate_discussion_payout_time( const comment_o
 
 const reward_fund_object& database::get_reward_fund() const
 {
-  return get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME );
+  return get_singleton( _singletons.reward_fund,
+    [&]() -> const auto& { return get< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ); } );
+}
+
+const rc_resource_param_object& database::get_rc_resource_params() const
+{
+  return get_singleton( _singletons.rc_resource_params,
+    [&]() -> const auto& { return get< rc_resource_param_object, by_id >( rc_resource_param_id_type() ); } );
+}
+
+const rc_pool_object& database::get_rc_pool() const
+{
+  return get_singleton( _singletons.rc_pool, [&]() -> const auto& { return get< rc_pool_object, by_id >( rc_pool_id_type() ); } );
+}
+
+const rc_stats_object& database::get_rc_pending_stats() const
+{
+  return get_singleton( _singletons.rc_pending_stats, [&]() -> const auto& { return get< rc_stats_object >( RC_PENDING_STATS_ID ); } );
+}
+
+const rc_stats_object& database::get_rc_archive_stats() const
+{
+  return get_singleton( _singletons.rc_archive_stats, [&]() -> const auto& { return get< rc_stats_object >( RC_ARCHIVE_STATS_ID ); } );
+}
+
+void database::reset_singleton_cache()
+{
+  _singletons.dynamic_global_properties.store( nullptr, std::memory_order_relaxed );
+  _singletons.hardfork_properties.store( nullptr, std::memory_order_relaxed );
+  _singletons.feed_history.store( nullptr, std::memory_order_relaxed );
+  _singletons.witness_schedule.store( nullptr, std::memory_order_relaxed );
+  _singletons.future_witness_schedule.store( nullptr, std::memory_order_relaxed );
+  _singletons.reward_fund.store( nullptr, std::memory_order_relaxed );
+  _singletons.rc_resource_params.store( nullptr, std::memory_order_relaxed );
+  _singletons.rc_pool.store( nullptr, std::memory_order_relaxed );
+  _singletons.rc_pending_stats.store( nullptr, std::memory_order_relaxed );
+  _singletons.rc_archive_stats.store( nullptr, std::memory_order_relaxed );
+}
+
+void database::on_undo()
+{
+  reset_singleton_cache();
 }
 
 const comment_cashout_object* database::find_comment_cashout( const comment_object& comment ) const

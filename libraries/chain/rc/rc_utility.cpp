@@ -318,8 +318,8 @@ int64_t resource_credits::compute_cost(
 int64_t resource_credits::compute_cost( rc_transaction_info* usage_info ) const
 {
   const dynamic_global_property_object& dgpo = db.get_dynamic_global_properties();
-  const rc_resource_param_object& params_obj = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
-  const rc_pool_object& pool_obj = db.get< rc_pool_object, by_id >( rc_pool_id_type() );
+  const rc_resource_param_object& params_obj = db.get_rc_resource_params();
+  const rc_pool_object& pool_obj = db.get_rc_pool();
 
   int64_t total_vests = dgpo.get_total_vesting_shares().amount.value;
   int64_t rc_regen = ( total_vests / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
@@ -720,7 +720,7 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
   if( ( block_num % HIVE_RC_STATS_REPORT_FREQUENCY ) != 0 )
     return;
 
-  const auto& new_stats_obj = db.get< rc_stats_object >( RC_PENDING_STATS_ID );
+  const auto& new_stats_obj = db.get_rc_pending_stats();
   db.modify( new_stats_obj, [&]( rc_stats_object& new_stats )
   {
     new_stats.finalize_stats();
@@ -759,7 +759,7 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
     };
   }
 
-  const auto& old_stats_obj = db.get< rc_stats_object, by_id >( RC_ARCHIVE_STATS_ID );
+  const auto& old_stats_obj = db.get_rc_archive_stats();
   db.modify( old_stats_obj, [&]( rc_stats_object& old_stats )
   {
     old_stats.archive_stats( new_stats_obj );
@@ -797,7 +797,7 @@ void resource_credits::finalize_block() const
   auto block_num = dgpo.get_head_block_number();
   int64_t regen = ( dgpo.get_total_vesting_shares().amount.value / ( HIVE_RC_REGEN_TIME / HIVE_BLOCK_INTERVAL ) );
 
-  const auto& params_obj = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+  const auto& params_obj = db.get_rc_resource_params();
 
   const auto& bucket_idx = db.get_index< rc_usage_bucket_index, by_timestamp >();
   const auto* active_bucket = &( *bucket_idx.rbegin() );
@@ -805,7 +805,7 @@ void resource_credits::finalize_block() const
   if( reset_bucket )
     active_bucket = &( *bucket_idx.begin() );
 
-  const auto& rc_pool = db.get< rc_pool_object, by_id >( rc_pool_id_type() );
+  const auto& rc_pool = db.get_rc_pool();
   db.modify( rc_pool, [&]( rc_pool_object& pool_obj )
   {
     for( size_t i = 0; i < HIVE_RC_NUM_RESOURCE_TYPES; ++i )
@@ -878,7 +878,7 @@ void resource_credits::finalize_transaction( const full_transaction_type& full_t
   {
     block_info.add( tx_info );
 
-    const auto& rc_stats = db.get< rc_stats_object >( RC_PENDING_STATS_ID );
+    const auto& rc_stats = db.get_rc_pending_stats();
     db.modify( rc_stats, [&]( rc_stats_object& stats_obj )
     {
       stats_obj.add_stats( tx_info );
@@ -890,7 +890,7 @@ void resource_credits::set_pool_params( const witness_schedule_object& wso ) con
 {
   //hardfork needs to be tested outside because the routine is actually also used right before HF20 activates
 
-  const auto& rc_params = db.get< rc_resource_param_object, by_id >( rc_resource_param_id_type() );
+  const auto& rc_params = db.get_rc_resource_params();
   if( rc_params.resource_param_array[ resource_new_accounts ].resource_dynamics_params != wso.account_subsidy_rd )
   {
     dlog( "Activating new account subsidy params in block ${b}", ( "b", db.head_block_num() ) );

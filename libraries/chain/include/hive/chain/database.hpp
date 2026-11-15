@@ -334,6 +334,15 @@ namespace chain {
 
       const hardfork_property_object&        get_hardfork_property_object()const;
 
+      const rc_resource_param_object&        get_rc_resource_params()const;
+      const rc_pool_object&                  get_rc_pool()const;
+      const rc_stats_object&                 get_rc_pending_stats()const;
+      const rc_stats_object&                 get_rc_archive_stats()const;
+
+      /// Drops the cached singleton objects returned by the getters above; call after their indexes were filled
+      /// directly (snapshot load), since that replaces the objects without passing through this class.
+      void reset_singleton_cache();
+
       const state_stamp_data_object&         get_state_stamp_data()const;
 
     private:
@@ -760,6 +769,38 @@ namespace chain {
       std::atomic<std::shared_ptr<full_block_type>> cached_lib;
 
       void on_segment_remapped() override;
+      void on_undo() override;
+
+      // Singleton state objects, looked up once and then returned by the getters directly; dropped whenever they
+      // could move or disappear (open, close, wipe, remap, undo, snapshot load). Modify and undo of a modify keep
+      // an object at its address. Atomic since readers holding the shared lock may fill an empty slot concurrently.
+      struct singleton_cache
+      {
+        std::atomic< const dynamic_global_property_object* > dynamic_global_properties{ nullptr };
+        std::atomic< const hardfork_property_object* >       hardfork_properties{ nullptr };
+        std::atomic< const feed_history_object* >            feed_history{ nullptr };
+        std::atomic< const witness_schedule_object* >        witness_schedule{ nullptr };
+        std::atomic< const witness_schedule_object* >        future_witness_schedule{ nullptr };
+        std::atomic< const reward_fund_object* >             reward_fund{ nullptr };
+        std::atomic< const rc_resource_param_object* >       rc_resource_params{ nullptr };
+        std::atomic< const rc_pool_object* >                 rc_pool{ nullptr };
+        std::atomic< const rc_stats_object* >                rc_pending_stats{ nullptr };
+        std::atomic< const rc_stats_object* >                rc_archive_stats{ nullptr };
+      };
+      mutable singleton_cache _singletons;
+
+      template< typename ObjectType, typename Lookup >
+      const ObjectType& get_singleton( std::atomic< const ObjectType* >& slot, Lookup&& lookup )const
+      {
+        CHAINBASE_REQUIRE_READ_LOCK( "get", ObjectType );
+        const ObjectType* obj = slot.load( std::memory_order_relaxed );
+        if( BOOST_UNLIKELY( obj == nullptr ) )
+        {
+          obj = &lookup();
+          slot.store( obj, std::memory_order_relaxed );
+        }
+        return *obj;
+      }
 
       std::optional< std::pair< chainbase::database::undo_session_guard, chainbase::database::undo_session_guard >> _pending_tx_session;
 

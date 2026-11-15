@@ -34,14 +34,15 @@ const witness_object* database::find_witness( const account_name_type& name ) co
 
 const witness_schedule_object& database::get_witness_schedule_object()const
 { try {
-  return get< witness_schedule_object >();
+  return get_singleton( _singletons.witness_schedule, [&]() -> const auto& { return get< witness_schedule_object >(); } );
 } FC_CAPTURE_AND_RETHROW() }
 
 const witness_schedule_object& database::get_future_witness_schedule_object() const
 {
   try
   {
-    return get<witness_schedule_object>(witness_schedule_object::id_type(1));
+    return get_singleton( _singletons.future_witness_schedule,
+      [&]() -> const auto& { return get<witness_schedule_object>(witness_schedule_object::id_type(1)); } );
   }
   catch (const std::out_of_range&)
   {
