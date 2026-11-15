@@ -81,6 +81,7 @@ void database::initialize_irreversible_storage()
 
 void database::on_segment_remapped()
 {
+  reset_singleton_cache();
   last_irreversible_object = get_segment_manager()->find<irreversible_block_data_type>( "irreversible" ).first;
   FC_ASSERT( last_irreversible_object != nullptr, "Irreversible block data is missing from the remapped storage" );
   if( _comments_handler )

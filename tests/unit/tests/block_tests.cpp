@@ -76,6 +76,7 @@
 #include <hive/chain/detail/state/savings_withdraw_object_multiindex.hpp>
 #include <hive/chain/detail/state/liquidity_reward_balance_object_multiindex.hpp>
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
+#include <hive/chain/rc/rc_objects_multiindex.hpp>
 
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
 #include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects_multiindex.hpp>
@@ -2208,6 +2209,38 @@ BOOST_AUTO_TEST_CASE( block_flow_control_p2p )
   FC_LOG_AND_RETHROW()
 }
 
+// a singleton getter has to return the object a lookup in the current mapping of the state file finds, and fail
+// when there is none
+template< typename ObjectType, typename Getter >
+static void check_singleton_is_current( const ObjectType* current, Getter&& getter )
+{
+  if( current == nullptr )
+  {
+    bool failed = false;
+    try { getter(); } catch( ... ) { failed = true; }
+    BOOST_CHECK( failed );
+  }
+  else
+  {
+    BOOST_CHECK( &getter() == current );
+  }
+}
+
+static void check_singletons_are_current( const database& db )
+{
+  check_singleton_is_current( db.find< dynamic_global_property_object >(), [&]() -> const auto& { return db.get_dynamic_global_properties(); } );
+  check_singleton_is_current( db.find< hardfork_property_object >(), [&]() -> const auto& { return db.get_hardfork_property_object(); } );
+  check_singleton_is_current( db.find< feed_history_object >(), [&]() -> const auto& { return db.get_feed_history(); } );
+  check_singleton_is_current( db.find< witness_schedule_object >(), [&]() -> const auto& { return db.get_witness_schedule_object(); } );
+  check_singleton_is_current( db.find< witness_schedule_object >( witness_schedule_object::id_type( 1 ) ),
+    [&]() -> const auto& { return db.get_future_witness_schedule_object(); } );
+  check_singleton_is_current( db.find< reward_fund_object, by_name >( HIVE_POST_REWARD_FUND_NAME ), [&]() -> const auto& { return db.get_reward_fund(); } );
+  check_singleton_is_current( db.find< rc_resource_param_object >(), [&]() -> const auto& { return db.get_rc_resource_params(); } );
+  check_singleton_is_current( db.find< rc_pool_object >(), [&]() -> const auto& { return db.get_rc_pool(); } );
+  check_singleton_is_current( db.find< rc_stats_object >( RC_PENDING_STATS_ID ), [&]() -> const auto& { return db.get_rc_pending_stats(); } );
+  check_singleton_is_current( db.find< rc_stats_object >( RC_ARCHIVE_STATS_ID ), [&]() -> const auto& { return db.get_rc_archive_stats(); } );
+}
+
 // a threshold of 0.01% grows the state file by 1% after every block
 static hived_fixture::config_arg_override_t growing_state_file_config( const std::string& data_dir, const std::string& comment_archive )
 {
@@ -2273,11 +2306,15 @@ static void check_state_file_growth_during_block_processing( const std::string& 
     push_pending_transaction( chain_plugin_, "pending" );
 
     const uint32_t first_block_num = db_bp.head_block_num() + 1;
+    int remaps = 0;
     // enough blocks for the irreversible block to move on after the state file has grown
     for( int i = 0; i < 30; ++i )
     {
       const size_t bp_size = db_bp.get_max_memory();
       const size_t size = db_.get_max_memory();
+      const void* mapping = db_.get_segment_manager();
+      check_singletons_are_current( db_bp );
+      check_singletons_are_current( db_ );
 
       push_pending_transaction( chain_plugin_bp, "produced" + std::to_string( i ) );
 
@@ -2291,7 +2328,13 @@ static void check_state_file_growth_during_block_processing( const std::string& 
       BOOST_REQUIRE_EQUAL( db_.head_block_id(), block->get_block_id() );
       BOOST_REQUIRE_GT( db_.get_max_memory(), size );
       BOOST_REQUIRE_EQUAL( db_._pending_tx.size(), 1u );
+      if( db_.get_segment_manager() != mapping )
+        ++remaps;
+      check_singletons_are_current( db_bp );
+      check_singletons_are_current( db_ );
     }
+    // otherwise the checks above could not tell a stale singleton from a current one
+    BOOST_CHECK_GT( remaps, 0 );
 
     for( database* db : { &db_bp, &db_ } )
     {
@@ -2352,6 +2395,48 @@ BOOST_AUTO_TEST_CASE( state_file_grows_during_replay )
     // grown by 1% after each replayed block, compounded
     BOOST_CHECK_GT( fixture.db->get_max_memory(), size_t( 1024 * 1024 * hived_fixture::shared_file_size_small ) * 125 / 100 );
     BOOST_CHECK_EQUAL( fixture.db->get_last_irreversible_block_num(), fixture.db->get_last_irreversible_object()->_irreversible_block_num );
+    check_singletons_are_current( *fixture.db );
+    fixture.validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( singletons_follow_resize_and_undo )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing the singleton getters across a resize of the state file and the undo of the hardforks that created some singletons" );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    hived_fixture fixture( true /*remove_db_files*/, true /*disable_p2p*/, data_dir.path().string() );
+    fixture.postponed_init( { hived_fixture::config_line_t( { "shared-file-dir", { data_dir.path().string() } } ) } );
+    database& db = *fixture.db;
+
+    // HF20 creates the RC singletons and HF26 the future witness schedule
+    BOOST_REQUIRE( !db.has_hardfork( HIVE_HARDFORK_0_20 ) );
+    BOOST_REQUIRE( db.find< rc_pool_object >() == nullptr );
+    check_singletons_are_current( db );
+    {
+      auto session = db.start_undo_session();
+      db.set_hardfork( HIVE_BLOCKCHAIN_VERSION.minor_v() );
+      BOOST_REQUIRE( db.has_hardfork( HIVE_HARDFORK_1_26 ) );
+      BOOST_REQUIRE( db.find< rc_pool_object >() != nullptr );
+      BOOST_REQUIRE( db.find< witness_schedule_object >( witness_schedule_object::id_type( 1 ) ) != nullptr );
+      check_singletons_are_current( db );
+
+      // in the middle of a revision, as the growth of the state file after a block happens with pending transactions on top
+      const void* mapping = db.get_segment_manager();
+      db.resize( 2 * db.get_max_memory() );
+      BOOST_TEST_MESSAGE( std::string( "state file mapped " ) + ( db.get_segment_manager() == mapping ? "at the same address" : "at another address" ) );
+      BOOST_REQUIRE( db.has_hardfork( HIVE_HARDFORK_1_26 ) );
+      check_singletons_are_current( db );
+
+      session.undo();
+    }
+    BOOST_CHECK( !db.has_hardfork( HIVE_HARDFORK_0_20 ) );
+    BOOST_CHECK( db.find< rc_pool_object >() == nullptr );
+    BOOST_CHECK( db.find< witness_schedule_object >( witness_schedule_object::id_type( 1 ) ) == nullptr );
+    check_singletons_are_current( db );
     fixture.validate_database();
   }
   FC_LOG_AND_RETHROW()
