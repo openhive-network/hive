@@ -386,6 +386,107 @@ BOOST_AUTO_TEST_CASE( undo_modify_with_and_without_key_change )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( undo_comment_and_witness_lookup_by_key )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: undo_comment_and_witness_lookup_by_key" );
+    auto time = db->head_block_time();
+    const auto& author = db->create< account_object >( "lookupauthor", time );
+    const comment_object* no_parent = nullptr;
+    auto comment_hash = [&]( const std::string& permlink )
+    {
+      return comment_object::compute_author_and_permlink_hash( author.get_id(), permlink );
+    };
+    auto find_by_permlink = [&]( const std::string& permlink )
+    {
+      return db->find< comment_object, by_permlink >( comment_hash( permlink ) );
+    };
+
+    const auto& by_permlink_idx = db->get_index< comment_index, by_permlink >();
+    const auto& witness_by_name_idx = db->get_index< witness_index, by_name >();
+    const auto& witness_by_name_hash_idx = db->get_index< witness_index, by_name_hash >();
+    const size_t initial_comment_count = by_permlink_idx.size();
+    const size_t initial_witness_count = witness_by_name_idx.size();
+    const size_t comment_bucket_count = by_permlink_idx.bucket_count();
+    const size_t initial_witness_bucket_count = witness_by_name_hash_idx.bucket_count();
+    BOOST_REQUIRE_EQUAL( witness_by_name_hash_idx.size(), initial_witness_count );
+
+    BOOST_TEST_MESSAGE( "--- Missing keys" );
+    BOOST_REQUIRE( find_by_permlink( "nothing" ) == nullptr );
+    BOOST_REQUIRE( !db->find_comment( author.get_id(), std::string( "nothing" ) ) );
+    BOOST_REQUIRE( db->find_witness( "nobody" ) == nullptr );
+    BOOST_CHECK_EXCEPTION( db->get_witness( "nobody" ), fc::assert_exception, []( const fc::assert_exception& e )
+    {
+      return e.to_detail_string().find( "Witness nobody doesn't exist" ) != std::string::npos;
+    } );
+
+    undo_scenario< comment_object > co( *db );
+    undo_scenario< witness_object > wo( *db );
+    undo_db udb( *db );
+    co.remember_old_values< comment_index >();
+    wo.remember_old_values< witness_index >();
+    udb.undo_begin();
+
+    BOOST_TEST_MESSAGE( "--- Comments found by author and permlink, without rehashing the reserved buckets" );
+    std::vector< std::string > permlinks;
+    for( int i = 0; i < 2000; ++i )
+    {
+      permlinks.push_back( "permlink" + std::to_string( i ) );
+      co.create( author, permlinks.back(), no_parent );
+    }
+    BOOST_REQUIRE_EQUAL( by_permlink_idx.size(), initial_comment_count + permlinks.size() );
+    BOOST_REQUIRE_EQUAL( by_permlink_idx.bucket_count(), comment_bucket_count );
+    for( const auto& permlink : permlinks )
+    {
+      const comment_object* found = find_by_permlink( permlink );
+      BOOST_REQUIRE( found != nullptr );
+      BOOST_REQUIRE( found->get_author_and_permlink_hash() == comment_hash( permlink ) );
+      BOOST_REQUIRE( db->find_comment( author.get_id(), permlink ).get() == found );
+      BOOST_REQUIRE( db->get_comment( author.get_id(), permlink ).get() == found );
+    }
+
+    BOOST_TEST_MESSAGE( "--- Many witnesses created, so the hashed index grows its bucket array" );
+    std::vector< std::string > witness_names;
+    for( int i = 0; i < 300; ++i )
+    {
+      witness_names.push_back( "witness" + std::to_string( i ) );
+      wo.create( [&]( witness_object& w ){ w.owner = witness_names.back(); } );
+    }
+    BOOST_REQUIRE_GT( witness_by_name_hash_idx.bucket_count(), initial_witness_bucket_count );
+    BOOST_REQUIRE_EQUAL( witness_by_name_hash_idx.size(), initial_witness_count + witness_names.size() );
+    for( const auto& name : witness_names )
+    {
+      const witness_object* witness = db->find_witness( name );
+      BOOST_REQUIRE( witness != nullptr );
+      BOOST_REQUIRE( witness == &( *witness_by_name_idx.find( account_name_type( name ) ) ) );
+      BOOST_REQUIRE( &db->get_witness( name ) == witness );
+    }
+
+    BOOST_TEST_MESSAGE( "--- Removed comment and witness" );
+    co.remove( *find_by_permlink( "permlink0" ) );
+    BOOST_REQUIRE( find_by_permlink( "permlink0" ) == nullptr );
+    BOOST_REQUIRE( !db->find_comment( author.get_id(), std::string( "permlink0" ) ) );
+    wo.remove( *db->find_witness( "witness0" ) );
+    BOOST_REQUIRE( db->find_witness( "witness0" ) == nullptr );
+
+    udb.undo_end();
+    BOOST_REQUIRE( co.check< comment_index >() );
+    BOOST_REQUIRE( wo.check< witness_index >() );
+
+    BOOST_TEST_MESSAGE( "--- After undo only the initial objects are found" );
+    BOOST_REQUIRE_EQUAL( by_permlink_idx.size(), initial_comment_count );
+    for( const auto& permlink : permlinks )
+      BOOST_REQUIRE( find_by_permlink( permlink ) == nullptr );
+    BOOST_REQUIRE_EQUAL( witness_by_name_hash_idx.size(), initial_witness_count );
+    for( const auto& name : witness_names )
+      BOOST_REQUIRE( db->find_witness( name ) == nullptr );
+    for( const auto& witness : witness_by_name_idx )
+      BOOST_REQUIRE( db->find_witness( witness.owner ) == &witness );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( undo_delayed_votes )
 {
   try

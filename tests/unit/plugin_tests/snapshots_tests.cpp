@@ -4,6 +4,8 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
+#include <hive/chain/detail/state/comment_object_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 #include <hive/chain/detail/state/feed_history_object.hpp>
 #include <hive/chain/external_storage/rocksdb_format.hpp>
 #include <hive/chain/external_storage/types.hpp>
@@ -536,6 +538,71 @@ BOOST_AUTO_TEST_CASE( account_lookup_by_name_after_snapshot_load )
     BOOST_REQUIRE( std::is_sorted( names_in_index_order.begin(), names_in_index_order.end() ) );
     BOOST_REQUIRE_EQUAL( names_in_index_order.size(), ids_by_name.size() );
 
+    generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( comment_and_witness_lookup_after_snapshot_load )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: comment_and_witness_lookup_after_snapshot_load" );
+
+    const std::string snapshot_root_dir = "comment_and_witness_lookup_after_snapshot_load";
+    clear_snapshot( snapshot_root_dir );
+
+    start_node_with_all_witnesses( *this );
+    // one root post per author, because an author may only post one every 5 minutes
+    const std::vector< std::pair< std::string, std::string > > posts{
+      { HIVE_INIT_MINER_NAME, "zeta" }, { HIVE_INIT_MINER_NAME "1", "alpha" }, { HIVE_INIT_MINER_NAME "2", "mu" }, { HIVE_INIT_MINER_NAME "3", "zeta" } };
+    for( const auto& [ author, permlink ] : posts )
+      post_comment( author, permlink, "title", "body", "test", init_account_priv_key );
+    const uint32_t creation_block_num = db()->head_block_num() + 1;
+    // the dump restarts the node, which drops reversible blocks, so the comments have to become irreversible first
+    while( db()->get_last_irreversible_block_num() < creation_block_num )
+      generate_block();
+
+    dump_snapshot( snapshot_root_dir );
+
+    std::map< std::pair< account_id_type, std::string >, comment_id_type > comment_ids;
+    for( const auto& [ author, permlink ] : posts )
+    {
+      const account_id_type author_id = db()->get_account( author ).get_id();
+      comment_ids.emplace( std::make_pair( author_id, permlink ), db()->get_comment( author_id, permlink )->get_id() );
+    }
+    BOOST_REQUIRE_EQUAL( comment_ids.size(), posts.size() );
+    std::map< std::string, witness_id_type > witness_ids;
+    for( const auto& witness : db()->get_index< witness_index, by_name >() )
+      witness_ids.emplace( witness.owner, witness.get_id() );
+    BOOST_REQUIRE_EQUAL( witness_ids.size(), size_t( HIVE_MAX_WITNESSES ) );
+
+    load_snapshot( snapshot_root_dir );
+
+    for( const auto& [ key, id ] : comment_ids )
+    {
+      const auto& [ author_id, permlink ] = key;
+      const comment_object* comment = db()->find< comment_object, by_permlink >(
+        comment_object::compute_author_and_permlink_hash( author_id, permlink ) );
+      BOOST_REQUIRE( comment != nullptr );
+      BOOST_REQUIRE( comment->get_id() == id );
+      BOOST_REQUIRE( db()->get_comment( author_id, permlink ).get() == comment );
+    }
+    // the author of "alpha" did not write "mu"
+    BOOST_REQUIRE( !db()->find_comment( account_name_type( HIVE_INIT_MINER_NAME "1" ), std::string( "mu" ) ) );
+
+    const auto& witness_by_name_idx = db()->get_index< witness_index, by_name >();
+    const auto& witness_by_name_hash_idx = db()->get_index< witness_index, by_name_hash >();
+    BOOST_REQUIRE_EQUAL( witness_by_name_hash_idx.size(), witness_by_name_idx.size() );
+    for( const auto& [ name, id ] : witness_ids )
+    {
+      const witness_object* witness = db()->find_witness( name );
+      BOOST_REQUIRE( witness != nullptr );
+      BOOST_REQUIRE( witness->get_id() == id );
+    }
+    BOOST_REQUIRE( db()->find_witness( "nobody" ) == nullptr );
+
+    // the node keeps producing blocks on the loaded state
     generate_block();
   }
   FC_LOG_AND_RETHROW()

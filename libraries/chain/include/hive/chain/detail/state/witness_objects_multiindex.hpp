@@ -23,6 +23,9 @@ namespace hive { namespace chain {
       >,
       ordered_unique< tag< by_name >,
         member< witness_object, account_name_type, &witness_object::owner > >,
+      // by_name stays for iteration in name order; by_name_hash serves point lookups in O(1)
+      hashed_unique< tag< by_name_hash >,
+        member< witness_object, account_name_type, &witness_object::owner >, account_name_hash >,
       ordered_unique< tag< by_pow >,
         composite_key< witness_object,
           member< witness_object, uint64_t, &witness_object::pow_worker >,
