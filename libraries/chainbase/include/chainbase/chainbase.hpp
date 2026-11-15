@@ -20,6 +20,7 @@
 #include <boost/throw_exception.hpp>
 
 #include <chainbase/allocators.hpp>
+#include <chainbase/index_key_snapshot.hpp>
 #include <chainbase/state_snapshot_support.hpp>
 #include <chainbase/util/object.hpp>
 #include <chainbase/util/object_id.hpp>
@@ -275,6 +276,10 @@ namespace chainbase {
       typedef typename value_type::id_type                          id_type;
       typedef allocator< generic_index >                            allocator_type;
 
+    private:
+      typedef index_keys::index_key_snapshot< value_type, index_type > key_snapshot;
+
+    public:
       struct undo_state
       {
         typedef undo_allocator_carrier< std::pair<const id_type, value_type> > id_value_allocator_type;
@@ -401,9 +406,25 @@ namespace chainbase {
         size_t old_size = 0, new_size = 0;
         if constexpr( value_type::has_dynamic_alloc_t::value )
           old_size = obj.get_dynamic_alloc();
-        auto ok = _indices.modify( itr, safe_modifier);
-        if constexpr( value_type::has_dynamic_alloc_t::value )
-          new_size = obj.get_dynamic_alloc();
+        bool ok = true;
+        if constexpr( key_snapshot::supported )
+        {
+          // Boost re-indexes by checking every index for the element's position (neighbours in each ordered
+          // index, the bucket in each hashed one) - when no key changed, all those checks would succeed and
+          // leave the element in place, so they are skipped; otherwise Boost re-indexes the updated element
+          const auto old_keys = key_snapshot::take( _indices, obj );
+          safe_modifier( const_cast< value_type& >( obj ) );
+          if constexpr( value_type::has_dynamic_alloc_t::value )
+            new_size = obj.get_dynamic_alloc();
+          if( !( key_snapshot::take( _indices, obj ) == old_keys ) )
+            ok = _indices.modify( itr, []( value_type& ) {} );
+        }
+        else
+        {
+          ok = _indices.modify( itr, safe_modifier );
+          if constexpr( value_type::has_dynamic_alloc_t::value )
+            new_size = obj.get_dynamic_alloc();
+        }
 
         if(fc_exception_ptr)
           fc_exception_ptr->dynamic_rethrow_exception();
