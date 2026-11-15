@@ -187,6 +187,7 @@ void database::initialize_state_independent_data(const open_args& args)
   _my->_decoded_types_data_storage->register_new_type<irreversible_block_data_type>();
 
   initialize_indexes();
+  set_may_have_removed_proposals();
   get_comments_handler().open();
   verify_match_of_state_objects_definitions_from_shm();
   initialize_evaluators();
@@ -471,6 +472,23 @@ void database::set_remove_threshold( int16_t val )
   {
     gpo.set_current_remove_threshold( val );
   } );
+}
+
+bool database::may_have_removed_proposals() const
+{
+  // undo can restore proposals marked `removed` that were already swept
+  return !_no_removed_proposals_at_undo_count ||
+    *_no_removed_proposals_at_undo_count != get_undo_change_count< proposal_index >();
+}
+
+void database::set_may_have_removed_proposals()
+{
+  _no_removed_proposals_at_undo_count.reset();
+}
+
+void database::set_no_removed_proposals()
+{
+  _no_removed_proposals_at_undo_count = get_undo_change_count< proposal_index >();
 }
 
 uint32_t database::get_node_skip_flags() const
