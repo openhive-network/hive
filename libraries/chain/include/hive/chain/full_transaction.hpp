@@ -59,6 +59,8 @@ struct full_transaction_type
     mutable hive::protocol::required_authorities_type required_authorities; // if we've figured out who is supposed to sign this tranaction, it's here
     mutable std::chrono::nanoseconds required_authorities_computation_time;
 
+    mutable hive::protocol::account_name_type rc_payer; // account that pays RC for this transaction (first operation that names one decides)
+
     /// immutable data below here isn't accessed across multiple threads, it's set at construction time and left alone
     
     // if this full_transaction was created while deserializing a block, we store
@@ -100,6 +102,7 @@ struct full_transaction_type
     mutable std::atomic<bool> signature_keys_accessed = { false };
     mutable std::atomic<bool> has_required_authorities = { false };
     mutable std::atomic<bool> required_authorities_accessed = { false };
+    mutable std::atomic<bool> has_rc_payer = { false };
 
 
     static std::atomic<uint32_t> number_of_instances_created;
@@ -125,6 +128,8 @@ struct full_transaction_type
     const flat_set<hive::protocol::public_key_type>& get_signature_keys() const;
     void compute_required_authorities() const;
     const hive::protocol::required_authorities_type& get_required_authorities() const;
+    void compute_rc_payer() const;
+    const hive::protocol::account_name_type& get_rc_payer() const;
     bool is_legacy_pack() const;
     void precompute_validation(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
     void validate(std::function<void(const hive::protocol::operation& op, bool post)> notify = std::function<void(const hive::protocol::operation&, bool)>()) const;
