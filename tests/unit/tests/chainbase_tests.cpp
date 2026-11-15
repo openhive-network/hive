@@ -2,13 +2,22 @@
 
 #include <chainbase/chainbase.hpp>
 #include <chainbase/huge_pages.hpp>
+#include <chainbase/index_key_snapshot.hpp>
 
 #include <hive/utilities/tempdir.hpp>
 
 #include <fc/filesystem.hpp>
 #include <fc/log/logger_config.hpp>
 
+#include <boost/multi_index/composite_key.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index_container.hpp>
+
 #include <algorithm>
+#include <array>
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
@@ -17,6 +26,9 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -81,6 +93,55 @@ struct wipeable_database : chainbase::database
 {
   using chainbase::database::wipe;
 };
+
+struct keyed_item
+{
+  uint32_t id = 0;
+  std::array< char, 4 > name = {};
+  uint32_t group = 0;
+  uint64_t score = 0;
+  uint64_t payload = 0;
+
+  uint64_t get_score() const { return score; }
+  const std::array< char, 4 >& get_name() const { return name; }
+};
+
+struct name_hash
+{
+  size_t operator()( const std::array< char, 4 >& name ) const { return std::hash< std::string_view >()( std::string_view( name.data(), name.size() ) ); }
+};
+
+namespace bmi = boost::multi_index;
+
+using keyed_item_index = bmi::multi_index_container<
+  keyed_item,
+  bmi::indexed_by<
+    bmi::ordered_unique< bmi::member< keyed_item, uint32_t, &keyed_item::id > >,
+    bmi::hashed_unique< bmi::const_mem_fun< keyed_item, const std::array< char, 4 >&, &keyed_item::get_name >, name_hash >,
+    bmi::hashed_non_unique< bmi::member< keyed_item, uint32_t, &keyed_item::group > >,
+    bmi::ordered_non_unique< bmi::const_mem_fun< keyed_item, uint64_t, &keyed_item::get_score > >,
+    bmi::ordered_non_unique< bmi::composite_key< keyed_item,
+      bmi::member< keyed_item, uint32_t, &keyed_item::group >,
+      bmi::const_mem_fun< keyed_item, uint64_t, &keyed_item::get_score > > >,
+    bmi::ordered_unique< bmi::composite_key< keyed_item,
+      bmi::const_mem_fun< keyed_item, const std::array< char, 4 >&, &keyed_item::get_name >,
+      bmi::member< keyed_item, uint32_t, &keyed_item::id > > >
+  >
+>;
+
+struct string_keyed_item
+{
+  uint32_t id = 0;
+  std::string name;
+};
+
+using string_keyed_item_index = bmi::multi_index_container<
+  string_keyed_item,
+  bmi::indexed_by<
+    bmi::ordered_unique< bmi::member< string_keyed_item, uint32_t, &string_keyed_item::id > >,
+    bmi::ordered_unique< bmi::member< string_keyed_item, std::string, &string_keyed_item::name > >
+  >
+>;
 
 }
 
@@ -370,6 +431,28 @@ BOOST_AUTO_TEST_CASE( tmpfs_mount_without_huge_pages_is_found_in_mountinfo )
 
   std::istringstream empty;
   BOOST_CHECK( chainbase::tmpfs_mount_without_huge_pages( empty, "/dev/shm/hived" ) == none );
+}
+
+BOOST_AUTO_TEST_CASE( index_key_snapshot_copies_every_kind_of_index_key )
+{
+  using keys_snapshot = chainbase::index_keys::index_key_snapshot< keyed_item, keyed_item_index >;
+  static_assert( keys_snapshot::supported, "keys of ordered and hashed, unique and non-unique indexes are copied" );
+  static_assert( std::is_same_v< keys_snapshot::type,
+    std::tuple< uint32_t, std::array< char, 4 >, uint32_t, uint64_t, std::tuple< uint32_t, uint64_t >, std::tuple< std::array< char, 4 >, uint32_t > > >,
+    "keys are copied by value, composite keys as tuples of their members" );
+  static_assert( !chainbase::index_keys::index_key_snapshot< string_keyed_item, string_keyed_item_index >::supported,
+    "a container with a key owning allocated memory is re-indexed on every modify" );
+
+  keyed_item_index items;
+  const auto& item = *items.insert( keyed_item{ 1, { 'a', 'b', 'c', 0 }, 7, 9, 0 } ).first;
+  const auto keys = keys_snapshot::take( items, item );
+  BOOST_CHECK( keys == keys_snapshot::type( 1, item.name, 7, 9, std::make_tuple( 7u, uint64_t( 9 ) ), std::make_tuple( item.name, 1u ) ) );
+
+  items.modify( items.begin(), []( keyed_item& i ){ ++i.payload; } );
+  BOOST_CHECK( keys_snapshot::take( items, item ) == keys );
+  items.modify( items.begin(), []( keyed_item& i ){ ++i.score; } );
+  BOOST_CHECK( keys_snapshot::take( items, item ) != keys );
+  BOOST_CHECK( std::get< 4 >( keys_snapshot::take( items, item ) ) == std::make_tuple( 7u, uint64_t( 10 ) ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
