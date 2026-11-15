@@ -4,7 +4,6 @@
 namespace hive { namespace chain {
 
   struct by_comment_voter {};
-  struct by_voter_comment;
   typedef multi_index_container<
     comment_vote_object,
     indexed_by<
@@ -14,12 +13,6 @@ namespace hive { namespace chain {
         composite_key< comment_vote_object,
           const_mem_fun< comment_vote_object, comment_id_type, &comment_vote_object::get_comment>,
           const_mem_fun< comment_vote_object, account_id_type, &comment_vote_object::get_voter>
-        >
-      >,
-      ordered_unique< tag< by_voter_comment >,
-        composite_key< comment_vote_object,
-          const_mem_fun< comment_vote_object, account_id_type, &comment_vote_object::get_voter>,
-          const_mem_fun< comment_vote_object, comment_id_type, &comment_vote_object::get_comment>
         >
       >
     >,
