@@ -52,6 +52,7 @@
 
 #include "../db_fixture/clean_database_fixture.hpp"
 #include "../undo_data/undo.hpp"
+#include "../undo_data/index_consistency.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -229,6 +230,158 @@ BOOST_AUTO_TEST_CASE( undo_account_lookup_by_name )
     BOOST_REQUIRE( db->find_account( "lookuprenamed" ) == nullptr );
     for( const auto& account : by_name_idx )
       BOOST_REQUIRE( db->find_account( account.get_name() ) == &account );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( undo_modify_with_and_without_key_change )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: undo_modify_with_and_without_key_change" );
+    static_assert( chainbase::index_keys::index_key_snapshot< account_object, account_index >::supported,
+      "account_object modifies must be able to skip re-indexing" );
+    static_assert( chainbase::index_keys::index_key_snapshot< witness_object, witness_index >::supported,
+      "witness_object modifies must be able to skip re-indexing" );
+
+    ACTORS( HIVE_asset( 1'000 ), (alice)(bob) );
+    generate_block();
+
+    const auto& accounts = db->get_index< account_index >().indicies();
+    const auto& witnesses = db->get_index< witness_index >().indicies();
+    const auto& by_proxy_idx = db->get_index< account_index, by_proxy >();
+    const auto& by_withdrawal_idx = db->get_index< account_index, by_next_vesting_withdrawal >();
+    const auto& by_vote_idx = db->get_index< witness_index, by_vote_name >();
+    const auto& by_schedule_idx = db->get_index< witness_index, by_schedule_time >();
+    const account_object& alice = db->get_account( "alice" );
+    const account_object& bob = db->get_account( "bob" );
+    const witness_object& witness = db->get_witness( HIVE_INIT_MINER_NAME );
+    const auto time = db->head_block_time();
+
+    auto check_found = [&]()
+    {
+      BOOST_REQUIRE( every_index_finds( accounts, alice ) );
+      BOOST_REQUIRE( every_index_finds( witnesses, witness ) );
+      BOOST_REQUIRE( indexes_are_consistent( accounts ) );
+      BOOST_REQUIRE( indexes_are_consistent( witnesses ) );
+      BOOST_REQUIRE( db->find_account( alice.get_name() ) == &alice );
+    };
+
+    auto modify_no_key = [&]()
+    {
+      db->modify( alice, [&]( account_object& a )
+      {
+        a.rc_manabar.current_mana -= 1;
+        a.post_count += 1;
+      } );
+      db->modify( witness, [&]( witness_object& w ){ w.total_missed += 1; } );
+    };
+
+    auto modify_keys = [&]( const std::string& new_name, const fc::time_point_sec& withdrawal, share_type votes, fc::uint128 schedule )
+    {
+      db->modify( alice, [&]( account_object& a )
+      {
+        a.set_name( new_name );
+        a.set_proxy( bob );
+        a.next_vesting_withdrawal = withdrawal;
+        a.update_governance_vote_expiration_ts( time );
+      } );
+      db->modify( witness, [&]( witness_object& w )
+      {
+        w.votes = votes;
+        w.virtual_scheduled_time = schedule;
+      } );
+    };
+
+    BOOST_TEST_MESSAGE( "--- No key changed, outside an undo session" );
+    const auto mana = alice.rc_manabar.current_mana;
+    const auto missed = witness.total_missed;
+    modify_no_key();
+    BOOST_REQUIRE_EQUAL( alice.rc_manabar.current_mana, mana - 1 );
+    BOOST_REQUIRE_EQUAL( witness.total_missed, missed + 1 );
+    check_found();
+
+    BOOST_TEST_MESSAGE( "--- Keys changed, outside an undo session" );
+    modify_keys( "alice2", time + fc::days( 1 ), witness.votes + 1000, fc::uint128( 12345 ) );
+    BOOST_REQUIRE( db->find_account( "alice" ) == nullptr );
+    BOOST_REQUIRE( db->find_account( "alice2" ) == &alice );
+    BOOST_REQUIRE( &*by_proxy_idx.find( boost::make_tuple( bob.get_id(), account_name_type( "alice2" ) ) ) == &alice );
+    BOOST_REQUIRE( &*by_withdrawal_idx.find( boost::make_tuple( time + fc::days( 1 ), account_name_type( "alice2" ) ) ) == &alice );
+    BOOST_REQUIRE( &*by_vote_idx.find( boost::make_tuple( witness.votes, witness.owner ) ) == &witness );
+    BOOST_REQUIRE( &*by_schedule_idx.find( boost::make_tuple( fc::uint128( 12345 ), witness.get_id() ) ) == &witness );
+    check_found();
+
+    BOOST_TEST_MESSAGE( "--- A key changed and changed back in one modify" );
+    db->modify( alice, [&]( account_object& a )
+    {
+      a.set_name( "alice3" );
+      a.set_name( "alice2" );
+    } );
+    BOOST_REQUIRE( db->find_account( "alice2" ) == &alice );
+    check_found();
+
+    BOOST_TEST_MESSAGE( "--- Keys changed and not changed, inside an undo session that is undone" );
+    const auto old_votes = witness.votes;
+    const auto old_schedule = witness.virtual_scheduled_time;
+    const auto old_expiration = alice.get_governance_vote_expiration_ts();
+    const auto old_mana = alice.rc_manabar.current_mana;
+    {
+      undo_db udb( *db );
+      udb.undo_begin();
+      modify_no_key();
+      check_found();
+      modify_keys( "alice4", time + fc::days( 2 ), old_votes + 2000, fc::uint128( 23456 ) );
+      check_found();
+      modify_no_key();
+      BOOST_REQUIRE( db->find_account( "alice4" ) == &alice );
+      BOOST_REQUIRE( by_vote_idx.find( boost::make_tuple( old_votes, witness.owner ) ) == by_vote_idx.end() );
+      check_found();
+      udb.undo_end();
+    }
+    const account_object* restored = db->find_account( "alice2" );
+    BOOST_REQUIRE( restored != nullptr );
+    BOOST_REQUIRE( db->find_account( "alice4" ) == nullptr );
+    BOOST_REQUIRE_EQUAL( restored->rc_manabar.current_mana, old_mana );
+    BOOST_REQUIRE( restored->next_vesting_withdrawal == time + fc::days( 1 ) );
+    BOOST_REQUIRE( restored->get_governance_vote_expiration_ts() == old_expiration );
+    BOOST_REQUIRE( &*by_withdrawal_idx.find( boost::make_tuple( time + fc::days( 1 ), account_name_type( "alice2" ) ) ) == restored );
+    BOOST_REQUIRE( by_withdrawal_idx.find( boost::make_tuple( time + fc::days( 2 ), account_name_type( "alice4" ) ) ) == by_withdrawal_idx.end() );
+    const witness_object& restored_witness = db->get_witness( HIVE_INIT_MINER_NAME );
+    BOOST_REQUIRE( restored_witness.votes == old_votes );
+    BOOST_REQUIRE( restored_witness.virtual_scheduled_time == old_schedule );
+    BOOST_REQUIRE( &*by_vote_idx.find( boost::make_tuple( old_votes, restored_witness.owner ) ) == &restored_witness );
+    BOOST_REQUIRE( &*by_schedule_idx.find( boost::make_tuple( old_schedule, restored_witness.get_id() ) ) == &restored_witness );
+    BOOST_REQUIRE( every_index_finds( accounts, *restored ) );
+    BOOST_REQUIRE( indexes_are_consistent( accounts ) );
+    BOOST_REQUIRE( indexes_are_consistent( witnesses ) );
+
+    BOOST_TEST_MESSAGE( "--- A modifier that throws keeps its changes re-indexed, and undo restores them" );
+    {
+      undo_db udb( *db );
+      udb.undo_begin();
+      BOOST_REQUIRE_THROW( db->modify( *restored, [&]( account_object& a )
+      {
+        a.rc_manabar.current_mana -= 1;
+        FC_ASSERT( false, "modifier failed without changing a key" );
+      } ), fc::assert_exception );
+      BOOST_REQUIRE_EQUAL( restored->rc_manabar.current_mana, old_mana - 1 );
+      BOOST_REQUIRE( indexes_are_consistent( accounts ) );
+
+      BOOST_REQUIRE_THROW( db->modify( *restored, [&]( account_object& a )
+      {
+        a.next_vesting_withdrawal = time + fc::days( 3 );
+        FC_ASSERT( false, "modifier failed after changing a key" );
+      } ), fc::assert_exception );
+      BOOST_REQUIRE( &*by_withdrawal_idx.find( boost::make_tuple( time + fc::days( 3 ), account_name_type( "alice2" ) ) ) == restored );
+      BOOST_REQUIRE( by_withdrawal_idx.find( boost::make_tuple( time + fc::days( 1 ), account_name_type( "alice2" ) ) ) == by_withdrawal_idx.end() );
+      BOOST_REQUIRE( indexes_are_consistent( accounts ) );
+      udb.undo_end();
+    }
+    restored = db->find_account( "alice2" );
+    BOOST_REQUIRE( restored != nullptr );
+    BOOST_REQUIRE_EQUAL( restored->rc_manabar.current_mana, old_mana );
+    BOOST_REQUIRE( &*by_withdrawal_idx.find( boost::make_tuple( time + fc::days( 1 ), account_name_type( "alice2" ) ) ) == restored );
+    BOOST_REQUIRE( indexes_are_consistent( accounts ) );
   }
   FC_LOG_AND_RETHROW()
 }

@@ -91,6 +91,7 @@
 #include <thread>
 
 #include "../db_fixture/clean_database_fixture.hpp"
+#include "../undo_data/index_consistency.hpp"
 
 using namespace hive;
 using namespace hive::chain;
@@ -599,6 +600,103 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     BOOST_CHECK_EQUAL( db2.get(alice_id).get_name(), "alice" );
     BOOST_CHECK( db1.get_account( "alice" ).get_id() == alice_id );
     BOOST_CHECK( db2.get_account( "alice" ).get_id() == alice_id );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+namespace
+{
+  template< typename MultiIndex >
+  void require_indexes_consistent_and_equal( const database& db1, const database& db2 )
+  {
+    const auto& objects1 = db1.get_index< MultiIndex >().indicies();
+    const auto& objects2 = db2.get_index< MultiIndex >().indicies();
+    BOOST_REQUIRE( indexes_are_consistent( objects1 ) );
+    BOOST_REQUIRE( indexes_are_consistent( objects2 ) );
+    BOOST_REQUIRE_EQUAL( objects1.size(), objects2.size() );
+    for( auto it1 = objects1.begin(), it2 = objects2.begin(); it1 != objects1.end(); ++it1, ++it2 )
+      BOOST_REQUIRE( same_index_keys( objects1, *it1, *it2 ) );
+  }
+}
+
+BOOST_AUTO_TEST_CASE( switch_forks_undo_modify_keys )
+{
+  try {
+    fc::temp_directory dir1( hive::utilities::temp_directory_path() ),
+                  dir2( hive::utilities::temp_directory_path() );
+    SET_UP_FIXTURE_SUFFIX( dir1.path().string(), 1, fc::optional< fc::logging_config >() );
+    auto common_logging_config = fixture1.get_logging_config();
+    SET_UP_FIXTURE_SUFFIX( dir2.path().string(), 2, common_logging_config );
+    witness::block_producer bp1( chain_plugin1 ),
+                    bp2( chain_plugin2 );
+
+    auto init_account_priv_key  = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")) );
+
+    {
+      //Generate an empty block, because `runtime_expiration` for every transaction is set only when `head_block_num() > 0`
+      auto b = GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
+      PUSH_BLOCK( chain_plugin2, b );
+    }
+
+    const auto temp_id = db1.get_account( HIVE_TEMP_ACCOUNT ).get_id();
+    const auto old_expiration = db1.get_account( HIVE_INIT_MINER_NAME ).get_governance_vote_expiration_ts();
+    const auto old_balance = db1.get_account( HIVE_TEMP_ACCOUNT ).get_hive_balance().amount;
+
+    // modifies of initminer that change keys (proxy, governance vote expiration) and that change none (balance, RC)
+    signed_transaction trx;
+    account_witness_proxy_operation proxy_op;
+    proxy_op.account = HIVE_INIT_MINER_NAME;
+    proxy_op.proxy = HIVE_TEMP_ACCOUNT;
+    trx.operations.push_back( proxy_op );
+    transfer_operation transfer_op;
+    transfer_op.from = HIVE_INIT_MINER_NAME;
+    transfer_op.to = HIVE_TEMP_ACCOUNT;
+    transfer_op.amount = asset( 1000, HIVE_SYMBOL );
+    trx.operations.push_back( transfer_op );
+    trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    PUSH_TX( chain_plugin1, trx, init_account_priv_key );
+
+    // db1 : A, db2 : B C
+    GENERATE_BLOCK( bp1, db1.get_slot_time(1), db1.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    BOOST_REQUIRE( db1.get_account( HIVE_INIT_MINER_NAME ).get_proxy() == temp_id );
+    BOOST_REQUIRE( db1.get_account( HIVE_TEMP_ACCOUNT ).get_hive_balance().amount == old_balance + transfer_op.amount.amount );
+    BOOST_REQUIRE( every_index_finds( db1.get_index< account_index >().indicies(), db1.get_account( HIVE_INIT_MINER_NAME ) ) );
+    BOOST_REQUIRE( indexes_are_consistent( db1.get_index< account_index >().indicies() ) );
+    BOOST_REQUIRE( indexes_are_consistent( db1.get_index< witness_index >().indicies() ) );
+
+    for( int i = 0; i < 2; ++i )
+    {
+      auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+        init_account_priv_key, database::skip_nothing );
+      PUSH_BLOCK( chain_plugin1, b );
+    }
+    db1.clear_pending();
+    BOOST_REQUIRE( db1.head_block_id() == db2.head_block_id() );
+
+    BOOST_TEST_MESSAGE( "--- After the fork switch db1 has the keys of the winning fork" );
+    const auto& initminer1 = db1.get_account( HIVE_INIT_MINER_NAME );
+    BOOST_REQUIRE( !initminer1.has_proxy() );
+    BOOST_REQUIRE( initminer1.get_governance_vote_expiration_ts() == old_expiration );
+    BOOST_REQUIRE( db1.get_account( HIVE_TEMP_ACCOUNT ).get_hive_balance().amount == old_balance );
+    require_indexes_consistent_and_equal< account_index >( db1, db2 );
+    require_indexes_consistent_and_equal< witness_index >( db1, db2 );
+
+    BOOST_TEST_MESSAGE( "--- The modifies applied again on the winning fork" );
+    PUSH_TX( chain_plugin2, trx, init_account_priv_key );
+    auto b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
+      init_account_priv_key, database::skip_nothing );
+    PUSH_BLOCK( chain_plugin1, b );
+    db1.clear_pending();
+    BOOST_REQUIRE( db1.get_account( HIVE_INIT_MINER_NAME ).get_proxy() == temp_id );
+    const auto& by_proxy_idx = db1.get_index< account_index, by_proxy >();
+    BOOST_REQUIRE( &*by_proxy_idx.find( boost::make_tuple( temp_id, account_name_type( HIVE_INIT_MINER_NAME ) ) ) ==
+      &db1.get_account( HIVE_INIT_MINER_NAME ) );
+    require_indexes_consistent_and_equal< account_index >( db1, db2 );
+    require_indexes_consistent_and_equal< witness_index >( db1, db2 );
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
