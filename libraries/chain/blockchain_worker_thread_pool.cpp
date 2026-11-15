@@ -232,6 +232,20 @@ void blockchain_worker_thread_pool::impl::perform_work(const std::weak_ptr<full_
         // fully decompress (if necessary) the block and unpack it
         full_block->decode_block();
 
+        // the transaction id and RC payer are needed by every replay, so take them off the replay thread;
+        // if either throws, it is not cached and the replay thread recomputes it and gets the same exception
+        for (const full_transaction_ptr& full_transaction : full_block->get_full_transactions())
+        {
+          try
+          {
+            full_transaction->get_digest();
+            full_transaction->compute_rc_payer();
+          }
+          catch (...)
+          {
+          }
+        }
+
         // precompute some stuff we'll need for validating the block
         if (validate_during_replay)
         {
@@ -294,6 +308,14 @@ void blockchain_worker_thread_pool::impl::perform_work(const work_request_type::
         // result (or, if there's an error, precompute the exception).  Just like with a normal result, the
         // full_transaction will cache any exceptions thrown now and rethrow them when and if the blockchain
         // makes the corresponding call during the course of apply_transaction.
+      }
+
+      try
+      {
+        full_transaction->compute_rc_payer();
+      }
+      catch (...)
+      {
       }
 
       // but by default, signature validation isn't done unless you specify --p2p-force-validate
@@ -376,6 +398,13 @@ void blockchain_worker_thread_pool::impl::perform_work(const work_request_type::
       try
       {
         full_transaction->compute_required_authorities();
+      }
+      catch (...)
+      {
+      }
+      try
+      {
+        full_transaction->compute_rc_payer();
       }
       catch (...)
       {

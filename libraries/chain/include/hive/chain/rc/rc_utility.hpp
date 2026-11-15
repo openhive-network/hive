@@ -128,7 +128,7 @@ class resource_credits
     void set_pool_params( const witness_schedule_object& wso ) const;
 
     // resets information for new transaction - should be called at the start of each transaction (fills payer and op)
-    void reset_tx_info( const protocol::signed_transaction& tx );
+    void reset_tx_info( const full_transaction_type& full_tx );
     // returns information collected for current transaction
     const rc_transaction_info& get_tx_info() const { return tx_info; }
 

@@ -1,5 +1,6 @@
 #include <hive/chain/full_transaction.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/rc/resource_user.hpp>
 #include <hive/protocol/exceptions.hpp>
 #include <hive/protocol/hardfork.hpp>
 #include <hive/protocol/transaction_util.hpp>
@@ -258,6 +259,24 @@ const hive::protocol::required_authorities_type& full_transaction_type::get_requ
   }
   required_authorities_accessed.store(true, std::memory_order_relaxed);
   return required_authorities;
+}
+
+void full_transaction_type::compute_rc_payer() const
+{
+  if (!has_rc_payer.load(std::memory_order_consume))
+  {
+    std::lock_guard<std::mutex> guard(results_mutex);
+    if (!has_rc_payer.load(std::memory_order_consume))
+    {
+      rc_payer = get_resource_user(get_transaction());
+      has_rc_payer.store(true, std::memory_order_release);
+    }
+  }
+}
+const hive::protocol::account_name_type& full_transaction_type::get_rc_payer() const
+{
+  compute_rc_payer();
+  return rc_payer;
 }
 
 bool full_transaction_type::is_legacy_pack() const

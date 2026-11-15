@@ -1609,6 +1609,73 @@ BOOST_AUTO_TEST_CASE( rc_exception_during_modify )
   BOOST_REQUIRE_EQUAL( expected_exception_found, true );
 }
 
+BOOST_AUTO_TEST_CASE( rc_payer_cached_in_full_transaction )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing that the RC payer cached in full_transaction matches get_resource_user" );
+
+    auto check_payer = [&]( const signed_transaction& tx, const std::string& expected_payer )
+    {
+      BOOST_REQUIRE_EQUAL( std::string( resource_credits::get_resource_user( tx ) ), expected_payer );
+      full_transaction_ptr ftx = full_transaction_type::create_from_signed_transaction( tx, pack_type::hf26, false );
+      BOOST_REQUIRE_EQUAL( std::string( ftx->get_rc_payer() ), expected_payer );
+      BOOST_REQUIRE_EQUAL( ftx->get_transaction_id().str(), tx.id( pack_type::hf26 ).str() );
+      ftx->compute_rc_payer(); // recomputing after the value is cached must not change it
+      BOOST_REQUIRE_EQUAL( std::string( ftx->get_rc_payer() ), expected_payer );
+    };
+
+    custom_json_operation no_authority;
+    no_authority.id = "test";
+    no_authority.json = "{}";
+
+    transfer_operation transfer;
+    transfer.from = "bob";
+    transfer.to = "alice";
+    transfer.amount = asset( 1'000, HIVE_SYMBOL );
+
+    custom_json_operation active_and_posting;
+    active_and_posting.id = "test";
+    active_and_posting.json = "{}";
+    active_and_posting.required_auths = { "carol", "dave" };
+    active_and_posting.required_posting_auths = { "alice" };
+
+    custom_json_operation posting_only;
+    posting_only.id = "test";
+    posting_only.json = "{}";
+    posting_only.required_posting_auths = { "erin", "dave" };
+
+    signed_transaction tx;
+    tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+
+    BOOST_TEST_MESSAGE( "First operation names no authority: the next one that does decides" );
+    tx.operations = { no_authority, transfer };
+    check_payer( tx, "bob" );
+
+    BOOST_TEST_MESSAGE( "Active authorities take precedence over posting ones, lowest name wins" );
+    tx.operations = { active_and_posting, transfer };
+    check_payer( tx, "carol" );
+
+    BOOST_TEST_MESSAGE( "Only posting authorities" );
+    tx.operations = { no_authority, posting_only };
+    check_payer( tx, "dave" );
+
+    BOOST_TEST_MESSAGE( "No operation names an authority" );
+    tx.operations = { no_authority };
+    check_payer( tx, "" );
+
+    BOOST_TEST_MESSAGE( "Applied transaction charges the cached payer" );
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    generate_block();
+    fund( "bob", HIVE_asset( 10'000 ) );
+    generate_block();
+    push_transaction( transfer, bob_private_key );
+    BOOST_REQUIRE_EQUAL( std::string( db->rc().get_tx_info().payer ), "bob" );
+    generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
