@@ -155,6 +155,13 @@ public:
     fixture->witness_create(owner, owner_key, url, signing_key, fee);
   }
 
+  void post_comment( const fc::string& author, const fc::string& permlink, const fc::string& title, const fc::string& body,
+                     const fc::string& category, const fc::ecc::private_key& post_key )
+  {
+    FC_ASSERT(fixture);
+    fixture->post_comment(author, permlink, title, body, category, post_key);
+  }
+
   void account_update( const fc::string& account, const fc::ecc::public_key& memo_key, const fc::string& metadata,
                        fc::optional<authority> owner, fc::optional<authority> active, fc::optional<authority> posting,
                        const fc::ecc::private_key& key )

@@ -28,7 +28,7 @@ void initialize_core_indexes_04( database& db )
 
 const witness_object* database::find_witness( const account_name_type& name ) const
 {
-  return find< witness_object, by_name >( name );
+  return find< witness_object, by_name_hash >( name );
 }
 
 
@@ -57,42 +57,68 @@ const witness_object& database::get_witness( const account_name_type& name ) con
   return *_witness;
 } FC_CAPTURE_AND_RETHROW( (name) ) }
 
-void database::adjust_witness_votes( const account_object& a, const share_type& delta )
-{
-  const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
-  auto itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
-  while( itr != vidx.end() && itr->account == a.get_name() )
-  {
-    adjust_witness_vote( get< witness_object, by_name >(itr->witness), delta );
-    ++itr;
-  }
-}
+namespace {
 
-void database::adjust_witness_vote( const witness_object& witness, share_type delta )
+/// State that adjusting a witness vote reads but never changes, so it is looked up once for a batch of witnesses.
+struct witness_vote_context
 {
-  const witness_schedule_object& wso = has_hardfork(HIVE_HARDFORK_1_27_FIX_TIMESHARE_WITNESS_SCHEDULING) ?
-                                       get_witness_schedule_object_for_irreversibility() : get_witness_schedule_object();
-  modify( witness, [&]( witness_object& w )
+  explicit witness_vote_context( const database& db )
+    : wso( db.has_hardfork( HIVE_HARDFORK_1_27_FIX_TIMESHARE_WITNESS_SCHEDULING ) ?
+           db.get_witness_schedule_object_for_irreversibility() : db.get_witness_schedule_object() ),
+      total_vesting_shares( db.get_dynamic_global_properties().get_total_vesting_shares() ),
+      lap_length( db.has_hardfork( HIVE_HARDFORK_0_2 ) ? HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2 : HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH ),
+      has_hardfork_0_4( db.has_hardfork( HIVE_HARDFORK_0_4 ) )
+  {}
+
+  const witness_schedule_object& wso;
+  const hive::protocol::VEST_asset total_vesting_shares;
+  const fc::uint128 lap_length;
+  const bool has_hardfork_0_4;
+};
+
+void adjust_witness_vote_in_context( database& db, const witness_vote_context& ctx, const witness_object& witness, share_type delta )
+{
+  const witness_schedule_object& wso = ctx.wso;
+  db.modify( witness, [&]( witness_object& w )
   {
     auto delta_pos = w.votes.value * (wso.current_virtual_time - w.virtual_last_update);
     w.virtual_position += delta_pos;
 
     w.virtual_last_update = wso.current_virtual_time;
     w.votes += delta;
-    FC_ASSERT( w.votes <= get_dynamic_global_properties().get_total_vesting_shares().amount, "", ("w.votes", w.votes)("props",get_dynamic_global_properties().get_total_vesting_shares()) );
+    FC_ASSERT( w.votes <= ctx.total_vesting_shares.amount, "", ("w.votes", w.votes)("props",ctx.total_vesting_shares) );
 
-    if( has_hardfork( HIVE_HARDFORK_0_2 ) )
-      w.virtual_scheduled_time = w.virtual_last_update + (HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH2 - w.virtual_position)/(w.votes.value+1);
-    else
-      w.virtual_scheduled_time = w.virtual_last_update + (HIVE_VIRTUAL_SCHEDULE_LAP_LENGTH - w.virtual_position)/(w.votes.value+1);
+    w.virtual_scheduled_time = w.virtual_last_update + (ctx.lap_length - w.virtual_position)/(w.votes.value+1);
 
     /** witnesses with a low number of votes could overflow the time field and end up with a scheduled time in the past */
-    if( has_hardfork( HIVE_HARDFORK_0_4 ) )
+    if( ctx.has_hardfork_0_4 )
     {
       if( w.virtual_scheduled_time < wso.current_virtual_time )
         w.virtual_scheduled_time = fc::uint128_max_value();
     }
   } );
+}
+
+} // namespace
+
+void database::adjust_witness_votes( const account_object& a, const share_type& delta )
+{
+  const auto& vidx = get_index< witness_vote_index >().indices().get< by_account_witness >();
+  auto itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
+  if( itr == vidx.end() || itr->account != a.get_name() )
+    return;
+
+  const witness_vote_context ctx( *this );
+  while( itr != vidx.end() && itr->account == a.get_name() )
+  {
+    adjust_witness_vote_in_context( *this, ctx, get< witness_object, by_name_hash >(itr->witness), delta );
+    ++itr;
+  }
+}
+
+void database::adjust_witness_vote( const witness_object& witness, share_type delta )
+{
+  adjust_witness_vote_in_context( *this, witness_vote_context( *this ), witness, delta );
 }
 
 void database::clear_witness_votes( const account_object& a )
@@ -139,7 +165,7 @@ void database::retally_witness_votes()
     auto wit_itr = vidx.lower_bound( boost::make_tuple( a.get_name(), account_name_type() ) );
     while( wit_itr != vidx.end() && wit_itr->account == a.get_name() )
     {
-      adjust_witness_vote( get< witness_object, by_name >(wit_itr->witness), a.get_governance_vote_power() );
+      adjust_witness_vote( get< witness_object, by_name_hash >(wit_itr->witness), a.get_governance_vote_power() );
       ++wit_itr;
     }
   }

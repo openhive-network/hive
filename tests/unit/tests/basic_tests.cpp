@@ -881,7 +881,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 
   //top RAM gluttons
   BOOST_CHECK_EQUAL( sizeof( comment_object ), 32u ); //85M+ growing fast
-  BOOST_CHECK_EQUAL( sizeof( comment_index::MULTIINDEX_NODE_TYPE ), 96u );
+  BOOST_CHECK_EQUAL( sizeof( comment_index::MULTIINDEX_NODE_TYPE ), 80u );
 
   //permanent objects (no operation to remove)
   BOOST_CHECK_EQUAL( alignof( account_object ), 16u );
@@ -892,7 +892,7 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_object ), 48u ); //obsolete - only created/modified up to HF12 (683 objects)
   BOOST_CHECK_EQUAL( sizeof( liquidity_reward_balance_index::MULTIINDEX_NODE_TYPE ), 144u );
   BOOST_CHECK_EQUAL( sizeof( witness_object ), 352u ); //small but potentially as many as account_object
-  BOOST_CHECK_EQUAL( sizeof( witness_index::MULTIINDEX_NODE_TYPE ), 544u );
+  BOOST_CHECK_EQUAL( sizeof( witness_index::MULTIINDEX_NODE_TYPE ), 560u );
 
   //lasting objects (operation to create and remove, but with potential to grow)
   BOOST_CHECK_EQUAL( sizeof( vesting_delegation_object ), 24u ); //1M+ (potential of account_object squared !!!)
