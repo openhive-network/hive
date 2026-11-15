@@ -42,6 +42,10 @@ bool dhf_processor::is_daily_maintenance_period( const time_point_sec& head_time
 
 void dhf_processor::remove_proposals( const time_point_sec& head_time )
 {
+  // Expired proposals are kept, so the walk below grows with history; skip it unless some proposal can be marked `removed`.
+  if( !db.may_have_removed_proposals() )
+    return;
+
   auto& byEndDateIdx = db.get_index< proposal_index, by_end_date >();
   auto& byVoterIdx = db.get_index< proposal_vote_index, by_proposal_voter >();
 
@@ -49,6 +53,7 @@ void dhf_processor::remove_proposals( const time_point_sec& head_time )
   auto itr = byEndDateIdx.begin();
 
   remove_guard obj_perf( db.get_remove_threshold() );
+  bool found_removed = false;
 
   while( itr != end )
   {
@@ -62,10 +67,18 @@ void dhf_processor::remove_proposals( const time_point_sec& head_time )
       cycles here.
     */
     if( proposal.removed )
+    {
+      found_removed = true;
       dhf_helper::remove_proposal( proposal, byVoterIdx, db, obj_perf );
+    }
     if( obj_perf.done() )
       break;
   }
+
+  // `remove_proposal_operation` moves `end_date` of proposals it marks `removed` into the past, so a walk that met none
+  // of them proves there are none.
+  if( !found_removed )
+    db.set_no_removed_proposals();
 }
 
 void dhf_processor::find_proposals( const time_point_sec& head_time, t_proposals& active_proposals, t_proposals& no_active_yet_proposals )

@@ -244,8 +244,12 @@ namespace chainbase {
     void add_index_extension( std::shared_ptr< index_extension > ext ) { _extensions.push_back( ext ); }
     const index_extensions& get_index_extensions()const { return _extensions; }
     void* get()const { return _idx_ptr; }
+
+    /// Number of undo()/undo_all() calls that could have changed contents of the index (not persistent).
+    uint64_t get_undo_change_count()const { return _undo_change_count; }
   protected:
     void*              _idx_ptr;
+    mutable uint64_t   _undo_change_count = 0;
   private:
     index_extensions   _extensions;
   };
@@ -629,6 +633,14 @@ namespace chainbase {
         }
       }
 
+      /// True when undo() would change contents of the index.
+      bool has_undo_changes()const
+      {
+        if( !enabled() ) return false;
+        const auto& head = _stack.back();
+        return !head.old_values.empty() || !head.removed_values.empty() || !head.new_ids.empty();
+      }
+
       /**
         *  This method works similar to git squash, it merges the change set from the two most
         *  recent revision numbers into one revision number (reducing the head revision number)
@@ -875,10 +887,15 @@ namespace chainbase {
       virtual void     start_undo_session() override { _base.start_undo_session(); }
       virtual void     set_revision( int64_t revision ) override { _base.set_revision( revision ); }
       virtual int64_t  revision() const override { return _base.revision(); }
-      virtual void     undo( bool keep_alive = false ) const override { _base.undo( keep_alive ); }
+      virtual void     undo( bool keep_alive = false ) const override
+      {
+        if( _base.has_undo_changes() )
+          ++_undo_change_count;
+        _base.undo( keep_alive );
+      }
       virtual void     squash( bool keep_alive = false ) const override { _base.squash( keep_alive ); }
       virtual void     commit( int64_t revision ) const override { _base.commit(revision); }
-      virtual void     undo_all() const override {_base.undo_all(); }
+      virtual void     undo_all() const override { ++_undo_change_count; _base.undo_all(); }
       virtual uint32_t type_id() const override { return BaseIndex::value_type::type_id; }
 
       virtual statistic_info get_statistics() const override
@@ -1154,6 +1171,19 @@ namespace chainbase {
 
       template<typename MultiIndexType>
       generic_index<MultiIndexType>& get_mutable_index();
+
+      /// See abstract_index::get_undo_change_count().
+      template<typename MultiIndexType>
+      uint64_t get_undo_change_count() const
+      {
+        typedef generic_index<MultiIndexType> index_type;
+        if( !has_index< MultiIndexType >() )
+        {
+          std::string type_name = boost::core::demangle( typeid( typename index_type::value_type ).name() );
+          CHAINBASE_THROW_EXCEPTION( std::runtime_error( "unable to find index for " + type_name + " in database" ) );
+        }
+        return _index_map[index_type::value_type::type_id]->get_undo_change_count();
+      }
 
       template<typename MultiIndexType>
       void add_index_extension( std::shared_ptr< index_extension > ext )
