@@ -827,6 +827,14 @@ namespace chain {
       int16_t get_remove_threshold() const;
       void set_remove_threshold( int16_t val );
 
+      /// Non-persistent hint for dhf_processor: false only when no proposal marked `removed` can exist in current state.
+      bool may_have_removed_proposals() const;
+      /// Call when a proposal can become marked `removed` (or state was replaced) - next dhf cycle has to look for them.
+      void set_may_have_removed_proposals();
+      /// Call after verifying that no proposal is marked `removed`; holds until proposal_index is changed by undo
+      /// or set_may_have_removed_proposals() is called.
+      void set_no_removed_proposals();
+
       bool get_snapshot_loaded() const
       {
         return snapshot_loaded;
@@ -835,6 +843,7 @@ namespace chain {
       void set_snapshot_loaded()
       {
         snapshot_loaded = true;
+        set_may_have_removed_proposals();
       }
 
       util::advanced_benchmark_dumper& get_benchmark_dumper()
@@ -888,6 +897,7 @@ namespace chain {
       uint16_t                      _shared_file_scale_rate = 0;
 
       bool                          snapshot_loaded = false;
+      std::optional<uint64_t>       _no_removed_proposals_at_undo_count;
       bool                          _collecting_state_definitions_only = false;
 
       std::optional<time_point_sec> _current_timestamp;

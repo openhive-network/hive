@@ -3741,6 +3741,101 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_01 )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_after_pop_block )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: proposals marked `removed` are swept again after pop_block restores them" );
+
+    ACTORS( HIVE_asset( 50'000 ), (a00)(a01)(a02)(a03)(a04)(a05) ); // extra vesting to cover RC costs of proposals
+    generate_block();
+
+    set_price_feed( HBD_price( 1000, 1000 ) );
+    generate_block();
+
+    auto receiver = db->get_treasury_name();
+    auto start_date = db->head_block_time() + fc::days( 100 );
+    auto end_date = start_date + fc::days( 101 );
+    auto daily_pay = HBD_asset( 100 );
+
+    const auto nr_proposals = 10;
+    std::vector< int64_t > proposals_id;
+
+    std::vector< std::pair< std::string, fc::ecc::private_key > > voters = {
+      { "a00", a00_private_key }, { "a01", a01_private_key }, { "a02", a02_private_key },
+      { "a03", a03_private_key }, { "a04", a04_private_key }, { "a05", a05_private_key } };
+
+    for( const auto& voter : voters )
+      ISSUE_FUNDS( voter.first, HBD_asset( 10'000'000 ) );
+
+    for( auto i = 0; i < nr_proposals; ++i )
+    {
+      proposals_id.push_back( create_proposal( "a00", receiver, start_date, end_date, daily_pay, a00_private_key, a00_post_key ) );
+      generate_block();
+    }
+
+    std::vector< int64_t > v1( proposals_id.begin(), proposals_id.begin() + HIVE_PROPOSAL_MAX_IDS_NUMBER );
+    std::vector< int64_t > v2( proposals_id.begin() + HIVE_PROPOSAL_MAX_IDS_NUMBER, proposals_id.end() );
+
+    for( const auto& voter : voters )
+    {
+      vote_proposal( voter.first, v1, true/*approve*/, voter.second );
+      generate_block();
+      vote_proposal( voter.first, v2, true/*approve*/, voter.second );
+      generate_block();
+    }
+
+    const auto& proposal_idx = db->get_index< proposal_index >().indices().get< by_proposal_id >();
+    const auto& proposal_vote_idx = db->get_index< proposal_vote_index >().indices().get< by_proposal_voter >();
+
+    BOOST_REQUIRE_EQUAL( db->get_remove_threshold(), 20 );
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), nr_proposals * static_cast< int >( voters.size() ) );
+
+    auto require_only_removed_proposals_left = [&]()
+    {
+      for( auto id : proposals_id )
+        BOOST_REQUIRE( !exist_proposal( id ) || find_proposal( id )->removed );
+    };
+
+    // 70 objects; each operation removes up to the threshold and marks the rest, the per-block sweep removes up to the threshold
+    remove_proposal( "a00", flat_set< int64_t >( v1.begin(), v1.end() ), a00_private_key );
+    remove_proposal( "a00", flat_set< int64_t >( v2.begin(), v2.end() ), a00_private_key );
+    generate_block();
+    const auto proposals_after_first_sweep = calc_proposals( proposal_idx, proposals_id );
+    const auto votes_after_first_sweep = calc_votes( proposal_vote_idx, proposals_id );
+    BOOST_REQUIRE_GT( proposals_after_first_sweep, 0 );
+    require_only_removed_proposals_left();
+
+    generate_block();
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), 0 );
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), 0 );
+    BOOST_REQUIRE( db->may_have_removed_proposals() );
+
+    generate_block(); // sweep finds nothing
+    BOOST_REQUIRE( !db->may_have_removed_proposals() );
+    generate_block(); // sweep is skipped
+    BOOST_REQUIRE( !db->may_have_removed_proposals() );
+
+    db->pop_block(); // block did not touch proposals
+    BOOST_REQUIRE( !db->may_have_removed_proposals() );
+    db->pop_block();
+    db->pop_block(); // restores proposals marked `removed` that this block swept
+    BOOST_REQUIRE( db->may_have_removed_proposals() );
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), proposals_after_first_sweep );
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), votes_after_first_sweep );
+    require_only_removed_proposals_left();
+
+    generate_block();
+    BOOST_REQUIRE_EQUAL( calc_proposals( proposal_idx, proposals_id ), 0 );
+    BOOST_REQUIRE_EQUAL( calc_votes( proposal_vote_idx, proposals_id ), 0 );
+    generate_block();
+    BOOST_REQUIRE( !db->may_have_removed_proposals() );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_02 )
 {
   try

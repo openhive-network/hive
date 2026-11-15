@@ -271,6 +271,7 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
             proposal.removed = true;
             proposal.end_date = new_end_date;
           } );
+          _db.set_may_have_removed_proposals();
         }
       }
     }
