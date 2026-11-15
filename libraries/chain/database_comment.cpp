@@ -34,10 +34,37 @@ using hive::protocol::comment_payout_update_operation;
 using hive::protocol::curation_reward_operation;
 using hive::protocol::vesting_shares_split_operation;
 
+namespace {
+
+/**
+  * Comments stay in state only until their cashout (7-day payout window) plus a short time before they are archived,
+  * so the population of comment_index stays bounded. Reserving the hashed lookup's buckets for that population up front
+  * means block processing never pauses to rehash it. Reservation happens once per state; later opens find enough buckets.
+  */
+#ifdef IS_TEST_NET
+constexpr size_t EXPECTED_COMMENTS_IN_STATE = 10000;
+#else
+constexpr size_t EXPECTED_COMMENTS_IN_STATE = 1000000;
+#endif
+
+void reserve_comment_lookup_buckets( database& db )
+{
+  db.with_write_lock( [&]()
+  {
+    auto& idx = db.get_mutable_index< comment_index >().mutable_indices().get< by_permlink >();
+    if( idx.bucket_count() < EXPECTED_COMMENTS_IN_STATE )
+      idx.reserve( EXPECTED_COMMENTS_IN_STATE );
+  } );
+}
+
+} // namespace
+
 void initialize_core_indexes_03( database& db )
 {
   HIVE_ADD_CORE_INDEX(db, block_summary_index);
   HIVE_ADD_CORE_INDEX(db, comment_index);
+  if( !db.is_collecting_state_definitions_only() )
+    reserve_comment_lookup_buckets( db );
   HIVE_ADD_CORE_INDEX(db, comment_vote_index);
   HIVE_ADD_CORE_INDEX(db, comment_cashout_index);
   HIVE_ADD_CORE_INDEX(db, comment_cashout_ex_index);

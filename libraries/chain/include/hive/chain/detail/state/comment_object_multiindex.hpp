@@ -31,8 +31,10 @@ namespace hive { namespace chain {
       /// CONSENSUS INDICES - used by evaluators
       ordered_unique< tag< by_id >,
         const_mem_fun< comment_object, comment_object::id_type, &comment_object::get_id > >,
-      ordered_unique< tag< by_permlink >, /// used by consensus to find posts referenced in ops
-        const_mem_fun< comment_object, const comment_object::author_and_permlink_hash_type&, &comment_object::get_author_and_permlink_hash > >
+      /// used by consensus to find posts referenced in ops; only searched, never iterated, so its order never matters
+      hashed_unique< tag< by_permlink >,
+        const_mem_fun< comment_object, const comment_object::author_and_permlink_hash_type&, &comment_object::get_author_and_permlink_hash >,
+        author_and_permlink_hash_hasher >
     >,
     multi_index_allocator< comment_object >
   > comment_index;

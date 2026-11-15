@@ -565,10 +565,36 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     cop.creator = HIVE_INIT_MINER_NAME;
     cop.owner = authority(1, init_account_pub_key, 1);
     cop.active = cop.owner;
+    cop.posting = cop.owner;
     trx.operations.push_back(cop);
+    transfer_to_vesting_operation tvop;
+    tvop.from = HIVE_INIT_MINER_NAME;
+    tvop.to = "alice";
+    tvop.amount = ASSET( "1000.000 TESTS" );
+    trx.operations.push_back(tvop);
     trx.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
     PUSH_TX( chain_plugin1, trx, init_account_priv_key );
     //*/
+    // alice's comment and witness are created on the fork that gets abandoned, then again on the winning one
+    signed_transaction trx2;
+    comment_operation comment_op;
+    comment_op.author = "alice";
+    comment_op.permlink = "forked";
+    comment_op.parent_permlink = "test";
+    comment_op.title = "forked";
+    comment_op.body = "forked";
+    trx2.operations.push_back(comment_op);
+    trx2.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    PUSH_TX( chain_plugin1, trx2, init_account_priv_key );
+    signed_transaction trx3;
+    witness_update_operation wop;
+    wop.owner = "alice";
+    wop.url = "http://alice.witness";
+    wop.block_signing_key = init_account_pub_key;
+    wop.fee = ASSET( "0.000 TESTS" );
+    trx3.operations.push_back(wop);
+    trx3.set_expiration( db1.head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+    PUSH_TX( chain_plugin1, trx3, init_account_priv_key );
     // generate blocks
     // db1 : A
     // db2 : B C D
@@ -578,6 +604,8 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
 
     auto alice_id = db1.get_account( "alice" ).get_id();
     BOOST_CHECK_EQUAL( db1.get(alice_id).get_name(), "alice" );
+    const auto alice_comment_id = db1.get_comment( alice_id, std::string( "forked" ) )->get_id();
+    const auto alice_witness_id = db1.get_witness( "alice" ).get_id();
 
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
@@ -590,8 +618,12 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     db1.clear_pending(); // clear it so that we can verify it was properly removed from pending state.
     HIVE_REQUIRE_THROW(db1.get(alice_id), std::exception);
     BOOST_CHECK( db1.find_account( "alice" ) == nullptr );
+    BOOST_CHECK( !db1.find_comment( alice_id, std::string( "forked" ) ) );
+    BOOST_CHECK( db1.find_witness( "alice" ) == nullptr );
 
     PUSH_TX( chain_plugin2, trx, init_account_priv_key );
+    PUSH_TX( chain_plugin2, trx2, init_account_priv_key );
+    PUSH_TX( chain_plugin2, trx3, init_account_priv_key );
 
     b = GENERATE_BLOCK( bp2, db2.get_slot_time(1), db2.get_scheduled_witness(1),
       init_account_priv_key, database::skip_nothing );
@@ -601,6 +633,11 @@ BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
     BOOST_CHECK_EQUAL( db2.get(alice_id).get_name(), "alice" );
     BOOST_CHECK( db1.get_account( "alice" ).get_id() == alice_id );
     BOOST_CHECK( db2.get_account( "alice" ).get_id() == alice_id );
+    for( const database* db : { &db1, &db2 } )
+    {
+      BOOST_CHECK( db->get_comment( alice_id, std::string( "forked" ) )->get_id() == alice_comment_id );
+      BOOST_CHECK( db->get_witness( "alice" ).get_id() == alice_witness_id );
+    }
   } catch (fc::exception& e) {
     edump((e.to_detail_string()));
     throw;
