@@ -1155,6 +1155,16 @@ namespace chainbase {
         return _segment_manager->get_free_memory();
       }
 
+      bool has_contiguous_free_memory( size_t size )const
+      {
+        return chainbase::has_contiguous_free_memory( _segment_manager, size );
+      }
+
+      size_t get_largest_free_block()const
+      {
+        return chainbase::get_largest_free_block( _segment_manager );
+      }
+
       size_t get_max_memory()const
       {
         return _file_size;

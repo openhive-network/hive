@@ -2577,6 +2577,55 @@ BOOST_AUTO_TEST_CASE( singletons_follow_resize_and_undo )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( autoscale_grows_a_fragmented_state_file )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing that autoscale grows the state file when its free memory is in holes smaller than the reserve" );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    hived_fixture fixture( true /*remove_db_files*/, true /*disable_p2p*/, data_dir.path().string() );
+    fixture.postponed_init( {
+      hived_fixture::config_line_t( { "shared-file-dir", { data_dir.path().string() } } ),
+      hived_fixture::config_line_t( { "shared-file-full-threshold", { "9500" } } ),
+      hived_fixture::config_line_t( { "shared-file-scale-rate", { "1000" } } )
+    } );
+    database& db = *fixture.db;
+
+    const size_t max_mem = db.get_max_memory();
+    const size_t reserve = max_mem / 20;
+    db.check_free_memory( false, 0 );
+    BOOST_REQUIRE_EQUAL( db.get_max_memory(), max_mem );
+
+    // fill the segment with chunks far smaller than the reserve and free every other one
+    constexpr size_t chunk_size = 64 * 1024;
+    const auto base = [&db]() { return reinterpret_cast< char* >( db.get_segment_manager() ); };
+    std::vector< void* > chunks;
+    while( void* chunk = db.get_segment_manager()->allocate( chunk_size, std::nothrow ) )
+      chunks.push_back( chunk );
+    std::vector< std::ptrdiff_t > kept;
+    for( size_t i = 0; i < chunks.size(); ++i )
+    {
+      if( i % 2 == 0 )
+        kept.push_back( static_cast< char* >( chunks[ i ] ) - base() );
+      else
+        db.get_segment_manager()->deallocate( chunks[ i ] );
+    }
+    BOOST_REQUIRE_GT( db.get_free_memory(), 4 * reserve );
+    BOOST_REQUIRE_LT( db.get_largest_free_block(), reserve );
+    BOOST_REQUIRE( !db.has_contiguous_free_memory( reserve ) );
+
+    db.check_free_memory( false, 0 );
+    BOOST_CHECK_GT( db.get_max_memory(), max_mem );
+    BOOST_CHECK( db.has_contiguous_free_memory( reserve ) );
+
+    for( std::ptrdiff_t offset : kept )
+      db.get_segment_manager()->deallocate( base() + offset );
+    fixture.validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( irreversible_block_num_is_readable_without_lock_during_resize )
 {
   try

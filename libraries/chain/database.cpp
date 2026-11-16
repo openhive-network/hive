@@ -2256,12 +2256,18 @@ void database::check_free_memory( bool force_print, uint32_t current_block_num )
 {
   uint64_t free_mem = get_free_memory();
   uint64_t max_mem = get_max_memory();
+  const bool autoscale = _shared_file_full_threshold != 0 && _shared_file_scale_rate != 0;
+  const uint64_t reserve = fc::uint128_to_uint64( ( uint128_t( HIVE_100_PERCENT - _shared_file_full_threshold ) * max_mem ) / HIVE_100_PERCENT );
 
-  if( BOOST_UNLIKELY( _shared_file_full_threshold != 0 && _shared_file_scale_rate != 0 && free_mem < fc::uint128_to_uint64( ( uint128_t( HIVE_100_PERCENT - _shared_file_full_threshold ) * max_mem ) / HIVE_100_PERCENT ) ) )
+  // The reserve has to be one free block, not just free memory in total: freed pool blocks fragment the free memory into
+  // holes, and an index whose next pool block is bigger than every hole fails to allocate while plenty is free.
+  // Replay applies blocks without undo, so the file has to grow before such an allocation, not after it fails.
+  if( BOOST_UNLIKELY( autoscale && ( free_mem < reserve || !has_contiguous_free_memory( reserve ) ) ) )
   {
     uint64_t new_max = fc::uint128_to_uint64( uint128_t( max_mem * _shared_file_scale_rate ) / HIVE_100_PERCENT ) + max_mem;
 
-    wlog( "Memory is almost full, increasing to ${mem}M", ("mem", new_max / (1024*1024)) );
+    wlog( "Memory is almost full, increasing to ${mem}M (${free}M free, no free block of ${reserve}M)",
+      ("mem", new_max / (1024*1024))("free", free_mem / (1024*1024))("reserve", reserve / (1024*1024)) );
 
     resize( new_max );
 
