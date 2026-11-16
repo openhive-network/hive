@@ -35,5 +35,6 @@ void register_account_evaluators( evaluator_registry<operation>& registry );
 void register_social_evaluators( evaluator_registry<operation>& registry );
 void register_witness_evaluators( evaluator_registry<operation>& registry );
 void register_dhf_evaluators( evaluator_registry<operation>& registry );
+void register_rc_evaluators( evaluator_registry<operation>& registry );
 
 } } // hive::chain

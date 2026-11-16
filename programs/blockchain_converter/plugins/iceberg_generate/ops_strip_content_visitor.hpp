@@ -154,13 +154,6 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       return op;
     }
 
-    result_type operator()( hive::protocol::reset_account_operation& op )const
-    {
-      op.new_owner_authority.clear();
-
-      return op;
-    }
-
     result_type operator()( hive::protocol::change_recovery_account_operation& op )const
     {
       op.extensions.clear();

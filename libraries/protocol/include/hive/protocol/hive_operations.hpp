@@ -859,17 +859,22 @@ namespace hive { namespace protocol {
 
 
   /**
-    * Never used, placeholder in case we need to add new operation.
+    * Delegates RC to each of delegatees (sets amount of existing delegation, removes it when max_rc is 0).
+    * Since HF29 regular operation; it can also be used embedded in custom_json_operation (see rc_custom_operation).
     */
-  struct reset_account_operation : public base_operation
+  struct delegate_rc_operation : public base_operation
   {
-    account_name_type reset_account;
-    account_name_type account_to_reset;
-    authority         new_owner_authority;
+    account_name_type             from;
+    flat_set< account_name_type > delegatees;
+    int64_t                       max_rc = 0;
+    extensions_type               extensions;
 
-    void get_required_active_authorities( flat_set<account_name_type>& a )const { a.insert( reset_account ); }
     void validate()const;
+    void get_required_posting_authorities( flat_set<account_name_type>& a )const { a.insert( from ); }
   };
+
+  /// Converts max_rc of delegate_rc_operation to int64; throws when it is an unsigned value above INT64_MAX.
+  int64_t delegated_rc_from_variant( const fc::variant& max_rc );
 
   /**
     * Never used, placeholder in case we need to add new operation.
@@ -1052,6 +1057,8 @@ namespace hive { namespace protocol {
 
 namespace fc
 {
+  void from_variant( const fc::variant& var, hive::protocol::delegate_rc_operation& vo );
+
   using hive::protocol::comment_options_extension;
   template<>
   struct serialization_functor< comment_options_extension >
@@ -1136,7 +1143,7 @@ FC_REFLECT( hive::protocol::transfer_to_savings_operation, (from)(to)(amount)(me
 FC_REFLECT( hive::protocol::transfer_from_savings_operation, (from)(request_id)(to)(amount)(memo) )
 FC_REFLECT( hive::protocol::cancel_transfer_from_savings_operation, (from)(request_id) )
 
-FC_REFLECT( hive::protocol::reset_account_operation, (reset_account)(account_to_reset)(new_owner_authority) )
+FC_REFLECT( hive::protocol::delegate_rc_operation, (from)(delegatees)(max_rc)(extensions) )
 FC_REFLECT( hive::protocol::set_reset_account_operation, (account)(current_reset_account)(reset_account) )
 
 

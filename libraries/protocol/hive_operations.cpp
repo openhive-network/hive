@@ -8,8 +8,10 @@
 #include <fc/macros.hpp>
 #include <fc/io/json.hpp>
 #include <fc/macros.hpp>
+#include <fc/reflect/variant.hpp>
 
 #include <chrono>
+#include <limits>
 #include <locale>
 
 namespace hive { namespace protocol {
@@ -771,9 +773,36 @@ namespace hive { namespace protocol {
     validate_account_name( account );
   }
 
-  void reset_account_operation::validate()const
+  void delegate_rc_operation::validate()const
   {
-    FC_ASSERT( false && "placeholder1", "Placeholder for potential new operation" );
+    validate_account_name( from );
+    HIVE_PROTOCOL_NUMBER_ASSERT( delegatees.size() != 0, "Must provide at least one account", ( "subject", delegatees.size() ) );
+    HIVE_PROTOCOL_NUMBER_ASSERT(
+      delegatees.size() <= HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP,
+      "Provided ${size} accounts, cannot delegate to more than ${max} accounts in one operation",
+      ( "size", delegatees.size() )( "max", HIVE_RC_MAX_ACCOUNTS_PER_DELEGATION_OP )( "subject", delegatees.size() )
+    );
+
+    for( const account_name_type& delegatee:delegatees )
+    {
+      validate_account_name( delegatee );
+      HIVE_PROTOCOL_ACCOUNT_NAME_ASSERT(
+        delegatee != from,
+        "cannot delegate rc to yourself",
+        ( "subject", delegatee )( "account", from )
+      );
+    }
+
+    HIVE_PROTOCOL_NUMBER_ASSERT( max_rc >= 0, "amount of rc delegated cannot be negative", ( "subject", max_rc ) );
+  }
+
+  // generic int64_t conversion silently wraps unsigned values above int64 range into negative ones
+  int64_t delegated_rc_from_variant( const fc::variant& max_rc )
+  {
+    const uint64_t max_int64 = static_cast< uint64_t >( std::numeric_limits< int64_t >::max() );
+    HIVE_PROTOCOL_NUMBER_ASSERT( !max_rc.is_uint64() || max_rc.as_uint64() <= max_int64,
+      "amount of rc delegated cannot exceed ${max}", ( "max", max_int64 )( "subject", max_rc ) );
+    return max_rc.as_int64();
   }
 
   void set_reset_account_operation::validate()const
@@ -865,3 +894,18 @@ namespace hive { namespace protocol {
   }
 
 } } // hive::protocol
+
+namespace fc
+{
+
+void from_variant( const fc::variant& var, hive::protocol::delegate_rc_operation& vo )
+{
+  const variant_object& v_object = var.get_object();
+  auto itr = v_object.find( "max_rc" );
+  if( itr != v_object.end() )
+    hive::protocol::delegated_rc_from_variant( itr->value() );
+  fc::reflector< hive::protocol::delegate_rc_operation >::visit(
+    from_variant_visitor< hive::protocol::delegate_rc_operation >( v_object, vo ) );
+}
+
+} // fc

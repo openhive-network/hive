@@ -1323,6 +1323,76 @@ BOOST_AUTO_TEST_CASE( rc_differential_usage_operations )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( rc_usage_delegate_rc_both_forms )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing RC usage of delegate_rc_operation used as regular operation vs embedded in custom_json" );
+
+    generate_block();
+
+    ACTORS( HIVE_asset( 50'000 ), (alice)(bob)(carol)(dave) );
+    generate_block();
+    // keep the minimum RC delegation at 0 (account_creation_fee/3 rounds down to 0) so the small test
+    // delegations below are accepted; the measured resource usage does not depend on the creation fee
+    set_account_creation_fee( HIVE_asset( 1 ) );
+    generate_block();
+
+    // alice delegates with custom_json, dave with regular operation - the same delegations, so differential usage
+    // (discount for already existing delegations) is the same
+    auto compare_forms = [&]( delegate_rc_operation op, const int64_t expected_state_bytes )
+    {
+      op.from = "alice";
+      custom_json_operation custom_json;
+      custom_json.required_posting_auths.insert( "alice" );
+      custom_json.id = HIVE_RC_CUSTOM_OPERATION_ID;
+      custom_json.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
+      push_transaction( custom_json, alice_post_key );
+      const auto custom_json_usage = db->rc().get_tx_info().usage;
+
+      op.from = "dave";
+      push_transaction( op, dave_post_key );
+      const auto regular_usage = db->rc().get_tx_info().usage;
+      generate_block();
+
+      // regular form is smaller (binary instead of JSON) and does not pay for custom_json execution
+      BOOST_REQUIRE_LT( regular_usage[ resource_history_bytes ], custom_json_usage[ resource_history_bytes ] );
+      BOOST_REQUIRE_EQUAL( regular_usage[ resource_new_accounts ], 0 );
+      BOOST_REQUIRE_EQUAL( custom_json_usage[ resource_new_accounts ], 0 );
+      BOOST_REQUIRE_EQUAL( regular_usage[ resource_market_bytes ], 0 );
+      BOOST_REQUIRE_EQUAL( custom_json_usage[ resource_market_bytes ], 0 );
+      BOOST_REQUIRE_EQUAL( regular_usage[ resource_state_bytes ], expected_state_bytes );
+      BOOST_REQUIRE_EQUAL( custom_json_usage[ resource_state_bytes ], expected_state_bytes );
+      // transaction + one signature + delegate_rc (+ custom_json)
+      BOOST_REQUIRE_EQUAL( regular_usage[ resource_execution_time ], 94165 + 6622 + 75000 );
+      BOOST_REQUIRE_EQUAL( custom_json_usage[ resource_execution_time ], 94165 + 6622 + 1509 + 75000 );
+    };
+
+    delegate_rc_operation op;
+
+    BOOST_TEST_MESSAGE( "Create RC delegation" );
+    op.delegatees = { "bob" };
+    op.max_rc = 10000000;
+    compare_forms( op, 128 + 1927200 );
+
+    BOOST_TEST_MESSAGE( "Create and update RC delegation" );
+    op.delegatees = { "bob", "carol" };
+    op.max_rc = 5000000;
+    compare_forms( op, 128 - 1927200 + 1927200 * 2 );
+
+    BOOST_TEST_MESSAGE( "Update RC delegations" );
+    op.max_rc = 7500000;
+    compare_forms( op, 128 - 1927200 * 2 + 1927200 * 2 );
+
+    BOOST_TEST_MESSAGE( "Remove RC delegations" );
+    op.max_rc = 0;
+    compare_forms( op, 128 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( rc_differential_usage_negative )
 {
   try
