@@ -366,6 +366,57 @@ BOOST_AUTO_TEST_CASE( failed_resize_aborts_with_its_cause )
   BOOST_CHECK( logged.find( "Free space available is less than declared size" ) != std::string::npos );
 }
 
+BOOST_AUTO_TEST_CASE( failed_pool_block_allocation_names_its_size )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  chainbase::database db;
+  db.open( shared_memory_dir( dir ), 0, STATE_FILE_SIZE );
+  auto* segment_manager = db.get_segment_manager();
+
+  // leave the free memory in 1 KiB holes
+  constexpr size_t hole_size = 1024;
+  std::vector< void* > chunks;
+  while( void* chunk = segment_manager->allocate( hole_size, std::nothrow ) )
+    chunks.push_back( chunk );
+  std::vector< void* > kept;
+  for( size_t i = 0; i < chunks.size(); ++i )
+  {
+    if( i % 2 == 0 )
+      kept.push_back( chunks[ i ] );
+    else
+      segment_manager->deallocate( chunks[ i ] );
+  }
+  const size_t largest = db.get_largest_free_block();
+  BOOST_REQUIRE_GE( largest, hole_size );
+  BOOST_REQUIRE_LT( largest, 4 * hole_size );
+  BOOST_REQUIRE_GT( db.get_free_memory(), 64 * hole_size );
+  BOOST_CHECK( db.has_contiguous_free_memory( largest ) );
+  BOOST_CHECK( !db.has_contiguous_free_memory( largest + 1 ) );
+
+  // one block of the pool holds 64 items of 64 bytes, so it fits in no hole
+  chainbase::pool_allocator_t< std::array< char, 64 >, 64, false > pool( segment_manager );
+  try
+  {
+    pool.allocate();
+    BOOST_FAIL( "the pool block was allocated" );
+  }
+  catch( const boost::interprocess::bad_alloc& e )
+  {
+    BOOST_CHECK( dynamic_cast< const chainbase::segment_allocation_error* >( &e ) != nullptr );
+    const std::string message = e.what();
+    BOOST_TEST_MESSAGE( message );
+    BOOST_CHECK( message.find( "Could not allocate " ) == 0 );
+    BOOST_CHECK( message.find( "a block of 64 objects of" ) != std::string::npos );
+    BOOST_CHECK( message.find( "the largest free block holds " + std::to_string( largest ) + "." ) != std::string::npos );
+  }
+  BOOST_CHECK_EQUAL( db.get_largest_free_block(), largest );
+
+  for( void* chunk : kept )
+    segment_manager->deallocate( chunk );
+  BOOST_CHECK_NO_THROW( pool.deallocate( pool.allocate() ) );
+  db.close();
+}
+
 BOOST_AUTO_TEST_CASE( huge_pages_are_requested_for_every_mapping_of_the_state_file )
 {
   fc::temp_directory dir( hive::utilities::temp_directory_path() );

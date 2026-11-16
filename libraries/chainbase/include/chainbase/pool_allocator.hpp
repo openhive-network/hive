@@ -9,9 +9,64 @@
 #include <boost/core/demangle.hpp>
 
 #include <limits>
+#include <new>
+#include <string>
 #include <memory>
 
 namespace chainbase {
+
+  using segment_manager_t = bip::managed_mapped_file::segment_manager;
+
+  /// Whether a single allocation of `size` bytes fits in the segment. Total free memory does not tell: freed pool blocks
+  /// leave holes no bigger than a block, so the segment can have plenty of free memory and no room for a larger request.
+  inline bool has_contiguous_free_memory( segment_manager_t* segment_manager, size_t size )
+    {
+    if (size == 0)
+      return true;
+    void* probe = segment_manager->allocate(size, std::nothrow);
+    if (probe == nullptr)
+      return false;
+    segment_manager->deallocate(probe);
+    return true;
+    }
+
+  /// Size of the largest single allocation the segment can satisfy, found by bisection with probing allocations.
+  inline size_t get_largest_free_block( segment_manager_t* segment_manager )
+    {
+    size_t fits = 0;
+    size_t does_not_fit = segment_manager->get_free_memory() + 1;
+    while (does_not_fit - fits > 1)
+      {
+      const size_t size = fits + (does_not_fit - fits) / 2;
+      if (has_contiguous_free_memory(segment_manager, size))
+        fits = size;
+      else
+        does_not_fit = size;
+      }
+    return fits;
+    }
+
+  /// Failed allocation in the segment that says what was requested and how the free memory looked. It stays a
+  /// boost::interprocess::bad_alloc for code that catches those.
+  class segment_allocation_error : public bip::bad_alloc
+    {
+    public:
+      segment_allocation_error( size_t size, const std::string& purpose, segment_manager_t* segment_manager )
+        : message("Could not allocate " + std::to_string(size) + " bytes in the state file for " + purpose + ": "
+            + std::to_string(segment_manager->get_free_memory()) + " bytes are free, but the largest free block holds "
+            + std::to_string(get_largest_free_block(segment_manager)) + ". Increase shared-file-size, or enable autoscaling"
+            " with shared-file-full-threshold and shared-file-scale-rate.")
+        {
+        }
+
+      const char* what() const noexcept override
+        {
+        return message.c_str();
+        }
+
+    private:
+      std::string message;
+    };
 
   // BLOCK_SIZE - it means how many objects fit in allocated memory block
   template <typename T, uint32_t BLOCK_SIZE, bool PRESERVE_LAST_BLOCK>
@@ -66,7 +121,17 @@ namespace chainbase {
       pointer allocate(size_type n = 1)
         {
         if (n != 1)
-          return base_class_t::allocate(n);
+          {
+          try
+            {
+            return base_class_t::allocate(n);
+            }
+          catch (const bip::bad_alloc&)
+            {
+            throw segment_allocation_error(n * sizeof(T), "an array of " + std::to_string(n) + " objects of " + get_allocator_name(),
+              get_segment_manager());
+            }
+          }
         ++allocated_count;
         return pointer(get_object_memory());
         }
@@ -288,7 +353,18 @@ namespace chainbase {
 
       block_ptr_t allocate_block()
         {
-        auto insert_result = block_index.emplace();
+        auto insert_result = [this]()
+          {
+          try
+            {
+            return block_index.emplace();
+            }
+          catch (const bip::bad_alloc&)
+            {
+            throw segment_allocation_error(sizeof(block_t), "a block of " + std::to_string(BLOCK_SIZE) + " objects of " + get_allocator_name(),
+              get_segment_manager());
+            }
+          }();
         ++blocks_allocated_count;
         block_ptr_t block = const_cast<block_t*>(&(*insert_result.first));
         return block;
