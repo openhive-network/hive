@@ -157,6 +157,12 @@
 #define GRAPHENE_NET_INVENTORY_LIMIT_REPORT_INTERVAL_SEC     10
 
 /**
+ * How often we log what fetching items during normal operation cost: iterations, fetch candidates
+ * examined, items requested and the time spent choosing them
+ */
+#define GRAPHENE_NET_FETCH_ITEMS_REPORT_INTERVAL_SEC         30
+
+/**
  * During normal operation, how many items will be fetched from each
  * peer at a time.  This will only come into play when the network
  * is being flooded -- typically transactions will be fetched as soon

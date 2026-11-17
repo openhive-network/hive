@@ -535,14 +535,28 @@ namespace graphene { namespace net {
       fc::future<void>       _fetch_item_loop_done;
 
       struct item_id_index{};
+      struct item_timestamp_index{};
       typedef boost::multi_index_container<prioritized_item_id,
                                            boost::multi_index::indexed_by<boost::multi_index::ordered_unique<boost::multi_index::identity<prioritized_item_id> >,
                                                                           boost::multi_index::hashed_unique<boost::multi_index::tag<item_id_index>,
                                                                                                             boost::multi_index::member<prioritized_item_id, item_id, &prioritized_item_id::item>,
-                                                                                                            std::hash<item_id> > >
+                                                                                                            std::hash<item_id> >,
+                                                                          boost::multi_index::ordered_non_unique<boost::multi_index::tag<item_timestamp_index>,
+                                                                                                                 boost::multi_index::member<prioritized_item_id, fc::time_point, &prioritized_item_id::timestamp> > >
                                            > items_to_fetch_set_type;
       unsigned _items_to_fetch_sequence_counter;
-      items_to_fetch_set_type _items_to_fetch; /// list of items we know another peer has and we want
+      /// list of items we know another peer has and we want; each is also in the fetch_candidates of the peers that advertised it
+      items_to_fetch_set_type _items_to_fetch;
+      /// what fetch_items_loop() did since its last report, see report_fetch_items_statistics()
+      struct fetch_items_statistics
+      {
+        uint64_t iterations = 0;
+        uint64_t candidates_examined = 0;
+        uint64_t items_requested = 0;
+        uint64_t items_expired = 0;
+        fc::microseconds scheduling_time;
+        fc::time_point last_report_time;
+      } _fetch_items_statistics;
       peer_connection::timestamped_items_set_type _recently_failed_items; /// list of transactions we've recently pushed and had rejected by the delegate
       // @}
 
@@ -676,8 +690,17 @@ namespace graphene { namespace net {
       void fetch_sync_items_loop();
       void trigger_fetch_sync_items_loop();
 
-      bool is_item_in_any_peers_inventory(const item_id& item) const;
       void fetch_items_loop();
+      /// the oldest time an item we heard about can be queued at and still be worth fetching
+      fc::time_point oldest_item_timestamp_to_fetch() const;
+      /// drops the items to fetch we heard about too long ago, returning how many
+      size_t remove_expired_items_to_fetch();
+      fetch_candidate_verdict judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item);
+      void report_fetch_items_statistics();
+      void add_fetch_candidate(peer_connection* peer, const item_id& item);
+      /// Adds @p item to the items to fetch, and to the fetch candidates of every peer that advertised it,
+      /// if any did; returns whether one did
+      bool queue_item_to_fetch_from_advertisers(const item_id& item);
       /// @p for_block: a block may be fetched now, so the loop runs at once instead of waiting out the minimum interval
       void trigger_fetch_items_loop(bool for_block);
       bool peer_advertised_a_queued_block(const peer_connection* peer) const;
@@ -1511,135 +1534,142 @@ namespace graphene { namespace net {
         _retrigger_fetch_sync_items_loop_promise->set_value();
     }
 
-    bool node_impl::is_item_in_any_peers_inventory(const item_id& item) const
+    fc::time_point node_impl::oldest_item_timestamp_to_fetch() const
     {
-      for( const peer_connection_ptr& peer : _active_connections )
+      return fc::time_point::now() - fc::seconds(_recent_block_interval_in_seconds * GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS);
+    }
+
+    size_t node_impl::remove_expired_items_to_fetch()
+    {
+      // these have probably already fallen out of our peers' caches, we'll just ignore them.
+      // this can happen during flooding, and the _items_to_fetch could otherwise get clogged
+      // with a bunch of items that we'll never be able to request from any peer
+      auto& items_by_timestamp = _items_to_fetch.get<item_timestamp_index>();
+      const auto first_to_keep = items_by_timestamp.lower_bound(oldest_item_timestamp_to_fetch());
+      size_t expired_items = 0;
+      for (auto iter = items_by_timestamp.begin(); iter != first_to_keep; ++expired_items)
       {
-        if (peer->inventory_peer_advertised_to_us.find(item) != peer->inventory_peer_advertised_to_us.end() )
-          return true;
+        dlog("Unable to fetch item ${item} before its likely expiration time, removing it from our list of items to fetch", ("item", iter->item));
+        iter = items_by_timestamp.erase(iter);
       }
-      return false;
+      return expired_items;
+    }
+
+    // expired items are removed from _items_to_fetch before the candidates are judged, so they are dropped here
+    fetch_candidate_verdict node_impl::judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item)
+    {
+      auto& items_by_id = _items_to_fetch.get<item_id_index>();
+      auto iter = items_by_id.find(item);
+      if (iter == items_by_id.end())
+        return fetch_candidate_verdict::drop; // we got it, requested it from another peer, or it expired
+      if (peer->inventory_peer_advertised_to_us.find(item) == peer->inventory_peer_advertised_to_us.end())
+        return fetch_candidate_verdict::drop; // the peer said it doesn't have it, sent us a bad copy, or advertised it too long ago
+      if (item.item_type == graphene::net::block_message_type && peer->is_block_fetching_deprioritized())
+      {
+        // a peer kept despite sending us a block whose body didn't match its header is asked only if no
+        // other peer advertised the block, so its next bad copy doesn't delay the genuine one.  Other peers
+        // ask for it from their own candidates when they are idle, so here they only count as sources
+        std::vector<block_source_candidate> candidates{{true, true}};
+        for (const peer_connection_ptr& other_peer : _active_connections)
+          if (other_peer != peer && other_peer->inventory_peer_advertised_to_us.find(item) != other_peer->inventory_peer_advertised_to_us.end())
+            candidates.push_back({other_peer->is_block_fetching_deprioritized(), false});
+        if (choose_block_source(candidates) != std::optional<size_t>(0))
+          return fetch_candidate_verdict::keep; // in case the other sources disconnect without delivering it
+      }
+      items_by_id.erase(iter);
+      return fetch_candidate_verdict::take;
+    }
+
+    void node_impl::report_fetch_items_statistics()
+    {
+      const fc::time_point now = fc::time_point::now();
+      fetch_items_statistics& statistics = _fetch_items_statistics;
+      if (now - statistics.last_report_time < fc::seconds(GRAPHENE_NET_FETCH_ITEMS_REPORT_INTERVAL_SEC))
+        return;
+      if (statistics.iterations > 0)
+        ilog("fetch items in the last ${seconds}s: ${iterations} iterations examined ${examined} candidates and requested "
+             "${requested} items in ${scheduling_us}us of scheduling, ${expired} items expired, ${queued} items are queued",
+             ("seconds", (now - statistics.last_report_time).to_seconds())("iterations", statistics.iterations)
+             ("examined", statistics.candidates_examined)("requested", statistics.items_requested)
+             ("scheduling_us", statistics.scheduling_time.count())("expired", statistics.items_expired)
+             ("queued", _items_to_fetch.size()));
+      statistics = fetch_items_statistics();
+      statistics.last_report_time = now;
     }
 
     void node_impl::fetch_items_loop()
     {
+      _fetch_items_statistics.last_report_time = fc::time_point::now();
       while (!_fetch_item_loop_done.canceled())
       {
         _fetch_items_loop_trigger.begin_iteration();
+        const fc::time_point iteration_start = fc::time_point::now();
         dlog("beginning an iteration of fetch items (${count} items to fetch)",
              ("count", _items_to_fetch.size()));
 
-        fc::time_point oldest_timestamp_to_fetch = fc::time_point::now() - fc::seconds(_recent_block_interval_in_seconds * GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS);
+        const size_t expired_items = remove_expired_items_to_fetch();
+        if (expired_items > 0)
+          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
         fc::time_point next_peer_unblocked_time = fc::time_point::maximum();
 
         // we need to construct a list of items to request from each peer first,
-        // then send the messages (in two steps, to avoid yielding while iterating)
-        // we want to evenly distribute our requests among our peers.
-        struct requested_item_count_index {};
+        // then send the messages (in two steps, to avoid yielding while iterating).
+        // Only idle peers are asked, each for items from its own fetch candidates.  They take turns, one
+        // item each, so items several of them advertised are spread evenly among them
         struct peer_and_items_to_fetch
         {
           peer_connection_ptr peer;
+          bool include_transactions;
+          bool done = false;
           std::vector<item_id> item_ids;
-          peer_and_items_to_fetch(const peer_connection_ptr& peer) : peer(peer) {}
-          bool operator<(const peer_and_items_to_fetch& rhs) const { return peer < rhs.peer; }
-          size_t number_of_items() const { return item_ids.size(); }
         };
-        typedef boost::multi_index_container<peer_and_items_to_fetch,
-                                             boost::multi_index::indexed_by<boost::multi_index::ordered_unique<boost::multi_index::member<peer_and_items_to_fetch, peer_connection_ptr, &peer_and_items_to_fetch::peer> >,
-                                                                            boost::multi_index::ordered_non_unique<boost::multi_index::tag<requested_item_count_index>,
-                                                                                                                   boost::multi_index::const_mem_fun<peer_and_items_to_fetch, size_t, &peer_and_items_to_fetch::number_of_items> > > > fetch_messages_to_send_set;
-        fetch_messages_to_send_set items_by_peer;
-
-        // initialize the fetch_messages_to_send with an empty set of items for all idle peers
+        std::vector<peer_and_items_to_fetch> items_by_peer;
         for (const peer_connection_ptr& peer : _active_connections)
-          if (peer->idle())
-            items_by_peer.insert(peer_and_items_to_fetch(peer));
-
-        // now loop over all items we want to fetch
-        size_t expired_items = 0;
-        for (auto item_iter = _items_to_fetch.begin(); item_iter != _items_to_fetch.end();)
-        {
-          if (item_iter->timestamp < oldest_timestamp_to_fetch)
+          if (peer->idle() && peer->fetch_candidates.size() > 0)
           {
-            // this item has probably already fallen out of our peers' caches, we'll just ignore it.
-            // this can happen during flooding, and the _items_to_fetch could otherwise get clogged
-            // with a bunch of items that we'll never be able to request from any peer
-            dlog("Unable to fetch item ${item} before its likely expiration time, removing it from our list of items to fetch", ("item", item_iter->item));
-            item_iter = _items_to_fetch.erase(item_iter);
-            ++expired_items;
+            const bool transaction_fetching_inhibited = peer->is_transaction_fetching_inhibited();
+            if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions())
+              next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
+            peer->fetch_candidates.begin_pass();
+            items_by_peer.push_back({peer, !transaction_fetching_inhibited});
           }
-          else
+
+        for (bool item_taken = true; item_taken;)
+        {
+          item_taken = false;
+          for (peer_and_items_to_fetch& peer_and_items : items_by_peer)
           {
-            auto& peers_by_load = items_by_peer.get<requested_item_count_index>();
-            auto request_item_from_peer = [&](decltype(peers_by_load.begin()) peer_iter) {
-              //dlog("requesting item ${hash} from peer ${endpoint}",
-              //     ("hash", iter->item.item_hash)("endpoint", peer->get_remote_endpoint()));
-              item_id item_id_to_fetch = item_iter->item;
-              peer_iter->peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(item_id_to_fetch, fc::time_point::now()));
-              item_iter = _items_to_fetch.erase(item_iter);
-              peers_by_load.modify(peer_iter, [&item_id_to_fetch](peer_and_items_to_fetch& peer_and_items) {
-                peer_and_items.item_ids.push_back(item_id_to_fetch);
-              });
-            };
-            auto peer_advertised_item = [&](const peer_connection_ptr& peer) {
-              return peer->inventory_peer_advertised_to_us.find(item_iter->item) != peer->inventory_peer_advertised_to_us.end();
-            };
-            // find a peer that has it, we'll use the one who has the least requests going to it to load balance
-            bool item_fetched = false;
-            if (item_iter->item.item_type == graphene::net::block_message_type)
+            if (peer_and_items.done)
+              continue;
+            const peer_connection_ptr& peer = peer_and_items.peer;
+            const std::optional<item_id> item_id_to_fetch =
+              peer->fetch_candidates.take_next(peer_and_items.include_transactions,
+                                               [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate); },
+                                               _fetch_items_statistics.candidates_examined);
+            if (!item_id_to_fetch)
             {
-              // a peer kept despite sending us a block whose body didn't match its header is asked only if no
-              // other peer advertised the block, so its next bad copy doesn't delay the genuine one
-              std::vector<block_source_candidate> candidates;
-              std::vector<decltype(peers_by_load.begin())> candidate_peer_iters;
-              for (auto peer_iter = peers_by_load.begin(); peer_iter != peers_by_load.end(); ++peer_iter)
-                if (peer_advertised_item(peer_iter->peer))
-                {
-                  candidates.push_back({peer_iter->peer->is_block_fetching_deprioritized(),
-                                        peer_iter->item_ids.size() < GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION});
-                  candidate_peer_iters.push_back(peer_iter);
-                }
-              // busy peers can't be asked now, but they count as sources a deprioritized peer must not preempt
-              for (const peer_connection_ptr& peer : _active_connections)
-                if (items_by_peer.find(peer) == items_by_peer.end() && peer_advertised_item(peer))
-                  candidates.push_back({peer->is_block_fetching_deprioritized(), false});
-              if (const std::optional<size_t> chosen = choose_block_source(candidates))
-              {
-                request_item_from_peer(candidate_peer_iters[*chosen]);
-                item_fetched = true;
-              }
+              peer_and_items.done = true;
+              continue;
             }
-            else
-              for (auto peer_iter = peers_by_load.begin(); peer_iter != peers_by_load.end(); ++peer_iter)
-              {
-                const peer_connection_ptr& peer = peer_iter->peer;
-                // if they have the item and we haven't already decided to ask them for too many other items
-                if (peer_iter->item_ids.size() < GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION &&
-                    peer_advertised_item(peer))
-                {
-                  if (item_iter->item.item_type == graphene::net::trx_message_type && peer->is_transaction_fetching_inhibited())
-                    next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
-                  else
-                  {
-                    request_item_from_peer(peer_iter);
-                    item_fetched = true;
-                    break;
-                  }
-                }
-              }
-            if (!item_fetched)
-              ++item_iter;
+            peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(*item_id_to_fetch, fc::time_point::now()));
+            peer_and_items.item_ids.push_back(*item_id_to_fetch);
+            peer_and_items.done = peer_and_items.item_ids.size() >= GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION;
+            item_taken = true;
           }
         }
-        if (expired_items > 0)
-          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
+
+        ++_fetch_items_statistics.iterations;
+        _fetch_items_statistics.items_expired += expired_items;
+        _fetch_items_statistics.scheduling_time += fc::time_point::now() - iteration_start;
 
         // we've figured out which peer will be providing each item, now send the messages.
         for (const peer_and_items_to_fetch& peer_and_items : items_by_peer)
         {
+          _fetch_items_statistics.items_requested += peer_and_items.item_ids.size();
           // the item lists are heterogenous and
           // the fetch_items_message can only deal with one item type at a time.
-          std::map<uint32_t, std::vector<item_hash_t> > items_to_fetch_by_type;
+          // Blocks are requested first
+          std::map<uint32_t, std::vector<item_hash_t>, std::greater<uint32_t> > items_to_fetch_by_type;
           for (const item_id& item : peer_and_items.item_ids)
             items_to_fetch_by_type[item.item_type].push_back(item.item_hash);
           for (auto& items_by_type : items_to_fetch_by_type)
@@ -1661,11 +1691,31 @@ namespace graphene { namespace net {
           }
         }
         items_by_peer.clear();
+        report_fetch_items_statistics();
 
         // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited
         _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
                                        next_peer_unblocked_time);
       } // while (!canceled)
+    }
+
+    void node_impl::add_fetch_candidate(peer_connection* peer, const item_id& item)
+    {
+      peer->fetch_candidates.push(item, fc::time_point::now(), oldest_item_timestamp_to_fetch());
+    }
+
+    bool node_impl::queue_item_to_fetch_from_advertisers(const item_id& item)
+    {
+      bool advertised = false;
+      for (const peer_connection_ptr& peer : _active_connections)
+        if (peer->inventory_peer_advertised_to_us.find(item) != peer->inventory_peer_advertised_to_us.end())
+        {
+          add_fetch_candidate(peer.get(), item);
+          advertised = true;
+        }
+      if (advertised)
+        _items_to_fetch.insert(prioritized_item_id(item, _items_to_fetch_sequence_counter++));
+      return advertised;
     }
 
     void node_impl::trigger_fetch_items_loop(bool for_block)
@@ -3639,8 +3689,8 @@ namespace graphene { namespace net {
         bool still_needed = true;
         if (requested_item.item_type == block_message_type && originating_peer->advertise_blocks_by_block_id())
           still_needed = classify_advertised_block_id(requested_item.item_hash) == block_id_classification::fetchable;
-        if (still_needed && is_item_in_any_peers_inventory(requested_item))
-          _items_to_fetch.insert(prioritized_item_id(requested_item, _items_to_fetch_sequence_counter++));
+        if (still_needed)
+          queue_item_to_fetch_from_advertisers(requested_item);
         wlog("Peer doesn't have the requested item.");
         trigger_fetch_items_loop(requested_item.item_type == block_message_type ||
                                  peer_advertised_a_queued_block(originating_peer));
@@ -3837,12 +3887,17 @@ namespace graphene { namespace net {
         dlog("not adding ${item_hash} to our list of items to fetch because we've recently fetched a copy and it failed to push", (item_hash));
       if (decision.queue)
       {
-        _items_to_fetch.insert(prioritized_item_id(advertised_item_id, _items_to_fetch_sequence_counter++));
+        // peers that advertised it while it was requested from another peer or being processed become candidates too
+        queue_item_to_fetch_from_advertisers(advertised_item_id);
         dlog("adding item ${item_hash} from inventory message to our list of items to fetch", (item_hash));
       }
       if (decision.refresh_timestamp)
+      {
         _items_to_fetch.get<item_id_index>().modify(items_to_fetch_iter,
                                                     [](prioritized_item_id& item) { item.timestamp = fc::time_point::now(); });
+        if (status.new_from_this_peer)
+          add_fetch_candidate(originating_peer, advertised_item_id);
+      }
       if (decision.wake_fetch_loop)
         trigger_fetch_items_loop(status.is_block);
     }
@@ -4007,6 +4062,7 @@ namespace graphene { namespace net {
         trigger_fetch_sync_items_loop();
       }
 
+      originating_peer->fetch_candidates.clear();
       if (!originating_peer->items_requested_from_peer.empty())
       {
         bool block_requeued = false;
@@ -4017,11 +4073,8 @@ namespace graphene { namespace net {
           bool still_needed = true;
           if (item_and_time.first.item_type == block_message_type && originating_peer->advertise_blocks_by_block_id())
             still_needed = classify_advertised_block_id(item_and_time.first.item_hash) == block_id_classification::fetchable;
-          if (still_needed && is_item_in_any_peers_inventory(item_and_time.first))
-          {
-            _items_to_fetch.insert(prioritized_item_id(item_and_time.first, _items_to_fetch_sequence_counter++));
+          if (still_needed && queue_item_to_fetch_from_advertisers(item_and_time.first))
             block_requeued = block_requeued || item_and_time.first.item_type == block_message_type;
-          }
         }
         trigger_fetch_items_loop(block_requeued);
       }
@@ -4114,12 +4167,9 @@ namespace graphene { namespace net {
       for (const peer_connection_ptr& peer : _active_connections)
         if (peer->items_requested_from_peer.find(block_item_id) != peer->items_requested_from_peer.end())
           return; // another copy is already on its way
-      if (is_item_in_any_peers_inventory(block_item_id) &&
-          _items_to_fetch.get<item_id_index>().find(block_item_id) == _items_to_fetch.get<item_id_index>().end())
-      {
-        _items_to_fetch.insert(prioritized_item_id(block_item_id, _items_to_fetch_sequence_counter++));
+      if (_items_to_fetch.get<item_id_index>().find(block_item_id) == _items_to_fetch.get<item_id_index>().end() &&
+          queue_item_to_fetch_from_advertisers(block_item_id))
         trigger_fetch_items_loop(true);
-      }
     }
 
     void node_impl::send_sync_block_to_node_delegate(const received_sync_item& item)
@@ -7471,6 +7521,32 @@ namespace graphene { namespace net {
       }
       _wake_promise.reset();
     }
+  }
+
+  void fetch_candidate_queue::push(const item_id& item, fc::time_point now, fc::time_point oldest_to_keep)
+  {
+    // both lanes are in the order entries were queued, so the stale ones are at their front
+    for (auto [lane, kept] : { std::make_pair(&_blocks, &_blocks_kept), std::make_pair(&_transactions, &_transactions_kept) })
+      while (!lane->empty() && lane->front().queued < oldest_to_keep)
+      {
+        lane->pop_front();
+        if (*kept > 0)
+          --*kept;
+      }
+    (item.item_type == block_message_type ? _blocks : _transactions).push_back(entry{item, now});
+  }
+
+  void fetch_candidate_queue::begin_pass()
+  {
+    _blocks_kept = 0;
+    _transactions_kept = 0;
+  }
+
+  void fetch_candidate_queue::clear()
+  {
+    _blocks.clear();
+    _transactions.clear();
+    begin_pass();
   }
 
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates)
