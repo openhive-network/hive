@@ -113,6 +113,7 @@ namespace graphene { namespace net
       fc::optional<fc::ip::endpoint> _remote_endpoint;
       message_oriented_connection    _message_connection;
 
+    public:
       /* a base class for messages on the queue, to hide the fact that some
        * messages are complete messages and some are only hashes of messages.
        */
@@ -135,6 +136,8 @@ namespace graphene { namespace net
         virtual size_t get_size_in_queue() = 0;
         virtual ~queued_message() {}
       };
+
+    private:
 
       /* when you queue up a 'real_queued_message', a full copy of the message is
        * stored on the heap until it is sent
@@ -391,6 +394,8 @@ namespace graphene { namespace net
       void send_queued_messages_task();
       bool send_flush_wait_is_over() const;
       void wait_for_transaction_batch_to_grow();
+      /// appends the message to built_messages and returns true, or logs and returns false if it cannot be built
+      bool build_queued_message(queued_message& message_to_build, size_t queue_position, std::vector<message>& built_messages);
       void accept_connection_task();
       void connect_to_task(const fc::ip::endpoint& remote_endpoint);
     };
