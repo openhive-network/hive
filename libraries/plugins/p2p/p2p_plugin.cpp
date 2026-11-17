@@ -107,6 +107,7 @@ public:
   fc::mutable_variant_object config;
   uint32_t max_connections = 0;
   fc::optional<uint32_t> transaction_flush_delay_us;
+  fc::optional<uint32_t> fetch_items_minimum_interval_us;
   bool force_validate = false;
   bool block_producer = false;
 
@@ -481,6 +482,9 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-transaction-flush-delay-us", bpo::value<uint32_t>(), "Maximum time, in microseconds, that transaction traffic queued for a peer waits for more to go out in the same socket write. "
      "A queued block, sync or control message, or a full batch, ends the wait at once. Default 5000 (5 ms); 0 writes without waiting. "
      "Overrides transaction_flush_delay_microseconds in p2p-parameters.")
+    ("p2p-fetch-items-minimum-interval-us", bpo::value<uint32_t>(), "Minimum time, in microseconds, between two passes over the items to fetch from peers. "
+     "Transaction advertisements arriving within it are handled together in the next pass; a block to fetch starts a pass at once. "
+     "Default 5000 (5 ms); 0 starts a pass on every advertisement. Overrides fetch_items_minimum_interval_microseconds in p2p-parameters.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
@@ -502,6 +506,9 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count( "p2p-transaction-flush-delay-us" ) )
     my->transaction_flush_delay_us = options.at( "p2p-transaction-flush-delay-us" ).as< uint32_t >();
+
+  if( options.count( "p2p-fetch-items-minimum-interval-us" ) )
+    my->fetch_items_minimum_interval_us = options.at( "p2p-fetch-items-minimum-interval-us" ).as< uint32_t >();
 
   if (options.count("p2p-seed-node"))
   {
@@ -608,6 +615,14 @@ void p2p_plugin::plugin_finalize_startup()
         ilog( "Overriding advanded_node_parameters[ \"transaction_flush_delay_microseconds\" ] with ${us}", ("us", *my->transaction_flush_delay_us) );
 
       my->config.set( "transaction_flush_delay_microseconds", fc::variant( *my->transaction_flush_delay_us ) );
+    }
+
+    if( my->fetch_items_minimum_interval_us )
+    {
+      if( my->config.find( "fetch_items_minimum_interval_microseconds" ) != my->config.end() )
+        ilog( "Overriding advanded_node_parameters[ \"fetch_items_minimum_interval_microseconds\" ] with ${us}", ("us", *my->fetch_items_minimum_interval_us) );
+
+      my->config.set( "fetch_items_minimum_interval_microseconds", fc::variant( *my->fetch_items_minimum_interval_us ) );
     }
 
     ilog("Setting parameters");

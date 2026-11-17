@@ -531,8 +531,7 @@ namespace graphene { namespace net {
 
       /// used by the task that fetches items during normal operation
       // @{
-      fc::promise<void>::ptr _retrigger_fetch_item_loop_promise;
-      bool                   _items_to_fetch_updated;
+      coalescing_loop_trigger _fetch_items_loop_trigger;
       fc::future<void>       _fetch_item_loop_done;
 
       struct item_id_index{};
@@ -679,7 +678,9 @@ namespace graphene { namespace net {
 
       bool is_item_in_any_peers_inventory(const item_id& item) const;
       void fetch_items_loop();
-      void trigger_fetch_items_loop();
+      /// @p for_block: a block may be fetched now, so the loop runs at once instead of waiting out the minimum interval
+      void trigger_fetch_items_loop(bool for_block);
+      bool peer_advertised_a_queued_block(const peer_connection* peer) const;
 
       void advertise_inventory_loop();
       void trigger_advertise_inventory_loop();
@@ -964,7 +965,6 @@ namespace graphene { namespace net {
       _potential_peer_database_updated(false),
       _sync_items_to_fetch_updated(false),
       _suspend_fetching_sync_blocks(false),
-      _items_to_fetch_updated(false),
       _items_to_fetch_sequence_counter(0),
       _recent_block_interval_in_seconds(HIVE_BLOCK_INTERVAL),
       _user_agent_string(user_agent),
@@ -1525,7 +1525,7 @@ namespace graphene { namespace net {
     {
       while (!_fetch_item_loop_done.canceled())
       {
-        _items_to_fetch_updated = false;
+        _fetch_items_loop_trigger.begin_iteration();
         dlog("beginning an iteration of fetch items (${count} items to fetch)",
              ("count", _items_to_fetch.size()));
 
@@ -1662,32 +1662,29 @@ namespace graphene { namespace net {
         }
         items_by_peer.clear();
 
-        if (!_items_to_fetch_updated)
-        {
-          _retrigger_fetch_item_loop_promise = fc::promise<void>::create("graphene::net::retrigger_fetch_item_loop");
-          fc::microseconds time_until_retrigger = fc::microseconds::maximum();
-          if (next_peer_unblocked_time != fc::time_point::maximum())
-            time_until_retrigger = next_peer_unblocked_time - fc::time_point::now();
-          try
-          {
-            if (time_until_retrigger > fc::microseconds(0))
-              _retrigger_fetch_item_loop_promise->wait(time_until_retrigger);
-          }
-          catch (const fc::timeout_exception&)
-          {
-            dlog("Resuming fetch_items_loop due to timeout -- one of our peers should no longer be throttled");
-          }
-          _retrigger_fetch_item_loop_promise.reset();
-        }
+        // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited
+        _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
+                                       next_peer_unblocked_time);
       } // while (!canceled)
     }
 
-    void node_impl::trigger_fetch_items_loop()
+    void node_impl::trigger_fetch_items_loop(bool for_block)
     {
       VERIFY_CORRECT_THREAD();
-      _items_to_fetch_updated = true;
-      if( _retrigger_fetch_item_loop_promise )
-        _retrigger_fetch_item_loop_promise->set_value();
+      _fetch_items_loop_trigger.trigger(for_block);
+    }
+
+    // blocks sort first in _items_to_fetch, so this looks only at the queued blocks
+    bool node_impl::peer_advertised_a_queued_block(const peer_connection* peer) const
+    {
+      for (const prioritized_item_id& queued : _items_to_fetch)
+      {
+        if (queued.item.item_type != graphene::net::block_message_type)
+          return false;
+        if (peer->inventory_peer_advertised_to_us.find(queued.item) != peer->inventory_peer_advertised_to_us.end())
+          return true;
+      }
+      return false;
     }
 
     void node_impl::advertise_inventory_loop()
@@ -3645,7 +3642,8 @@ namespace graphene { namespace net {
         if (still_needed && is_item_in_any_peers_inventory(requested_item))
           _items_to_fetch.insert(prioritized_item_id(requested_item, _items_to_fetch_sequence_counter++));
         wlog("Peer doesn't have the requested item.");
-        trigger_fetch_items_loop();
+        trigger_fetch_items_loop(requested_item.item_type == block_message_type ||
+                                 peer_advertised_a_queued_block(originating_peer));
         return;
       }
 
@@ -3846,7 +3844,7 @@ namespace graphene { namespace net {
         _items_to_fetch.get<item_id_index>().modify(items_to_fetch_iter,
                                                     [](prioritized_item_id& item) { item.timestamp = fc::time_point::now(); });
       if (decision.wake_fetch_loop)
-        trigger_fetch_items_loop();
+        trigger_fetch_items_loop(status.is_block);
     }
 
     // move transaction advertisements we deferred while the peer's inventory was full into it, as far
@@ -4011,6 +4009,7 @@ namespace graphene { namespace net {
 
       if (!originating_peer->items_requested_from_peer.empty())
       {
+        bool block_requeued = false;
         for (const auto& item_and_time : originating_peer->items_requested_from_peer)
         {
           // as in on_item_not_available_message: don't reschedule fetches for blocks the chain
@@ -4019,9 +4018,12 @@ namespace graphene { namespace net {
           if (item_and_time.first.item_type == block_message_type && originating_peer->advertise_blocks_by_block_id())
             still_needed = classify_advertised_block_id(item_and_time.first.item_hash) == block_id_classification::fetchable;
           if (still_needed && is_item_in_any_peers_inventory(item_and_time.first))
+          {
             _items_to_fetch.insert(prioritized_item_id(item_and_time.first, _items_to_fetch_sequence_counter++));
+            block_requeued = block_requeued || item_and_time.first.item_type == block_message_type;
+          }
         }
-        trigger_fetch_items_loop();
+        trigger_fetch_items_loop(block_requeued);
       }
 
       discard_abandoned_sync_blocks();
@@ -4116,7 +4118,7 @@ namespace graphene { namespace net {
           _items_to_fetch.get<item_id_index>().find(block_item_id) == _items_to_fetch.get<item_id_index>().end())
       {
         _items_to_fetch.insert(prioritized_item_id(block_item_id, _items_to_fetch_sequence_counter++));
-        trigger_fetch_items_loop();
+        trigger_fetch_items_loop(true);
       }
     }
 
@@ -4939,7 +4941,7 @@ namespace graphene { namespace net {
           originating_peer->items_requested_from_peer.erase(item_iter);
           process_block_during_normal_operation(originating_peer, full_block);
           if (originating_peer->idle())
-            trigger_fetch_items_loop();
+            trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
           return;
         }
       }
@@ -4981,7 +4983,7 @@ namespace graphene { namespace net {
       {
         originating_peer->items_requested_from_peer.erase(iter);
         if (originating_peer->idle())
-          trigger_fetch_items_loop();
+          trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
 
         // Next: have the delegate process the message
         fc::time_point message_validated_time;
@@ -5525,7 +5527,7 @@ namespace graphene { namespace net {
       {
         _fetch_item_loop_done.cancel("node_impl::close()");
         // cancel() is currently broken, so we need to wake up the task to allow it to finish
-        trigger_fetch_items_loop();
+        trigger_fetch_items_loop(true);
         _fetch_item_loop_done.wait();
         dlog("Fetch items loop terminated");
       }
@@ -7423,6 +7425,52 @@ namespace graphene { namespace net {
       return true;
     _recent_disconnect_times.push_back(now);
     return false;
+  }
+
+  void coalescing_loop_trigger::begin_iteration()
+  {
+    _iteration_start = fc::time_point::now();
+    _triggered = false;
+    _urgent = false;
+  }
+
+  void coalescing_loop_trigger::trigger(bool urgent)
+  {
+    // another plain trigger while one is pending changes nothing the waiting loop decides on, so it doesn't wake it
+    const bool changes_wait = !_triggered || (urgent && !_urgent);
+    _triggered = true;
+    _urgent = _urgent || urgent;
+    if (changes_wait && _wake_promise)
+      _wake_promise->set_value();
+  }
+
+  void coalescing_loop_trigger::wait(fc::microseconds minimum_interval, fc::time_point wake_at)
+  {
+    for (;;)
+    {
+      fc::time_point wake_time = wake_at;
+      if (_triggered)
+      {
+        if (_urgent)
+          return;
+        wake_time = std::min(wake_time, _iteration_start + minimum_interval);
+      }
+      if (wake_time <= fc::time_point::now())
+        return;
+      _wake_promise = fc::promise<void>::create("graphene::net::coalescing_loop_trigger");
+      try
+      {
+        if (wake_time == fc::time_point::maximum())
+          _wake_promise->wait();
+        else
+          _wake_promise->wait_until(wake_time);
+      }
+      catch (const fc::timeout_exception&)
+      {
+        // a deadline passed: the next pass of the loop returns
+      }
+      _wake_promise.reset();
+    }
   }
 
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates)
