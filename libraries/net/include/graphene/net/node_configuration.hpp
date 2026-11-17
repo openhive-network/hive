@@ -38,6 +38,12 @@ struct node_configuration
    uint32_t maximum_number_of_sync_blocks_to_prefetch = GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_PREFETCH;
    uint32_t maximum_blocks_per_peer_during_syncing = GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING;
    int64_t active_ignored_request_timeout_microseconds = 6000000;
+   /** how long, at most, transaction traffic queued for a peer waits for more to share its socket write; 0 = no wait */
+   int64_t transaction_flush_delay_microseconds = 1000;
+   /** how long, at least, between two runs of the fetch items loop that only transactions trigger; 0 = no minimum */
+   int64_t fetch_items_minimum_interval_microseconds = 5000;
+   /** how many transactions received from peers may wait for validation at once; at the limit, a peer's next one waits. 0 = no limit */
+   uint32_t maximum_transactions_in_flight = 10000;
 };
 
 } }
@@ -56,4 +62,7 @@ FC_REFLECT(graphene::net::node_configuration,
    (maximum_number_of_sync_blocks_to_prefetch)
    (maximum_blocks_per_peer_during_syncing)
    (active_ignored_request_timeout_microseconds)
+   (transaction_flush_delay_microseconds)
+   (fetch_items_minimum_interval_microseconds)
+   (maximum_transactions_in_flight)
 )

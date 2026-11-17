@@ -101,10 +101,15 @@
 #define GRAPHENE_NET_DEFAULT_PEER_CONNECTION_RETRY_TIME      30 // seconds
 
 /**
- * AFter trying all peers, how long to wait before we check to
- * see if there are peers we can try again.
+ * The connect loop runs again when it is triggered (a peer was added or learned, a connection closed or
+ * failed), but at most once per GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS: a peer that accepts the
+ * handshake and drops us, or whose address pair is still held by our previous connection, is due again
+ * at once and triggers the loop each time, so the interval bounds how often such a peer is redialed.
+ * Without a trigger it runs again GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC after an iteration, for
+ * state changes that do not trigger it (a peer's retry delay expiring).
  */
-#define GRAPHENE_PEER_DATABASE_RETRY_DELAY                   15 // seconds
+#define GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS        1000
+#define GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC           10
 
 #define GRAPHENE_NET_PEER_HANDSHAKE_INACTIVITY_TIMEOUT       5
 
@@ -126,6 +131,12 @@
 #define GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD           4
 
 /**
+ * A peer's queued messages are written to its socket together until the batch reaches this many
+ * bytes; the message that crosses the bound is still part of the batch.
+ */
+#define GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES              (64 * 1024)
+
+/**
  * When we receive a message from the network, we advertise it to
  * our peers and save a copy in a cache were we will find it if
  * a peer requests it.  We expire out old items out of the cache
@@ -135,6 +146,15 @@
  * the web wallet imposes on transactions.
  */
 #define GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS        20
+
+/**
+ * Number of transactions the transaction message cache's message hash index is sized for
+ * when the node starts, so it does not rehash on the p2p thread while the cache fills.
+ * It covers GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS blocks of about 13k
+ * transactions each (over 4k tx/s); a busier network still works, the index just
+ * grows once more.  Costs one bucket pointer per item, 2 MB.
+ */
+#define GRAPHENE_NET_TRANSACTION_MESSAGE_CACHE_EXPECTED_SIZE (256 * 1024)
 
 /**
  * We prevent a peer from offering us a list of blocks which, if we fetched them
@@ -158,17 +178,53 @@
 #define GRAPHENE_NET_INVENTORY_LIMIT_REPORT_INTERVAL_SEC     10
 
 /**
- * During normal operation, how many items will be fetched from each
+ * How often the node writes its p2p statistics (fetch scheduling, transaction handoff, send batching,
+ * request sizing) to the GRAPHENE_NET_STATISTICS_LOGGER logger, when that logger is enabled for info
+ */
+#define GRAPHENE_NET_STATISTICS_REPORT_INTERVAL_SEC          30
+#define GRAPHENE_NET_STATISTICS_LOGGER                       "p2p_stats"
+
+/**
+ * One in this many transactions, chosen by message hash so every node picks the same ones, is logged with
+ * a real-clock timestamp when received and when broadcast, to the GRAPHENE_NET_RELAY_SAMPLE_LOGGER logger
+ * when that logger is enabled for info
+ */
+#define GRAPHENE_NET_RELAY_SAMPLE_ONE_IN                     64
+#define GRAPHENE_NET_RELAY_SAMPLE_LOGGER                     "p2p_relay_sample"
+
+/**
+ * During normal operation, how many blocks will be fetched from each
+ * peer at a time.  A request that reaches this many blocks asks for
+ * no transactions.
+ */
+#define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION  100
+
+/**
+ * During normal operation, how many transactions will be fetched from each
  * peer at a time.  This will only come into play when the network
  * is being flooded -- typically transactions will be fetched as soon
  * as we find out about them, so only one item will be requested
- * at a time.
- *
- * No tests have been done to find the optimal value for this
- * parameter, so consider increasing or decreasing it if performance
- * during flooding is lacking.
+ * at a time.  The next request goes out only once the whole reply has
+ * arrived, so on a high-latency link this bounds the transactions a
+ * single peer carries per round trip.  GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH
+ * lowers it for a peer sending large transactions.
  */
-#define GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION  100
+#define GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION  400
+
+/**
+ * How many bytes of transactions we expect a single transaction request to bring back, at most.
+ * The peer queues its whole reply at once and drops us when its queue passes
+ * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, so this leaves it room for other traffic and for
+ * transactions larger than the peer's recent mean.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH         (512 * 1024)
+
+/**
+ * The transaction size assumed for a peer that has not sent us a transaction yet: the largest
+ * transaction, so the first requests stay within GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH whatever the
+ * peer sends.  Needs hive/protocol/config.hpp where it is used.
+ */
+#define GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE       HIVE_MAX_TRANSACTION_SIZE
 
 /**
  * Instead of fetching all item IDs from a peer, then fetching all blocks

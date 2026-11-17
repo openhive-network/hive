@@ -141,7 +141,10 @@ size_t stcp_socket::writesome( const char* buffer, size_t len )
     } buffer_in_use_checker(_write_buffer_in_use);
 #endif
 
-    const std::size_t write_buffer_length = 4096;
+    // the send cipher is one continuous CBC stream without padding, so the chunk size does not change
+    // the ciphertext; it must stay a multiple of 16 to keep every chunk a whole number of AES blocks
+    const std::size_t write_buffer_length = 64 * 1024;
+    static_assert(write_buffer_length % 16 == 0, "write chunks must be whole AES blocks");
     if (!_write_buffer)
       _write_buffer.reset(new char[write_buffer_length], [](char* p){ delete[] p; });
     len = std::min<size_t>(write_buffer_length, len);

@@ -69,6 +69,7 @@ def test_colony_on_basic_network_structure(
     for witness in WITNESSES:
         witness_node.config.private_key.append(tt.Account(witness).private_key)
     witness_node.config.private_key.append(tt.Account("initminer").private_key)
+    enable_production_on_replayed_head(witness_node)
 
     colony_node = tt.ApiNode()
     nodes.append(colony_node)
@@ -99,9 +100,7 @@ def test_colony_on_basic_network_structure(
 
     assert witness_node.is_running(), "Witness node didn't work"
     assert colony_node.is_running(), "Colony node didn't work"
-    # Use lower transaction threshold and longer timeout for basic network test -
-    # network coordination overhead means colony may not reach full 5000 txn/block target under CI load
-    wait_for_start_colony(witness_node, min_trx_in_block=2500, timeout=420)
+    wait_for_start_colony(witness_node, min_trx_in_block=5000)
 
 
 @pytest.mark.testnet
@@ -168,6 +167,7 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
     witness_node.config.shared_file_size = "4G"
     witness_node.config.witness.append("initminer")
     witness_node.config.private_key.append(tt.PrivateKey("initminer"))
+    enable_production_on_replayed_head(witness_node)
 
     witness_node_p2p_endpoint = ttcn.generate_free_addresses(1)
     witness_node.config.p2p_endpoint = witness_node_p2p_endpoint[0]
@@ -199,9 +199,7 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
     )
 
     assert all(node.is_running() for node in nodes), "At least one node is not working"
-    # Use lower transaction threshold for multi-node test - network coordination
-    # overhead means colony may not reach full 5000 txn/block target under CI load
-    wait_for_start_colony(witness_node, min_trx_in_block=2500, timeout=420)
+    wait_for_start_colony(witness_node, min_trx_in_block=5000)
 
 
 @pytest.mark.testnet
@@ -224,6 +222,7 @@ def test_colony_sustained_load_across_inventory_limit(
     for witness in WITNESSES:
         witness_node.config.private_key.append(tt.Account(witness).private_key)
     witness_node.config.private_key.append(tt.Account("initminer").private_key)
+    enable_production_on_replayed_head(witness_node)
 
     colony_node = tt.ApiNode()
     colony_node.config.shared_file_size = "4G"
@@ -317,7 +316,15 @@ def prepare_colony_config(node: tt.ApiNode | tt.InitNode) -> None:
     node.config.colony_transactions_per_block = "5000"
 
 
-def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int = 500, timeout: int = 300) -> None:
+def enable_production_on_replayed_head(witness_node: tt.WitnessNode) -> None:
+    """Let the network's only witness produce on its replayed head, even if it starts after the head's next slot."""
+    # The nodes start under faked time at the head block time. Opening a 4G state the replay has just written can take
+    # longer than one block interval on a disk-backed host; the witness then sees its head as stale and, being the
+    # only producer, never receives a recent block that would enable production.
+    witness_node.config.enable_stale_production = True
+
+
+def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int = 500, timeout: int = 240) -> None:
     def is_colony_started() -> bool:
         return (
             len(node.api.block.get_block(block_num=node.get_last_block_number()).block.transactions) >= min_trx_in_block

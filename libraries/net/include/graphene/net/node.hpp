@@ -26,6 +26,7 @@
  */
 #pragma once
 
+#include <graphene/net/config.hpp>
 #include <graphene/net/core_messages.hpp>
 #include <graphene/net/message.hpp>
 #include <graphene/net/node_configuration.hpp>
@@ -33,13 +34,27 @@
 
 #include <hive/protocol/types.hpp>
 
+#include <fc/exception/exception.hpp>
+#include <fc/thread/future.hpp>
 #include <fc/time.hpp>
+#include <fc/variant_object.hpp>
 
+#include <boost/container/small_vector.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index/tag.hpp>
+
+#include <array>
 #include <deque>
+#include <functional>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace appbase {
@@ -79,6 +94,13 @@ namespace graphene { namespace net {
     switched_forks, ///< the block made us switch to the fork it is on
     ignored         ///< the block was stored on a shorter fork without being validated
   };
+
+  /**
+   * Called exactly once, from the thread that validated it, when a transaction handed over by
+   * node_delegate::submit_transaction() has been validated.  @p error is null if the transaction was accepted.
+   * It must not block.
+   */
+  typedef std::function<void(const fc::exception_ptr& error)> transaction_validated_callback;
 
    /**
     *  @class node_delegate
@@ -123,12 +145,17 @@ namespace graphene { namespace net {
          virtual block_handling_result handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) = 0;
 
          /**
-          *  @brief Called when a new transaction comes in from the network
+          *  @brief Called when a new transaction comes in from the network; hands it over for validation
+          *         without waiting for the result
           *
-          *  @throws exception if error validating the item, otherwise the item is
-          *          safe to broadcast on.
+          *  Transactions are validated in the order they are submitted.  Once one is validated, @p on_validated
+          *  is called; if it reports no error, the transaction is safe to broadcast on.
+          *
+          *  @throws exception if the transaction can't be submitted (e.g. the client is shutting down);
+          *          @p on_validated is not called then
           */
-         virtual void handle_transaction(const std::shared_ptr<full_transaction_type>& full_transaction) = 0;
+         virtual void submit_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
+                                         transaction_validated_callback on_validated) = 0;
 
          /**
           *  @brief Called when a new message comes in from the network other than a
@@ -420,6 +447,402 @@ namespace graphene { namespace net {
     const fc::microseconds _window;
     std::deque<fc::time_point> _recent_disconnect_times;
   };
+
+  /**
+   * Wakes a loop that is triggered by events, letting the triggers that arrive within a minimum interval
+   * of the start of its last iteration share one later iteration.  An urgent trigger never waits.
+   * All calls must come from the loop's thread.
+   */
+  class coalescing_loop_trigger
+  {
+  public:
+    /// Marks the start of an iteration: it handles every trigger made before this call
+    void begin_iteration();
+
+    void trigger(bool urgent);
+
+    /**
+     * Returns when the next iteration is due: at once after an urgent trigger, otherwise for a trigger once
+     * @p minimum_interval has passed since begin_iteration(), and in any case at @p wake_at (fc::time_point::maximum()
+     * for none).  A zero @p minimum_interval makes every trigger run the next iteration at once.
+     */
+    void wait(fc::microseconds minimum_interval, fc::time_point wake_at);
+
+  private:
+    fc::time_point _iteration_start;
+    bool _triggered = false;
+    bool _urgent = false;
+    fc::promise<void>::ptr _wake_promise;
+  };
+
+  /**
+   * Hands results produced on other threads to one consumer, in the order they were pushed.  The first push
+   * after the consumer last took the results calls the scheduling function given at construction, so results
+   * that arrive before the consumer gets to them share one take.  Once closed, pushes are discarded and the
+   * scheduling function is not called any more.  Thread-safe.
+   */
+  template<typename Completion>
+  class completion_queue
+  {
+  public:
+    /// @p schedule_take must arrange for take_all() to be called; it is called with the queue's lock held
+    explicit completion_queue(std::function<void()> schedule_take) : _schedule_take(std::move(schedule_take)) {}
+
+    void push(Completion completion)
+    {
+      std::lock_guard<std::mutex> guard(_mutex);
+      if (_closed)
+        return;
+      _completions.push_back(std::move(completion));
+      if (!_take_scheduled)
+      {
+        _take_scheduled = true;
+        _schedule_take();
+      }
+    }
+
+    /// Every result pushed since the last call, oldest first
+    std::deque<Completion> take_all()
+    {
+      std::lock_guard<std::mutex> guard(_mutex);
+      _take_scheduled = false;
+      return std::exchange(_completions, {});
+    }
+
+    /// Discards the results not taken yet and every later push.  Once it returns, the scheduling function is not called again.
+    void close()
+    {
+      std::lock_guard<std::mutex> guard(_mutex);
+      _closed = true;
+      _completions.clear();
+    }
+
+    bool is_closed() const
+    {
+      std::lock_guard<std::mutex> guard(_mutex);
+      return _closed;
+    }
+
+  private:
+    const std::function<void()> _schedule_take;
+    mutable std::mutex _mutex;
+    std::deque<Completion> _completions;
+    bool _take_scheduled = false;
+    bool _closed = false;
+  };
+
+  /**
+   * Counts the items handed over for processing whose results have not been applied yet, and makes the tasks
+   * that would hand over more wait while the count is at the limit.  All calls must come from one thread.
+   */
+  class in_flight_limit
+  {
+  public:
+    /**
+     * Waits, letting other tasks run, until fewer than @p limit items are in flight (0 for no limit), then counts one more.
+     * @throws fc::canceled_exception once closed
+     */
+    void acquire(uint32_t limit);
+
+    /// Counts @p count items fewer in flight
+    void release(uint32_t count);
+
+    /// Wakes the waiting tasks; acquire() throws from now on
+    void close();
+
+    uint32_t in_flight() const { return _in_flight; }
+
+  private:
+    void wake_waiters();
+
+    uint32_t _in_flight = 0;
+    bool _closed = false;
+    fc::promise<void>::ptr _released;
+  };
+
+  /// What fetch_candidate_queue::take_next() does with the entry it looks at
+  enum class fetch_candidate_verdict
+  {
+    take, ///< request the item from the peer now
+    drop, ///< the item can't or needn't be requested from the peer any more
+    keep  ///< not now: look at the entry again in the next pass
+  };
+
+  /**
+   * The items one peer advertised to us that we want to fetch, so that choosing what to request from the peer
+   * looks at nothing else.  Blocks come before transactions, each lane in the order the items were added.
+   * Entries are judged only when reached, so an entry for an item that is no longer wanted costs one look;
+   * entries older than the fetch window are trimmed whenever one is added, which bounds the queue by what the
+   * peer advertised within the window.
+   */
+  class fetch_candidate_queue
+  {
+  public:
+    /// Adds @p item, queued (again) at @p now; entries queued before @p oldest_to_keep are discarded
+    void push(const item_id& item, fc::time_point now, fc::time_point oldest_to_keep);
+
+    /// Starts a pass: entries kept in the previous one are looked at again
+    void begin_pass();
+
+    /**
+     * Within a pass, the next entry @p judge (called as `fetch_candidate_verdict(const item_id&)`) says to take,
+     * looking at transactions only if @p include_transactions; none once the pass has looked at every entry.
+     * Taken and dropped entries are removed, kept ones stay for the next pass.  @p examined counts every entry
+     * looked at.
+     */
+    template<typename Judge>
+    std::optional<item_id> take_next(bool include_transactions, Judge&& judge, uint64_t& examined)
+    {
+      if (std::optional<item_id> item = take_next_from(_blocks, _blocks_kept, judge, examined))
+        return item;
+      if (include_transactions)
+        return take_next_from(_transactions, _transactions_kept, judge, examined);
+      return std::nullopt;
+    }
+
+    bool has_transactions() const { return !_transactions.empty(); }
+    size_t size() const { return _blocks.size() + _transactions.size(); }
+    void clear();
+
+  private:
+    struct entry
+    {
+      item_id item;
+      fc::time_point queued;
+    };
+
+    // kept entries are the first `kept` ones of their lane
+    template<typename Judge>
+    static std::optional<item_id> take_next_from(std::deque<entry>& lane, size_t& kept, Judge& judge, uint64_t& examined)
+    {
+      while (kept < lane.size())
+      {
+        ++examined;
+        const item_id item = lane[kept].item;
+        switch (judge(item))
+        {
+        case fetch_candidate_verdict::take:
+          lane.erase(lane.begin() + kept);
+          return item;
+        case fetch_candidate_verdict::drop:
+          lane.erase(lane.begin() + kept);
+          break;
+        case fetch_candidate_verdict::keep:
+          ++kept;
+          break;
+        }
+      }
+      return std::nullopt;
+    }
+
+    std::deque<entry> _blocks;
+    std::deque<entry> _transactions;
+    size_t _blocks_kept = 0;
+    size_t _transactions_kept = 0;
+  };
+
+  /**
+   * A peer's recent mean transaction size, from the transactions it sent us, and how many transactions one
+   * request may ask it for so the expected reply stays within GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH.
+   * Until the peer sends a transaction its mean is taken to be GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE.
+   * A transaction larger than the mean moves it a quarter of the way, a smaller one a sixteenth, so a burst of
+   * large transactions shrinks the next request quickly and requests grow back over a few round trips.
+   */
+  class transaction_size_estimate
+  {
+  public:
+    transaction_size_estimate();
+
+    void record(size_t transaction_size);
+    size_t mean() const { return _mean; }
+    /// at least 1, at most GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION
+    size_t max_transactions_per_request() const;
+
+  private:
+    size_t _mean;
+  };
+
+  /**
+   * What the peers are known to have of the transactions relayed within the inventory window: which peers
+   * advertised each transaction to us and which we advertised it to.  One record per transaction, found with
+   * one hash lookup, holds a bitmap of each kind over peer slots, so recording or checking a peer is a bit
+   * operation rather than a lookup in a set of the peer's own.
+   *
+   * A peer holds a slot from acquire_slot() to release_slot(), which clears the slot from every record, so a
+   * reused slot starts with no knowledge.  Slots are reused lowest first and a record's bitmaps are widened
+   * only when a bit past their width is set, so they take one word per kind, inside the record, up to 64 peers.
+   *
+   * A record expires once the inventory window has passed since a peer was last recorded in it (a peer's
+   * knowledge outlives its own advertisement by however much later the last other peer was recorded).
+   * Records are kept in that order, so expire() looks only at the expired ones.  All calls from one thread.
+   */
+  class transaction_inventory
+  {
+  public:
+    using slot_type = uint32_t;
+
+    class record
+    {
+    public:
+      explicit record(const item_hash_t& item) : item(item) {}
+
+      bool advertised_to_us(slot_type slot) const { return test(slot, advertised_to_us_kind); }
+      bool advertised_to_peer(slot_type slot) const { return test(slot, advertised_to_peer_kind); }
+
+    private:
+      friend class transaction_inventory;
+      static constexpr unsigned advertised_to_us_kind = 0;
+      static constexpr unsigned advertised_to_peer_kind = 1;
+      static constexpr unsigned kinds = 2;
+
+      bool test(slot_type slot, unsigned kind) const;
+      /// whether the bit was clear
+      bool set(slot_type slot, unsigned kind) const;
+      /// whether the bit was set
+      bool reset(slot_type slot, unsigned kind) const;
+
+      item_hash_t item;
+      // the records' container only indexes `item`, so the rest may change in place.
+      // Word kinds * w + kind holds the bits of slots 64 * w to 64 * w + 63
+      mutable boost::container::small_vector<uint64_t, kinds> bits;
+      mutable fc::time_point_sec last_recorded;
+    };
+
+    slot_type acquire_slot();
+    void release_slot(slot_type slot);
+
+    /// The record of @p item, or null if there is none.  Valid until the next expire() or release_slot()
+    const record* find(const item_hash_t& item) const;
+    /// The record of @p item, created if there is none.  Valid until the next expire() or release_slot()
+    const record& get(const item_hash_t& item, fc::time_point_sec now);
+
+    bool advertised_to_us(slot_type slot, const item_hash_t& item) const;
+    /// Returns whether the peer in @p slot had not advertised @p item to us yet
+    bool record_advertised_to_us(slot_type slot, const item_hash_t& item, fc::time_point_sec now);
+    /// The peer in @p slot doesn't have @p item after all
+    void forget_advertised_to_us(slot_type slot, const item_hash_t& item);
+    /// Returns whether we had not advertised @p item_record to the peer in @p slot yet
+    bool record_advertised_to_peer(const record& item_record, slot_type slot, fc::time_point_sec now);
+    /// We received and validated @p item: every peer that advertised it to us counts as having been
+    /// advertised it instead, so it no longer counts against the peer's limit of advertisements to us
+    /// but we still don't advertise it back
+    void mark_received(const item_hash_t& item);
+
+    /// Forgets the records nobody was recorded in since before @p oldest_to_keep
+    void expire(fc::time_point_sec oldest_to_keep);
+
+    uint32_t advertised_to_us_count(slot_type slot) const;
+    uint32_t advertised_to_peer_count(slot_type slot) const;
+    size_t size() const { return _records.size(); }
+
+  private:
+    struct slot_state
+    {
+      bool in_use = false;
+      std::array<uint32_t, record::kinds> counts{};
+    };
+    struct by_item{};
+    struct by_last_recorded{};
+    typedef boost::multi_index_container<
+      record,
+      boost::multi_index::indexed_by<
+        boost::multi_index::hashed_unique<boost::multi_index::tag<by_item>,
+                                          boost::multi_index::member<record, item_hash_t, &record::item>,
+                                          std::hash<item_hash_t>>,
+        boost::multi_index::sequenced<boost::multi_index::tag<by_last_recorded>>>> record_set_type;
+
+    void set_bit(const record& item_record, slot_type slot, unsigned kind);
+    bool set_bit_and_record_time(const record& item_record, slot_type slot, unsigned kind, fc::time_point_sec now);
+    void reset_bit(const record& item_record, slot_type slot, unsigned kind);
+
+    record_set_type _records;
+    std::vector<slot_state> _slots;
+  };
+
+  /**
+   * What the node's p2p work cost and how it was batched since the last report, for the periodic
+   * GRAPHENE_NET_STATISTICS_LOGGER report.  Counting is plain arithmetic, cheap enough to do whether or not
+   * the report is written.  All calls must come from one thread.
+   */
+  class p2p_statistics
+  {
+  public:
+    /// fetch_items_loop()
+    struct fetch_scheduling
+    {
+      uint64_t wakes = 0;
+      uint64_t candidates_examined = 0;
+      uint64_t items_requested = 0;
+      uint64_t items_expired = 0;
+      fc::microseconds scheduling_time;
+    };
+
+    /// completion latency bucket upper bounds in microseconds; the last bucket has none
+    static constexpr std::array<int64_t, 6> completion_latency_bounds_us{100, 250, 500, 1000, 2000, 5000};
+
+    /// transactions received from peers and handed to the client for validation
+    struct transaction_handoff
+    {
+      uint64_t submissions = 0;
+      uint64_t completions = 0;
+      uint32_t max_in_flight = 0;
+      uint64_t in_flight_sum = 0; ///< in flight after each submission, for the mean
+      std::array<uint64_t, completion_latency_bounds_us.size() + 1> completion_latency{}; ///< submit -> client result
+      uint64_t limit_waits = 0;   ///< submissions that waited for the in-flight limit
+      fc::microseconds limit_wait_time;
+    };
+
+    /// peer_connection socket writes
+    struct send_batching
+    {
+      uint64_t writes = 0;
+      uint64_t messages = 0;
+      uint64_t bytes = 0;
+    };
+
+    /// fetch_items_message requests for transactions
+    struct request_sizing
+    {
+      uint64_t transaction_requests = 0;
+      uint64_t transactions_requested = 0;
+      uint64_t byte_cap_bound = 0; ///< requests cut short by GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH
+    };
+
+    fetch_scheduling fetch;
+
+    /// @p in_flight counts the submitted transaction
+    void record_submission(uint32_t in_flight);
+    void record_limit_wait(fc::microseconds waited);
+    void record_completion(fc::microseconds latency);
+    void record_write(size_t messages, size_t bytes);
+    /// @p max_transactions is the most the request could ask for: the per-peer limit, or less when the byte cap is lower
+    void record_transaction_request(size_t transactions, size_t max_transactions);
+
+    const transaction_handoff& handoff() const { return _handoff; }
+    const send_batching& sending() const { return _sending; }
+    const request_sizing& requests() const { return _requests; }
+
+    /**
+     * Everything recorded since the last report (or since construction), as of @p now, with @p in_flight
+     * transactions in flight now and @p items_queued items waiting to be fetched; counting starts over.
+     */
+    fc::variant_object take_report(fc::time_point now, uint32_t in_flight, size_t items_queued);
+
+  private:
+    fc::time_point _period_start = fc::time_point::now();
+    transaction_handoff _handoff;
+    send_batching _sending;
+    request_sizing _requests;
+  };
+
+  /// Whether the transaction with @p message_hash is a relay sample: one in @p one_in, the same ones on every node
+  bool is_relay_sample(const message_hash_type& message_hash, uint32_t one_in = GRAPHENE_NET_RELAY_SAMPLE_ONE_IN);
+
+  /**
+   * Microseconds since the epoch on the real-time clock, read with the raw clock_gettime system call so that a
+   * library intercepting the call (libfaketime gives each test node its own offset) cannot shift it
+   */
+  int64_t raw_realtime_microseconds();
 
   /// A peer that advertised a block we want to fetch
   struct block_source_candidate

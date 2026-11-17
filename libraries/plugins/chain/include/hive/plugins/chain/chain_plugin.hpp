@@ -72,7 +72,7 @@ public:
   enum class lock_type { boost, fc };
   bool accept_block( const std::shared_ptr< p2p_block_flow_control >& p2p_block_ctrl, bool currently_syncing );
   void accept_transaction( const full_transaction_ptr& trx, const lock_type lock = lock_type::boost );
-  // nonblocking version of accept_transaction used by colony_plugin
+  // nonblocking version of accept_transaction used by colony_plugin and p2p_plugin
   void queue_transaction( const std::shared_ptr< transaction_flow_control >& trx_ctrl, const lock_type lock = lock_type::boost );
   void determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
     std::function< void( bool hf26_auth_fail )> on_full_trx = []( bool ){}, const lock_type lock = lock_type::boost );

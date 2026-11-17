@@ -1,0 +1,4 @@
+#!/bin/sh
+# Runs the p2p load harness with the host's python3 (see README.md): p2p-load run|ab|report|compare ...
+tests_dir="$(cd "$(dirname "$0")/../../.." && pwd)"
+PYTHONPATH="$tests_dir${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m python.functional.p2p_load "$@"

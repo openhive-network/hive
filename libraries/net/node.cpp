@@ -37,6 +37,7 @@
 #include <tuple>
 #include <boost/tuple/tuple.hpp>
 #include <boost/circular_buffer.hpp>
+#include <boost/core/bit.hpp>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -66,6 +67,9 @@
 #include <boost/preprocessor/stringize.hpp>
 
 #include <ifaddrs.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <time.h>
 #include <netinet/in.h>
 #include <cerrno>
 #include <cstring>
@@ -92,6 +96,7 @@
 #include <graphene/net/stcp_socket.hpp>
 #include <graphene/net/config.hpp>
 #include <graphene/net/exceptions.hpp>
+#include <graphene/net/message_cache.hpp>
 
 #include <hive/protocol/config.hpp>
 #include <hive/plugins/statsd/utility.hpp>
@@ -140,156 +145,6 @@ namespace graphene { namespace net {
 
   namespace detail
   {
-    namespace bmi = boost::multi_index;
-
-    struct message_hash_index{};
-    struct message_contents_hash_index{};
-    struct block_clock_index{};
-
-
-    // Cache of recently-seen messages, kept so we can serve peers' fetch requests without
-    // hitting deeper storage.  NOTE: with the introduction of authoritative chain-state checks
-    // (classify_advertised_block_id / has_item at delivery), this cache is no longer the
-    // arbiter of "have we seen this block?" for block-id-capable peers -- it retains that duty
-    // only for legacy message-hash advertisements, whose hashes cannot be checked against the
-    // chain.  Its block-clock expiry semantics are a serving-window bound, not a correctness
-    // boundary.
-    template <typename smart_ptr_type>
-    class blockchain_tied_message_cache
-    {
-    private:
-      static const uint32_t cache_duration_in_blocks = GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS;
-
-      struct message_info
-      {
-        smart_ptr_type item;
-        uint32_t block_clock_when_received;
-
-        // for network performance stats
-        message_propagation_data propagation_data;
-
-        message_info(const smart_ptr_type& item,
-                     uint32_t block_clock_when_received,
-                     const message_propagation_data& propagation_data) :
-          item(item),
-          block_clock_when_received(block_clock_when_received),
-          propagation_data(propagation_data)
-        {}
-      };
-      struct get_message_contents_hash
-      {
-        typedef item_hash_t result_type;
-        const item_hash_t& get_hash_from_item(const std::shared_ptr<full_block_type>& full_block) const
-        {
-          return full_block->get_block_id();
-        }
-        const item_hash_t& get_hash_from_item(const std::shared_ptr<full_transaction_type>& full_transaction) const
-        {
-          return full_transaction->get_transaction_id();
-        }
-        const item_hash_t& operator()(const message_info& info) const
-        {
-          return get_hash_from_item(info.item);
-        }
-      };
-      struct get_message_hash
-      {
-        typedef item_hash_t result_type;
-        const item_hash_t& get_message_hash_from_item(const std::shared_ptr<full_block_type>& full_block) const
-        {
-          return full_block->get_legacy_block_message_hash();
-        }
-        const item_hash_t& get_message_hash_from_item(const std::shared_ptr<full_transaction_type>& full_transaction) const
-        {
-          return full_transaction->get_legacy_transaction_message_hash();
-        }
-        const item_hash_t& operator()(const message_info& info) const
-        {
-          return get_message_hash_from_item(info.item);
-        }
-      };
-      typedef boost::multi_index_container
-        <message_info,
-         bmi::indexed_by<bmi::ordered_unique<bmi::tag<message_hash_index>, get_message_hash>, 
-                         bmi::ordered_non_unique<bmi::tag<message_contents_hash_index>, get_message_contents_hash>,
-                         bmi::ordered_non_unique<bmi::tag<block_clock_index>,
-                                                 bmi::member<message_info, uint32_t, &message_info::block_clock_when_received>>>> message_cache_container;
-
-      message_cache_container _message_cache;
-      uint32_t block_clock = 0;
-
-    public:
-      void block_accepted();
-      void cache_message(const smart_ptr_type& item, const message_propagation_data& propagation_data);
-      smart_ptr_type get_item(const message_hash_type& message_hash) const;
-      bool contains_item(const message_hash_type& message_hash) const;
-      smart_ptr_type get_item_by_contents_hash(const message_hash_type& message_hash) const;
-      bool contains_item_by_contents_hash(const message_hash_type& message_hash) const;
-      message_propagation_data get_message_propagation_data(const fc::uint160_t& message_contents_hash) const;
-      size_t size() const { return _message_cache.size(); }
-    };
-
-    template <typename smart_ptr_type>
-    void blockchain_tied_message_cache<smart_ptr_type>::block_accepted()
-    {
-      ++block_clock;
-      if (block_clock > cache_duration_in_blocks)
-      {
-        auto& idx = _message_cache.template get<block_clock_index>();
-        idx.erase(idx.begin(), idx.lower_bound(block_clock - cache_duration_in_blocks));
-      }
-    }
-
-    template <typename smart_ptr_type>
-    void blockchain_tied_message_cache<smart_ptr_type>::cache_message(const smart_ptr_type& item, const message_propagation_data& propagation_data)
-    {
-      _message_cache.insert(message_info(item, block_clock, propagation_data));
-    }
-
-    template <typename smart_ptr_type>
-    smart_ptr_type blockchain_tied_message_cache<smart_ptr_type>::get_item(const message_hash_type& message_hash) const
-    {
-      const auto& idx = _message_cache.template get<message_hash_index>();
-      if (const auto iter = idx.find(message_hash); iter != idx.end())
-        return iter->item;
-      FC_THROW_EXCEPTION(fc::key_not_found_exception, "Requested message not in cache");
-    }
-
-    template <typename smart_ptr_type>
-    bool blockchain_tied_message_cache<smart_ptr_type>::contains_item(const message_hash_type& message_hash) const
-    {
-      const auto& idx = _message_cache.template get<message_hash_index>();
-      return idx.find(message_hash) != idx.end();
-    }
-
-    template <typename smart_ptr_type>
-    smart_ptr_type blockchain_tied_message_cache<smart_ptr_type>::get_item_by_contents_hash(const message_hash_type& message_contents_hash) const
-    {
-      const auto& idx = _message_cache.template get<message_contents_hash_index>();
-      if (const auto iter = idx.find(message_contents_hash); iter != idx.end())
-        return iter->item;
-      FC_THROW_EXCEPTION(fc::key_not_found_exception, "Requested message not in cache");
-    }
-
-    template <typename smart_ptr_type>
-    bool blockchain_tied_message_cache<smart_ptr_type>::contains_item_by_contents_hash(const message_hash_type& message_contents_hash) const
-    {
-      const auto& idx = _message_cache.template get<message_contents_hash_index>();
-      return idx.find(message_contents_hash) != idx.end();
-    }
-
-    template <typename smart_ptr_type>
-    message_propagation_data blockchain_tied_message_cache<smart_ptr_type>::get_message_propagation_data(const fc::uint160_t& hash_of_message_contents_to_lookup) const
-    {
-      const auto& idx = _message_cache.template get<message_contents_hash_index>();
-      if (hash_of_message_contents_to_lookup != fc::uint160_t())
-      {
-        if (const auto iter = idx.find(hash_of_message_contents_to_lookup); iter != idx.end())
-          return iter->propagation_data;
-      }
-      FC_THROW_EXCEPTION(fc::key_not_found_exception, "Requested message not in cache");
-    }
-
     // when requesting items from peers, we want to prioritize any blocks before
     // transactions, but otherwise request items in the order we heard about them
     struct prioritized_item_id
@@ -327,7 +182,7 @@ namespace graphene { namespace net {
 #define NODE_DELEGATE_METHOD_NAMES (has_item) \
                                    (handle_message) \
                                    (handle_block) \
-                                   (handle_transaction) \
+                                   (submit_transaction) \
                                    (get_block_ids) \
                                    (get_item) \
                                    (get_blockchain_synopsis) \
@@ -425,7 +280,8 @@ namespace graphene { namespace net {
       bool has_item( const net::item_id& id ) override;
       void handle_message( const message& ) override;
       block_handling_result handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) override;
-      void handle_transaction(const std::shared_ptr<full_transaction_type>& full_transaction) override;
+      void submit_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
+                              transaction_validated_callback on_validated) override;
       std::vector<item_hash_t> get_block_ids(const std::vector<item_hash_t>& blockchain_synopsis,
                                              uint32_t& remaining_item_count,
                                              uint32_t limit = DEFAULT_MAX_BLOCK_IDS_TO_FETCH) override;
@@ -476,7 +332,7 @@ namespace graphene { namespace net {
       std::list<potential_peer_record> _add_once_node_list; /// list of peers we want to connect to as soon as possible
 
       peer_database             _potential_peer_db;
-      fc::promise<void>::ptr    _retrigger_connect_loop_promise;
+      coalescing_loop_trigger   _connect_loop_trigger;
       bool                      _potential_peer_database_updated;
       fc::future<void>          _p2p_network_connect_loop_done;
       /// cached results of the per-address route probe (see can_route_to); entries expire so
@@ -531,20 +387,25 @@ namespace graphene { namespace net {
 
       /// used by the task that fetches items during normal operation
       // @{
-      fc::promise<void>::ptr _retrigger_fetch_item_loop_promise;
-      bool                   _items_to_fetch_updated;
+      coalescing_loop_trigger _fetch_items_loop_trigger;
       fc::future<void>       _fetch_item_loop_done;
 
       struct item_id_index{};
+      struct item_timestamp_index{};
       typedef boost::multi_index_container<prioritized_item_id,
                                            boost::multi_index::indexed_by<boost::multi_index::ordered_unique<boost::multi_index::identity<prioritized_item_id> >,
                                                                           boost::multi_index::hashed_unique<boost::multi_index::tag<item_id_index>,
                                                                                                             boost::multi_index::member<prioritized_item_id, item_id, &prioritized_item_id::item>,
-                                                                                                            std::hash<item_id> > >
+                                                                                                            std::hash<item_id> >,
+                                                                          boost::multi_index::ordered_non_unique<boost::multi_index::tag<item_timestamp_index>,
+                                                                                                                 boost::multi_index::member<prioritized_item_id, fc::time_point, &prioritized_item_id::timestamp> > >
                                            > items_to_fetch_set_type;
       unsigned _items_to_fetch_sequence_counter;
-      items_to_fetch_set_type _items_to_fetch; /// list of items we know another peer has and we want
+      /// list of items we know another peer has and we want; each is also in the fetch_candidates of the peers that advertised it
+      items_to_fetch_set_type _items_to_fetch;
       peer_connection::timestamped_items_set_type _recently_failed_items; /// list of transactions we've recently pushed and had rejected by the delegate
+      /// what our active peers advertised to us and we advertised to them of recent transactions
+      transaction_inventory _transaction_inventory;
       // @}
 
       /// used by the task that advertises inventory during normal operation
@@ -604,7 +465,7 @@ namespace graphene { namespace net {
       std::vector<uint32_t> _hard_fork_block_numbers; /// list of all block numbers where there are hard forks
 
       blockchain_tied_message_cache<std::shared_ptr<full_block_type>> _block_message_cache; /// cache blocks we have received and might be required to provide to other peers via inventory requests
-      blockchain_tied_message_cache<std::shared_ptr<full_transaction_type>> _transaction_message_cache; /// cache blocks we have received and might be required to provide to other peers via inventory requests
+      blockchain_tied_message_cache<std::shared_ptr<full_transaction_type>> _transaction_message_cache{GRAPHENE_NET_TRANSACTION_MESSAGE_CACHE_EXPECTED_SIZE}; /// cache blocks we have received and might be required to provide to other peers via inventory requests
 
       fc::rate_limiting_group _rate_limiter;
 
@@ -625,6 +486,9 @@ namespace graphene { namespace net {
       fc::future<void> _bandwidth_monitor_loop_done;
 
       fc::future<void> _dump_node_status_task_done;
+
+      p2p_statistics _statistics;
+      fc::future<void> _statistics_report_loop_done;
 
       /* We have two alternate paths through the schedule_peer_for_deletion code -- one that
        * uses a mutex to prevent one fiber from adding items to the queue while another is deleting
@@ -649,6 +513,22 @@ namespace graphene { namespace net {
 
       std::list<fc::future<void>> _handle_message_calls_in_progress;
       std::set<message_hash_type> _message_ids_currently_being_processed;
+
+      /// the outcome of validating a transaction a peer sent us; it refers to the peer only by node id,
+      /// because the peer may be gone by the time the outcome is applied
+      struct transaction_completion
+      {
+        std::shared_ptr<full_transaction_type> full_transaction;
+        message_hash_type message_hash;
+        fc::time_point received_time;
+        node_id_t originating_peer;
+        fc::time_point submitted_time;
+        fc::time_point validated_time;
+        fc::exception_ptr error;
+      };
+      /// filled by the delegate's validation callbacks on the chain's writer thread, applied on our thread
+      std::shared_ptr<completion_queue<transaction_completion>> _transaction_completions;
+      in_flight_limit _transactions_in_flight;
       std::set<block_id_type> _block_ids_currently_being_processed;
 
       std::atomic_int        _activeCalls;
@@ -677,9 +557,19 @@ namespace graphene { namespace net {
       void fetch_sync_items_loop();
       void trigger_fetch_sync_items_loop();
 
-      bool is_item_in_any_peers_inventory(const item_id& item) const;
       void fetch_items_loop();
-      void trigger_fetch_items_loop();
+      /// the oldest time an item we heard about can be queued at and still be worth fetching
+      fc::time_point oldest_item_timestamp_to_fetch() const;
+      /// drops the items to fetch we heard about too long ago, returning how many
+      size_t remove_expired_items_to_fetch();
+      fetch_candidate_verdict judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item);
+      void add_fetch_candidate(peer_connection* peer, const item_id& item);
+      /// Adds @p item to the items to fetch, and to the fetch candidates of every peer that advertised it,
+      /// if any did; returns whether one did
+      bool queue_item_to_fetch_from_advertisers(const item_id& item);
+      /// @p for_block: a block may be fetched now, so the loop runs at once instead of waiting out the minimum interval
+      void trigger_fetch_items_loop(bool for_block);
+      bool peer_advertised_a_queued_block(const peer_connection* peer) const;
 
       void advertise_inventory_loop();
       void trigger_advertise_inventory_loop();
@@ -690,6 +580,7 @@ namespace graphene { namespace net {
       void update_bandwidth_data(uint32_t bytes_read_this_second, uint32_t bytes_written_this_second);
       void bandwidth_monitor_loop();
       void dump_node_status_task();
+      void statistics_report_loop();
 
       bool is_accepting_new_connections();
       bool is_wanting_new_connections();
@@ -742,6 +633,19 @@ namespace graphene { namespace net {
       void record_advertised_item(peer_connection* originating_peer, const item_id& advertised_item_id);
       void process_deferred_transaction_advertisements(peer_connection* peer);
       void report_inventory_limit_hits(peer_connection* peer);
+      /// whether @p peer advertised @p item to us and still counts as having it
+      bool peer_advertised_item(const peer_connection* peer, const item_id& item) const;
+      /// @p transaction_record is the record of the transaction in question, or null if there is none
+      static bool peer_advertised_transaction(const peer_connection* peer, const transaction_inventory::record* transaction_record);
+      /// records that @p peer advertised @p item to us; returns whether it had not done so before
+      bool record_item_advertised_to_us(peer_connection* peer, const item_id& item);
+      void forget_item_advertised_to_us(peer_connection* peer, const item_id& item);
+      uint32_t inventory_advertised_to_us_size(const peer_connection* peer) const;
+      // we have a higher limit for blocks than transactions so we will still fetch blocks even when transactions are throttled
+      bool is_inventory_advertised_to_us_list_full_for_transactions(const peer_connection* peer) const;
+      bool is_inventory_advertised_to_us_list_full(const peer_connection* peer) const;
+      void expire_old_transaction_inventory();
+      void release_transaction_inventory_slot(peer_connection* peer);
 
       void on_closing_connection_message( peer_connection* originating_peer,
                                           const closing_connection_message& closing_connection_message_received );
@@ -790,6 +694,8 @@ namespace graphene { namespace net {
       void process_block_during_normal_operation(peer_connection* originating_peer, const std::shared_ptr<full_block_type>& full_block);
       void process_block_message(peer_connection* originating_peer, const message& message_to_process, const message_hash_type& message_hash);
       void process_trx_message(peer_connection* originating_peer, const trx_message& transaction_message_to_process);
+      void apply_transaction_completions();
+      void apply_transaction_completion(const transaction_completion& completion);
 
       void process_ordinary_message(peer_connection* originating_peer, const message& message_to_process, const message_hash_type& message_hash);
 
@@ -801,6 +707,7 @@ namespace graphene { namespace net {
       void close();
 
       void accept_connection_task(const peer_connection_ptr& new_peer);
+      peer_connection_ptr create_peer_connection();
       void accept_loop();
       void send_hello_message(const peer_connection_ptr& peer);
       void send_connection_rejected_message(peer_connection* peer,
@@ -865,6 +772,7 @@ namespace graphene { namespace net {
       void                       set_total_bandwidth_limit( uint32_t upload_bytes_per_second, uint32_t download_bytes_per_second );
       fc::variant_object         get_call_statistics() const;
       std::shared_ptr<full_block_type> get_full_block_by_block_id(const block_id_type& block_id) override;
+      void on_messages_written(size_t message_count, size_t byte_count) override;
       std::shared_ptr<full_block_type> get_block_to_send(peer_connection* peer, const item_hash_t& requested_item) override;
 
       fc::variant_object         network_get_info() const;
@@ -964,7 +872,6 @@ namespace graphene { namespace net {
       _potential_peer_database_updated(false),
       _sync_items_to_fetch_updated(false),
       _suspend_fetching_sync_blocks(false),
-      _items_to_fetch_updated(false),
       _items_to_fetch_sequence_counter(0),
       _recent_block_interval_in_seconds(HIVE_BLOCK_INTERVAL),
       _user_agent_string(user_agent),
@@ -989,6 +896,15 @@ namespace graphene { namespace net {
       fc::rand_bytes(&_node_id.data[0], (int)_node_id.size());
 
       _shutdownNotifier = fc::promise<void>::create("Node shutdown notifier");
+
+      // called on the writer thread, and only until close() closes the queue, so this node is still alive
+      _transaction_completions = std::make_shared<completion_queue<transaction_completion>>([this]() {
+        _thread->async([this, completions = _transaction_completions]() {
+          // closing the queue and destroying this node happen on this thread, so an open queue means a live node
+          if (!completions->is_closed())
+            apply_transaction_completions();
+        }, "apply_transaction_completions");
+      });
     }
 
     node_impl::~node_impl()
@@ -996,6 +912,8 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       ilog( "cleaning up node" );
       _node_is_shutting_down = true;
+      // a message handler waiting for room to submit a transaction would keep _activeCalls up
+      _transactions_in_flight.close();
 
       if(_activeCalls.load() != 0)
       {
@@ -1191,6 +1109,7 @@ namespace graphene { namespace net {
     {
       while (!_p2p_network_connect_loop_done.canceled() && !node_is_shutting_down())
       {
+        _connect_loop_trigger.begin_iteration();
         try
         {
           dlog("Starting an iteration of p2p_network_connect_loop().");
@@ -1289,32 +1208,6 @@ namespace graphene { namespace net {
             ilog("Breaking p2p_network_connect_loop loop because node is shutting down");
             break;
           }
-          // if we broke out of the while loop, that means either we have connected to enough nodes, or
-          // we don't have any good candidates to connect to right now.
-#if 0
-          try
-          {
-            _retrigger_connect_loop_promise = fc::promise<void>::ptr( new fc::promise<void>("graphene::net::retrigger_connect_loop") );
-            if( is_wanting_new_connections() || !_add_once_node_list.empty() )
-            {
-              if( is_wanting_new_connections() )
-                dlog( "Still want to connect to more nodes, but I don't have any good candidates.  Trying again in 15 seconds" );
-              else
-                dlog( "I still have some \"add once\" nodes to connect to.  Trying again in 15 seconds" );
-              _retrigger_connect_loop_promise->wait_until( fc::time_point::now() + fc::seconds(GRAPHENE_PEER_DATABASE_RETRY_DELAY ) );
-            }
-            else
-            {
-              dlog( "I don't need any more connections, waiting forever until something changes" );
-              _retrigger_connect_loop_promise->wait();
-            }
-          }
-          catch ( fc::timeout_exception& ) //intentionally not logged
-          {
-          }  // catch
-#else
-          fc::usleep(fc::seconds(10));
-#endif
         }
         catch (const fc::canceled_exception&)
         {
@@ -1324,6 +1217,10 @@ namespace graphene { namespace net {
         {
           edump((e));
         }
+        // either we have connected to enough nodes, or we don't have any good candidates to connect to
+        // right now: wait for something to change, or for retry delays to expire
+        _connect_loop_trigger.wait(fc::milliseconds(GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS),
+                                   fc::time_point::now() + fc::seconds(GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC));
       }// while(!canceled)
     }
 
@@ -1331,10 +1228,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _potential_peer_database_updated = true; // if we are looking for peers, this says to retry the loop
-#if 0 // disabled because it doesn't trigger the loop any more      
-      if( _retrigger_connect_loop_promise )
-        _retrigger_connect_loop_promise->set_value();
-#endif
+      _connect_loop_trigger.trigger(false);
     }
 
     bool node_impl::have_already_received_sync_item(const item_hash_t& item_hash)
@@ -1511,135 +1405,137 @@ namespace graphene { namespace net {
         _retrigger_fetch_sync_items_loop_promise->set_value();
     }
 
-    bool node_impl::is_item_in_any_peers_inventory(const item_id& item) const
+    fc::time_point node_impl::oldest_item_timestamp_to_fetch() const
     {
-      for( const peer_connection_ptr& peer : _active_connections )
+      return fc::time_point::now() - fc::seconds(_recent_block_interval_in_seconds * GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS);
+    }
+
+    size_t node_impl::remove_expired_items_to_fetch()
+    {
+      // these have probably already fallen out of our peers' caches, we'll just ignore them.
+      // this can happen during flooding, and the _items_to_fetch could otherwise get clogged
+      // with a bunch of items that we'll never be able to request from any peer
+      auto& items_by_timestamp = _items_to_fetch.get<item_timestamp_index>();
+      const auto first_to_keep = items_by_timestamp.lower_bound(oldest_item_timestamp_to_fetch());
+      size_t expired_items = 0;
+      for (auto iter = items_by_timestamp.begin(); iter != first_to_keep; ++expired_items)
       {
-        if (peer->inventory_peer_advertised_to_us.find(item) != peer->inventory_peer_advertised_to_us.end() )
-          return true;
+        dlog("Unable to fetch item ${item} before its likely expiration time, removing it from our list of items to fetch", ("item", iter->item));
+        iter = items_by_timestamp.erase(iter);
       }
-      return false;
+      return expired_items;
+    }
+
+    // expired items are removed from _items_to_fetch before the candidates are judged, so they are dropped here
+    fetch_candidate_verdict node_impl::judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item)
+    {
+      auto& items_by_id = _items_to_fetch.get<item_id_index>();
+      auto iter = items_by_id.find(item);
+      if (iter == items_by_id.end())
+        return fetch_candidate_verdict::drop; // we got it, requested it from another peer, or it expired
+      if (!peer_advertised_item(peer.get(), item))
+        return fetch_candidate_verdict::drop; // the peer said it doesn't have it, sent us a bad copy, or advertised it too long ago
+      if (item.item_type == graphene::net::block_message_type && peer->is_block_fetching_deprioritized())
+      {
+        // a peer kept despite sending us a block whose body didn't match its header is asked only if no
+        // other peer advertised the block, so its next bad copy doesn't delay the genuine one.  Other peers
+        // ask for it from their own candidates when they are idle, so here they only count as sources
+        std::vector<block_source_candidate> candidates{{true, true}};
+        for (const peer_connection_ptr& other_peer : _active_connections)
+          if (other_peer != peer && other_peer->block_inventory_peer_advertised_to_us.find(item) != other_peer->block_inventory_peer_advertised_to_us.end())
+            candidates.push_back({other_peer->is_block_fetching_deprioritized(), false});
+        if (choose_block_source(candidates) != std::optional<size_t>(0))
+          return fetch_candidate_verdict::keep; // in case the other sources disconnect without delivering it
+      }
+      items_by_id.erase(iter);
+      return fetch_candidate_verdict::take;
     }
 
     void node_impl::fetch_items_loop()
     {
       while (!_fetch_item_loop_done.canceled())
       {
-        _items_to_fetch_updated = false;
+        _fetch_items_loop_trigger.begin_iteration();
+        const fc::time_point iteration_start = fc::time_point::now();
         dlog("beginning an iteration of fetch items (${count} items to fetch)",
              ("count", _items_to_fetch.size()));
 
-        fc::time_point oldest_timestamp_to_fetch = fc::time_point::now() - fc::seconds(_recent_block_interval_in_seconds * GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS);
+        const size_t expired_items = remove_expired_items_to_fetch();
+        if (expired_items > 0)
+          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
         fc::time_point next_peer_unblocked_time = fc::time_point::maximum();
 
         // we need to construct a list of items to request from each peer first,
-        // then send the messages (in two steps, to avoid yielding while iterating)
-        // we want to evenly distribute our requests among our peers.
-        struct requested_item_count_index {};
+        // then send the messages (in two steps, to avoid yielding while iterating).
+        // Only idle peers are asked, each for items from its own fetch candidates.  They take turns, one
+        // item each, so items several of them advertised are spread evenly among them
         struct peer_and_items_to_fetch
         {
           peer_connection_ptr peer;
+          bool include_transactions;
+          size_t max_transactions;
+          size_t blocks = 0;
+          size_t transactions = 0;
+          bool done = false;
           std::vector<item_id> item_ids;
-          peer_and_items_to_fetch(const peer_connection_ptr& peer) : peer(peer) {}
-          bool operator<(const peer_and_items_to_fetch& rhs) const { return peer < rhs.peer; }
-          size_t number_of_items() const { return item_ids.size(); }
         };
-        typedef boost::multi_index_container<peer_and_items_to_fetch,
-                                             boost::multi_index::indexed_by<boost::multi_index::ordered_unique<boost::multi_index::member<peer_and_items_to_fetch, peer_connection_ptr, &peer_and_items_to_fetch::peer> >,
-                                                                            boost::multi_index::ordered_non_unique<boost::multi_index::tag<requested_item_count_index>,
-                                                                                                                   boost::multi_index::const_mem_fun<peer_and_items_to_fetch, size_t, &peer_and_items_to_fetch::number_of_items> > > > fetch_messages_to_send_set;
-        fetch_messages_to_send_set items_by_peer;
-
-        // initialize the fetch_messages_to_send with an empty set of items for all idle peers
+        std::vector<peer_and_items_to_fetch> items_by_peer;
         for (const peer_connection_ptr& peer : _active_connections)
-          if (peer->idle())
-            items_by_peer.insert(peer_and_items_to_fetch(peer));
-
-        // now loop over all items we want to fetch
-        size_t expired_items = 0;
-        for (auto item_iter = _items_to_fetch.begin(); item_iter != _items_to_fetch.end();)
-        {
-          if (item_iter->timestamp < oldest_timestamp_to_fetch)
+          if (peer->idle() && peer->fetch_candidates.size() > 0)
           {
-            // this item has probably already fallen out of our peers' caches, we'll just ignore it.
-            // this can happen during flooding, and the _items_to_fetch could otherwise get clogged
-            // with a bunch of items that we'll never be able to request from any peer
-            dlog("Unable to fetch item ${item} before its likely expiration time, removing it from our list of items to fetch", ("item", item_iter->item));
-            item_iter = _items_to_fetch.erase(item_iter);
-            ++expired_items;
+            const bool transaction_fetching_inhibited = peer->is_transaction_fetching_inhibited();
+            if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions())
+              next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
+            peer->fetch_candidates.begin_pass();
+            items_by_peer.push_back({peer, !transaction_fetching_inhibited,
+                                     peer->received_transaction_size.max_transactions_per_request()});
           }
-          else
+
+        for (bool item_taken = true; item_taken;)
+        {
+          item_taken = false;
+          for (peer_and_items_to_fetch& peer_and_items : items_by_peer)
           {
-            auto& peers_by_load = items_by_peer.get<requested_item_count_index>();
-            auto request_item_from_peer = [&](decltype(peers_by_load.begin()) peer_iter) {
-              //dlog("requesting item ${hash} from peer ${endpoint}",
-              //     ("hash", iter->item.item_hash)("endpoint", peer->get_remote_endpoint()));
-              item_id item_id_to_fetch = item_iter->item;
-              peer_iter->peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(item_id_to_fetch, fc::time_point::now()));
-              item_iter = _items_to_fetch.erase(item_iter);
-              peers_by_load.modify(peer_iter, [&item_id_to_fetch](peer_and_items_to_fetch& peer_and_items) {
-                peer_and_items.item_ids.push_back(item_id_to_fetch);
-              });
-            };
-            auto peer_advertised_item = [&](const peer_connection_ptr& peer) {
-              return peer->inventory_peer_advertised_to_us.find(item_iter->item) != peer->inventory_peer_advertised_to_us.end();
-            };
-            // find a peer that has it, we'll use the one who has the least requests going to it to load balance
-            bool item_fetched = false;
-            if (item_iter->item.item_type == graphene::net::block_message_type)
+            if (peer_and_items.done)
+              continue;
+            const peer_connection_ptr& peer = peer_and_items.peer;
+            const std::optional<item_id> item_id_to_fetch =
+              peer->fetch_candidates.take_next(peer_and_items.include_transactions,
+                                               [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate); },
+                                               _statistics.fetch.candidates_examined);
+            if (!item_id_to_fetch)
             {
-              // a peer kept despite sending us a block whose body didn't match its header is asked only if no
-              // other peer advertised the block, so its next bad copy doesn't delay the genuine one
-              std::vector<block_source_candidate> candidates;
-              std::vector<decltype(peers_by_load.begin())> candidate_peer_iters;
-              for (auto peer_iter = peers_by_load.begin(); peer_iter != peers_by_load.end(); ++peer_iter)
-                if (peer_advertised_item(peer_iter->peer))
-                {
-                  candidates.push_back({peer_iter->peer->is_block_fetching_deprioritized(),
-                                        peer_iter->item_ids.size() < GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION});
-                  candidate_peer_iters.push_back(peer_iter);
-                }
-              // busy peers can't be asked now, but they count as sources a deprioritized peer must not preempt
-              for (const peer_connection_ptr& peer : _active_connections)
-                if (items_by_peer.find(peer) == items_by_peer.end() && peer_advertised_item(peer))
-                  candidates.push_back({peer->is_block_fetching_deprioritized(), false});
-              if (const std::optional<size_t> chosen = choose_block_source(candidates))
-              {
-                request_item_from_peer(candidate_peer_iters[*chosen]);
-                item_fetched = true;
-              }
+              peer_and_items.done = true;
+              continue;
             }
+            peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(*item_id_to_fetch, fc::time_point::now()));
+            peer_and_items.item_ids.push_back(*item_id_to_fetch);
+            // the peer's blocks are all taken before its first transaction, so a peer that reaches
+            // its transaction limit has nothing more to give in this pass
+            if (item_id_to_fetch->item_type == graphene::net::block_message_type)
+              ++peer_and_items.blocks;
             else
-              for (auto peer_iter = peers_by_load.begin(); peer_iter != peers_by_load.end(); ++peer_iter)
-              {
-                const peer_connection_ptr& peer = peer_iter->peer;
-                // if they have the item and we haven't already decided to ask them for too many other items
-                if (peer_iter->item_ids.size() < GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION &&
-                    peer_advertised_item(peer))
-                {
-                  if (item_iter->item.item_type == graphene::net::trx_message_type && peer->is_transaction_fetching_inhibited())
-                    next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
-                  else
-                  {
-                    request_item_from_peer(peer_iter);
-                    item_fetched = true;
-                    break;
-                  }
-                }
-              }
-            if (!item_fetched)
-              ++item_iter;
+              ++peer_and_items.transactions;
+            peer_and_items.done = peer_and_items.blocks >= GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION ||
+                                  peer_and_items.transactions >= peer_and_items.max_transactions;
+            item_taken = true;
           }
         }
-        if (expired_items > 0)
-          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
+
+        ++_statistics.fetch.wakes;
+        _statistics.fetch.items_expired += expired_items;
+        _statistics.fetch.scheduling_time += fc::time_point::now() - iteration_start;
 
         // we've figured out which peer will be providing each item, now send the messages.
         for (const peer_and_items_to_fetch& peer_and_items : items_by_peer)
         {
+          _statistics.fetch.items_requested += peer_and_items.item_ids.size();
+          if (peer_and_items.transactions > 0)
+            _statistics.record_transaction_request(peer_and_items.transactions, peer_and_items.max_transactions);
           // the item lists are heterogenous and
           // the fetch_items_message can only deal with one item type at a time.
-          std::map<uint32_t, std::vector<item_hash_t> > items_to_fetch_by_type;
+          // Blocks are requested first
+          std::map<uint32_t, std::vector<item_hash_t>, std::greater<uint32_t> > items_to_fetch_by_type;
           for (const item_id& item : peer_and_items.item_ids)
             items_to_fetch_by_type[item.item_type].push_back(item.item_hash);
           for (auto& items_by_type : items_to_fetch_by_type)
@@ -1662,32 +1558,52 @@ namespace graphene { namespace net {
         }
         items_by_peer.clear();
 
-        if (!_items_to_fetch_updated)
-        {
-          _retrigger_fetch_item_loop_promise = fc::promise<void>::create("graphene::net::retrigger_fetch_item_loop");
-          fc::microseconds time_until_retrigger = fc::microseconds::maximum();
-          if (next_peer_unblocked_time != fc::time_point::maximum())
-            time_until_retrigger = next_peer_unblocked_time - fc::time_point::now();
-          try
-          {
-            if (time_until_retrigger > fc::microseconds(0))
-              _retrigger_fetch_item_loop_promise->wait(time_until_retrigger);
-          }
-          catch (const fc::timeout_exception&)
-          {
-            dlog("Resuming fetch_items_loop due to timeout -- one of our peers should no longer be throttled");
-          }
-          _retrigger_fetch_item_loop_promise.reset();
-        }
+        // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited
+        _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
+                                       next_peer_unblocked_time);
       } // while (!canceled)
     }
 
-    void node_impl::trigger_fetch_items_loop()
+    void node_impl::add_fetch_candidate(peer_connection* peer, const item_id& item)
+    {
+      peer->fetch_candidates.push(item, fc::time_point::now(), oldest_item_timestamp_to_fetch());
+    }
+
+    bool node_impl::queue_item_to_fetch_from_advertisers(const item_id& item)
+    {
+      bool advertised = false;
+      // a transaction's record is looked up once for all peers
+      const transaction_inventory::record* transaction_record =
+        item.item_type == trx_message_type ? _transaction_inventory.find(item.item_hash) : nullptr;
+      for (const peer_connection_ptr& peer : _active_connections)
+        if (item.item_type == trx_message_type ? peer_advertised_transaction(peer.get(), transaction_record)
+                                               : peer->block_inventory_peer_advertised_to_us.find(item) != peer->block_inventory_peer_advertised_to_us.end())
+        {
+          add_fetch_candidate(peer.get(), item);
+          advertised = true;
+        }
+      if (advertised)
+        _items_to_fetch.insert(prioritized_item_id(item, _items_to_fetch_sequence_counter++));
+      return advertised;
+    }
+
+    void node_impl::trigger_fetch_items_loop(bool for_block)
     {
       VERIFY_CORRECT_THREAD();
-      _items_to_fetch_updated = true;
-      if( _retrigger_fetch_item_loop_promise )
-        _retrigger_fetch_item_loop_promise->set_value();
+      _fetch_items_loop_trigger.trigger(for_block);
+    }
+
+    // blocks sort first in _items_to_fetch, so this looks only at the queued blocks
+    bool node_impl::peer_advertised_a_queued_block(const peer_connection* peer) const
+    {
+      for (const prioritized_item_id& queued : _items_to_fetch)
+      {
+        if (queued.item.item_type != graphene::net::block_message_type)
+          return false;
+        if (peer->block_inventory_peer_advertised_to_us.find(queued.item) != peer->block_inventory_peer_advertised_to_us.end())
+          return true;
+      }
+      return false;
     }
 
     void node_impl::advertise_inventory_loop()
@@ -1707,51 +1623,73 @@ namespace graphene { namespace net {
         // we're computing the messages)
         std::list<std::pair<peer_connection_ptr, item_ids_inventory_message>> inventory_messages_to_send;
 
+        expire_old_transaction_inventory();
+        const fc::time_point_sec now = fc::time_point::now();
+
+        // don't send a peer anything we've already advertised to it or anything it has advertised to us.
+        // Group the items we need to send by type, because we'll need to send one inventory message per type
+        struct peer_and_items_to_advertise
+        {
+          peer_connection_ptr peer;
+          std::map<uint32_t, std::vector<item_hash_t>> items_to_advertise_by_type;
+          unsigned total_items = 0;
+        };
+        std::vector<peer_and_items_to_advertise> items_by_peer;
+        // only advertise to peers who are in sync with us
+        for (const peer_connection_ptr& peer : _active_connections)
+          if (!peer->peer_needs_sync_items_from_us)
+            items_by_peer.push_back({peer});
+
+        for (peer_and_items_to_advertise& peer_and_items : items_by_peer)
+        {
+          const peer_connection_ptr& peer = peer_and_items.peer;
+          for (const std::shared_ptr<full_block_type>& full_block_to_advertise : block_inventory_to_advertise)
+          {
+            fc::ripemd160 item_hash_for_block = peer->advertise_blocks_by_block_id() ? full_block_to_advertise->get_block_id() 
+                                                                                     : full_block_to_advertise->get_legacy_block_message_hash();
+            item_id item_to_advertise{graphene::net::block_message_type, item_hash_for_block};
+
+            if (peer->block_inventory_advertised_to_peer.find(item_to_advertise) == peer->block_inventory_advertised_to_peer.end() &&
+                peer->block_inventory_peer_advertised_to_us.find(item_to_advertise) == peer->block_inventory_peer_advertised_to_us.end())
+            {
+              peer_and_items.items_to_advertise_by_type[item_to_advertise.item_type].push_back(item_to_advertise.item_hash);
+              peer->block_inventory_advertised_to_peer.insert(peer_connection::timestamped_item_id(item_to_advertise, now));
+              ++peer_and_items.total_items;
+              dlog("advertising block ${id} to peer ${endpoint}", ("id", item_to_advertise.item_hash)("endpoint", peer->get_remote_endpoint()));
+            }
+          }
+        }
+
+        // each transaction's record is looked up once, then every peer is checked by its slot
+        for (const std::shared_ptr<full_transaction_type>& full_transaction_to_advertise : transaction_inventory_to_advertise)
+        {
+          const item_hash_t& item_hash = full_transaction_to_advertise->get_legacy_transaction_message_hash();
+          const transaction_inventory::record& item_record = _transaction_inventory.get(item_hash, now);
+          for (peer_and_items_to_advertise& peer_and_items : items_by_peer)
+          {
+            const peer_connection_ptr& peer = peer_and_items.peer;
+            const transaction_inventory::slot_type slot = *peer->transaction_inventory_slot;
+            if (!item_record.advertised_to_us(slot) && _transaction_inventory.record_advertised_to_peer(item_record, slot, now))
+            {
+              peer_and_items.items_to_advertise_by_type[graphene::net::trx_message_type].push_back(item_hash);
+              ++peer_and_items.total_items;
+              testnetlog("advertising transaction ${id} to peer ${endpoint}", ("id", item_hash)("endpoint", peer->get_remote_endpoint()));
+              dlog("advertising transaction ${id} to peer ${endpoint}", ("id", item_hash)("endpoint", peer->get_remote_endpoint()));
+            }
+          }
+        }
+
+        for (const peer_and_items_to_advertise& peer_and_items : items_by_peer)
+        {
+          dlog("advertising ${count} new item(s) of ${types} type(s) to peer ${endpoint}",
+               ("count", peer_and_items.total_items)("types", peer_and_items.items_to_advertise_by_type.size())
+               ("endpoint", peer_and_items.peer->get_remote_endpoint()));
+          for (const auto& items_group : peer_and_items.items_to_advertise_by_type)
+            inventory_messages_to_send.push_back(std::make_pair(peer_and_items.peer, item_ids_inventory_message(items_group.first, items_group.second)));
+        }
+
         for (const peer_connection_ptr& peer : _active_connections)
         {
-          // only advertise to peers who are in sync with us
-          //wdump((peer->peer_needs_sync_items_from_us));
-          if (!peer->peer_needs_sync_items_from_us)
-          {
-            std::map<uint32_t, std::vector<item_hash_t>> items_to_advertise_by_type;
-            // don't send the peer anything we've already advertised to it
-            // or anything it has advertised to us
-            // group the items we need to send by type, because we'll need to send one inventory message per type
-            unsigned total_items_to_send_to_this_peer = 0;
-            for (const std::shared_ptr<full_block_type>& full_block_to_advertise : block_inventory_to_advertise)
-            {
-              fc::ripemd160 item_hash_for_block = peer->advertise_blocks_by_block_id() ? full_block_to_advertise->get_block_id() 
-                                                                                       : full_block_to_advertise->get_legacy_block_message_hash();
-              item_id item_to_advertise{graphene::net::block_message_type, item_hash_for_block};
-
-              if (peer->inventory_advertised_to_peer.find(item_to_advertise) == peer->inventory_advertised_to_peer.end() &&
-                  peer->inventory_peer_advertised_to_us.find(item_to_advertise) == peer->inventory_peer_advertised_to_us.end())
-              {
-                items_to_advertise_by_type[item_to_advertise.item_type].push_back(item_to_advertise.item_hash);
-                peer->inventory_advertised_to_peer.insert(peer_connection::timestamped_item_id(item_to_advertise, fc::time_point::now()));
-                ++total_items_to_send_to_this_peer;
-                dlog("advertising block ${id} to peer ${endpoint}", ("id", item_to_advertise.item_hash)("endpoint", peer->get_remote_endpoint()));
-              }
-            }
-            for (const std::shared_ptr<full_transaction_type>& full_transaction_to_advertise : transaction_inventory_to_advertise)
-            {
-              item_id item_to_advertise{graphene::net::trx_message_type, full_transaction_to_advertise->get_legacy_transaction_message_hash()};
-
-              if (peer->inventory_advertised_to_peer.find(item_to_advertise) == peer->inventory_advertised_to_peer.end() &&
-                  peer->inventory_peer_advertised_to_us.find(item_to_advertise) == peer->inventory_peer_advertised_to_us.end())
-              {
-                items_to_advertise_by_type[item_to_advertise.item_type].push_back(item_to_advertise.item_hash);
-                peer->inventory_advertised_to_peer.insert(peer_connection::timestamped_item_id(item_to_advertise, fc::time_point::now()));
-                ++total_items_to_send_to_this_peer;
-                testnetlog("advertising transaction ${id} to peer ${endpoint}", ("id", item_to_advertise.item_hash)("endpoint", peer->get_remote_endpoint()));
-                dlog("advertising transaction ${id} to peer ${endpoint}", ("id", item_to_advertise.item_hash)("endpoint", peer->get_remote_endpoint()));
-              }
-            }
-            dlog("advertising ${count} new item(s) of ${types} type(s) to peer ${endpoint}",
-                 ("count", total_items_to_send_to_this_peer)("types", items_to_advertise_by_type.size())("endpoint", peer->get_remote_endpoint()));
-            for (const auto& items_group : items_to_advertise_by_type)
-              inventory_messages_to_send.push_back(std::make_pair(peer, item_ids_inventory_message(items_group.first, items_group.second)));
-          }
           peer->clear_old_inventory();
           process_deferred_transaction_advertisements(peer.get());
         }
@@ -2113,6 +2051,17 @@ namespace graphene { namespace net {
         _dump_node_status_task_done = schedule_task([=, this](){ dump_node_status_task(); },
                                                    fc::time_point::now() + fc::minutes(GRAPHENE_NET_DUMP_NODE_STATUS_INTERVAL_MINUTES),
                                                    "dump_node_status_task");
+    }
+
+    void node_impl::statistics_report_loop()
+    {
+      const fc::variant_object report = _statistics.take_report(fc::time_point::now(), _transactions_in_flight.in_flight(),
+                                                                _items_to_fetch.size());
+      fc_ilog(fc::logger::get(GRAPHENE_NET_STATISTICS_LOGGER), "p2p statistics: ${report}", (report));
+      if (!node_is_shutting_down() && !_statistics_report_loop_done.canceled())
+        _statistics_report_loop_done = schedule_task([this](){ statistics_report_loop(); },
+                                                     fc::time_point::now() + fc::seconds(GRAPHENE_NET_STATISTICS_REPORT_INTERVAL_SEC),
+                                                     "statistics_report_loop");
     }
 
     void node_impl::delayed_peer_deletion_task()
@@ -3503,6 +3452,12 @@ namespace graphene { namespace net {
       }
     }
 
+    void node_impl::on_messages_written(size_t message_count, size_t byte_count)
+    {
+      VERIFY_CORRECT_THREAD();
+      _statistics.record_write(message_count, byte_count);
+    }
+
     // this is only called when a peer wants a block from us
     std::shared_ptr<full_block_type> node_impl::get_full_block_by_block_id(const block_id_type& block_id)
     {
@@ -3626,7 +3581,7 @@ namespace graphene { namespace net {
         assert(reply_transactions.size() == ids_to_answer.size());
         for (unsigned i = 0; i < reply_transactions.size() && !connection_is_closing(); ++i)
           if (reply_transactions[i])
-            originating_peer->send_message(trx_message(reply_transactions[i]));
+            originating_peer->send_transaction_message(reply_transactions[i]);
           else
             originating_peer->send_message(item_not_available_message(item_id(trx_message_type, ids_to_answer[i])));
       }
@@ -3643,17 +3598,18 @@ namespace graphene { namespace net {
       if (regular_item_iter != originating_peer->items_requested_from_peer.end())
       {
         originating_peer->items_requested_from_peer.erase( regular_item_iter );
-        originating_peer->inventory_peer_advertised_to_us.erase( requested_item );
+        forget_item_advertised_to_us(originating_peer, requested_item);
         // before handing the request to another peer, re-check that we still need the item:
         // the chain may have advanced past it while it was in flight.  (Only possible for
         // block ids -- legacy message hashes carry no block number to reason about.)
         bool still_needed = true;
         if (requested_item.item_type == block_message_type && originating_peer->advertise_blocks_by_block_id())
           still_needed = classify_advertised_block_id(requested_item.item_hash) == block_id_classification::fetchable;
-        if (still_needed && is_item_in_any_peers_inventory(requested_item))
-          _items_to_fetch.insert(prioritized_item_id(requested_item, _items_to_fetch_sequence_counter++));
+        if (still_needed)
+          queue_item_to_fetch_from_advertisers(requested_item);
         wlog("Peer doesn't have the requested item.");
-        trigger_fetch_items_loop();
+        trigger_fetch_items_loop(requested_item.item_type == block_message_type ||
+                                 peer_advertised_a_queued_block(originating_peer));
         return;
       }
 
@@ -3709,6 +3665,7 @@ namespace graphene { namespace net {
       }
 
       // expire old inventory so we'll be making decisions our about whether to fetch blocks below based only on recent inventory
+      expire_old_transaction_inventory();
       originating_peer->clear_old_inventory();
 
       // Peers don't advertise items to a node they are syncing, but one that can't serve our sync (e.g. a node
@@ -3737,7 +3694,7 @@ namespace graphene { namespace net {
           // But if our copy of a block turns out to have a bad body, refetch_block_from_other_peers() has to
           // know this peer has the block too: it won't advertise it again
           if (item_ids_inventory_message_received.item_type == graphene::net::block_message_type &&
-              !originating_peer->is_inventory_advertised_to_us_list_full())
+              !is_inventory_advertised_to_us_list_full(originating_peer))
             record_advertised_item(originating_peer, advertised_item_id);
           continue;
         }
@@ -3803,12 +3760,12 @@ namespace graphene { namespace net {
         // rather than lost.  We try to allow fetching blocks even when we've stopped fetching transactions.
         if (item_ids_inventory_message_received.item_type == graphene::net::trx_message_type &&
             (!originating_peer->transaction_inventory_deferred.empty() ||
-             originating_peer->is_inventory_advertised_to_us_list_full_for_transactions()))
+             is_inventory_advertised_to_us_list_full_for_transactions(originating_peer)))
         {
           originating_peer->defer_transaction_advertisement(advertised_item_id);
           continue;
         }
-        if (originating_peer->is_inventory_advertised_to_us_list_full())
+        if (is_inventory_advertised_to_us_list_full(originating_peer))
         {
           ++originating_peer->inventory_advertisements_dropped_since_report;
           continue;
@@ -3836,8 +3793,7 @@ namespace graphene { namespace net {
           break;
         }
 
-      status.new_from_this_peer =
-        originating_peer->inventory_peer_advertised_to_us.insert(peer_connection::timestamped_item_id(advertised_item_id, fc::time_point::now())).second;
+      status.new_from_this_peer = record_item_advertised_to_us(originating_peer, advertised_item_id);
       status.recently_failed = _recently_failed_items.find(advertised_item_id) != _recently_failed_items.end();
       auto items_to_fetch_iter = _items_to_fetch.get<item_id_index>().find(advertised_item_id);
       status.queued = items_to_fetch_iter != _items_to_fetch.get<item_id_index>().end();
@@ -3847,14 +3803,19 @@ namespace graphene { namespace net {
         dlog("not adding ${item_hash} to our list of items to fetch because we've recently fetched a copy and it failed to push", (item_hash));
       if (decision.queue)
       {
-        _items_to_fetch.insert(prioritized_item_id(advertised_item_id, _items_to_fetch_sequence_counter++));
+        // peers that advertised it while it was requested from another peer or being processed become candidates too
+        queue_item_to_fetch_from_advertisers(advertised_item_id);
         dlog("adding item ${item_hash} from inventory message to our list of items to fetch", (item_hash));
       }
       if (decision.refresh_timestamp)
+      {
         _items_to_fetch.get<item_id_index>().modify(items_to_fetch_iter,
                                                     [](prioritized_item_id& item) { item.timestamp = fc::time_point::now(); });
+        if (status.new_from_this_peer)
+          add_fetch_candidate(originating_peer, advertised_item_id);
+      }
       if (decision.wake_fetch_loop)
-        trigger_fetch_items_loop();
+        trigger_fetch_items_loop(status.is_block);
     }
 
     // move transaction advertisements we deferred while the peer's inventory was full into it, as far
@@ -3867,7 +3828,7 @@ namespace graphene { namespace net {
       // (they expire from the deferred list meanwhile)
       if (!deferred_by_time.empty() && _delegate->is_at_live_sync())
       {
-        while (!deferred_by_time.empty() && !peer->is_inventory_advertised_to_us_list_full_for_transactions())
+        while (!deferred_by_time.empty() && !is_inventory_advertised_to_us_list_full_for_transactions(peer))
         {
           item_id deferred_item_id = deferred_by_time.begin()->item;
           deferred_by_time.erase(deferred_by_time.begin());
@@ -3900,6 +3861,67 @@ namespace graphene { namespace net {
       peer->inventory_advertisements_deferred_since_report = 0;
       peer->inventory_advertisements_dropped_since_report = 0;
       peer->last_inventory_limit_report_time = now;
+    }
+
+    bool node_impl::peer_advertised_item(const peer_connection* peer, const item_id& item) const
+    {
+      if (item.item_type == trx_message_type)
+        return peer->transaction_inventory_slot && _transaction_inventory.advertised_to_us(*peer->transaction_inventory_slot, item.item_hash);
+      return peer->block_inventory_peer_advertised_to_us.find(item) != peer->block_inventory_peer_advertised_to_us.end();
+    }
+
+    bool node_impl::peer_advertised_transaction(const peer_connection* peer, const transaction_inventory::record* transaction_record)
+    {
+      return transaction_record && peer->transaction_inventory_slot && transaction_record->advertised_to_us(*peer->transaction_inventory_slot);
+    }
+
+    // a peer that is not an active connection holds no slot: we neither fetch from it nor advertise to it
+    bool node_impl::record_item_advertised_to_us(peer_connection* peer, const item_id& item)
+    {
+      if (item.item_type == trx_message_type)
+        return peer->transaction_inventory_slot &&
+               _transaction_inventory.record_advertised_to_us(*peer->transaction_inventory_slot, item.item_hash, fc::time_point::now());
+      return peer->block_inventory_peer_advertised_to_us.insert(peer_connection::timestamped_item_id(item, fc::time_point::now())).second;
+    }
+
+    void node_impl::forget_item_advertised_to_us(peer_connection* peer, const item_id& item)
+    {
+      if (item.item_type != trx_message_type)
+        peer->block_inventory_peer_advertised_to_us.erase(item);
+      else if (peer->transaction_inventory_slot)
+        _transaction_inventory.forget_advertised_to_us(*peer->transaction_inventory_slot, item.item_hash);
+    }
+
+    uint32_t node_impl::inventory_advertised_to_us_size(const peer_connection* peer) const
+    {
+      const uint32_t transactions = peer->transaction_inventory_slot ? _transaction_inventory.advertised_to_us_count(*peer->transaction_inventory_slot) : 0;
+      return transactions + (uint32_t)peer->block_inventory_peer_advertised_to_us.size();
+    }
+
+    bool node_impl::is_inventory_advertised_to_us_list_full_for_transactions(const peer_connection* peer) const
+    {
+      return inventory_advertised_to_us_size(peer) > GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60;
+    }
+
+    bool node_impl::is_inventory_advertised_to_us_list_full(const peer_connection* peer) const
+    {
+      // allow the total inventory size to be the maximum number of transactions we'll store in the inventory (above)
+      // plus the maximum number of blocks that would be generated in GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES (plus one,
+      // to give us some wiggle room)
+      return inventory_advertised_to_us_size(peer) >
+        GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60 +
+        (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES + 1) * 60 / HIVE_BLOCK_INTERVAL;
+    }
+
+    void node_impl::expire_old_transaction_inventory()
+    {
+      _transaction_inventory.expire(fc::time_point_sec(fc::time_point::now() - fc::minutes(GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES)));
+    }
+
+    void node_impl::release_transaction_inventory_slot(peer_connection* peer)
+    {
+      if (peer->transaction_inventory_slot)
+        _transaction_inventory.release_slot(*std::exchange(peer->transaction_inventory_slot, std::nullopt));
     }
 
     void node_impl::on_closing_connection_message( peer_connection* originating_peer, const closing_connection_message& closing_connection_message_received )
@@ -3962,6 +3984,7 @@ namespace graphene { namespace net {
       _closing_connections.erase(originating_peer_ptr);
       _handshaking_connections.erase(originating_peer_ptr);
       _terminating_connections.erase(originating_peer_ptr);
+      release_transaction_inventory_slot(originating_peer);
       if (_active_connections.find(originating_peer_ptr) != _active_connections.end())
       {
         _active_connections.erase(originating_peer_ptr);
@@ -4017,8 +4040,10 @@ namespace graphene { namespace net {
         trigger_fetch_sync_items_loop();
       }
 
+      originating_peer->fetch_candidates.clear();
       if (!originating_peer->items_requested_from_peer.empty())
       {
+        bool block_requeued = false;
         for (const auto& item_and_time : originating_peer->items_requested_from_peer)
         {
           // as in on_item_not_available_message: don't reschedule fetches for blocks the chain
@@ -4026,10 +4051,10 @@ namespace graphene { namespace net {
           bool still_needed = true;
           if (item_and_time.first.item_type == block_message_type && originating_peer->advertise_blocks_by_block_id())
             still_needed = classify_advertised_block_id(item_and_time.first.item_hash) == block_id_classification::fetchable;
-          if (still_needed && is_item_in_any_peers_inventory(item_and_time.first))
-            _items_to_fetch.insert(prioritized_item_id(item_and_time.first, _items_to_fetch_sequence_counter++));
+          if (still_needed && queue_item_to_fetch_from_advertisers(item_and_time.first))
+            block_requeued = block_requeued || item_and_time.first.item_type == block_message_type;
         }
-        trigger_fetch_items_loop();
+        trigger_fetch_items_loop(block_requeued);
       }
 
       discard_abandoned_sync_blocks();
@@ -4116,16 +4141,13 @@ namespace graphene { namespace net {
     void node_impl::refetch_block_from_other_peers(peer_connection* peer_that_sent_bad_copy, const item_id& block_item_id)
     {
       VERIFY_CORRECT_THREAD();
-      peer_that_sent_bad_copy->inventory_peer_advertised_to_us.erase(block_item_id);
+      peer_that_sent_bad_copy->block_inventory_peer_advertised_to_us.erase(block_item_id);
       for (const peer_connection_ptr& peer : _active_connections)
         if (peer->items_requested_from_peer.find(block_item_id) != peer->items_requested_from_peer.end())
           return; // another copy is already on its way
-      if (is_item_in_any_peers_inventory(block_item_id) &&
-          _items_to_fetch.get<item_id_index>().find(block_item_id) == _items_to_fetch.get<item_id_index>().end())
-      {
-        _items_to_fetch.insert(prioritized_item_id(block_item_id, _items_to_fetch_sequence_counter++));
-        trigger_fetch_items_loop();
-      }
+      if (_items_to_fetch.get<item_id_index>().find(block_item_id) == _items_to_fetch.get<item_id_index>().end() &&
+          queue_item_to_fetch_from_advertisers(block_item_id))
+        trigger_fetch_items_loop(true);
     }
 
     void node_impl::send_sync_block_to_node_delegate(const received_sync_item& item)
@@ -4716,11 +4738,11 @@ namespace graphene { namespace net {
         {
           ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
 
-          auto iter = peer->inventory_peer_advertised_to_us.find(peer->advertise_blocks_by_block_id() ? new_block_message_item_id : legacy_block_message_item_id);
-          if (iter != peer->inventory_peer_advertised_to_us.end())
+          auto iter = peer->block_inventory_peer_advertised_to_us.find(peer->advertise_blocks_by_block_id() ? new_block_message_item_id : legacy_block_message_item_id);
+          if (iter != peer->block_inventory_peer_advertised_to_us.end())
           {
             // this peer offered us the item.  It will eventually expire from the peer's
-            // inventory_peer_advertised_to_us list after some time has passed (currently 2 minutes).
+            // block_inventory_peer_advertised_to_us list after some time has passed (currently 2 minutes).
             // For now, it will remain there, which will prevent us from offering the peer this
             // block back when we rebroadcast the block below
             peer->last_block_delegate_has_seen = block_id;
@@ -4947,7 +4969,7 @@ namespace graphene { namespace net {
           originating_peer->items_requested_from_peer.erase(item_iter);
           process_block_during_normal_operation(originating_peer, full_block);
           if (originating_peer->idle())
-            trigger_fetch_items_loop();
+            trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
           return;
         }
       }
@@ -4977,6 +4999,9 @@ namespace graphene { namespace net {
 
       // only process it if we asked for it
       const fc::ripemd160& message_hash = full_transaction->get_legacy_transaction_message_hash();
+      if (is_relay_sample(message_hash))
+        fc_ilog(fc::logger::get(GRAPHENE_NET_RELAY_SAMPLE_LOGGER), "relay sample received ${trx} ${hash} at ${time_us}",
+                ("trx", full_transaction->get_transaction_id())("hash", message_hash)("time_us", raw_realtime_microseconds()));
       auto iter = originating_peer->items_requested_from_peer.find(item_id(trx_message_type, message_hash));
       if (iter == originating_peer->items_requested_from_peer.end())
       {
@@ -4988,22 +5013,74 @@ namespace graphene { namespace net {
       else
       {
         originating_peer->items_requested_from_peer.erase(iter);
+        originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
         if (originating_peer->idle())
-          trigger_fetch_items_loop();
+          trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
 
-        // Next: have the delegate process the message
-        fc::time_point message_validated_time;
+        // Next: have the delegate validate the transaction; apply_transaction_completion() applies the outcome.
+        // It counts as being processed while we wait for room to submit it, so no other peer is asked for it meanwhile
+        _message_ids_currently_being_processed.insert(message_hash);
         try
         {
-          dlog("passing message containing transaction ${trx} to client", ("trx", full_transaction->get_transaction_id()));
-          _message_ids_currently_being_processed.insert(message_hash);
-          // erase it however handle_transaction() ends, as the block path does: an id left in the set makes us
+          // the clock is read only when we wait; otherwise submitting follows receiving at once
+          const uint32_t in_flight_limit = _node_configuration.maximum_transactions_in_flight;
+          const bool waits = in_flight_limit != 0 && _transactions_in_flight.in_flight() >= in_flight_limit;
+          const fc::time_point wait_start = waits ? fc::time_point::now() : message_receive_time;
+          _transactions_in_flight.acquire(in_flight_limit);
+          const fc::time_point submitted_time = waits ? fc::time_point::now() : message_receive_time;
+          if (waits)
+            _statistics.record_limit_wait(submitted_time - wait_start);
+          _statistics.record_submission(_transactions_in_flight.in_flight());
+          try
+          {
+            dlog("passing message containing transaction ${trx} to client", ("trx", full_transaction->get_transaction_id()));
+            transaction_completion completion{full_transaction, message_hash, message_receive_time, originating_peer->node_id, submitted_time};
+            _delegate->submit_transaction(full_transaction,
+              [completions = _transaction_completions, completion](const fc::exception_ptr& error) {
+                transaction_completion validated = completion;
+                validated.validated_time = fc::time_point::now();
+                validated.error = error;
+                completions->push(std::move(validated));
+              });
+          }
+          catch (...)
+          {
+            _transactions_in_flight.release(1);
+            throw;
+          }
+        }
+        catch (const fc::canceled_exception&)
+        {
+          _message_ids_currently_being_processed.erase(message_hash);
+          throw;
+        }
+        catch (const fc::exception& e)
+        {
+          _message_ids_currently_being_processed.erase(message_hash);
+          dlog("client did not accept transaction message sent by peer ${peer} for validation, ${e}", ("peer", originating_peer->get_remote_endpoint())(e));
+          // record it so we don't try to fetch this item again
+          _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(trx_message_type, message_hash), fc::time_point::now()));
+        }
+        catch (...)
+        {
+          // clear the mark however submitting ends, as the block path does: an id left in the set makes us
           // skip every later advertisement of that transaction until restart
-          BOOST_SCOPE_EXIT(this_, &message_hash) {
-            this_->_message_ids_currently_being_processed.erase(message_hash);
-          } BOOST_SCOPE_EXIT_END
-          _delegate->handle_transaction(full_transaction);
-          message_validated_time = fc::time_point::now();
+          _message_ids_currently_being_processed.erase(message_hash);
+          throw;
+        }
+      }
+    }
+
+    void node_impl::apply_transaction_completions()
+    {
+      VERIFY_CORRECT_THREAD();
+      const std::deque<transaction_completion> completions = _transaction_completions->take_all();
+      for (const transaction_completion& completion : completions)
+      {
+        _statistics.record_completion(completion.validated_time - completion.submitted_time);
+        try
+        {
+          apply_transaction_completion(completion);
         }
         catch (const fc::canceled_exception&)
         {
@@ -5011,30 +5088,43 @@ namespace graphene { namespace net {
         }
         catch (const fc::exception& e)
         {
-          dlog("client rejected transaction message sent by peer ${peer}, ${e}", ("peer", originating_peer->get_remote_endpoint())(e));
-          // record it so we don't try to fetch this item again
-          _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(trx_message_type, message_hash), fc::time_point::now()));
-          return;
+          elog("Unexpected exception applying the validation result of transaction ${trx}: ${e}",
+               ("trx", completion.full_transaction->get_transaction_id())("e", e.to_detail_string()));
         }
-        catch (...)
+        catch (const std::exception& e)
         {
-          elog("Caught unexpected unknown exception in process_ordinary_message"); //we don't expect this to happen
-          _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(trx_message_type, message_hash), fc::time_point::now()));
-          return;
+          elog("Unexpected exception applying the validation result of transaction ${trx}: ${e}",
+               ("trx", completion.full_transaction->get_transaction_id())("e", e.what()));
         }
-
-        item_id received_item_id(trx_message_type, message_hash);
-        for (const peer_connection_ptr& active_peer : _active_connections)
-        {
-          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
-          active_peer->mark_advertised_transaction_received(received_item_id);
-          process_deferred_transaction_advertisements(active_peer.get());
-        }
-
-        // finally, if the delegate validated the message, broadcast it to our other peers
-        message_propagation_data propagation_data{message_receive_time, message_validated_time, originating_peer->node_id};
-        broadcast(full_transaction, propagation_data);
       }
+      _transactions_in_flight.release(completions.size());
+    }
+
+    void node_impl::apply_transaction_completion(const transaction_completion& completion)
+    {
+      VERIFY_CORRECT_THREAD();
+      _message_ids_currently_being_processed.erase(completion.message_hash);
+      const item_id received_item_id(trx_message_type, completion.message_hash);
+
+      if (completion.error)
+      {
+        dlog("client rejected transaction ${trx} sent by peer ${peer}, ${e}",
+             ("trx", completion.full_transaction->get_transaction_id())("peer", completion.originating_peer)("e", completion.error->to_string()));
+        // record it so we don't try to fetch this item again
+        _recently_failed_items.insert(peer_connection::timestamped_item_id(received_item_id, fc::time_point::now()));
+        return;
+      }
+
+      _transaction_inventory.mark_received(completion.message_hash);
+      for (const peer_connection_ptr& active_peer : _active_connections)
+      {
+        ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
+        process_deferred_transaction_advertisements(active_peer.get());
+      }
+
+      // finally, as the delegate validated the transaction, broadcast it to our other peers
+      message_propagation_data propagation_data{completion.received_time, completion.validated_time, completion.originating_peer};
+      broadcast(completion.full_transaction, propagation_data);
     }
 
     void node_impl::on_current_time_request_message(peer_connection* originating_peer,
@@ -5166,7 +5256,7 @@ namespace graphene { namespace net {
         {
           // we're not connected to them, so we need to set up a connection to them
           // to test.
-          peer_connection_ptr peer_for_testing(peer_connection::make_shared(this));
+          peer_connection_ptr peer_for_testing(create_peer_connection());
           peer_for_testing->firewall_check_state = new firewall_check_state_data;
           peer_for_testing->firewall_check_state->endpoint_to_test = check_firewall_message_received.endpoint_to_check;
           peer_for_testing->firewall_check_state->expected_node_id = check_firewall_message_received.node_id;
@@ -5389,6 +5479,10 @@ namespace graphene { namespace net {
 
       _node_is_shutting_down = true;
 
+      // transactions still being validated are discarded when their validation ends
+      _transaction_completions->close();
+      _transactions_in_flight.close();
+
       try
       {
         save_active_peers_to_peer_database();
@@ -5537,7 +5631,7 @@ namespace graphene { namespace net {
       {
         _fetch_item_loop_done.cancel("node_impl::close()");
         // cancel() is currently broken, so we need to wake up the task to allow it to finish
-        trigger_fetch_items_loop();
+        trigger_fetch_items_loop(true);
         _fetch_item_loop_done.wait();
         dlog("Fetch items loop terminated");
       }
@@ -5698,6 +5792,20 @@ namespace graphene { namespace net {
       {
         wlog( "Exception thrown while terminating Dump node status task, ignoring" );
       }
+
+      try
+      {
+        _statistics_report_loop_done.cancel_and_wait("node_impl::close()");
+        dlog("Statistics report loop terminated");
+      }
+      catch ( const fc::exception& e )
+      {
+        wlog( "Exception thrown while terminating Statistics report loop, ignoring: ${e}", ("e", e) );
+      }
+      catch (...)
+      {
+        wlog( "Exception thrown while terminating Statistics report loop, ignoring" );
+      }
     } // node_impl::close()
 
     void node_impl::accept_connection_task( const peer_connection_ptr& new_peer )
@@ -5728,11 +5836,19 @@ namespace graphene { namespace net {
       send_hello_message(new_peer);
     }
 
+    peer_connection_ptr node_impl::create_peer_connection()
+    {
+      VERIFY_CORRECT_THREAD();
+      peer_connection_ptr new_peer(peer_connection::make_shared(this));
+      new_peer->set_send_flush_delay(fc::microseconds(_node_configuration.transaction_flush_delay_microseconds));
+      return new_peer;
+    }
+
     void node_impl::accept_loop()
     {
       while ( !_accept_loop_complete.canceled() )
       {
-        peer_connection_ptr new_peer(peer_connection::make_shared(this));
+        peer_connection_ptr new_peer(create_peer_connection());
 
         try
         {
@@ -6198,7 +6314,8 @@ namespace graphene { namespace net {
              !_terminate_inactive_connections_loop_done.valid() &&
              !_fetch_updated_peer_lists_loop_done.valid() &&
              !_bandwidth_monitor_loop_done.valid() &&
-             !_dump_node_status_task_done.valid());
+             !_dump_node_status_task_done.valid() &&
+             !_statistics_report_loop_done.valid());
       if (_node_configuration.accept_incoming_connections)
         _accept_loop_complete = async_task( [=, this](){ accept_loop(); }, "accept_loop");
       _p2p_network_connect_loop_done = async_task( [=, this]() { p2p_network_connect_loop(); }, "p2p_network_connect_loop" );
@@ -6209,6 +6326,9 @@ namespace graphene { namespace net {
       _fetch_updated_peer_lists_loop_done = async_task([=, this](){ fetch_updated_peer_lists_loop(); }, "fetch_updated_peer_lists_loop");
       _bandwidth_monitor_loop_done = async_task([=, this](){ bandwidth_monitor_loop(); }, "bandwidth_monitor_loop");
       _dump_node_status_task_done = async_task([=, this](){ dump_node_status_task(); }, "dump_node_status_task");
+      _statistics_report_loop_done = schedule_task([this](){ statistics_report_loop(); },
+                                                   fc::time_point::now() + fc::seconds(GRAPHENE_NET_STATISTICS_REPORT_INTERVAL_SEC),
+                                                   "statistics_report_loop");
     }
 
     void node_impl::add_node(const fc::ip::endpoint& ep)
@@ -6273,7 +6393,7 @@ namespace graphene { namespace net {
       }
 
       dlog("node_impl::connect_to_endpoint(${endpoint})", ("endpoint", remote_endpoint));
-      peer_connection_ptr new_peer(peer_connection::make_shared(this));
+      peer_connection_ptr new_peer(create_peer_connection());
       new_peer->set_remote_endpoint(remote_endpoint);
       initiate_connect_to(new_peer);
     }
@@ -6295,6 +6415,8 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _active_connections.insert(peer);
+      if (!peer->transaction_inventory_slot)
+        peer->transaction_inventory_slot = _transaction_inventory.acquire_slot();
       _handshaking_connections.erase(peer);
       _closing_connections.erase(peer);
       _terminating_connections.erase(peer);
@@ -6307,6 +6429,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _active_connections.erase(peer);
+      release_transaction_inventory_slot(peer.get());
       _handshaking_connections.erase(peer);
       _closing_connections.insert(peer);
       _terminating_connections.erase(peer);
@@ -6319,6 +6442,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _active_connections.erase(peer);
+      release_transaction_inventory_slot(peer.get());
       _handshaking_connections.erase(peer);
       _closing_connections.erase(peer);
       _terminating_connections.insert(peer);
@@ -6469,14 +6593,18 @@ namespace graphene { namespace net {
             ("block_size", _new_block_inventory.size() )("transaction_size", _new_transaction_inventory.size() ) );
       ilog( "node._block_message_cache size: ${size}", ("size", _block_message_cache.size() ) );
       ilog( "node._transaction_message_cache size: ${size}", ("size", _transaction_message_cache.size() ) );
+      ilog( "node._transaction_inventory size: ${size}", ("size", _transaction_inventory.size() ) );
       for( const peer_connection_ptr& peer : _active_connections )
       {
         ilog( "  peer ${endpoint}", ("endpoint", peer->get_remote_endpoint() ) );
         ilog( "    last requested block number for peers on this fork: ${block_num}",("block_num",peer->last_requested_block_number_for_peers_on_this_fork) );
         ilog( "    block number of first id to get: ${block_num}", ("block_num",peer->first_id_block_number) );
         ilog( "    peer.ids_of_items_to_get size: ${size}", ("size", peer->ids_of_items_to_get.size() ) );
-        ilog( "    peer.inventory_peer_advertised_to_us size: ${size}", ("size", peer->inventory_peer_advertised_to_us.size() ) );
-        ilog( "    peer.inventory_advertised_to_peer size: ${size}", ("size", peer->inventory_advertised_to_peer.size() ) );
+        const transaction_inventory::slot_type slot = peer->transaction_inventory_slot.value_or(std::numeric_limits<transaction_inventory::slot_type>::max());
+        ilog( "    peer inventory advertised to us: ${blocks} blocks, ${transactions} transactions",
+              ("blocks", peer->block_inventory_peer_advertised_to_us.size())("transactions", _transaction_inventory.advertised_to_us_count(slot)) );
+        ilog( "    peer inventory advertised to peer: ${blocks} blocks, ${transactions} transactions",
+              ("blocks", peer->block_inventory_advertised_to_peer.size())("transactions", _transaction_inventory.advertised_to_peer_count(slot)) );
         if (!peer->item_ids_requested_from_peer)
           ilog( "    peer.time_since_inventory_requested: no request in progress" );
         else
@@ -6801,6 +6929,10 @@ namespace graphene { namespace net {
     void node_impl::broadcast(const std::shared_ptr<full_transaction_type>& full_transaction, const message_propagation_data& propagation_data)
     {
       VERIFY_CORRECT_THREAD();
+      if (is_relay_sample(full_transaction->get_legacy_transaction_message_hash()))
+        fc_ilog(fc::logger::get(GRAPHENE_NET_RELAY_SAMPLE_LOGGER), "relay sample broadcast ${trx} ${hash} at ${time_us}",
+                ("trx", full_transaction->get_transaction_id())("hash", full_transaction->get_legacy_transaction_message_hash())
+                ("time_us", raw_realtime_microseconds()));
       _transaction_message_cache.cache_message(full_transaction, propagation_data);
       _new_transaction_inventory.insert(full_transaction);
       trigger_advertise_inventory_loop();
@@ -7213,7 +7345,7 @@ namespace graphene { namespace net {
                        destination_node->delegate->handle_block(full_block, false);
                      },
                      [&](const std::shared_ptr<full_transaction_type>& full_transaction) {
-                       destination_node->delegate->handle_transaction(full_transaction);
+                       destination_node->delegate->submit_transaction(full_transaction, [](const fc::exception_ptr&) {});
                      }
                    }, message_to_deliver);
       }
@@ -7328,9 +7460,10 @@ namespace graphene { namespace net {
       INVOKE_AND_COLLECT_STATISTICS(handle_block, full_block, sync_mode);
     }
 
-    void statistics_gathering_node_delegate_wrapper::handle_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
+    void statistics_gathering_node_delegate_wrapper::submit_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
+                                                                        transaction_validated_callback on_validated)
     {
-      INVOKE_AND_COLLECT_STATISTICS(handle_transaction, full_transaction);
+      INVOKE_AND_COLLECT_STATISTICS(submit_transaction, full_transaction, std::move(on_validated));
     }
 
     std::vector<item_hash_t> statistics_gathering_node_delegate_wrapper::get_block_ids(const std::vector<item_hash_t>& blockchain_synopsis,
@@ -7449,6 +7582,371 @@ namespace graphene { namespace net {
       return true;
     _recent_disconnect_times.push_back(now);
     return false;
+  }
+
+  void coalescing_loop_trigger::begin_iteration()
+  {
+    _iteration_start = fc::time_point::now();
+    _triggered = false;
+    _urgent = false;
+  }
+
+  void coalescing_loop_trigger::trigger(bool urgent)
+  {
+    // another plain trigger while one is pending changes nothing the waiting loop decides on, so it doesn't wake it
+    const bool changes_wait = !_triggered || (urgent && !_urgent);
+    _triggered = true;
+    _urgent = _urgent || urgent;
+    if (changes_wait && _wake_promise)
+      _wake_promise->set_value();
+  }
+
+  void coalescing_loop_trigger::wait(fc::microseconds minimum_interval, fc::time_point wake_at)
+  {
+    for (;;)
+    {
+      fc::time_point wake_time = wake_at;
+      if (_triggered)
+      {
+        if (_urgent)
+          return;
+        wake_time = std::min(wake_time, _iteration_start + minimum_interval);
+      }
+      if (wake_time <= fc::time_point::now())
+        return;
+      _wake_promise = fc::promise<void>::create("graphene::net::coalescing_loop_trigger");
+      try
+      {
+        if (wake_time == fc::time_point::maximum())
+          _wake_promise->wait();
+        else
+          _wake_promise->wait_until(wake_time);
+      }
+      catch (const fc::timeout_exception&)
+      {
+        // a deadline passed: the next pass of the loop returns
+      }
+      _wake_promise.reset();
+    }
+  }
+
+  void in_flight_limit::acquire(uint32_t limit)
+  {
+    while (!_closed && limit != 0 && _in_flight >= limit)
+    {
+      if (!_released)
+        _released = fc::promise<void>::create("graphene::net::in_flight_limit");
+      // keep our own reference, wake_waiters() drops the member
+      fc::promise<void>::ptr released = _released;
+      released->wait();
+    }
+    if (_closed)
+      FC_THROW_EXCEPTION(fc::canceled_exception, "no more items are accepted for processing, the node is shutting down");
+    ++_in_flight;
+  }
+
+  void in_flight_limit::release(uint32_t count)
+  {
+    _in_flight -= std::min(count, _in_flight);
+    if (count != 0)
+      wake_waiters();
+  }
+
+  void in_flight_limit::close()
+  {
+    _closed = true;
+    wake_waiters();
+  }
+
+  void in_flight_limit::wake_waiters()
+  {
+    if (_released)
+      std::exchange(_released, nullptr)->set_value();
+  }
+
+  void fetch_candidate_queue::push(const item_id& item, fc::time_point now, fc::time_point oldest_to_keep)
+  {
+    // both lanes are in the order entries were queued, so the stale ones are at their front
+    for (auto [lane, kept] : { std::make_pair(&_blocks, &_blocks_kept), std::make_pair(&_transactions, &_transactions_kept) })
+      while (!lane->empty() && lane->front().queued < oldest_to_keep)
+      {
+        lane->pop_front();
+        if (*kept > 0)
+          --*kept;
+      }
+    (item.item_type == block_message_type ? _blocks : _transactions).push_back(entry{item, now});
+  }
+
+  void fetch_candidate_queue::begin_pass()
+  {
+    _blocks_kept = 0;
+    _transactions_kept = 0;
+  }
+
+  void fetch_candidate_queue::clear()
+  {
+    _blocks.clear();
+    _transactions.clear();
+    begin_pass();
+  }
+
+  transaction_size_estimate::transaction_size_estimate() :
+    _mean(GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE)
+  {}
+
+  void transaction_size_estimate::record(size_t transaction_size)
+  {
+    if (transaction_size > _mean)
+      _mean += (transaction_size - _mean + 3) / 4;
+    else
+      _mean -= (_mean - transaction_size) / 16;
+  }
+
+  size_t transaction_size_estimate::max_transactions_per_request() const
+  {
+    return std::clamp<size_t>(GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / std::max<size_t>(_mean, 1),
+                              1, GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION);
+  }
+
+  bool transaction_inventory::record::test(slot_type slot, unsigned kind) const
+  {
+    const size_t word = record::kinds * (slot / 64) + kind;
+    return word < bits.size() && (bits[word] >> (slot % 64)) & 1;
+  }
+
+  bool transaction_inventory::record::set(slot_type slot, unsigned kind) const
+  {
+    const size_t word = record::kinds * (slot / 64) + kind;
+    if (word >= bits.size())
+      bits.resize(record::kinds * (slot / 64 + 1), 0);
+    const uint64_t mask = uint64_t(1) << (slot % 64);
+    const bool was_clear = !(bits[word] & mask);
+    bits[word] |= mask;
+    return was_clear;
+  }
+
+  bool transaction_inventory::record::reset(slot_type slot, unsigned kind) const
+  {
+    const size_t word = record::kinds * (slot / 64) + kind;
+    if (word >= bits.size())
+      return false;
+    const uint64_t mask = uint64_t(1) << (slot % 64);
+    const bool was_set = bits[word] & mask;
+    bits[word] &= ~mask;
+    return was_set;
+  }
+
+  transaction_inventory::slot_type transaction_inventory::acquire_slot()
+  {
+    auto free_slot = std::find_if(_slots.begin(), _slots.end(), [](const slot_state& state) { return !state.in_use; });
+    if (free_slot == _slots.end())
+      free_slot = _slots.insert(_slots.end(), slot_state());
+    free_slot->in_use = true;
+    return (slot_type)(free_slot - _slots.begin());
+  }
+
+  void transaction_inventory::release_slot(slot_type slot)
+  {
+    FC_ASSERT(slot < _slots.size() && _slots[slot].in_use, "releasing transaction inventory slot ${slot}, which is not in use", (slot));
+    for (const record& item_record : _records)
+      for (unsigned kind = 0; kind < record::kinds; ++kind)
+        item_record.reset(slot, kind);
+    _slots[slot] = slot_state();
+  }
+
+  const transaction_inventory::record* transaction_inventory::find(const item_hash_t& item) const
+  {
+    const auto iter = _records.find(item);
+    return iter == _records.end() ? nullptr : &*iter;
+  }
+
+  const transaction_inventory::record& transaction_inventory::get(const item_hash_t& item, fc::time_point_sec now)
+  {
+    const auto [iter, inserted] = _records.insert(record(item));
+    if (inserted)
+      iter->last_recorded = now;
+    return *iter;
+  }
+
+  bool transaction_inventory::advertised_to_us(slot_type slot, const item_hash_t& item) const
+  {
+    const record* item_record = find(item);
+    return item_record && item_record->advertised_to_us(slot);
+  }
+
+  bool transaction_inventory::record_advertised_to_us(slot_type slot, const item_hash_t& item, fc::time_point_sec now)
+  {
+    return set_bit_and_record_time(get(item, now), slot, record::advertised_to_us_kind, now);
+  }
+
+  void transaction_inventory::forget_advertised_to_us(slot_type slot, const item_hash_t& item)
+  {
+    if (const record* item_record = find(item))
+      reset_bit(*item_record, slot, record::advertised_to_us_kind);
+  }
+
+  bool transaction_inventory::record_advertised_to_peer(const record& item_record, slot_type slot, fc::time_point_sec now)
+  {
+    return set_bit_and_record_time(item_record, slot, record::advertised_to_peer_kind, now);
+  }
+
+  // like a set entry moved from one kind to the other, the moved bits don't make the record newer
+  void transaction_inventory::mark_received(const item_hash_t& item)
+  {
+    const record* item_record = find(item);
+    if (!item_record)
+      return;
+    for (size_t word = 0; word < item_record->bits.size(); word += record::kinds)
+      for (uint64_t moving = item_record->bits[word + record::advertised_to_us_kind]; moving != 0; moving &= moving - 1)
+      {
+        const slot_type slot = (slot_type)(64 * (word / record::kinds) + boost::core::countr_zero(moving));
+        reset_bit(*item_record, slot, record::advertised_to_us_kind);
+        set_bit(*item_record, slot, record::advertised_to_peer_kind);
+      }
+  }
+
+  void transaction_inventory::expire(fc::time_point_sec oldest_to_keep)
+  {
+    auto& by_time = _records.get<by_last_recorded>();
+    while (!by_time.empty() && by_time.front().last_recorded < oldest_to_keep)
+    {
+      const record& expiring = by_time.front();
+      for (size_t word = 0; word < expiring.bits.size(); ++word)
+        for (uint64_t remaining = expiring.bits[word]; remaining != 0; remaining &= remaining - 1)
+          --_slots[64 * (word / record::kinds) + boost::core::countr_zero(remaining)].counts[word % record::kinds];
+      by_time.pop_front();
+    }
+  }
+
+  uint32_t transaction_inventory::advertised_to_us_count(slot_type slot) const
+  {
+    return slot < _slots.size() ? _slots[slot].counts[record::advertised_to_us_kind] : 0;
+  }
+
+  uint32_t transaction_inventory::advertised_to_peer_count(slot_type slot) const
+  {
+    return slot < _slots.size() ? _slots[slot].counts[record::advertised_to_peer_kind] : 0;
+  }
+
+  void transaction_inventory::set_bit(const record& item_record, slot_type slot, unsigned kind)
+  {
+    if (item_record.set(slot, kind))
+      ++_slots[slot].counts[kind];
+  }
+
+  // the record moves to the back of the expiry order, which stays sorted as long as the clock doesn't go back;
+  // if it does, records stamped later wait behind it and expire late, never early
+  bool transaction_inventory::set_bit_and_record_time(const record& item_record, slot_type slot, unsigned kind, fc::time_point_sec now)
+  {
+    if (!item_record.set(slot, kind))
+      return false;
+    ++_slots[slot].counts[kind];
+    if (now > item_record.last_recorded)
+    {
+      item_record.last_recorded = now;
+      auto& by_time = _records.get<by_last_recorded>();
+      by_time.relocate(by_time.end(), by_time.iterator_to(item_record));
+    }
+    return true;
+  }
+
+  void transaction_inventory::reset_bit(const record& item_record, slot_type slot, unsigned kind)
+  {
+    if (item_record.reset(slot, kind))
+      --_slots[slot].counts[kind];
+  }
+
+  void p2p_statistics::record_submission(uint32_t in_flight)
+  {
+    ++_handoff.submissions;
+    _handoff.max_in_flight = std::max(_handoff.max_in_flight, in_flight);
+    _handoff.in_flight_sum += in_flight;
+  }
+
+  void p2p_statistics::record_limit_wait(fc::microseconds waited)
+  {
+    ++_handoff.limit_waits;
+    _handoff.limit_wait_time += waited;
+  }
+
+  void p2p_statistics::record_completion(fc::microseconds latency)
+  {
+    ++_handoff.completions;
+    const auto bound = std::upper_bound(completion_latency_bounds_us.begin(), completion_latency_bounds_us.end(),
+                                        latency.count());
+    ++_handoff.completion_latency[bound - completion_latency_bounds_us.begin()];
+  }
+
+  void p2p_statistics::record_write(size_t messages, size_t bytes)
+  {
+    ++_sending.writes;
+    _sending.messages += messages;
+    _sending.bytes += bytes;
+  }
+
+  void p2p_statistics::record_transaction_request(size_t transactions, size_t max_transactions)
+  {
+    ++_requests.transaction_requests;
+    _requests.transactions_requested += transactions;
+    if (transactions >= max_transactions && max_transactions < GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION)
+      ++_requests.byte_cap_bound;
+  }
+
+  fc::variant_object p2p_statistics::take_report(fc::time_point now, uint32_t in_flight, size_t items_queued)
+  {
+    const auto mean = [](uint64_t total, uint64_t count) { return count ? double(total) / double(count) : 0.0; };
+
+    fc::mutable_variant_object latency;
+    for (size_t i = 0; i < _handoff.completion_latency.size(); ++i)
+      latency(i < completion_latency_bounds_us.size() ? "lt" + std::to_string(completion_latency_bounds_us[i]) + "us"
+                                                      : "ge" + std::to_string(completion_latency_bounds_us.back()) + "us",
+              _handoff.completion_latency[i]);
+
+    fc::variant_object report = fc::mutable_variant_object()
+      ("seconds", (now - _period_start).to_seconds())
+      ("fetch", fc::mutable_variant_object()
+        ("wakes", fetch.wakes)
+        ("candidates_examined", fetch.candidates_examined)
+        ("items_requested", fetch.items_requested)
+        ("items_expired", fetch.items_expired)
+        ("items_queued", items_queued)
+        ("scheduling_us", fetch.scheduling_time.count()))
+      ("handoff", fc::mutable_variant_object()
+        ("submissions", _handoff.submissions)
+        ("completions", _handoff.completions)
+        ("in_flight", in_flight)
+        ("max_in_flight", _handoff.max_in_flight)
+        ("mean_in_flight", mean(_handoff.in_flight_sum, _handoff.submissions))
+        ("completion_latency", std::move(latency))
+        ("limit_waits", _handoff.limit_waits)
+        ("limit_wait_us", _handoff.limit_wait_time.count()))
+      ("send", fc::mutable_variant_object()
+        ("writes", _sending.writes)
+        ("messages_per_write", mean(_sending.messages, _sending.writes))
+        ("bytes_per_write", mean(_sending.bytes, _sending.writes)))
+      ("transaction_requests", fc::mutable_variant_object()
+        ("requests", _requests.transaction_requests)
+        ("transactions_per_request", mean(_requests.transactions_requested, _requests.transaction_requests))
+        ("byte_cap_bound", _requests.byte_cap_bound));
+
+    fetch = fetch_scheduling();
+    _handoff = transaction_handoff();
+    _sending = send_batching();
+    _requests = request_sizing();
+    _period_start = now;
+    return report;
+  }
+
+  bool is_relay_sample(const message_hash_type& message_hash, uint32_t one_in)
+  {
+    return message_hash._hash[0] % one_in == 0;
+  }
+
+  int64_t raw_realtime_microseconds()
+  {
+    timespec now;
+    syscall(SYS_clock_gettime, CLOCK_REALTIME, &now);
+    return int64_t(now.tv_sec) * 1000000 + now.tv_nsec / 1000;
   }
 
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates)

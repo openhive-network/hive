@@ -28,9 +28,11 @@
 #include <graphene/net/exceptions.hpp>
 #include <graphene/net/config.hpp>
 #include <hive/protocol/config.hpp>
+#include <hive/chain/full_transaction.hpp>
 
 #include <fc/thread/thread.hpp>
 
+#include <boost/core/demangle.hpp>
 #include <boost/scope_exit.hpp>
 
 #ifdef DEFAULT_LOGGER
@@ -46,7 +48,33 @@
 
 namespace graphene { namespace net
   {
-    message peer_connection::real_queued_message::get_message(peer_connection_delegate*, peer_connection*)
+    namespace
+    {
+      /// transactions, and the inventories and fetch requests that relay them; everything else (blocks and
+      /// their inventories, sync and connection control) is written without waiting for a batch to grow
+      bool is_transaction_traffic(const message& m)
+      {
+        if (m.msg_type == trx_message_type)
+          return true;
+        if (m.msg_type != item_ids_inventory_message_type && m.msg_type != fetch_items_message_type)
+          return false;
+        // item_type is the first field of both messages
+        uint32_t item_type = 0;
+        if (m.data.size() < sizeof(item_type))
+          return false;
+        memcpy(&item_type, m.data.data(), sizeof(item_type));
+        return item_type == trx_message_type;
+      }
+    }
+
+    message_to_write peer_connection::queued_message::get_message_to_write(peer_connection_delegate* node, peer_connection* peer,
+                                                                          std::deque<message>& built_messages)
+    {
+      const message& built_message = built_messages.emplace_back(get_message(node, peer));
+      return message_to_write{built_message, built_message.data.data()};
+    }
+
+    void peer_connection::real_queued_message::patch_send_time()
     {
       if (message_send_time_field_offset != (size_t)-1)
       {
@@ -57,11 +85,49 @@ namespace graphene { namespace net
         memcpy(message_to_send.data.data() + message_send_time_field_offset,
                packed_current_time.data(), packed_current_time.size());
       }
+    }
+    message peer_connection::real_queued_message::get_message(peer_connection_delegate*, peer_connection*)
+    {
+      patch_send_time();
       return message_to_send;
+    }
+    message_to_write peer_connection::real_queued_message::get_message_to_write(peer_connection_delegate*, peer_connection*,
+                                                                                std::deque<message>&)
+    {
+      patch_send_time();
+      return message_to_write{message_to_send, message_to_send.data.data()};
     }
     size_t peer_connection::real_queued_message::get_size_in_queue()
     {
       return message_to_send.data.size();
+    }
+
+    peer_connection::queued_transaction_message::queued_transaction_message(const std::shared_ptr<full_transaction_type>& full_transaction) :
+      full_transaction(full_transaction)
+    {
+      FC_ASSERT(full_transaction, "Can't send a transaction_message when we don't have the full_transaction");
+      may_wait_for_batch = true;
+    }
+    message peer_connection::queued_transaction_message::get_message(peer_connection_delegate*, peer_connection*)
+    {
+      return trx_message(full_transaction);
+    }
+    message_to_write peer_connection::queued_transaction_message::get_message_to_write(peer_connection_delegate*, peer_connection*,
+                                                                                       std::deque<message>&)
+    {
+      // the same header and payload message(const trx_message&) builds, without copying the payload
+      const hive::chain::serialized_transaction_data& serialized_transaction = full_transaction->get_serialized_transaction();
+      message_to_write transaction_to_write;
+      transaction_to_write.header.msg_type = trx_message::type;
+      transaction_to_write.header.size = (uint32_t)full_transaction->get_transaction_size();
+      transaction_to_write.payload = serialized_transaction.begin;
+      return transaction_to_write;
+    }
+    size_t peer_connection::queued_transaction_message::get_size_in_queue()
+    {
+      // the payload is shared, but counting its size keeps the queue limit and the full-batch flush the same
+      // as for a transaction queued as a copy
+      return full_transaction->get_transaction_size();
     }
     message peer_connection::virtual_queued_block_message::get_message(peer_connection_delegate* node, peer_connection* peer)
     {
@@ -333,23 +399,45 @@ namespace graphene { namespace net
 #endif
       while (!_queued_messages.empty())
       {
-        // only this task removes messages from the queue, so the ones prepared here stay in it
+        wait_for_transaction_batch_to_grow();
+
+        // start the lookups (and the worker-thread compression) of the next few queued blocks before their turn;
+        // only this task removes messages from the queue, so the ones prepared here are still queued or in the batch
         for (size_t i = 0; i < _queued_messages.size() && i < GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD; ++i)
           _queued_messages[i]->prepare(_node, this);
-        _queued_messages.front()->transmission_start_time = fc::time_point::now();
-        message message_to_send = _queued_messages.front()->get_message(_node, this);
+
+        // take everything queued, up to the batch bound, so it goes out in one socket write;
+        // get_message_to_write() is still called here, at send time, because block messages are built lazily
+        std::vector<std::unique_ptr<queued_message>> batch;
+        std::vector<message_to_write> messages_to_send;
+        // messages built at send time; the queued ones in `batch` and the shared transactions are written in place
+        std::deque<message> built_messages;
+        // every popped message, sent or dropped, leaves the queue's size exactly once, however this batch ends
+        BOOST_SCOPE_EXIT(this_, &batch) {
+          for (const std::unique_ptr<queued_message>& popped_message : batch)
+            this_->_total_queued_messages_size -= popped_message->get_size_in_queue();
+        } BOOST_SCOPE_EXIT_END
+        size_t batch_size = 0;
+        do
+        {
+          batch.emplace_back(std::move(_queued_messages.front()));
+          _queued_messages.pop_front();
+          if (!batch.back()->may_wait_for_batch)
+            --_queued_messages_not_waiting_for_batch;
+          batch.back()->transmission_start_time = fc::time_point::now();
+          if (!build_queued_message(*batch.back(), batch.size() - 1, messages_to_send, built_messages))
+            break; // send what was built before it; the rest of the queue goes in the next batch
+          batch_size += sizeof(message_header) + messages_to_send.back().header.size;
+        } while (!_queued_messages.empty() && batch_size < GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES);
         try
         {
-          //dlog("peer_connection::send_queued_messages_task() calling message_oriented_connection::send_message() "
-          //     "to send message of type ${type} for peer ${endpoint}",
-          //     ("type", message_to_send.msg_type)("endpoint", get_remote_endpoint()));
-          _message_connection.send_message(message_to_send);
-          //dlog("peer_connection::send_queued_messages_task()'s call to message_oriented_connection::send_message() completed normally for peer ${endpoint}",
-          //     ("endpoint", get_remote_endpoint()));
+          _message_connection.send_messages(messages_to_send);
+          if (!messages_to_send.empty())
+            _node->on_messages_written(messages_to_send.size(), batch_size);
         }
         catch (const fc::canceled_exception&)
         {
-          dlog("message_oriented_connection::send_message() was canceled, rethrowing canceled_exception");
+          dlog("message_oriented_connection::send_messages() was canceled, rethrowing canceled_exception");
           throw;
         }
         catch (const fc::exception& send_error)
@@ -367,17 +455,77 @@ namespace graphene { namespace net
         }
         catch (const std::exception& e)
         {
-          elog("message_oriented_exception::send_message() threw a std::exception(): ${what}", ("what", e.what()));
+          elog("message_oriented_exception::send_messages() threw a std::exception(): ${what}", ("what", e.what()));
         }
         catch (...)
         {
-          elog("message_oriented_exception::send_message() threw an unhandled exception");
+          elog("message_oriented_exception::send_messages() threw an unhandled exception");
         }
-        _queued_messages.front()->transmission_finish_time = fc::time_point::now();
-        _total_queued_messages_size -= _queued_messages.front()->get_size_in_queue();
-        _queued_messages.pop_front();
+        const fc::time_point transmission_finish_time = fc::time_point::now();
+        for (const std::unique_ptr<queued_message>& sent_message : batch)
+          sent_message->transmission_finish_time = transmission_finish_time;
       }
       //dlog("leaving peer_connection::send_queued_messages_task() due to queue exhaustion");
+    }
+
+    bool peer_connection::build_queued_message(queued_message& message_to_build, size_t queue_position,
+                                               std::vector<message_to_write>& messages_to_write, std::deque<message>& built_messages)
+    {
+      // a message that cannot be built (a block whose compression fails) is dropped on its own, so the
+      // peer still gets everything else; if it asked for this item, it asks again or times out the request
+      try
+      {
+        messages_to_write.emplace_back(message_to_build.get_message_to_write(_node, this, built_messages));
+        return true;
+      }
+      catch (const fc::canceled_exception&)
+      {
+        throw;
+      }
+      catch (const fc::exception& e)
+      {
+        elog("Dropping queued ${type} at queue position ${position}, building it failed: ${e}",
+             ("type", boost::core::demangle(typeid(message_to_build).name()))("position", queue_position)("e", e.to_detail_string()));
+      }
+      catch (const std::exception& e)
+      {
+        elog("Dropping queued ${type} at queue position ${position}, building it threw a std::exception: ${what}",
+             ("type", boost::core::demangle(typeid(message_to_build).name()))("position", queue_position)("what", e.what()));
+      }
+      catch (...)
+      {
+        elog("Dropping queued ${type} at queue position ${position}, building it threw an unhandled exception",
+             ("type", boost::core::demangle(typeid(message_to_build).name()))("position", queue_position));
+      }
+      return false;
+    }
+
+    bool peer_connection::send_flush_wait_is_over() const
+    {
+      return _queued_messages_not_waiting_for_batch > 0 ||
+             _total_queued_messages_size >= GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES;
+    }
+
+    void peer_connection::wait_for_transaction_batch_to_grow()
+    {
+      if (_send_flush_delay.count() <= 0 || send_flush_wait_is_over())
+        return;
+      const fc::time_point flush_deadline = _queued_messages.front()->enqueue_time + _send_flush_delay;
+      if (flush_deadline <= fc::time_point::now())
+        return;
+
+      // a local reference keeps the promise alive while send_queueable_message() fulfills and drops the member;
+      // the wait does not hold the connection's send guard, and canceling this task ends it like any fc wait
+      fc::promise<void>::ptr delay_ended = fc::promise<void>::create("graphene::net::peer_connection::send_flush_delay_ended");
+      _send_flush_delay_ended = delay_ended;
+      BOOST_SCOPE_EXIT(this_) { this_->_send_flush_delay_ended.reset(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        delay_ended->wait_until(flush_deadline);
+      }
+      catch (const fc::timeout_exception&) //intentionally not logged, the delay elapsed
+      {
+      }
     }
 
     void peer_connection::send_queueable_message(std::unique_ptr<queued_message>&& message_to_send)
@@ -404,10 +552,18 @@ namespace graphene { namespace net
         return;
       }
       _total_queued_messages_size += message_size;
+      if (!message_to_send->may_wait_for_batch)
+        ++_queued_messages_not_waiting_for_batch;
       _queued_messages.emplace_back(std::move(message_to_send));
 
       if( _send_queued_messages_done.valid() && _send_queued_messages_done.canceled() )
         FC_THROW_EXCEPTION(fc::exception, "Attempting to send a message on a connection that is being shut down");
+
+      if (_send_flush_delay_ended && send_flush_wait_is_over())
+      {
+        _send_flush_delay_ended->set_value();
+        _send_flush_delay_ended.reset();
+      }
 
       if (!_send_queued_messages_done.valid() || _send_queued_messages_done.ready())
       {
@@ -424,13 +580,26 @@ namespace graphene { namespace net
       //dlog("peer_connection::send_message() enqueueing message of type ${type} for peer ${endpoint}",
       //     ("type", message_to_send.msg_type)("endpoint", get_remote_endpoint()));
       std::unique_ptr<queued_message> message_to_enqueue(new real_queued_message(message_to_send, message_send_time_field_offset));
+      message_to_enqueue->may_wait_for_batch = is_transaction_traffic(message_to_send);
       send_queueable_message(std::move(message_to_enqueue));
+    }
+
+    void peer_connection::set_send_flush_delay(fc::microseconds delay)
+    {
+      VERIFY_CORRECT_THREAD();
+      _send_flush_delay = delay;
     }
 
     void peer_connection::send_block_message(const item_hash_t& requested_item)
     {
       VERIFY_CORRECT_THREAD();
       send_queueable_message(std::make_unique<virtual_queued_block_message>(requested_item));
+    }
+
+    void peer_connection::send_transaction_message(const std::shared_ptr<full_transaction_type>& full_transaction)
+    {
+      VERIFY_CORRECT_THREAD();
+      send_queueable_message(std::make_unique<queued_transaction_message>(full_transaction));
     }
 
     void peer_connection::close_connection()
@@ -567,45 +736,28 @@ namespace graphene { namespace net
       VERIFY_CORRECT_THREAD();
       fc::time_point_sec oldest_inventory_to_keep(fc::time_point::now() - fc::minutes(GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES));
 
-      // expire old items from inventory_advertised_to_peer
-      auto oldest_inventory_to_keep_iter = inventory_advertised_to_peer.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
-      auto begin_iter = inventory_advertised_to_peer.get<timestamp_index>().begin();
+      // expire old items from block_inventory_advertised_to_peer
+      auto oldest_inventory_to_keep_iter = block_inventory_advertised_to_peer.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
+      auto begin_iter = block_inventory_advertised_to_peer.get<timestamp_index>().begin();
       unsigned number_of_elements_advertised_to_peer_to_discard = std::distance(begin_iter, oldest_inventory_to_keep_iter);
-      inventory_advertised_to_peer.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
+      block_inventory_advertised_to_peer.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
 
-      // also expire items from inventory_peer_advertised_to_us
-      oldest_inventory_to_keep_iter = inventory_peer_advertised_to_us.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
-      begin_iter = inventory_peer_advertised_to_us.get<timestamp_index>().begin();
+      // also expire items from block_inventory_peer_advertised_to_us
+      oldest_inventory_to_keep_iter = block_inventory_peer_advertised_to_us.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
+      begin_iter = block_inventory_peer_advertised_to_us.get<timestamp_index>().begin();
       unsigned number_of_elements_peer_advertised_to_discard = std::distance(begin_iter, oldest_inventory_to_keep_iter);
-      inventory_peer_advertised_to_us.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
+      block_inventory_peer_advertised_to_us.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
 
       // deferred advertisements this old have most likely fallen out of the peer's cache, so we couldn't fetch them anyway
       oldest_inventory_to_keep_iter = transaction_inventory_deferred.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
       begin_iter = transaction_inventory_deferred.get<timestamp_index>().begin();
       inventory_advertisements_dropped_since_report += std::distance(begin_iter, oldest_inventory_to_keep_iter);
       transaction_inventory_deferred.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
-      dlog("Expiring old inventory for peer ${peer}: removing ${to_peer} items advertised to peer (${remain_to_peer} left), and ${to_us} advertised to us (${remain_to_us} left)",
-           ("peer", get_remote_endpoint())
-           ("to_peer", number_of_elements_advertised_to_peer_to_discard)("remain_to_peer", inventory_advertised_to_peer.size())
-           ("to_us", number_of_elements_peer_advertised_to_discard)("remain_to_us", inventory_peer_advertised_to_us.size()));
-    }
-
-    // we have a higher limit for blocks than transactions so we will still fetch blocks even when transactions are throttled
-    bool peer_connection::is_inventory_advertised_to_us_list_full_for_transactions() const
-    {
-      VERIFY_CORRECT_THREAD();
-      return inventory_peer_advertised_to_us.size() > GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60;
-    }
-
-    bool peer_connection::is_inventory_advertised_to_us_list_full() const
-    {
-      VERIFY_CORRECT_THREAD();
-      // allow the total inventory size to be the maximum number of transactions we'll store in the inventory (above)
-      // plus the maximum number of blocks that would be generated in GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES (plus one,
-      // to give us some wiggle room)
-      return inventory_peer_advertised_to_us.size() >
-        GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60 +
-        (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES + 1) * 60 / HIVE_BLOCK_INTERVAL;
+      if (number_of_elements_advertised_to_peer_to_discard > 0 || number_of_elements_peer_advertised_to_discard > 0)
+        dlog("Expiring old block inventory for peer ${peer}: removing ${to_peer} blocks advertised to peer (${remain_to_peer} left), and ${to_us} advertised to us (${remain_to_us} left)",
+             ("peer", get_remote_endpoint())
+             ("to_peer", number_of_elements_advertised_to_peer_to_discard)("remain_to_peer", block_inventory_advertised_to_peer.size())
+             ("to_us", number_of_elements_peer_advertised_to_discard)("remain_to_us", block_inventory_peer_advertised_to_us.size()));
     }
 
     // remember a transaction advertisement we can't record yet because the inventory is full;
@@ -620,18 +772,6 @@ namespace graphene { namespace net
       }
       if (transaction_inventory_deferred.insert(timestamped_item_id(item, fc::time_point::now())).second)
         ++inventory_advertisements_deferred_since_report;
-    }
-
-    // a transaction we have received and validated no longer counts against the limit of advertisements
-    // to us; it is kept in inventory_advertised_to_peer instead, so we still don't advertise it back
-    void peer_connection::mark_advertised_transaction_received(const item_id& item)
-    {
-      VERIFY_CORRECT_THREAD();
-      auto iter = inventory_peer_advertised_to_us.find(item);
-      if (iter == inventory_peer_advertised_to_us.end())
-        return;
-      inventory_advertised_to_peer.insert(*iter);
-      inventory_peer_advertised_to_us.erase(iter);
     }
 
     bool peer_connection::performing_firewall_check() const

@@ -31,6 +31,14 @@ namespace graphene { namespace net {
 
   class message_oriented_connection;
 
+  /** one message to write without owning its payload: the header, and `header.size` bytes at `payload`
+   *  that must stay valid until the write returns */
+  struct message_to_write
+  {
+    message_header header;
+    const char* payload = nullptr;
+  };
+
   /** receives incoming messages from a message_oriented_connection object */
   class message_oriented_connection_delegate 
   {
@@ -52,6 +60,9 @@ namespace graphene { namespace net {
        void connect_to(const fc::ip::endpoint& remote_endpoint);
 
        void send_message(const message& message_to_send);
+       /** pads every message into one buffer and writes it with a single write and flush; the bytes
+        *  on the wire are the same as sending each message with send_message() in order */
+       void send_messages(const std::vector<message_to_write>& messages_to_send);
        void close_connection();
        void destroy_connection(const char* caller);
 
