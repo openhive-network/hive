@@ -119,6 +119,12 @@
 #define GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES        (1024 * 1024)
 
 /**
+ * A peer's queued messages are written to its socket together until the batch reaches this many
+ * bytes; the message that crosses the bound is still part of the batch.
+ */
+#define GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES              (64 * 1024)
+
+/**
  * When we receive a message from the network, we advertise it to
  * our peers and save a copy in a cache were we will find it if
  * a peer requests it.  We expire out old items out of the cache

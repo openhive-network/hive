@@ -72,6 +72,7 @@ namespace graphene { namespace net {
 
       void read_loop();
       void start_read_loop();
+      void send_padded_messages(const message* messages_to_send, size_t message_count);
     public:
       fc::tcp_socket& get_socket();
       void accept();
@@ -83,6 +84,7 @@ namespace graphene { namespace net {
       ~message_oriented_connection_impl();
 
       void send_message(const message& message_to_send);
+      void send_messages(const std::vector<message>& messages_to_send);
       void close_connection();
       void destroy_connection(const char* caller);
 
@@ -253,18 +255,19 @@ namespace graphene { namespace net {
     void message_oriented_connection_impl::send_message(const message& message_to_send)
     {
       VERIFY_CORRECT_THREAD();
-#if 0 // this gets too verbose
-#ifndef NDEBUG
-      fc::optional<fc::ip::endpoint> remote_endpoint;
-      if (_sock.get_socket().is_open())
-        remote_endpoint = _sock.get_socket().remote_endpoint();
-      struct scope_logger {
-        const fc::optional<fc::ip::endpoint>& endpoint;
-        scope_logger(const fc::optional<fc::ip::endpoint>& endpoint) : endpoint(endpoint) { dlog("entering message_oriented_connection::send_message() for peer ${endpoint}", ("endpoint", endpoint)); }
-        ~scope_logger() { dlog("leaving message_oriented_connection::send_message() for peer ${endpoint}", ("endpoint", endpoint)); }
-      } send_message_scope_logger(remote_endpoint);
-#endif
-#endif
+      send_padded_messages(&message_to_send, 1);
+    }
+
+    void message_oriented_connection_impl::send_messages(const std::vector<message>& messages_to_send)
+    {
+      VERIFY_CORRECT_THREAD();
+      if (!messages_to_send.empty())
+        send_padded_messages(messages_to_send.data(), messages_to_send.size());
+    }
+
+    void message_oriented_connection_impl::send_padded_messages(const message* messages_to_send, size_t message_count)
+    {
+      VERIFY_CORRECT_THREAD();
       struct verify_no_send_in_progress {
         bool& var;
         verify_no_send_in_progress(bool& var) : var(var)
@@ -279,22 +282,32 @@ namespace graphene { namespace net {
 
       try
       {
-        size_t size_of_message_and_header = sizeof(message_header) + message_to_send.size;
-        if( message_to_send.size > MAX_MESSAGE_SIZE )
-           elog("Trying to send a message larger than MAX_MESSAGE_SIZE. This probably won't work...");
-        //pad the message we send to a multiple of 16 bytes
-        size_t size_with_padding = 16 * ((size_of_message_and_header + 15) / 16);
-        std::unique_ptr<char[]> padded_message(new char[size_with_padding]);
+        // each message is padded to a multiple of 16 bytes on its own, so a batch puts on the wire
+        // exactly the bytes the same messages sent one by one would
+        size_t total_size_with_padding = 0;
+        for (size_t i = 0; i < message_count; ++i)
+        {
+          if( messages_to_send[i].size > MAX_MESSAGE_SIZE )
+             elog("Trying to send a message larger than MAX_MESSAGE_SIZE. This probably won't work...");
+          total_size_with_padding += 16 * ((sizeof(message_header) + messages_to_send[i].size + 15) / 16);
+        }
+        std::unique_ptr<char[]> padded_messages(new char[total_size_with_padding]);
 
-        memcpy(padded_message.get(), (char*)&message_to_send, sizeof(message_header));
-        memcpy(padded_message.get() + sizeof(message_header), message_to_send.data.data(), message_to_send.size );
-        char* paddingSpace = padded_message.get() + sizeof(message_header) + message_to_send.size;
-        size_t toClean = size_with_padding - size_of_message_and_header;
-        memset(paddingSpace, 0, toClean);
+        char* next_message = padded_messages.get();
+        for (size_t i = 0; i < message_count; ++i)
+        {
+          const message& message_to_send = messages_to_send[i];
+          size_t size_of_message_and_header = sizeof(message_header) + message_to_send.size;
+          size_t size_with_padding = 16 * ((size_of_message_and_header + 15) / 16);
+          memcpy(next_message, (char*)&message_to_send, sizeof(message_header));
+          memcpy(next_message + sizeof(message_header), message_to_send.data.data(), message_to_send.size );
+          memset(next_message + size_of_message_and_header, 0, size_with_padding - size_of_message_and_header);
+          next_message += size_with_padding;
+        }
 
-        _sock.write(padded_message.get(), size_with_padding);
+        _sock.write(padded_messages.get(), total_size_with_padding);
         _sock.flush();
-        _bytes_sent += size_with_padding;
+        _bytes_sent += total_size_with_padding;
         _last_message_sent_time = fc::time_point::now();
       } FC_RETHROW_EXCEPTIONS( warn, "unable to send message" );
     }
@@ -399,6 +412,11 @@ namespace graphene { namespace net {
   void message_oriented_connection::send_message(const message& message_to_send)
   {
     my->send_message(message_to_send);
+  }
+
+  void message_oriented_connection::send_messages(const std::vector<message>& messages_to_send)
+  {
+    my->send_messages(messages_to_send);
   }
 
   void message_oriented_connection::close_connection()

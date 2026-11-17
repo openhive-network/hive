@@ -304,20 +304,27 @@ namespace graphene { namespace net
 #endif
       while (!_queued_messages.empty())
       {
-        _queued_messages.front()->transmission_start_time = fc::time_point::now();
-        message message_to_send = _queued_messages.front()->get_message(_node, this);
+        // take everything queued, up to the batch bound, so it goes out in one socket write;
+        // get_message() is still called here, at send time, because block messages are built lazily
+        std::vector<std::unique_ptr<queued_message>> batch;
+        std::vector<message> messages_to_send;
+        size_t batch_size = 0;
+        do
+        {
+          batch.emplace_back(std::move(_queued_messages.front()));
+          _queued_messages.pop();
+          batch.back()->transmission_start_time = fc::time_point::now();
+          messages_to_send.emplace_back(batch.back()->get_message(_node, this));
+          batch_size += sizeof(message_header) + messages_to_send.back().size;
+        } while (!_queued_messages.empty() && batch_size < GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES);
+
         try
         {
-          //dlog("peer_connection::send_queued_messages_task() calling message_oriented_connection::send_message() "
-          //     "to send message of type ${type} for peer ${endpoint}",
-          //     ("type", message_to_send.msg_type)("endpoint", get_remote_endpoint()));
-          _message_connection.send_message(message_to_send);
-          //dlog("peer_connection::send_queued_messages_task()'s call to message_oriented_connection::send_message() completed normally for peer ${endpoint}",
-          //     ("endpoint", get_remote_endpoint()));
+          _message_connection.send_messages(messages_to_send);
         }
         catch (const fc::canceled_exception&)
         {
-          dlog("message_oriented_connection::send_message() was canceled, rethrowing canceled_exception");
+          dlog("message_oriented_connection::send_messages() was canceled, rethrowing canceled_exception");
           throw;
         }
         catch (const fc::exception& send_error)
@@ -335,15 +342,18 @@ namespace graphene { namespace net
         }
         catch (const std::exception& e)
         {
-          elog("message_oriented_exception::send_message() threw a std::exception(): ${what}", ("what", e.what()));
+          elog("message_oriented_exception::send_messages() threw a std::exception(): ${what}", ("what", e.what()));
         }
         catch (...)
         {
-          elog("message_oriented_exception::send_message() threw an unhandled exception");
+          elog("message_oriented_exception::send_messages() threw an unhandled exception");
         }
-        _queued_messages.front()->transmission_finish_time = fc::time_point::now();
-        _total_queued_messages_size -= _queued_messages.front()->get_size_in_queue();
-        _queued_messages.pop();
+        const fc::time_point transmission_finish_time = fc::time_point::now();
+        for (const std::unique_ptr<queued_message>& sent_message : batch)
+        {
+          sent_message->transmission_finish_time = transmission_finish_time;
+          _total_queued_messages_size -= sent_message->get_size_in_queue();
+        }
       }
       //dlog("leaving peer_connection::send_queued_messages_task() due to queue exhaustion");
     }
