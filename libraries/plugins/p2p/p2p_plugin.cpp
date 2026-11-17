@@ -106,6 +106,7 @@ public:
   string user_agent;
   fc::mutable_variant_object config;
   uint32_t max_connections = 0;
+  fc::optional<uint32_t> transaction_flush_delay_us;
   bool force_validate = false;
   bool block_producer = false;
 
@@ -477,6 +478,8 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-seed-node", bpo::value<vector<string>>()->composing()->default_value( default_seeds, seed_ss.str() ), "The IP address and port of a remote peer to sync with. A host name is resolved to all of its addresses and each becomes "
      "its own peer entry, so a host with both IPv4 and IPv6 addresses is dialed twice; the second handshake is rejected as "
      "already connected once per startup, which is expected and does not delay later connection attempts.")
+    ("p2p-transaction-flush-delay-us", bpo::value<uint32_t>(), "Maximum time, in microseconds, that transaction traffic queued for a peer waits for more to go out in the same socket write. "
+     "A queued block, sync or control message, or a full batch, ends the wait at once. 0 (the default) writes without waiting.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
@@ -495,6 +498,9 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count( "p2p-max-connections" ) )
     my->max_connections = options.at( "p2p-max-connections" ).as< uint32_t >();
+
+  if( options.count( "p2p-transaction-flush-delay-us" ) )
+    my->transaction_flush_delay_us = options.at( "p2p-transaction-flush-delay-us" ).as< uint32_t >();
 
   if (options.count("p2p-seed-node"))
   {
@@ -593,6 +599,14 @@ void p2p_plugin::plugin_finalize_startup()
         ilog( "Overriding advanded_node_parameters[ \"maximum_number_of_connections\" ] with ${cons}", ("cons", my->max_connections) );
 
       my->config.set( "maximum_number_of_connections", fc::variant( my->max_connections ) );
+    }
+
+    if( my->transaction_flush_delay_us )
+    {
+      if( my->config.find( "transaction_flush_delay_microseconds" ) != my->config.end() )
+        ilog( "Overriding advanded_node_parameters[ \"transaction_flush_delay_microseconds\" ] with ${us}", ("us", *my->transaction_flush_delay_us) );
+
+      my->config.set( "transaction_flush_delay_microseconds", fc::variant( *my->transaction_flush_delay_us ) );
     }
 
     ilog("Setting parameters");

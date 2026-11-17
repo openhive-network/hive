@@ -46,6 +46,25 @@
 
 namespace graphene { namespace net
   {
+    namespace
+    {
+      /// transactions, and the inventories and fetch requests that relay them; everything else (blocks and
+      /// their inventories, sync and connection control) is written without waiting for a batch to grow
+      bool is_transaction_traffic(const message& m)
+      {
+        if (m.msg_type == trx_message_type)
+          return true;
+        if (m.msg_type != item_ids_inventory_message_type && m.msg_type != fetch_items_message_type)
+          return false;
+        // item_type is the first field of both messages
+        uint32_t item_type = 0;
+        if (m.data.size() < sizeof(item_type))
+          return false;
+        memcpy(&item_type, m.data.data(), sizeof(item_type));
+        return item_type == trx_message_type;
+      }
+    }
+
     message peer_connection::real_queued_message::get_message(peer_connection_delegate*, peer_connection*)
     {
       if (message_send_time_field_offset != (size_t)-1)
@@ -304,6 +323,8 @@ namespace graphene { namespace net
 #endif
       while (!_queued_messages.empty())
       {
+        wait_for_transaction_batch_to_grow();
+
         // take everything queued, up to the batch bound, so it goes out in one socket write;
         // get_message() is still called here, at send time, because block messages are built lazily
         std::vector<std::unique_ptr<queued_message>> batch;
@@ -313,6 +334,8 @@ namespace graphene { namespace net
         {
           batch.emplace_back(std::move(_queued_messages.front()));
           _queued_messages.pop();
+          if (!batch.back()->may_wait_for_batch)
+            --_queued_messages_not_waiting_for_batch;
           batch.back()->transmission_start_time = fc::time_point::now();
           messages_to_send.emplace_back(batch.back()->get_message(_node, this));
           batch_size += sizeof(message_header) + messages_to_send.back().size;
@@ -358,10 +381,40 @@ namespace graphene { namespace net
       //dlog("leaving peer_connection::send_queued_messages_task() due to queue exhaustion");
     }
 
+    bool peer_connection::send_flush_wait_is_over() const
+    {
+      return _queued_messages_not_waiting_for_batch > 0 ||
+             _total_queued_messages_size >= GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES;
+    }
+
+    void peer_connection::wait_for_transaction_batch_to_grow()
+    {
+      if (_send_flush_delay.count() <= 0 || send_flush_wait_is_over())
+        return;
+      const fc::time_point flush_deadline = _queued_messages.front()->enqueue_time + _send_flush_delay;
+      if (flush_deadline <= fc::time_point::now())
+        return;
+
+      // a local reference keeps the promise alive while send_queueable_message() fulfills and drops the member;
+      // the wait does not hold the connection's send guard, and canceling this task ends it like any fc wait
+      fc::promise<void>::ptr delay_ended = fc::promise<void>::create("graphene::net::peer_connection::send_flush_delay_ended");
+      _send_flush_delay_ended = delay_ended;
+      BOOST_SCOPE_EXIT(this_) { this_->_send_flush_delay_ended.reset(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        delay_ended->wait_until(flush_deadline);
+      }
+      catch (const fc::timeout_exception&) //intentionally not logged, the delay elapsed
+      {
+      }
+    }
+
     void peer_connection::send_queueable_message(std::unique_ptr<queued_message>&& message_to_send)
     {
       VERIFY_CORRECT_THREAD();
       _total_queued_messages_size += message_to_send->get_size_in_queue();
+      if (!message_to_send->may_wait_for_batch)
+        ++_queued_messages_not_waiting_for_batch;
       _queued_messages.emplace(std::move(message_to_send));
       if (_total_queued_messages_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
       {
@@ -381,6 +434,12 @@ namespace graphene { namespace net
       if( _send_queued_messages_done.valid() && _send_queued_messages_done.canceled() )
         FC_THROW_EXCEPTION(fc::exception, "Attempting to send a message on a connection that is being shut down");
 
+      if (_send_flush_delay_ended && send_flush_wait_is_over())
+      {
+        _send_flush_delay_ended->set_value();
+        _send_flush_delay_ended.reset();
+      }
+
       if (!_send_queued_messages_done.valid() || _send_queued_messages_done.ready())
       {
         //dlog("peer_connection::send_message() is firing up send_queued_message_task");
@@ -396,7 +455,14 @@ namespace graphene { namespace net
       //dlog("peer_connection::send_message() enqueueing message of type ${type} for peer ${endpoint}",
       //     ("type", message_to_send.msg_type)("endpoint", get_remote_endpoint()));
       std::unique_ptr<queued_message> message_to_enqueue(new real_queued_message(message_to_send, message_send_time_field_offset));
+      message_to_enqueue->may_wait_for_batch = is_transaction_traffic(message_to_send);
       send_queueable_message(std::move(message_to_enqueue));
+    }
+
+    void peer_connection::set_send_flush_delay(fc::microseconds delay)
+    {
+      VERIFY_CORRECT_THREAD();
+      _send_flush_delay = delay;
     }
 
     void peer_connection::send_block_message(const std::shared_ptr<full_block_type>& full_block)

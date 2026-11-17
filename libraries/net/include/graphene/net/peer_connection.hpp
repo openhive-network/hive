@@ -121,6 +121,8 @@ namespace graphene { namespace net
         fc::time_point enqueue_time;
         fc::time_point transmission_start_time;
         fc::time_point transmission_finish_time;
+        /// transaction traffic, which may wait up to the send flush delay to share a socket write
+        bool may_wait_for_batch = false;
 
         queued_message(fc::time_point enqueue_time = fc::time_point::now()) :
           enqueue_time(enqueue_time)
@@ -171,7 +173,12 @@ namespace graphene { namespace net
 
       size_t _total_queued_messages_size = 0;
       std::queue<std::unique_ptr<queued_message>, std::list<std::unique_ptr<queued_message>>> _queued_messages;
+      /// queued messages that must not wait for a batch to grow (blocks, sync and control messages)
+      size_t _queued_messages_not_waiting_for_batch = 0;
       fc::future<void> _send_queued_messages_done;
+      fc::microseconds _send_flush_delay;
+      /// set while the send task waits for transaction traffic to accumulate; fulfilled to end the wait early
+      fc::promise<void>::ptr _send_flush_delay_ended;
     public:
       fc::time_point connection_initiation_time;
       fc::time_point connection_closed_time;
@@ -328,6 +335,10 @@ namespace graphene { namespace net
       void send_block_message(const std::shared_ptr<full_block_type>& full_block);
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);
       void send_item(const item_id& item_to_send);
+      /// Lets queued transaction traffic wait up to `delay` (measured from the oldest queued message) so
+      /// more of it goes out in one socket write; any other queued message, or a full batch, ends the
+      /// wait at once.  Zero, the default, writes as soon as the send task runs
+      void set_send_flush_delay(fc::microseconds delay);
       void close_connection();
       void destroy_connection(const char* caller);
       /// Records why the connection is closing, and whether that is a failure of the peer, unless a
@@ -378,6 +389,8 @@ namespace graphene { namespace net
       bool requires_alternate_compression_for_block(const std::shared_ptr<full_block_type>& full_block) const;
     private:
       void send_queued_messages_task();
+      bool send_flush_wait_is_over() const;
+      void wait_for_transaction_batch_to_grow();
       void accept_connection_task();
       void connect_to_task(const fc::ip::endpoint& remote_endpoint);
     };
