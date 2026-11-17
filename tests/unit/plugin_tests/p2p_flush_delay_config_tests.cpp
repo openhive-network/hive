@@ -9,8 +9,8 @@ namespace {
 
 struct p2p_flush_delay_fixture : public witness_fixture
 {
-  /// starts a node with @p extra_config_args and returns the transaction flush delay its p2p node runs with
-  int64_t configured_flush_delay( const config_arg_override_t& extra_config_args )
+  /// starts a node with @p extra_config_args and returns the parameters its p2p node runs with
+  graphene::net::node_configuration configured_parameters( const config_arg_override_t& extra_config_args )
   {
     BOOST_SCOPE_EXIT( this_ )
     {
@@ -21,7 +21,17 @@ struct p2p_flush_delay_fixture : public witness_fixture
     } BOOST_SCOPE_EXIT_END
 
     initialize( 3, {}, { "initminer" }, extra_config_args );
-    return theApp.get_plugin< hive::plugins::p2p::p2p_plugin >().get_advanced_node_parameters().transaction_flush_delay_microseconds;
+    return theApp.get_plugin< hive::plugins::p2p::p2p_plugin >().get_advanced_node_parameters();
+  }
+
+  int64_t configured_flush_delay( const config_arg_override_t& extra_config_args )
+  {
+    return configured_parameters( extra_config_args ).transaction_flush_delay_microseconds;
+  }
+
+  int64_t configured_fetch_items_minimum_interval( const config_arg_override_t& extra_config_args )
+  {
+    return configured_parameters( extra_config_args ).fetch_items_minimum_interval_microseconds;
   }
 };
 
@@ -55,6 +65,39 @@ BOOST_AUTO_TEST_CASE( flush_delay_p2p_parameter_zero_disables_the_delay )
     const std::string p2p_parameters =
       R"({"listen_endpoint":"0.0.0.0:0","accept_incoming_connections":false,"transaction_flush_delay_microseconds":0})";
     BOOST_CHECK_EQUAL( configured_flush_delay( { config_line_t( { "p2p-parameters", { p2p_parameters } } ) } ), 0 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( fetch_items_minimum_interval_defaults_to_5_ms )
+{
+  try
+  {
+    BOOST_CHECK_EQUAL( configured_fetch_items_minimum_interval( {} ), 5000 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+static const std::string p2p_parameters_with_2_ms_fetch_items_minimum_interval =
+  R"({"listen_endpoint":"0.0.0.0:0","accept_incoming_connections":false,"fetch_items_minimum_interval_microseconds":2000})";
+
+BOOST_AUTO_TEST_CASE( fetch_items_minimum_interval_p2p_parameter_is_applied )
+{
+  try
+  {
+    BOOST_CHECK_EQUAL( configured_fetch_items_minimum_interval(
+      { config_line_t( { "p2p-parameters", { p2p_parameters_with_2_ms_fetch_items_minimum_interval } } ) } ), 2000 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( fetch_items_minimum_interval_option_overrides_p2p_parameters )
+{
+  try
+  {
+    BOOST_CHECK_EQUAL( configured_fetch_items_minimum_interval(
+      { config_line_t( { "p2p-parameters", { p2p_parameters_with_2_ms_fetch_items_minimum_interval } } ),
+        config_line_t( { "p2p-fetch-items-minimum-interval-us", { "0" } } ) } ), 0 );
   }
   FC_LOG_AND_RETHROW()
 }

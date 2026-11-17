@@ -33,6 +33,7 @@
 
 #include <hive/protocol/types.hpp>
 
+#include <fc/thread/future.hpp>
 #include <fc/time.hpp>
 
 #include <deque>
@@ -419,6 +420,33 @@ namespace graphene { namespace net {
     const uint32_t _count;
     const fc::microseconds _window;
     std::deque<fc::time_point> _recent_disconnect_times;
+  };
+
+  /**
+   * Wakes a loop that is triggered by events, letting the triggers that arrive within a minimum interval
+   * of the start of its last iteration share one later iteration.  An urgent trigger never waits.
+   * All calls must come from the loop's thread.
+   */
+  class coalescing_loop_trigger
+  {
+  public:
+    /// Marks the start of an iteration: it handles every trigger made before this call
+    void begin_iteration();
+
+    void trigger(bool urgent);
+
+    /**
+     * Returns when the next iteration is due: at once after an urgent trigger, otherwise for a trigger once
+     * @p minimum_interval has passed since begin_iteration(), and in any case at @p wake_at (fc::time_point::maximum()
+     * for none).  A zero @p minimum_interval makes every trigger run the next iteration at once.
+     */
+    void wait(fc::microseconds minimum_interval, fc::time_point wake_at);
+
+  private:
+    fc::time_point _iteration_start;
+    bool _triggered = false;
+    bool _urgent = false;
+    fc::promise<void>::ptr _wake_promise;
   };
 
   /// A peer that advertised a block we want to fetch

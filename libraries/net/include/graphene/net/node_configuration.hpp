@@ -40,6 +40,8 @@ struct node_configuration
    int64_t active_ignored_request_timeout_microseconds = 6000000;
    /** how long, at most, transaction traffic queued for a peer waits for more to share its socket write; 0 = no wait */
    int64_t transaction_flush_delay_microseconds = 5000;
+   /** how long, at least, between two runs of the fetch items loop that only transactions trigger; 0 = no minimum */
+   int64_t fetch_items_minimum_interval_microseconds = 5000;
 };
 
 } }
@@ -59,4 +61,5 @@ FC_REFLECT(graphene::net::node_configuration,
    (maximum_blocks_per_peer_during_syncing)
    (active_ignored_request_timeout_microseconds)
    (transaction_flush_delay_microseconds)
+   (fetch_items_minimum_interval_microseconds)
 )
