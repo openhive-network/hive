@@ -479,7 +479,8 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
      "its own peer entry, so a host with both IPv4 and IPv6 addresses is dialed twice; the second handshake is rejected as "
      "already connected once per startup, which is expected and does not delay later connection attempts.")
     ("p2p-transaction-flush-delay-us", bpo::value<uint32_t>(), "Maximum time, in microseconds, that transaction traffic queued for a peer waits for more to go out in the same socket write. "
-     "A queued block, sync or control message, or a full batch, ends the wait at once. 0 (the default) writes without waiting.")
+     "A queued block, sync or control message, or a full batch, ends the wait at once. Default 5000 (5 ms); 0 writes without waiting. "
+     "Overrides transaction_flush_delay_microseconds in p2p-parameters.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
@@ -739,6 +740,12 @@ fc::variant_object p2p_plugin::get_info()
   fc::mutable_variant_object result = my->node->network_get_info();
   result["connection_count"] = my->node->get_connection_count();
   return result;
+}
+
+graphene::net::node_configuration p2p_plugin::get_advanced_node_parameters()
+{
+  FC_ASSERT( my->node, "p2p node is not running" );
+  return my->node->get_advanced_node_parameters();
 }
 
 void p2p_plugin::add_node(const fc::ip::endpoint& endpoint)

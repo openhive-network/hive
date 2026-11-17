@@ -3,6 +3,7 @@
 #include <hive/plugins/chain/chain_plugin.hpp>
 
 #include <graphene/net/core_messages.hpp>
+#include <graphene/net/node_configuration.hpp>
 
 #include <appbase/application.hpp>
 #include <fc/network/ip.hpp>
@@ -51,6 +52,8 @@ public:
   void broadcast_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction);
   void set_block_production( bool producing_blocks );
   fc::variant_object get_info();
+  /// the parameters the p2p node runs with, after p2p-parameters and the p2p options are applied
+  graphene::net::node_configuration get_advanced_node_parameters();
   void add_node(const fc::ip::endpoint& endpoint);
   void set_allowed_peers(const std::vector<graphene::net::node_id_t>& allowed_peers);
   std::vector< api_peer_status > get_connected_peers();

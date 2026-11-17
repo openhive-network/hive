@@ -39,7 +39,7 @@ struct node_configuration
    uint32_t maximum_blocks_per_peer_during_syncing = GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING;
    int64_t active_ignored_request_timeout_microseconds = 6000000;
    /** how long, at most, transaction traffic queued for a peer waits for more to share its socket write; 0 = no wait */
-   int64_t transaction_flush_delay_microseconds = 0;
+   int64_t transaction_flush_delay_microseconds = 5000;
 };
 
 } }
