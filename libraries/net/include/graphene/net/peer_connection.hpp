@@ -301,6 +301,8 @@ namespace graphene { namespace net
       fc::time_point last_inventory_limit_report_time;
 
       item_to_time_map_type items_requested_from_peer;  /// items we've requested from this peer during normal operation.  fetch from another peer if this peer disconnects
+      /// items in the node's list of items to fetch that this peer advertised, to choose from once it is idle
+      fetch_candidate_queue fetch_candidates;
       uint32_t compressed_blocks_received_from_peer = 0;   // fields to track which peers are sending us compressed vs uncompressed blocks
       uint32_t uncompressed_blocks_received_from_peer = 0;
       /// @}

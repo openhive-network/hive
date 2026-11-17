@@ -449,6 +449,87 @@ namespace graphene { namespace net {
     fc::promise<void>::ptr _wake_promise;
   };
 
+  /// What fetch_candidate_queue::take_next() does with the entry it looks at
+  enum class fetch_candidate_verdict
+  {
+    take, ///< request the item from the peer now
+    drop, ///< the item can't or needn't be requested from the peer any more
+    keep  ///< not now: look at the entry again in the next pass
+  };
+
+  /**
+   * The items one peer advertised to us that we want to fetch, so that choosing what to request from the peer
+   * looks at nothing else.  Blocks come before transactions, each lane in the order the items were added.
+   * Entries are judged only when reached, so an entry for an item that is no longer wanted costs one look;
+   * entries older than the fetch window are trimmed whenever one is added, which bounds the queue by what the
+   * peer advertised within the window.
+   */
+  class fetch_candidate_queue
+  {
+  public:
+    /// Adds @p item, queued (again) at @p now; entries queued before @p oldest_to_keep are discarded
+    void push(const item_id& item, fc::time_point now, fc::time_point oldest_to_keep);
+
+    /// Starts a pass: entries kept in the previous one are looked at again
+    void begin_pass();
+
+    /**
+     * Within a pass, the next entry @p judge (called as `fetch_candidate_verdict(const item_id&)`) says to take,
+     * looking at transactions only if @p include_transactions; none once the pass has looked at every entry.
+     * Taken and dropped entries are removed, kept ones stay for the next pass.  @p examined counts every entry
+     * looked at.
+     */
+    template<typename Judge>
+    std::optional<item_id> take_next(bool include_transactions, Judge&& judge, uint64_t& examined)
+    {
+      if (std::optional<item_id> item = take_next_from(_blocks, _blocks_kept, judge, examined))
+        return item;
+      if (include_transactions)
+        return take_next_from(_transactions, _transactions_kept, judge, examined);
+      return std::nullopt;
+    }
+
+    bool has_transactions() const { return !_transactions.empty(); }
+    size_t size() const { return _blocks.size() + _transactions.size(); }
+    void clear();
+
+  private:
+    struct entry
+    {
+      item_id item;
+      fc::time_point queued;
+    };
+
+    // kept entries are the first `kept` ones of their lane
+    template<typename Judge>
+    static std::optional<item_id> take_next_from(std::deque<entry>& lane, size_t& kept, Judge& judge, uint64_t& examined)
+    {
+      while (kept < lane.size())
+      {
+        ++examined;
+        const item_id item = lane[kept].item;
+        switch (judge(item))
+        {
+        case fetch_candidate_verdict::take:
+          lane.erase(lane.begin() + kept);
+          return item;
+        case fetch_candidate_verdict::drop:
+          lane.erase(lane.begin() + kept);
+          break;
+        case fetch_candidate_verdict::keep:
+          ++kept;
+          break;
+        }
+      }
+      return std::nullopt;
+    }
+
+    std::deque<entry> _blocks;
+    std::deque<entry> _transactions;
+    size_t _blocks_kept = 0;
+    size_t _transactions_kept = 0;
+  };
+
   /// A peer that advertised a block we want to fetch
   struct block_source_candidate
   {
