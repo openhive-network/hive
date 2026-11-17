@@ -801,6 +801,7 @@ namespace graphene { namespace net {
       void close();
 
       void accept_connection_task(const peer_connection_ptr& new_peer);
+      peer_connection_ptr create_peer_connection();
       void accept_loop();
       void send_hello_message(const peer_connection_ptr& peer);
       void send_connection_rejected_message(peer_connection* peer,
@@ -5153,7 +5154,7 @@ namespace graphene { namespace net {
         {
           // we're not connected to them, so we need to set up a connection to them
           // to test.
-          peer_connection_ptr peer_for_testing(peer_connection::make_shared(this));
+          peer_connection_ptr peer_for_testing(create_peer_connection());
           peer_for_testing->firewall_check_state = new firewall_check_state_data;
           peer_for_testing->firewall_check_state->endpoint_to_test = check_firewall_message_received.endpoint_to_check;
           peer_for_testing->firewall_check_state->expected_node_id = check_firewall_message_received.node_id;
@@ -5693,11 +5694,19 @@ namespace graphene { namespace net {
       send_hello_message(new_peer);
     }
 
+    peer_connection_ptr node_impl::create_peer_connection()
+    {
+      VERIFY_CORRECT_THREAD();
+      peer_connection_ptr new_peer(peer_connection::make_shared(this));
+      new_peer->set_send_flush_delay(fc::microseconds(_node_configuration.transaction_flush_delay_microseconds));
+      return new_peer;
+    }
+
     void node_impl::accept_loop()
     {
       while ( !_accept_loop_complete.canceled() )
       {
-        peer_connection_ptr new_peer(peer_connection::make_shared(this));
+        peer_connection_ptr new_peer(create_peer_connection());
 
         try
         {
@@ -6238,7 +6247,7 @@ namespace graphene { namespace net {
       }
 
       dlog("node_impl::connect_to_endpoint(${endpoint})", ("endpoint", remote_endpoint));
-      peer_connection_ptr new_peer(peer_connection::make_shared(this));
+      peer_connection_ptr new_peer(create_peer_connection());
       new_peer->set_remote_endpoint(remote_endpoint);
       initiate_connect_to(new_peer);
     }

@@ -29,9 +29,14 @@ class recording_delegate : public graphene::net::peer_connection_delegate
 {
 public:
   std::vector<message> received;
+  std::vector<fc::time_point> received_at;
   bool closed = false;
 
-  void on_message( peer_connection*, const message& received_message ) override { received.push_back( received_message ); }
+  void on_message( peer_connection*, const message& received_message ) override
+  {
+    received.push_back( received_message );
+    received_at.push_back( fc::time_point::now() );
+  }
   void on_connection_closed( peer_connection* ) override { closed = true; }
   std::shared_ptr<hive::chain::full_block_type> get_full_block_by_block_id( const hive::protocol::block_id_type& ) override { return {}; }
 };
@@ -93,6 +98,59 @@ bool same_message( const message& a, const message& b )
   return a.msg_type == b.msg_type && a.size == b.size && a.data == b.data;
 }
 
+/// Two peer_connections joined over loopback, with the sender's socket writes counted.
+struct connected_pair
+{
+  recording_delegate sender_delegate;
+  recording_delegate receiver_delegate;
+  peer_connection_ptr sender = peer_connection::make_shared( &sender_delegate );
+  peer_connection_ptr receiver = peer_connection::make_shared( &receiver_delegate );
+  write_counting_hooks hooks;
+
+  connected_pair()
+  {
+    fc::tcp_server server;
+    server.listen( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), 0 ) );
+    fc::future<void> accepted = fc::async( [&]() {
+      server.accept( receiver->get_socket() );
+      receiver->accept_connection();
+    }, "batched_send_test accept" );
+    sender->connect_to( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), server.get_port() ) );
+    accepted.wait();
+    sender->get_socket().set_io_hooks( &hooks );
+  }
+
+  ~connected_pair()
+  {
+    sender->get_socket().set_io_hooks( nullptr );
+    sender->close_connection();
+    receiver->close_connection();
+    sender->destroy_connection( __FUNCTION__ );
+    receiver->destroy_connection( __FUNCTION__ );
+  }
+
+  void wait_for_messages( size_t count, fc::microseconds timeout = fc::seconds( 30 ) )
+  {
+    const fc::time_point deadline = fc::time_point::now() + timeout;
+    while( receiver_delegate.received.size() < count && !receiver_delegate.closed && fc::time_point::now() < deadline )
+      fc::usleep( fc::milliseconds( 1 ) );
+  }
+};
+
+const fc::microseconds long_flush_delay = fc::seconds( 3 );
+
+message make_transaction_message( char fill )
+{
+  return make_message( graphene::net::trx_message_type, 200, fill );
+}
+
+std::shared_ptr<hive::chain::full_block_type> make_small_block()
+{
+  hive::protocol::signed_block block;
+  block.witness = "initminer";
+  return hive::chain::full_block_type::create_from_signed_block( block );
+}
+
 } // namespace
 
 BOOST_AUTO_TEST_SUITE( p2p_batched_send_tests )
@@ -128,22 +186,7 @@ BOOST_AUTO_TEST_CASE( send_cipher_output_does_not_depend_on_chunk_size )
 /// the batch bound included, and go out in far fewer socket writes than there are messages.
 BOOST_AUTO_TEST_CASE( queued_messages_arrive_intact_and_in_order_in_few_writes )
 {
-  recording_delegate sender_delegate;
-  recording_delegate receiver_delegate;
-  peer_connection_ptr sender = peer_connection::make_shared( &sender_delegate );
-  peer_connection_ptr receiver = peer_connection::make_shared( &receiver_delegate );
-
-  fc::tcp_server server;
-  server.listen( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), 0 ) );
-  fc::future<void> accepted = fc::async( [&]() {
-    server.accept( receiver->get_socket() );
-    receiver->accept_connection();
-  }, "batched_send_test accept" );
-  sender->connect_to( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), server.get_port() ) );
-  accepted.wait();
-
-  write_counting_hooks hooks;
-  sender->get_socket().set_io_hooks( &hooks );
+  connected_pair pair;
 
   const std::shared_ptr<hive::chain::full_block_type> block = make_large_block();
   std::vector<message> expected;
@@ -159,28 +202,125 @@ BOOST_AUTO_TEST_CASE( queued_messages_arrive_intact_and_in_order_in_few_writes )
   for( const message& m : expected )
   {
     if( m.msg_type == graphene::net::block_message_type )
-      sender->send_block_message( block );
+      pair.sender->send_block_message( block );
     else
-      sender->send_message( m );
+      pair.sender->send_message( m );
   }
 
-  const fc::time_point deadline = fc::time_point::now() + fc::seconds( 30 );
-  while( receiver_delegate.received.size() < expected.size() && !receiver_delegate.closed && fc::time_point::now() < deadline )
-    fc::usleep( fc::milliseconds( 10 ) );
+  pair.wait_for_messages( expected.size() );
 
-  BOOST_REQUIRE_EQUAL( receiver_delegate.received.size(), expected.size() );
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), expected.size() );
   for( size_t i = 0; i < expected.size(); ++i )
-    BOOST_CHECK_MESSAGE( same_message( receiver_delegate.received[i], expected[i] ), "message " << i << " differs" );
+    BOOST_CHECK_MESSAGE( same_message( pair.receiver_delegate.received[i], expected[i] ), "message " << i << " differs" );
 
   // one message per write would be at least one write per message, plus extra writes for the block
-  BOOST_CHECK_LT( hooks.writes, expected.size() / 4 );
-  BOOST_CHECK_EQUAL( sender->get_total_bytes_sent(), receiver->get_total_bytes_received() );
+  BOOST_CHECK_LT( pair.hooks.writes, expected.size() / 4 );
+  BOOST_CHECK_EQUAL( pair.sender->get_total_bytes_sent(), pair.receiver->get_total_bytes_received() );
+}
 
-  sender->get_socket().set_io_hooks( nullptr );
-  sender->close_connection();
-  receiver->close_connection();
-  sender->destroy_connection( __FUNCTION__ );
-  receiver->destroy_connection( __FUNCTION__ );
+/// With a flush delay, transaction traffic waits for the delay and then goes out together in one write.
+BOOST_AUTO_TEST_CASE( transaction_traffic_waits_for_the_flush_delay )
+{
+  connected_pair pair;
+  const fc::microseconds flush_delay = fc::milliseconds( 300 );
+  pair.sender->set_send_flush_delay( flush_delay );
+
+  std::vector<message> expected;
+  expected.push_back( make_transaction_message( 'a' ) );
+  expected.push_back( message( graphene::net::item_ids_inventory_message( graphene::net::trx_message_type,
+    { graphene::net::item_hash_t( std::string( "0102030405060708090a0b0c0d0e0f1011121314" ) ) } ) ) );
+  expected.push_back( message( graphene::net::fetch_items_message( graphene::net::trx_message_type,
+    { graphene::net::item_hash_t( std::string( "1112131415161718191a1b1c1d1e1f2021222324" ) ) } ) ) );
+
+  const fc::time_point queued_at = fc::time_point::now();
+  pair.sender->send_message( expected[0] );
+  // the send task runs between these, as it would while a node handles the next incoming transaction
+  fc::usleep( fc::milliseconds( 20 ) );
+  pair.sender->send_message( expected[1] );
+  pair.sender->send_message( expected[2] );
+  pair.wait_for_messages( expected.size() );
+
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), expected.size() );
+  for( size_t i = 0; i < expected.size(); ++i )
+    BOOST_CHECK_MESSAGE( same_message( pair.receiver_delegate.received[i], expected[i] ), "message " << i << " differs" );
+  BOOST_CHECK_GE( ( pair.receiver_delegate.received_at.front() - queued_at ).count(), flush_delay.count() );
+  BOOST_CHECK_EQUAL( pair.hooks.writes, 1u );
+}
+
+/// A block already queued behind transactions means the send task does not wait at all.
+BOOST_AUTO_TEST_CASE( queued_block_is_sent_without_the_flush_delay )
+{
+  connected_pair pair;
+  pair.sender->set_send_flush_delay( long_flush_delay );
+
+  const std::shared_ptr<hive::chain::full_block_type> block = make_small_block();
+  const fc::time_point queued_at = fc::time_point::now();
+  pair.sender->send_message( make_transaction_message( 'a' ) );
+  pair.sender->send_message( make_transaction_message( 'b' ) );
+  pair.sender->send_block_message( block );
+  pair.wait_for_messages( 3 );
+
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 3u );
+  BOOST_CHECK_EQUAL( pair.receiver_delegate.received.back().msg_type, uint32_t( graphene::net::block_message_type ) );
+  BOOST_CHECK_LT( ( pair.receiver_delegate.received_at.back() - queued_at ).count(), long_flush_delay.count() / 2 );
+}
+
+/// A block, or any other message that is not transaction traffic, queued while the send task waits ends the wait.
+BOOST_AUTO_TEST_CASE( message_arriving_during_the_wait_ends_it )
+{
+  for( bool send_block : { true, false } )
+  {
+    BOOST_TEST_CONTEXT( ( send_block ? "block" : "sync request" ) )
+    {
+      connected_pair pair;
+      pair.sender->set_send_flush_delay( long_flush_delay );
+
+      const fc::time_point queued_at = fc::time_point::now();
+      pair.sender->send_message( make_transaction_message( 'a' ) );
+      fc::usleep( fc::milliseconds( 100 ) );
+      BOOST_REQUIRE( pair.receiver_delegate.received.empty() );
+
+      if( send_block )
+        pair.sender->send_block_message( make_small_block() );
+      else
+        pair.sender->send_message( message( graphene::net::fetch_blockchain_item_ids_message( graphene::net::block_message_type, {} ) ) );
+      pair.wait_for_messages( 2 );
+
+      BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 2u );
+      BOOST_CHECK_EQUAL( pair.receiver_delegate.received.front().msg_type, uint32_t( graphene::net::trx_message_type ) );
+      BOOST_CHECK_LT( ( pair.receiver_delegate.received_at.back() - queued_at ).count(), long_flush_delay.count() / 2 );
+      BOOST_CHECK_EQUAL( pair.hooks.writes, 1u );
+    }
+  }
+}
+
+/// Transaction traffic that fills a batch is written without waiting for the delay.
+BOOST_AUTO_TEST_CASE( full_batch_ends_the_wait )
+{
+  connected_pair pair;
+  pair.sender->set_send_flush_delay( long_flush_delay );
+
+  const fc::time_point queued_at = fc::time_point::now();
+  pair.sender->send_message( make_transaction_message( 'a' ) );
+  fc::usleep( fc::milliseconds( 100 ) );
+  pair.sender->send_message( make_message( graphene::net::trx_message_type, 64 * 1024, 'b' ) );
+  pair.wait_for_messages( 2 );
+
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 2u );
+  BOOST_CHECK_LT( ( pair.receiver_delegate.received_at.back() - queued_at ).count(), long_flush_delay.count() / 2 );
+}
+
+/// Closing a connection whose send task is waiting does not wait for the delay.
+BOOST_AUTO_TEST_CASE( destroying_a_waiting_connection_does_not_wait_for_the_delay )
+{
+  const fc::time_point started_at = fc::time_point::now();
+  {
+    connected_pair pair;
+    pair.sender->set_send_flush_delay( fc::seconds( 20 ) );
+    pair.sender->send_message( make_transaction_message( 'a' ) );
+    fc::usleep( fc::milliseconds( 50 ) );
+  }
+  BOOST_CHECK_LT( ( fc::time_point::now() - started_at ).count(), fc::seconds( 10 ).count() );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
