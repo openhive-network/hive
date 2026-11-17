@@ -31,12 +31,24 @@
 #include <hive/protocol/forward_impacted.hpp>
 
 #include <hive/chain/rc/rc_objects_multiindex.hpp>
+#include <hive/chain/notifications.hpp>
+
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
+
+#include <hive/utilities/signal.hpp>
+#include <hive/utilities/tempdir.hpp>
 
 #include <fc/crypto/hex.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
+#include <boost/scope_exit.hpp>
+
+#include <algorithm>
 #include <chrono>
+#include <limits>
+#include <tuple>
 
 using namespace hive::chain;
 using namespace hive::protocol;
@@ -2256,6 +2268,291 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_both_forms_failure_in_block )
     BOOST_REQUIRE_EQUAL( find_delegation()->delegated_rc, uint64_t( op.max_rc ) );
 
     validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+namespace {
+
+using hive::plugins::account_history_rocksdb::rocksdb_operation_object;
+
+operation to_operation( const rocksdb_operation_object& obj )
+{
+  return fc::raw::unpack_from_buffer< operation >( obj.serialized_op );
+}
+
+/// binary form of operation, for comparisons (operator== of operation only compares types)
+template< typename T >
+std::string packed( const T& op )
+{
+  const auto bytes = fc::raw::pack_to_vector( op );
+  return std::string( bytes.begin(), bytes.end() );
+}
+
+std::string packed( const rocksdb_operation_object& obj )
+{
+  return std::string( obj.serialized_op.begin(), obj.serialized_op.end() );
+}
+
+/// Account history entry without its id (only content is compared between live node and replay).
+typedef std::tuple< std::string /*trx_id*/, uint32_t /*block*/, uint32_t /*trx_in_block*/, uint32_t /*op_in_trx*/,
+  bool /*is_virtual*/, fc::time_point_sec /*timestamp*/, std::string /*serialized_op*/ > ah_entry_t;
+
+ah_entry_t to_ah_entry( const rocksdb_operation_object& obj )
+{
+  return ah_entry_t( obj.trx_id.str(), obj.block, obj.trx_in_block, obj.op_in_trx, obj.is_virtual, obj.timestamp, packed( obj ) );
+}
+
+/**
+  * Node with account history and all hardforks active since block 1, so its block log can be replayed with
+  * the same result (unlike clean_database_fixture, that sets hardfork outside of blocks).
+  */
+struct rc_delegation_ah_fixture : public hived_fixture
+{
+  rc_delegation_ah_fixture( const fc::path& data_dir, bool replay )
+    : hived_fixture( !replay /*remove_db_files*/, true /*disable_p2p*/, data_dir )
+  {
+    configuration_data.set_initial_asset_supply( HIVE_INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY, HP_INITIAL_TEST_SUPPLY );
+    // more witnesses, so blocks don't become irreversible right away
+    std::vector< std::string > init_witnesses;
+    for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; ++i )
+      init_witnesses.push_back( HIVE_INIT_MINER_NAME + fc::to_string( i ) );
+    configuration_data.set_init_witnesses( init_witnesses );
+    configuration_data.set_hardfork_schedule( HIVE_GENESIS_TIME, { { HIVE_NUM_HARDFORKS, 1 } } );
+
+    config_arg_override_t config = {
+      config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ),
+      config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * shared_file_size_big ) } } )
+    };
+    if( replay )
+      config.emplace_back( config_line_t( { "force-replay", { "" } } ) );
+    postponed_init( config, &ah_plugin );
+
+    init_account_pub_key = init_account_priv_key.get_public_key();
+  }
+
+  virtual ~rc_delegation_ah_fixture()
+  {
+    configuration_data.set_init_witnesses( {} );
+    configuration_data.reset_hardfork_schedule();
+  }
+
+  /// entries of account history for given block (in order of their creation), only for given transaction
+  std::vector< rocksdb_operation_object > get_ops_in_trx( uint32_t block_num, uint32_t trx_in_block, bool include_reversible )
+  {
+    std::vector< rocksdb_operation_object > result;
+    ah_plugin->find_operations_by_block( block_num, include_reversible, [&]( const rocksdb_operation_object& obj )
+    {
+      if( obj.trx_in_block == trx_in_block )
+        result.push_back( obj );
+    } );
+    return result;
+  }
+
+  /// delegate_rc_operation entries of account history of given account (in binary form)
+  std::vector< std::string > get_delegations_in_history( const account_name_type& account )
+  {
+    std::vector< std::string > result;
+    ah_plugin->find_account_history_data( account, std::numeric_limits< uint64_t >::max(), 1000, true,
+      [&]( unsigned int, const rocksdb_operation_object& obj )
+    {
+      if( to_operation( obj ).which() == operation::tag< delegate_rc_operation >::value )
+        result.push_back( packed( obj ) );
+      return true;
+    } );
+    std::reverse( result.begin(), result.end() ); // history is processed from the newest entry
+    return result;
+  }
+};
+
+/// binary forms of given delegations as regular operations
+std::vector< std::string > packed_delegations( const std::vector< delegate_rc_operation >& delegations )
+{
+  std::vector< std::string > result;
+  for( const auto& op : delegations )
+    result.push_back( packed( operation( op ) ) );
+  return result;
+}
+
+} // namespace
+
+BOOST_AUTO_TEST_SUITE( direct_rc_delegation_account_history )
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_in_account_history )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: effective delegate_rc_operation embedded in custom_json in account history (issue #867)" );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    uint32_t block_num = 0;
+    std::vector< ah_entry_t > live_entries;
+    {
+      rc_delegation_ah_fixture fixture( data_dir.path(), false );
+      auto& f = fixture;
+      f.generate_block();
+      f.vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
+      ACTORS_EXT( f, DEFAULT_VESTING, (alice)(bob)(carol)(dave) );
+      f.vest( "alice", HIVE_asset( 10'000 ) );
+      f.generate_block();
+
+      // way above minimal delegation and way below what alice can delegate
+      const int64_t base = f.get_vesting( "alice" ).amount.value / 10;
+      auto delegation = []( const account_name_type& to, int64_t max_rc )
+      {
+        delegate_rc_operation op;
+        op.from = "alice";
+        op.delegatees = { to };
+        op.max_rc = max_rc;
+        return op;
+      };
+      auto embedded = []( const delegate_rc_operation& first, const delegate_rc_operation& second )
+      {
+        custom_json_operation op;
+        op.required_posting_auths.insert( "alice" );
+        op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+        // list of embedded operations has to be in legacy form
+        op.json = "[[\"delegate_rc\"," + fc::json::to_string( first ) + "],[\"delegate_rc\"," + fc::json::to_string( second ) + "]]";
+        return op;
+      };
+
+      comment_operation A;
+      A.author = "alice";
+      A.permlink = "test";
+      A.parent_permlink = "test";
+      A.title = "test";
+      A.body = "test";
+      const delegate_rc_operation B = delegation( "bob", base + 1 );
+      const delegate_rc_operation C1 = delegation( "bob", base + 2 );
+      const delegate_rc_operation C2 = delegation( "carol", base + 3 );
+      const custom_json_operation C = embedded( C1, C2 );
+      const delegate_rc_operation D = delegation( "dave", base + 4 );
+      const delegate_rc_operation E1 = delegation( "dave", base + 5 ); // correct, but...
+      const delegate_rc_operation E2 = delegation( "bob", base + 2 ); // ...this one fails (the same amount as current)
+      const custom_json_operation E = embedded( E1, E2 );
+      const delegate_rc_operation F = delegation( "carol", 0 );
+      vote_operation G;
+      G.voter = "alice";
+      G.author = "alice";
+      G.permlink = "test";
+      G.weight = HIVE_100_PERCENT;
+
+      signed_transaction tx;
+      tx.set_expiration( f.db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations = { A, B, C, D, E, F, G };
+
+      BOOST_TEST_MESSAGE( "--- new transaction fails as a whole" );
+      HIVE_REQUIRE_ASSERT( f.push_transaction( tx, alice_post_key ), "delegation->delegated_rc != uint64_t( op.max_rc )" );
+
+      BOOST_TEST_MESSAGE( "--- in block only operations embedded in failed custom_json are not effective" );
+      // what non-undoable consumer of operation notifications (f.e. HAF) gets
+      std::vector< std::string > notified_delegations;
+      auto connection = f.db->add_pre_apply_operation_handler( [&]( const operation_notification& note )
+      {
+        if( note.op.which() == operation::tag< delegate_rc_operation >::value )
+          notified_delegations.push_back( packed( note.op ) );
+      }, *f.db_plugin );
+      BOOST_SCOPE_EXIT( &connection ) { hive::utilities::disconnect_signal( connection ); } BOOST_SCOPE_EXIT_END
+      // work around "is_in_control" by not actually executing transaction
+      f.db_plugin->debug_push_pending_transaction( f.build_transaction( tx, std::vector< fc::ecc::private_key >{ alice_post_key } ) );
+      f.generate_block_from_pending();
+      hive::utilities::disconnect_signal( connection );
+      block_num = f.db->head_block_num();
+      const auto block = f.get_block_reader().get_block_by_number( block_num );
+      BOOST_REQUIRE_EQUAL( block->get_full_transactions().size(), 1u );
+      const std::string trx_id = block->get_full_transactions()[0]->get_transaction_id().str();
+      auto get_delegated = [&]( const account_id_type& to ) -> int64_t
+      {
+        const auto* delegation = f.db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, to ) );
+        return delegation == nullptr ? -1 : int64_t( delegation->delegated_rc );
+      };
+      BOOST_REQUIRE_EQUAL( get_delegated( bob_id ), base + 2 );
+      BOOST_REQUIRE_EQUAL( get_delegated( carol_id ), -1 );
+      BOOST_REQUIRE_EQUAL( get_delegated( dave_id ), base + 4 );
+      // E1 was applied and reverted, but notifications are only sent for effective delegations
+      auto was_notified = [&]( const delegate_rc_operation& op )
+      {
+        return std::find( notified_delegations.begin(), notified_delegations.end(), packed( operation( op ) ) ) != notified_delegations.end();
+      };
+      BOOST_REQUIRE( !was_notified( E1 ) );
+      BOOST_REQUIRE( was_notified( C1 ) );
+      BOOST_REQUIRE( was_notified( C2 ) );
+
+      // non-virtual entries of account history with their op_in_trx; effective embedded delegations follow their
+      // custom_json and share its op_in_trx
+      const std::vector< std::pair< std::string, uint32_t > > expected = {
+        { packed( operation( A ) ), 0 }, { packed( operation( B ) ), 1 }, { packed( operation( C ) ), 2 },
+        { packed( operation( C1 ) ), 2 }, { packed( operation( C2 ) ), 2 }, { packed( operation( D ) ), 3 },
+        { packed( operation( E ) ), 4 }, { packed( operation( F ) ), 5 }, { packed( operation( G ) ), 6 } };
+      auto check_entries = [&]( const std::vector< rocksdb_operation_object >& entries )
+      {
+        std::vector< std::pair< std::string, uint32_t > > actual;
+        std::vector< std::pair< int64_t, uint32_t > > virtual_ops;
+        for( const auto& obj : entries )
+        {
+          BOOST_REQUIRE_EQUAL( obj.trx_id.str(), trx_id );
+          if( obj.is_virtual )
+            virtual_ops.emplace_back( to_operation( obj ).which(), obj.op_in_trx );
+          else
+            actual.emplace_back( packed( obj ), obj.op_in_trx );
+        }
+        BOOST_REQUIRE( actual == expected );
+        // virtual operations still get their own op_in_trx
+        const std::vector< std::pair< int64_t, uint32_t > > expected_virtual_ops = {
+          { operation::tag< effective_comment_vote_operation >::value, 7 } };
+        BOOST_REQUIRE( virtual_ops == expected_virtual_ops );
+
+        // original transaction can be restored from account history by skipping non-virtual entries that repeat
+        // op_in_trx of previous one
+        std::vector< std::string > restored;
+        fc::optional< uint32_t > last_op_in_trx;
+        for( const auto& obj : entries )
+        {
+          if( obj.is_virtual || ( last_op_in_trx.valid() && obj.op_in_trx == *last_op_in_trx ) )
+            continue;
+          restored.push_back( packed( obj ) );
+          last_op_in_trx = obj.op_in_trx;
+        }
+        std::vector< std::string > original;
+        for( const auto& op : tx.operations )
+          original.push_back( packed( op ) );
+        BOOST_REQUIRE( restored == original );
+      };
+
+      BOOST_TEST_MESSAGE( "--- account history of reversible block" );
+      BOOST_REQUIRE_LT( f.db->get_last_irreversible_block_num(), block_num );
+      check_entries( f.get_ops_in_trx( block_num, 0, true ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "bob" ) == packed_delegations( { B, C1 } ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "carol" ) == packed_delegations( { C2, F } ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "dave" ) == packed_delegations( { D } ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "alice" ) == packed_delegations( { B, C1, C2, D, F } ) );
+
+      BOOST_TEST_MESSAGE( "--- account history of irreversible block" );
+      f.generate_until_irreversible_block( block_num );
+      const auto entries = f.get_ops_in_trx( block_num, 0, false );
+      check_entries( entries );
+      for( size_t i = 1; i < entries.size(); ++i )
+        BOOST_REQUIRE_LT( entries[i-1].id, entries[i].id ); // entries sharing op_in_trx still have unique ids
+      for( const auto& obj : entries )
+        live_entries.push_back( to_ah_entry( obj ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "bob" ) == packed_delegations( { B, C1 } ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "dave" ) == packed_delegations( { D } ) );
+
+      f.validate_database();
+    }
+
+    BOOST_TEST_MESSAGE( "--- account history after replay is the same" );
+    {
+      rc_delegation_ah_fixture fixture( data_dir.path(), true );
+      BOOST_REQUIRE_GE( fixture.db->head_block_num(), block_num );
+      std::vector< ah_entry_t > replayed_entries;
+      for( const auto& obj : fixture.get_ops_in_trx( block_num, 0, false ) )
+        replayed_entries.push_back( to_ah_entry( obj ) );
+      BOOST_REQUIRE( replayed_entries == live_entries );
+      fixture.validate_database();
+    }
   }
   FC_LOG_AND_RETHROW()
 }

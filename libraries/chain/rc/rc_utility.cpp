@@ -4,6 +4,7 @@
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/state_stamp_data_object_multiindex.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/full_transaction.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
@@ -811,9 +812,46 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
   * Since HF29 the same happens to RC usage collected by the embedded operations (state discount and extra
   * usage), so transaction only pays for the custom_json_operation itself. Before HF29 such RC usage remains,
   * because changing it retroactively would change past RC values.
+  * Embedded operations that became effective are reported (f.e. to account history) as if they were regular
+  * operations placed in transaction right after their custom_json_operation (issue #867).
   */
 class rc_custom_operation_interpreter final : public generic_custom_operation_interpreter< rc_custom_operation >
 {
+  struct push_interpreted_operation_visitor
+  {
+    typedef void result_type;
+
+    database& db;
+
+    template< typename OpType >
+    void operator()( const OpType& op ) const { push_interpreted_operation( db, operation( op ) ); }
+  };
+
+  protected:
+    virtual void post_apply_operations( const vector< rc_custom_operation >& custom_operations ) override
+    {
+      // before HF26 embedded RC delegations were ignored (see delegate_rc_evaluator), so there is nothing to report;
+      // reporting itself is not consensus related, so it is not tied to HF29 - past delegations are reported too
+      if( !_db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+        return;
+      // Notifications of embedded operations are sent only here, after all of them were applied, so handlers
+      // of both pre- and post-notification see the state after the changes.
+      // Virtual operations are different - push_virtual_operation sends them right away, so if evaluator of
+      // embedded operation (or any code it calls) ever starts emitting them:
+      // - when the interpretation fails later (f.e. one of following embedded operations fails), the virtual
+      //   operation was already reported; account history on live node reverts it, but account history during
+      //   replay and HAF keep it,
+      // - when the interpretation succeeds, the virtual operation is reported before the embedded operation that
+      //   caused it, and with greater op_in_trx (it moved the counter, while embedded operation shares op_in_trx
+      //   of its carrier).
+      // Possible solution: collect notifications of virtual operations during interpretation and send them here,
+      // each right after its embedded operation (and drop them when interpretation fails). Don't guard against it
+      // with an assertion - in a block the interpreter would treat it as a failure of the embedded operation,
+      // which changes consensus.
+      for( const rc_custom_operation& custom_op : custom_operations )
+        custom_op.visit( push_interpreted_operation_visitor{ _db } );
+    }
+
   public:
     rc_custom_operation_interpreter( database& db )
       : generic_custom_operation_interpreter< rc_custom_operation >( db, HIVE_RC_CUSTOM_OPERATION_ID ) {}

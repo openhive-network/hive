@@ -14,11 +14,13 @@ For each delegatee:
 
 The operation can be used in two forms that work on the same delegations:
 
-\- since HF 26 - embedded in custom\_json\_operation with { id } = "rc" and { required\_posting\_auths } = [ { from } ], with the operation in its JSON form, f.e. `{"type":"delegate_rc_operation","value":{"from":"alice","delegatees":["bob"],"max_rc":1000000000,"extensions":[]}}` (a list of such operations is also accepted),
+\- since HF 26 - embedded in custom\_json\_operation with { id } = "rc" and { required\_posting\_auths } = [ { from } ], with the operation in its JSON form, f.e. `{"type":"delegate_rc_operation","value":{"from":"alice","delegatees":["bob"],"max_rc":1000000000,"extensions":[]}}` or in legacy JSON form `["delegate_rc",{"from":"alice","delegatees":["bob"],"max_rc":1000000000,"extensions":[]}]` (more operations can be embedded as a list of operations in legacy form, f.e. `[["delegate_rc",{...}],["delegate_rc",{...}]]`),
 
 \- since HF 29 - as a regular operation (it uses the number of reset\_account\_operation, which was never active). Before HF 29 the regular form is rejected.
 
 The forms differ in what happens when the delegation fails. A failed regular operation fails the whole transaction, so a block that contains such a transaction is invalid. A failed embedded delegation in a new transaction also fails the transaction, but when it is already in a block, the custom\_json\_operation stays in the block and only the delegation is not effective (along with all other operations embedded in the same custom\_json\_operation). Since HF 29 the RC usage of such failed embedded operations is not counted either, so the transaction pays only for the custom\_json\_operation itself.
+
+Account history (and other consumers of operation notifications, f.e. HAF) shows each effective embedded delegation as if it was a regular operation placed in the transaction right after its custom\_json\_operation - a non-virtual delegate\_rc\_operation with the same position in the transaction (op\_in\_trx) as the custom\_json\_operation. A non-virtual operation that repeats op\_in\_trx of the previous one is therefore not a direct part of the transaction. Embedded delegations that were not effective (all of them before HF 26, and all embedded in a custom\_json\_operation where any of embedded operations failed) are not shown. It is not tied to HF 29, so effective embedded delegations from before HF 29 are also shown (after account history is replayed).
 
 Up to HF 28 the minimal amount of delegation and the ban on delegation during removal of excess delegations (see preconditions) were only checked for new transactions, so blocks could contain effective delegations that break them. Since HF 29 they are checked also for transactions in blocks.
 

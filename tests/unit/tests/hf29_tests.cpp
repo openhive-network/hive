@@ -17,6 +17,8 @@
 #include <hive/protocol/hive_custom_operations.hpp>
 
 #include <hive/plugins/debug_node/debug_node_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
 
 #include <fc/io/json.hpp>
 
@@ -856,6 +858,113 @@ BOOST_AUTO_TEST_CASE( rc_usage_of_failed_embedded_rc_delegation_in_block )
 
     is_hf29 = true;
 
+    BOOST_TEST_MESSAGE( "*****HF-29*****" );
+    execute_hardfork<29>( _content );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( embedded_rc_delegation_in_account_history )
+{
+  try
+  {
+    uint32_t hf = 0;
+
+    auto _content = [ &hf ]( ptr_hardfork_database_fixture& executor )
+    {
+      BOOST_TEST_MESSAGE( "Testing: embedded RC delegation is in account history when it is effective (issue #867)" );
+      BOOST_REQUIRE_EQUAL( (bool)executor, true );
+
+      executor->generate_block();
+      executor->set_account_creation_fee( HIVE_asset( 3'000 ) ); //mainnet value - makes minimum RC delegation noticeable
+      executor->generate_block();
+
+      ACTORS_EXT( (*executor), DEFAULT_VESTING, (alice)(bob)(carol)(dave) );
+      executor->vest( "alice", HIVE_asset( 10'000 ) );
+      executor->generate_block();
+
+      // minimum delegation is expressed in VESTS, so it changes along with VESTS price - take amounts with big margin
+      int64_t min_delegation = 0;
+      {
+        const auto& gpo = executor->db->get_dynamic_global_properties();
+        const auto& wso = executor->db->get_witness_schedule_object();
+        min_delegation = ( HIVE_asset( wso.median_props.account_creation_fee.amount / 3 ) * gpo.get_vesting_share_price() ).amount.value;
+      }
+      const int64_t below_min = min_delegation / 2;
+      BOOST_REQUIRE_GT( below_min, 0 );
+
+      // all entries of account history for transactions of given block: { operation in binary form, op_in_trx, is_virtual }
+      typedef std::tuple< std::string, uint32_t, bool > entry_t;
+      auto get_entries = [&]( uint32_t block_num )
+      {
+        std::vector< entry_t > result;
+        executor->ah_plugin->find_operations_by_block( block_num, true,
+          [&]( const hive::plugins::account_history_rocksdb::rocksdb_operation_object& obj )
+        {
+          if( obj.trx_in_block == 0 )
+            result.emplace_back( std::string( obj.serialized_op.begin(), obj.serialized_op.end() ), obj.op_in_trx, obj.is_virtual );
+        } );
+        return result;
+      };
+      auto entry = []( const operation& op, uint32_t op_in_trx )
+      {
+        const auto bytes = fc::raw::pack_to_vector( op );
+        return entry_t( std::string( bytes.begin(), bytes.end() ), op_in_trx, false );
+      };
+
+      delegate_rc_operation op;
+      op.from = "alice";
+      op.delegatees = { "bob" };
+      op.max_rc = min_delegation * 2;
+      custom_json_operation custom_op = rc_delegation_as_custom_json( op );
+
+      // correct embedded delegation is effective since HF26
+      executor->push_transaction( custom_op, alice_post_key );
+      executor->generate_block();
+      const bool effective = hf >= 26;
+      BOOST_REQUIRE_EQUAL( find_rc_delegation( *executor->db, alice_id, bob_id ) != nullptr, effective );
+      if( effective )
+        BOOST_REQUIRE( get_entries( executor->db->head_block_num() ) == std::vector< entry_t >( { entry( custom_op, 0 ), entry( op, 0 ) } ) );
+      else
+        BOOST_REQUIRE( get_entries( executor->db->head_block_num() ) == std::vector< entry_t >( { entry( custom_op, 0 ) } ) );
+
+      // embedded delegation below minimum in block is effective since HF26 and until HF29
+      op.delegatees = { "carol" };
+      op.max_rc = below_min;
+      custom_op = rc_delegation_as_custom_json( op );
+      // work around "is_in_control" by not actually executing transaction
+      executor->db_plugin->debug_push_pending_transaction( executor->build_transaction( custom_op, alice_post_key ) );
+      executor->generate_block_from_pending();
+      const bool effective_below_min = hf >= 26 && hf < 29;
+      BOOST_REQUIRE_EQUAL( find_rc_delegation( *executor->db, alice_id, carol_id ) != nullptr, effective_below_min );
+      if( effective_below_min )
+        BOOST_REQUIRE( get_entries( executor->db->head_block_num() ) == std::vector< entry_t >( { entry( custom_op, 0 ), entry( op, 0 ) } ) );
+      else
+        BOOST_REQUIRE( get_entries( executor->db->head_block_num() ) == std::vector< entry_t >( { entry( custom_op, 0 ) } ) );
+
+      if( hf >= 29 )
+      {
+        // regular operation is in account history once, just like any other regular operation
+        op.delegatees = { "dave" };
+        op.max_rc = min_delegation * 2;
+        executor->push_transaction( op, alice_post_key );
+        executor->generate_block();
+        BOOST_REQUIRE( find_rc_delegation( *executor->db, alice_id, dave_id ) != nullptr );
+        BOOST_REQUIRE( get_entries( executor->db->head_block_num() ) == std::vector< entry_t >( { entry( op, 0 ) } ) );
+      }
+
+      executor->validate_database();
+    };
+
+    hf = 25;
+    BOOST_TEST_MESSAGE( "*****HF-25*****" );
+    execute_hardfork<25>( _content );
+
+    hf = 28;
+    BOOST_TEST_MESSAGE( "*****HF-28*****" );
+    execute_hardfork<28>( _content );
+
+    hf = 29;
     BOOST_TEST_MESSAGE( "*****HF-29*****" );
     execute_hardfork<29>( _content );
   }

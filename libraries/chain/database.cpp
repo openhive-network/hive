@@ -802,6 +802,22 @@ void post_push_virtual_operation( database& db, const operation& op, const fc::o
   db.notify_post_apply_operation( note );
 }
 
+void push_interpreted_operation( database& db, const operation& op )
+{
+  FC_ASSERT( !is_virtual_operation( op ) && "on push interpreted" );
+  const operation_notification* carrier = db.get_current_applied_operation_info();
+  FC_ASSERT( carrier != nullptr && "interpreted operation needs carrier" );
+  operation_notification note( op );
+  note.trx_id       = carrier->trx_id;
+  note.block        = carrier->block;
+  note.timestamp    = carrier->timestamp;
+  note.trx_in_block = carrier->trx_in_block;
+  note.op_in_trx    = carrier->op_in_trx; // not _current_op_in_trx - carrier might have emitted virtual operations
+  note.virtual_op   = false;
+  db.notify_pre_apply_operation( note );
+  db.notify_post_apply_operation( note );
+}
+
 void database::notify_pre_apply_operation( const operation_notification& note )
 {
   comments_handler::lookup_path_scope lookup_scope( comments_handler::lookup_path::operation_notification );
