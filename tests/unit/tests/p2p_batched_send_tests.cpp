@@ -1,5 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
+#include <graphene/net/config.hpp>
 #include <graphene/net/core_messages.hpp>
 #include <graphene/net/peer_connection.hpp>
 
@@ -15,6 +16,7 @@
 #include <fc/network/tcp_socket_io_hooks.hpp>
 #include <fc/thread/thread.hpp>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -150,6 +152,61 @@ std::shared_ptr<hive::chain::full_block_type> make_small_block()
   block.witness = "initminer";
   return hive::chain::full_block_type::create_from_signed_block( block );
 }
+
+/// A queued message that cannot be built, as a block whose compression fails; counts the attempts.
+struct unbuildable_queued_message : peer_connection::queued_message
+{
+  size_t& build_attempts;
+  size_t size_in_queue;
+
+  unbuildable_queued_message( size_t& build_attempts, size_t size_in_queue ) :
+    build_attempts( build_attempts ), size_in_queue( size_in_queue )
+  {
+    may_wait_for_batch = true;
+  }
+  message get_message( graphene::net::peer_connection_delegate*, peer_connection* ) override
+  {
+    ++build_attempts;
+    FC_THROW( "test message cannot be built" );
+  }
+  size_t get_size_in_queue() override { return size_in_queue; }
+};
+
+/// A queued message whose building blocks until the send task is canceled; records how that ended.
+struct blocking_queued_message : peer_connection::queued_message
+{
+  size_t& build_attempts;
+  bool& saw_cancel;
+
+  blocking_queued_message( size_t& build_attempts, bool& saw_cancel ) :
+    build_attempts( build_attempts ), saw_cancel( saw_cancel )
+  {}
+  message get_message( graphene::net::peer_connection_delegate*, peer_connection* ) override
+  {
+    ++build_attempts;
+    try
+    {
+      fc::usleep( fc::seconds( 20 ) );
+    }
+    catch( const fc::canceled_exception& )
+    {
+      saw_cancel = true;
+      throw;
+    }
+    return make_message( 5000, 16, 'x' );
+  }
+  size_t get_size_in_queue() override { return 16; }
+};
+
+/// A message that alone takes the whole queue limit, so queueing it closes the connection unless the queue is empty.
+struct queue_limit_sized_message : peer_connection::queued_message
+{
+  message message_to_send;
+
+  explicit queue_limit_sized_message( message message_to_send ) : message_to_send( std::move( message_to_send ) ) {}
+  message get_message( graphene::net::peer_connection_delegate*, peer_connection* ) override { return message_to_send; }
+  size_t get_size_in_queue() override { return GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES; }
+};
 
 } // namespace
 
@@ -320,6 +377,85 @@ BOOST_AUTO_TEST_CASE( destroying_a_waiting_connection_does_not_wait_for_the_dela
     pair.sender->send_message( make_transaction_message( 'a' ) );
     fc::usleep( fc::milliseconds( 50 ) );
   }
+  BOOST_CHECK_LT( ( fc::time_point::now() - started_at ).count(), fc::seconds( 10 ).count() );
+}
+
+/// A queued message that cannot be built is dropped on its own: the messages around it are delivered,
+/// with or without a flush delay, and its queue space is given back.
+BOOST_AUTO_TEST_CASE( message_that_cannot_be_built_is_dropped_alone )
+{
+  for( fc::microseconds flush_delay : { fc::microseconds( 0 ), fc::milliseconds( 300 ) } )
+  {
+    BOOST_TEST_CONTEXT( "flush delay " << flush_delay.count() << "us" )
+    {
+      connected_pair pair;
+      pair.sender->set_send_flush_delay( flush_delay );
+
+      size_t build_attempts = 0;
+      const message before = make_transaction_message( 'a' );
+      const message after = make_transaction_message( 'c' );
+      pair.sender->send_message( before );
+      // small enough that the batch still waits for the flush delay
+      pair.sender->send_queueable_message( std::make_unique<unbuildable_queued_message>( build_attempts, 1000 ) );
+      pair.sender->send_message( after );
+      pair.wait_for_messages( 2 );
+
+      BOOST_CHECK_EQUAL( build_attempts, 1u );
+      BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 2u );
+      BOOST_CHECK( same_message( pair.receiver_delegate.received[0], before ) );
+      BOOST_CHECK( same_message( pair.receiver_delegate.received[1], after ) );
+
+      // the send task gives the queue space back once its write returns
+      fc::usleep( fc::milliseconds( 50 ) );
+      const message probe = make_message( 5000, 16, 'p' );
+      pair.sender->send_queueable_message( std::make_unique<queue_limit_sized_message>( probe ) );
+      pair.wait_for_messages( 3 );
+
+      BOOST_CHECK( !pair.sender_delegate.closed );
+      BOOST_CHECK( !pair.receiver_delegate.closed );
+      BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 3u );
+      BOOST_CHECK( same_message( pair.receiver_delegate.received[2], probe ) );
+    }
+  }
+}
+
+/// Messages that cannot be built, again and again, do not fill the send queue and close the connection.
+BOOST_AUTO_TEST_CASE( repeated_build_failures_do_not_overflow_the_send_queue )
+{
+  connected_pair pair;
+
+  const size_t rounds = 1000;
+  // three of these left in the queue's size would exceed its limit
+  const size_t unbuildable_message_size = GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES * 2 / 5;
+  size_t build_attempts = 0;
+  for( size_t i = 0; i < rounds; ++i )
+  {
+    pair.sender->send_queueable_message( std::make_unique<unbuildable_queued_message>( build_attempts, unbuildable_message_size ) );
+    pair.sender->send_message( make_message( 5000, 16, char( 'a' + i % 26 ) ) );
+    pair.wait_for_messages( i + 1 );
+    BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), i + 1 );
+  }
+
+  BOOST_CHECK_EQUAL( build_attempts, rounds );
+  BOOST_CHECK( !pair.sender_delegate.closed );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
+}
+
+/// Canceling the send task while it builds a message still ends it; the build failure handling does not swallow the cancel.
+BOOST_AUTO_TEST_CASE( canceling_the_send_task_while_building_ends_it )
+{
+  size_t build_attempts = 0;
+  bool saw_cancel = false;
+  const fc::time_point started_at = fc::time_point::now();
+  {
+    connected_pair pair;
+    pair.sender->send_queueable_message( std::make_unique<blocking_queued_message>( build_attempts, saw_cancel ) );
+    pair.sender->send_queueable_message( std::make_unique<blocking_queued_message>( build_attempts, saw_cancel ) );
+    fc::usleep( fc::milliseconds( 50 ) );
+    BOOST_REQUIRE_EQUAL( build_attempts, 1u );
+  }
+  BOOST_CHECK( saw_cancel );
+  BOOST_CHECK_EQUAL( build_attempts, 1u );
   BOOST_CHECK_LT( ( fc::time_point::now() - started_at ).count(), fc::seconds( 10 ).count() );
 }
 

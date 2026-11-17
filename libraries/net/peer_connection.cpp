@@ -31,6 +31,7 @@
 
 #include <fc/thread/thread.hpp>
 
+#include <boost/core/demangle.hpp>
 #include <boost/scope_exit.hpp>
 
 #ifdef DEFAULT_LOGGER
@@ -329,6 +330,11 @@ namespace graphene { namespace net
         // get_message() is still called here, at send time, because block messages are built lazily
         std::vector<std::unique_ptr<queued_message>> batch;
         std::vector<message> messages_to_send;
+        // every popped message, sent or dropped, leaves the queue's size exactly once, however this batch ends
+        BOOST_SCOPE_EXIT(this_, &batch) {
+          for (const std::unique_ptr<queued_message>& popped_message : batch)
+            this_->_total_queued_messages_size -= popped_message->get_size_in_queue();
+        } BOOST_SCOPE_EXIT_END
         size_t batch_size = 0;
         do
         {
@@ -337,7 +343,8 @@ namespace graphene { namespace net
           if (!batch.back()->may_wait_for_batch)
             --_queued_messages_not_waiting_for_batch;
           batch.back()->transmission_start_time = fc::time_point::now();
-          messages_to_send.emplace_back(batch.back()->get_message(_node, this));
+          if (!build_queued_message(*batch.back(), batch.size() - 1, messages_to_send))
+            break; // send what was built before it; the rest of the queue goes in the next batch
           batch_size += sizeof(message_header) + messages_to_send.back().size;
         } while (!_queued_messages.empty() && batch_size < GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES);
 
@@ -373,12 +380,41 @@ namespace graphene { namespace net
         }
         const fc::time_point transmission_finish_time = fc::time_point::now();
         for (const std::unique_ptr<queued_message>& sent_message : batch)
-        {
           sent_message->transmission_finish_time = transmission_finish_time;
-          _total_queued_messages_size -= sent_message->get_size_in_queue();
-        }
       }
       //dlog("leaving peer_connection::send_queued_messages_task() due to queue exhaustion");
+    }
+
+    bool peer_connection::build_queued_message(queued_message& message_to_build, size_t queue_position,
+                                               std::vector<message>& built_messages)
+    {
+      // a message that cannot be built (a block whose compression fails) is dropped on its own, so the
+      // peer still gets everything else; if it asked for this item, it asks again or times out the request
+      try
+      {
+        built_messages.emplace_back(message_to_build.get_message(_node, this));
+        return true;
+      }
+      catch (const fc::canceled_exception&)
+      {
+        throw;
+      }
+      catch (const fc::exception& e)
+      {
+        elog("Dropping queued ${type} at queue position ${position}, building it failed: ${e}",
+             ("type", boost::core::demangle(typeid(message_to_build).name()))("position", queue_position)("e", e.to_detail_string()));
+      }
+      catch (const std::exception& e)
+      {
+        elog("Dropping queued ${type} at queue position ${position}, building it threw a std::exception: ${what}",
+             ("type", boost::core::demangle(typeid(message_to_build).name()))("position", queue_position)("what", e.what()));
+      }
+      catch (...)
+      {
+        elog("Dropping queued ${type} at queue position ${position}, building it threw an unhandled exception",
+             ("type", boost::core::demangle(typeid(message_to_build).name()))("position", queue_position));
+      }
+      return false;
     }
 
     bool peer_connection::send_flush_wait_is_over() const
