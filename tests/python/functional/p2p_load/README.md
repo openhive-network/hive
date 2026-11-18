@@ -34,7 +34,9 @@ COMMON="--block-log /path/to/single_sign_universal_block_log --tools /path/to/bu
 3. installs the `tc netem` delay when asked, then starts the driver in container `p2p-load-NAME`;
 4. the driver creates the nodes (`witness`, `observer`, `colony0..`, `relay1..`), wires the topology, replays the
    block log on every node, checks each node's `config.ini`, starts them together under libfaketime from the
-   block log's head time, samples every 3 s and waits until `--blocks` blocks after the colonies started;
+   block log's head time, redials every node's seeds until each seed link is up (a node started before its seed
+   listens would otherwise wait out the 60-120 s p2p retry backoff; links still down after 60 s fail the run), waits
+   until every node is live, samples every 3 s and waits until `--blocks` blocks after the colonies started;
 5. copies back only logs and configs (`OUT_ROOT/NAME/generated/<node>/`, no `blockchain/`, no `*.bin`) and removes
    the tmpfs directory, whatever happened. A disk-backed 8-peer run wrote 90-415 GB; this one writes megabytes.
 
@@ -101,7 +103,9 @@ $P run late $COMMON --hived $HIVED --topology strict --colonies 8 --tpb 2500 --l
 
 `p2p-load ab NAME --build A=PATH --build B=PATH --reps R [run options]` runs A, B, A, B, ... (`NAME-A-1`,
 `NAME-B-1`, `NAME-A-2`, ...) under one host lock and prints each run's report, then the comparison table: the
-mean of each headline metric per build with the per-run values. For example #1073 against its parent `fb7e4d96`
+mean of each headline metric per build with the per-run values. A run whose driver fails or whose report cannot be
+built (no loaded blocks, for one) counts as failed: the series goes on, compares the runs that finished and exits 1.
+For example #1073 against its parent `fb7e4d96`
 on the 3-hop chain at 1000 tx/block (#1075 measured a colony-to-relay1 median of 51 against 134 ms):
 
 ```
@@ -113,6 +117,11 @@ $P ab chain3 $COMMON --build cand=$B1073/hived --build base=$B_FB7E4D96/hived --
 `p2p-load report RUN_DIR...` (`--json` for machine-readable) and `p2p-load compare RUN_DIR...` (grouped by label)
 work on any finished run directory and need no node and no test-tools.
 
+- **short window**: a run measures `--blocks` blocks from the colonies' start block, the first two as ramp. The
+  report flags it `SHORT WINDOW` when the loaded window has fewer blocks than that, or when the witness was already
+  at the colonies' start block once every node was live (`late_start` in `out.json`: the colonies started late).
+  `report --json` carries it as `window`, and `compare` counts loaded blocks and short windows per label; leave
+  short runs out of conclusions.
 - **tx/s**: included (transactions in witness blocks) and received (`before.inc` of the witness's Block stats:
   transactions it applied between blocks), over the loaded window and per `--window-blocks` blocks (default 10).
   The loaded window starts two blocks after the first witness block with transactions.

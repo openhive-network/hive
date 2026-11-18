@@ -33,6 +33,7 @@ def summarize(run: analysis.Run, full_txs: int | None = None, blocks_per_window:
             "unsupported": meta["p2p_parameters"]["unsupported"],
         },
         "blocks": [meta["first"], meta["last"]],
+        "window": analysis.window_shortfall(run),
         "rates": analysis.rates(run, blocks_per_window),
         "underfilled": {"below_txs": threshold, "blocks": analysis.underfilled(run, threshold)},
         "offsets": analysis.corrected_offsets(run),
@@ -113,6 +114,16 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
             f"{w['from']}-{w['to']} {w['included_tx_s']:.0f}/{w['received_tx_s']:.0f}" for w in rates["windows"]
         ),
     ]
+    window = summary["window"]
+    if window["short"]:
+        lines.append(
+            f"   SHORT WINDOW: {window['loaded_blocks']} loaded blocks of {window['expected_blocks']} expected"
+            + (
+                ", the colonies started late (the witness was at or past colony_start_block when the nodes were live)"
+                if window["late_start"]
+                else ""
+            )
+        )
     under = summary["underfilled"]
     lines.append(f"   underfilled (<{under['below_txs']} tx): {len(under['blocks'])} {under['blocks'][:20]}")
     for role, off in summary["offsets"].items():
@@ -166,6 +177,8 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
         return lambda s: ((s["p2p_counters"].get(role) or {}).get(group) or {}).get(key)
 
     rows: dict[str, Callable[[dict[str, Any]], float | None]] = {
+        "loaded blocks": lambda s: s["rates"]["blocks"],
+        "short windows": lambda s: int(s["window"]["short"]),
         "included tx/s": lambda s: s["rates"]["included_tx_s"],
         "received tx/s": lambda s: s["rates"]["received_tx_s"],
         "underfilled blocks": lambda s: len(s["underfilled"]["blocks"]),

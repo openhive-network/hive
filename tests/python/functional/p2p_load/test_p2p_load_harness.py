@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import json
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -7,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 import test_tools as tt
+from python.functional.p2p_load import __main__ as cli
 from python.functional.p2p_load import p2p_loggers, p2p_parameters, report
 from python.functional.p2p_load.analysis import Run
 from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
@@ -360,3 +362,73 @@ def test_comparison_groups_runs_by_label(tmp_path: Path) -> None:
     assert any(row.startswith("relay1 relay median ms") and row.count("51.0") == 2 for row in rows)
     assert any(row.startswith("witness fetch examined/requested") and row.count("1.0") == 2 for row in rows)
     assert any(row.startswith("witness send messages/write") and row.count("2.5") == 2 for row in rows)
+
+
+def _edit_meta(run_dir: Path, **changes: Any) -> None:
+    meta = json.loads((run_dir / "out.json").read_text())
+    (run_dir / "out.json").write_text(json.dumps({**meta, **changes}))
+
+
+@pytest.mark.parametrize(
+    ("changes", "short", "late_start"),
+    [
+        ({}, False, False),  # recorded before the window was checked: no expectation
+        ({"blocks": 31, "colony_start_block": 109}, False, False),  # 29 blocks measured after the 2-block ramp
+        ({"blocks": 40, "colony_start_block": 109}, True, False),  # the colonies loaded fewer blocks than asked
+        ({"blocks": 31, "colony_start_block": 100}, True, True),  # the witness was at the start block: late start
+    ],
+)
+def test_a_short_loaded_window_is_flagged(
+    tmp_path: Path, changes: dict[str, Any], short: bool, late_start: bool
+) -> None:
+    run_dir = _make_run(tmp_path / "chain-a-1")
+    _edit_meta(run_dir, **changes)
+
+    summary = report.summarize(Run.load(run_dir))
+
+    window = summary["window"]
+    assert window["loaded_blocks"] == 29
+    assert window["short"] is short
+    assert window["late_start"] is late_start
+    text = report.format_summary(summary)
+    assert ("SHORT WINDOW" in text) is short
+    assert ("started late" in text) is late_start
+
+
+def test_a_series_counts_an_unreportable_run_as_failed_and_compares_the_rest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    block_log = tmp_path / "block_log"
+    block_log.mkdir()
+    (block_log / "alternate-chain-spec.json").write_text("{}")
+    builds = []
+    for label in ("a", "b"):
+        hived = tmp_path / f"hived-{label}"
+        hived.write_text("#!/bin/sh\n")
+        hived.chmod(0o755)
+        builds += ["--build", f"{label}={hived}"]
+    executed = []
+
+    def execute_run(spec: RunSpec, *_: object) -> int:
+        executed.append(spec.name)
+        run_dir = _make_run(tmp_path / "runs" / spec.name)
+        # the colonies of s-b-1 started after the measured window: the witness produced no loaded block
+        _edit_meta(run_dir, name=spec.name, label=spec.label, **({"first": 139} if spec.name == "s-b-1" else {}))
+        return 0
+
+    monkeypatch.setattr(cli, "execute_run", execute_run)
+    monkeypatch.setattr(cli, "find_tools", lambda *_: {})
+    monkeypatch.setattr(cli, "HostLock", contextlib.nullcontext)
+
+    exit_code = cli.main([
+        *("ab", "s", "--block-log", str(block_log), "--out-root", str(tmp_path / "runs"), "--tpb", "1000"),
+        *("--image", "test-image", "--reps", "2", *builds),
+    ])
+
+    assert exit_code == 1
+    assert executed == ["s-a-1", "s-b-1", "s-a-2", "s-b-2"]
+    out, err = capsys.readouterr()
+    assert "s-b-1: no report: s-b-1: the witness produced no loaded blocks after the ramp" in err
+    assert [line.split()[1] for line in out.splitlines() if line.startswith("== ")] == ["s-a-1", "s-a-2", "s-b-2"]
+    loaded_row = next(line for line in out.splitlines() if line.startswith("loaded blocks"))
+    assert loaded_row.split()[2:] == ["29.0", "(29/29)", "29.0", "(29)"]

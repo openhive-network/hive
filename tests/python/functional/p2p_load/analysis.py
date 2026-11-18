@@ -121,6 +121,29 @@ def rates(run: Run, blocks_per_window: int = 10) -> dict[str, Any]:
     return total
 
 
+def window_shortfall(run: Run) -> dict[str, Any]:
+    """
+    Whether the loaded window is shorter than the run asked for, and why.
+
+    A run measures `blocks` blocks from colony_start_block, the first RAMP_BLOCKS of them as ramp. `late_start`: the
+    witness was at colony_start_block or past it when every node was live, so the colonies started late. `short`: the
+    window has fewer than `blocks - RAMP_BLOCKS` witness blocks, or the colonies started late. Runs recorded before
+    these fields existed have no expectation and are never short.
+    """
+    witness = run.stats("witness")
+    loaded = sum(1 for num in run.window if num in witness)
+    asked = run.meta.get("blocks")
+    expected = asked - RAMP_BLOCKS if asked is not None else None
+    start = run.meta.get("colony_start_block")
+    late_start = start is not None and run.meta["first"] >= start
+    return {
+        "loaded_blocks": loaded,
+        "expected_blocks": expected,
+        "late_start": late_start,
+        "short": late_start or (expected is not None and loaded < expected),
+    }
+
+
 def underfilled(run: Run, full_txs: int) -> list[tuple[int, int]]:
     """Return (block, transactions) of every loaded-window witness block with fewer than `full_txs` transactions."""
     witness = run.stats("witness")

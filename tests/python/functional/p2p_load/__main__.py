@@ -154,7 +154,12 @@ def _series(args: argparse.Namespace, builds: list[tuple[str, Path]], reps: int)
                     failed += 1
                     print(f"{name}: driver exited {exit_code}; see {spec.out_dir}/driver.log", file=sys.stderr)
                     continue
-                summary = report.summarize(analysis.Run.load(Path(spec.out_dir)))
+                try:
+                    summary = report.summarize(analysis.Run.load(Path(spec.out_dir)))
+                except analysis.RunDataError as error:
+                    failed += 1
+                    print(f"{name}: no report: {error}", file=sys.stderr)
+                    continue
                 finished.append(summary)
                 print(report.format_summary(summary), flush=True)
     if len(builds) > 1 and finished:

@@ -13,8 +13,9 @@ import os
 import socket
 import threading
 import time
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import timedelta
 from pathlib import Path
 from typing import Any, TypeAlias
@@ -30,6 +31,10 @@ from test_tools import complex_networks as ttcn
 _SAMPLE_INTERVAL_S = 3
 _LINKS_EVERY_N_SAMPLES = 10
 _NODE_TIMEOUT_S = 300
+# a node dials its seeds once at start and, refused, only after the p2p retry backoff (60-120 s); the driver redials
+# them until every link is up, this long at most
+_SEED_LINK_TIMEOUT_S = 60
+_SEED_LINK_POLL_S = 1
 # The colony tests' setup (functional/colony), repeated here: the driver runs with the test-tools of the image, which
 # hive_local_tools' helpers may have outgrown, so it imports nothing from the functional tests.
 _WITNESSES = [f"witness-{w}" for w in range(20)]
@@ -82,9 +87,16 @@ class _Topology:
     colonies: list[_Node]
     relays: list[_Node]
     endpoint: dict[int, P2PUrl]  # id(node) -> its p2p endpoint
+    links: list[tuple[_Node, _Node]] = field(default_factory=list)  # (node, a seed of it)
 
     def seed(self, node: _Node, *peers: _Node) -> None:
         node.config.p2p_seed_node = [self.endpoint[id(peer)] for peer in peers]
+        self.links.extend((node, peer) for peer in peers)
+
+    def address(self, node: _Node) -> str | None:
+        """host:port the node listens on for p2p, as hived names its peers; None for a node that does not listen."""
+        endpoint = self.endpoint.get(id(node))
+        return None if endpoint is None else endpoint.as_string(with_protocol=False)
 
 
 def _connect_mesh(t: _Topology) -> None:
@@ -118,7 +130,7 @@ def _connect_chain(t: _Topology) -> None:
 _TOPOLOGIES = {"mesh": _connect_mesh, "star": _connect_star, "strict": _connect_strict, "chain": _connect_chain}
 
 
-def _connect(spec: RunSpec, nodes: dict[str, _Node]) -> None:
+def _connect(spec: RunSpec, nodes: dict[str, _Node]) -> _Topology:
     free = iter(ttcn.generate_free_addresses(len(nodes)))
     endpoint: dict[int, P2PUrl] = {}
     for role, node in nodes.items():
@@ -136,6 +148,60 @@ def _connect(spec: RunSpec, nodes: dict[str, _Node]) -> None:
         endpoint=endpoint,
     )
     _TOPOLOGIES[spec.topology](topology)
+    return topology
+
+
+def _peer_hosts(node: _Node) -> set[str]:
+    return {peer.host for peer in node.api.network_node.get_connected_peers().connected_peers}
+
+
+def _add_node(node: _Node, endpoint: str) -> None:
+    """
+    Have `node` dial `endpoint` now, resetting its p2p retry backoff for it.
+
+    Sent as plain JSON-RPC: the image's test-tools expects an `endpoint` field in network_node_api.add_node's
+    result, which hived returns empty, and fails on every call.
+    """
+    request = {"jsonrpc": "2.0", "id": 1, "method": "network_node_api.add_node", "params": {"endpoint": endpoint}}
+    with urllib.request.urlopen(
+        urllib.request.Request(
+            str(node.http_endpoint),
+            data=json.dumps(request).encode(),
+            headers={"Content-Type": "application/json"},
+        ),
+        timeout=10,
+    ) as response:
+        result = json.loads(response.read())
+    if "error" in result:
+        raise RuntimeError(f"{node}: network_node_api.add_node({endpoint}) failed: {result['error']}")
+
+
+def _wait_for_seed_links(topology: _Topology, nodes: list[_Node]) -> float:
+    """
+    Redial the seeds of `nodes` until each node is linked to every seed of it; return how long that took.
+
+    A link is up when either end lists the other's p2p endpoint as a peer: hived keeps one connection per pair of
+    nodes, so the seed may hold the connection it dialed itself. Raise RuntimeError naming the links still down
+    after _SEED_LINK_TIMEOUT_S.
+    """
+    running = {id(node) for node in nodes}
+    links = [(node, seed) for node, seed in topology.links if id(node) in running and id(seed) in running]
+    started = time.time()
+    while True:
+        hosts = {id(node): _peer_hosts(node) for node in nodes}
+        down = [
+            (node, seed)
+            for node, seed in links
+            if topology.address(seed) not in hosts[id(node)] and topology.address(node) not in hosts[id(seed)]
+        ]
+        if not down:
+            return time.time() - started
+        if time.time() - started > _SEED_LINK_TIMEOUT_S:
+            names = ", ".join(f"{node} -> {seed}" for node, seed in down)
+            raise RuntimeError(f"p2p links still down {_SEED_LINK_TIMEOUT_S} s after the nodes started: {names}")
+        for node, seed in down:
+            _add_node(node, str(topology.address(seed)))
+        time.sleep(_SEED_LINK_POLL_S)
 
 
 def _apply_p2p_parameters(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, Any]:
@@ -214,7 +280,7 @@ def run(spec: RunSpec) -> dict[str, Any]:
     colony_start_block = block_log.get_head_block_number() + spec.colony_start_delay
 
     nodes = {role: _create_node(spec, role, colony_start_block) for role in spec.roles()}
-    _connect(spec, nodes)
+    topology = _connect(spec, nodes)
     parameters = _apply_p2p_parameters(spec, nodes)
     loggers = _enable_p2p_loggers(spec, nodes)
     roles = {role: node.directory.name for role, node in nodes.items()}
@@ -242,13 +308,17 @@ def run(spec: RunSpec) -> dict[str, Any]:
             pool.submit(
                 node.run,
                 timeout=_NODE_TIMEOUT_S,
-                wait_for_live=True,
+                wait_for_live=False,
                 alternate_chain_specs=chain_specs,
                 time_control=tt.StartTimeControl(start_time=start_time),
             )
             for node in starting
         ]:
             future.result()
+    # started together, a node may dial a seed that does not listen yet; the colonies must not wait out the backoff
+    seed_links_s = _wait_for_seed_links(topology, starting)
+    for node in starting:
+        node.wait_for_live_mode(timeout=_NODE_TIMEOUT_S)
     witness = nodes["witness"]
     pids = {role: _pid_of(node) for role, node in nodes.items() if not (late and role == "observer")}
     first = witness.get_last_block_number()
@@ -289,7 +359,11 @@ def run(spec: RunSpec) -> dict[str, Any]:
         "p2p_parameters": parameters,
         "p2p_loggers": loggers,
         "colony_start_block": colony_start_block,
+        "seed_links_s": seed_links_s,
         "first": first,
+        # the colonies start loading at colony_start_block: a witness already there when every node was live means
+        # they started late, and the loaded window is short
+        "late_start": first >= colony_start_block,
         "last": last,
         "late_observer": late_observer,
         "pids": pids,
