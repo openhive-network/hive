@@ -5,6 +5,7 @@
 #include <graphene/net/peer_connection.hpp>
 
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/full_transaction.hpp>
 #include <hive/protocol/hive_operations.hpp>
 
 #include <fc/asio.hpp>
@@ -16,6 +17,7 @@
 #include <fc/network/tcp_socket_io_hooks.hpp>
 #include <fc/thread/thread.hpp>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -155,6 +157,19 @@ message make_transaction_message( char fill )
   return make_message( graphene::net::trx_message_type, 200, fill );
 }
 
+/// A transaction whose serialization is not a multiple of 16 bytes, so its message is padded on the wire.
+std::shared_ptr<hive::chain::full_transaction_type> make_full_transaction( size_t json_size )
+{
+  hive::protocol::custom_json_operation op;
+  op.required_posting_auths.insert( "alice" );
+  op.id = "batched_send_test";
+  op.json = "\"" + std::string( json_size, 't' ) + "\"";
+  hive::protocol::signed_transaction tx;
+  tx.ref_block_num = 1;
+  tx.operations.push_back( op );
+  return hive::chain::full_transaction_type::create_from_signed_transaction( tx, hive::protocol::pack_type::hf26, false );
+}
+
 std::shared_ptr<hive::chain::full_block_type> make_small_block()
 {
   hive::protocol::signed_block block;
@@ -290,6 +305,89 @@ BOOST_AUTO_TEST_CASE( queued_messages_arrive_intact_and_in_order_in_few_writes )
   BOOST_CHECK_GE( pair.sender_delegate.batched_writes, 2u );
   BOOST_CHECK_LE( pair.sender_delegate.batched_writes, pair.hooks.writes );
   BOOST_CHECK_EQUAL( pair.sender->get_total_bytes_sent(), pair.receiver->get_total_bytes_received() );
+}
+
+/// A transaction sent from its shared serialization arrives as the same bytes as a trx_message built for
+/// the peer, to every peer it is sent to and with the same byte accounting, padding included.
+BOOST_AUTO_TEST_CASE( shared_transaction_is_sent_as_the_same_bytes_as_a_trx_message )
+{
+  std::vector<std::shared_ptr<hive::chain::full_transaction_type>> transactions;
+  for( size_t json_size : { 1, 17, 300, 5000 } )
+    transactions.push_back( make_full_transaction( json_size ) );
+  BOOST_REQUIRE( std::any_of( transactions.begin(), transactions.end(), []( const auto& transaction ) {
+    return ( sizeof( graphene::net::message_header ) + transaction->get_transaction_size() ) % 16 != 0; } ) );
+
+  std::vector<message> expected;
+  for( const auto& transaction : transactions )
+  {
+    expected.push_back( message( graphene::net::trx_message( transaction ) ) );
+    expected.push_back( make_message( 5000, 3, 'q' ) );
+  }
+
+  connected_pair copying_pair;
+  for( const message& m : expected )
+    copying_pair.sender->send_message( m );
+  copying_pair.wait_for_messages( expected.size() );
+  BOOST_REQUIRE_EQUAL( copying_pair.receiver_delegate.received.size(), expected.size() );
+
+  for( size_t peer = 0; peer < 3; ++peer )
+  {
+    BOOST_TEST_CONTEXT( "peer " << peer )
+    {
+      connected_pair pair;
+      for( size_t i = 0; i < transactions.size(); ++i )
+      {
+        pair.sender->send_transaction_message( transactions[i] );
+        pair.sender->send_message( expected[2 * i + 1] );
+      }
+      pair.wait_for_messages( expected.size() );
+
+      BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), expected.size() );
+      for( size_t i = 0; i < expected.size(); ++i )
+        BOOST_CHECK_MESSAGE( same_message( pair.receiver_delegate.received[i], expected[i] ), "message " << i << " differs" );
+      BOOST_CHECK_EQUAL( pair.sender_delegate.messages_written, copying_pair.sender_delegate.messages_written );
+      BOOST_CHECK_EQUAL( pair.sender_delegate.bytes_written, copying_pair.sender_delegate.bytes_written );
+      BOOST_CHECK_EQUAL( pair.sender->get_total_bytes_sent(), copying_pair.sender->get_total_bytes_sent() );
+      BOOST_CHECK_EQUAL( pair.sender->get_total_bytes_sent(), pair.receiver->get_total_bytes_received() );
+    }
+  }
+}
+
+/// A shared transaction is transaction traffic: it waits for the flush delay and shares one write with the rest.
+BOOST_AUTO_TEST_CASE( shared_transaction_waits_for_the_flush_delay )
+{
+  connected_pair pair;
+  const fc::microseconds flush_delay = fc::milliseconds( 300 );
+  pair.sender->set_send_flush_delay( flush_delay );
+
+  const std::shared_ptr<hive::chain::full_transaction_type> transaction = make_full_transaction( 100 );
+  const fc::time_point queued_at = fc::time_point::now();
+  pair.sender->send_transaction_message( transaction );
+  fc::usleep( fc::milliseconds( 20 ) );
+  pair.sender->send_message( make_transaction_message( 'b' ) );
+  pair.wait_for_messages( 2 );
+
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 2u );
+  BOOST_CHECK( same_message( pair.receiver_delegate.received[0], message( graphene::net::trx_message( transaction ) ) ) );
+  BOOST_CHECK_GE( ( pair.receiver_delegate.received_at.front() - queued_at ).count(), flush_delay.count() );
+  BOOST_CHECK_EQUAL( pair.hooks.writes, 1u );
+}
+
+/// A message queued with a send time field goes out with the time it was written patched in.
+BOOST_AUTO_TEST_CASE( send_time_field_is_patched_when_written )
+{
+  connected_pair pair;
+
+  const fc::time_point queued_at = fc::time_point::now();
+  pair.sender->send_message( message( graphene::net::current_time_request_message( fc::time_point() ) ),
+                             offsetof( graphene::net::current_time_request_message, request_sent_time ) );
+  pair.wait_for_messages( 1 );
+
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 1u );
+  const graphene::net::current_time_request_message request =
+    pair.receiver_delegate.received[0].as<graphene::net::current_time_request_message>();
+  BOOST_CHECK( request.request_sent_time >= queued_at );
+  BOOST_CHECK( request.request_sent_time <= pair.receiver_delegate.received_at[0] );
 }
 
 /// With a flush delay, transaction traffic waits for the delay and then goes out together in one write.

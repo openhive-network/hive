@@ -28,6 +28,7 @@
 #include <graphene/net/exceptions.hpp>
 #include <graphene/net/config.hpp>
 #include <hive/protocol/config.hpp>
+#include <hive/chain/full_transaction.hpp>
 
 #include <fc/thread/thread.hpp>
 
@@ -66,7 +67,14 @@ namespace graphene { namespace net
       }
     }
 
-    message peer_connection::real_queued_message::get_message(peer_connection_delegate*, peer_connection*)
+    message_to_write peer_connection::queued_message::get_message_to_write(peer_connection_delegate* node, peer_connection* peer,
+                                                                          std::deque<message>& built_messages)
+    {
+      const message& built_message = built_messages.emplace_back(get_message(node, peer));
+      return message_to_write{built_message, built_message.data.data()};
+    }
+
+    void peer_connection::real_queued_message::patch_send_time()
     {
       if (message_send_time_field_offset != (size_t)-1)
       {
@@ -77,11 +85,49 @@ namespace graphene { namespace net
         memcpy(message_to_send.data.data() + message_send_time_field_offset,
                packed_current_time.data(), packed_current_time.size());
       }
+    }
+    message peer_connection::real_queued_message::get_message(peer_connection_delegate*, peer_connection*)
+    {
+      patch_send_time();
       return message_to_send;
+    }
+    message_to_write peer_connection::real_queued_message::get_message_to_write(peer_connection_delegate*, peer_connection*,
+                                                                                std::deque<message>&)
+    {
+      patch_send_time();
+      return message_to_write{message_to_send, message_to_send.data.data()};
     }
     size_t peer_connection::real_queued_message::get_size_in_queue()
     {
       return message_to_send.data.size();
+    }
+
+    peer_connection::queued_transaction_message::queued_transaction_message(const std::shared_ptr<full_transaction_type>& full_transaction) :
+      full_transaction(full_transaction)
+    {
+      FC_ASSERT(full_transaction, "Can't send a transaction_message when we don't have the full_transaction");
+      may_wait_for_batch = true;
+    }
+    message peer_connection::queued_transaction_message::get_message(peer_connection_delegate*, peer_connection*)
+    {
+      return trx_message(full_transaction);
+    }
+    message_to_write peer_connection::queued_transaction_message::get_message_to_write(peer_connection_delegate*, peer_connection*,
+                                                                                       std::deque<message>&)
+    {
+      // the same header and payload message(const trx_message&) builds, without copying the payload
+      const hive::chain::serialized_transaction_data& serialized_transaction = full_transaction->get_serialized_transaction();
+      message_to_write transaction_to_write;
+      transaction_to_write.header.msg_type = trx_message::type;
+      transaction_to_write.header.size = (uint32_t)full_transaction->get_transaction_size();
+      transaction_to_write.payload = serialized_transaction.begin;
+      return transaction_to_write;
+    }
+    size_t peer_connection::queued_transaction_message::get_size_in_queue()
+    {
+      // the payload is shared, but counting its size keeps the queue limit and the full-batch flush the same
+      // as for a transaction queued as a copy
+      return full_transaction->get_transaction_size();
     }
     message peer_connection::virtual_queued_block_message::get_message(peer_connection_delegate* node, peer_connection* peer)
     {
@@ -327,9 +373,11 @@ namespace graphene { namespace net
         wait_for_transaction_batch_to_grow();
 
         // take everything queued, up to the batch bound, so it goes out in one socket write;
-        // get_message() is still called here, at send time, because block messages are built lazily
+        // get_message_to_write() is still called here, at send time, because block messages are built lazily
         std::vector<std::unique_ptr<queued_message>> batch;
-        std::vector<message> messages_to_send;
+        std::vector<message_to_write> messages_to_send;
+        // messages built at send time; the queued ones in `batch` and the shared transactions are written in place
+        std::deque<message> built_messages;
         // every popped message, sent or dropped, leaves the queue's size exactly once, however this batch ends
         BOOST_SCOPE_EXIT(this_, &batch) {
           for (const std::unique_ptr<queued_message>& popped_message : batch)
@@ -343,9 +391,9 @@ namespace graphene { namespace net
           if (!batch.back()->may_wait_for_batch)
             --_queued_messages_not_waiting_for_batch;
           batch.back()->transmission_start_time = fc::time_point::now();
-          if (!build_queued_message(*batch.back(), batch.size() - 1, messages_to_send))
+          if (!build_queued_message(*batch.back(), batch.size() - 1, messages_to_send, built_messages))
             break; // send what was built before it; the rest of the queue goes in the next batch
-          batch_size += sizeof(message_header) + messages_to_send.back().size;
+          batch_size += sizeof(message_header) + messages_to_send.back().header.size;
         } while (!_queued_messages.empty() && batch_size < GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES);
 
         try
@@ -388,13 +436,13 @@ namespace graphene { namespace net
     }
 
     bool peer_connection::build_queued_message(queued_message& message_to_build, size_t queue_position,
-                                               std::vector<message>& built_messages)
+                                               std::vector<message_to_write>& messages_to_write, std::deque<message>& built_messages)
     {
       // a message that cannot be built (a block whose compression fails) is dropped on its own, so the
       // peer still gets everything else; if it asked for this item, it asks again or times out the request
       try
       {
-        built_messages.emplace_back(message_to_build.get_message(_node, this));
+        messages_to_write.emplace_back(message_to_build.get_message_to_write(_node, this, built_messages));
         return true;
       }
       catch (const fc::canceled_exception&)
@@ -507,6 +555,12 @@ namespace graphene { namespace net
     {
       VERIFY_CORRECT_THREAD();
       send_queueable_message(std::make_unique<virtual_queued_block_message>(full_block));
+    }
+
+    void peer_connection::send_transaction_message(const std::shared_ptr<full_transaction_type>& full_transaction)
+    {
+      VERIFY_CORRECT_THREAD();
+      send_queueable_message(std::make_unique<queued_transaction_message>(full_transaction));
     }
 
     void peer_connection::close_connection()

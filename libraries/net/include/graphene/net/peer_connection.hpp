@@ -34,6 +34,8 @@
 
 #include <boost/tuple/tuple.hpp>
 
+#include <deque>
+
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
@@ -132,6 +134,11 @@ namespace graphene { namespace net
         {}
 
         virtual message get_message(peer_connection_delegate* node, peer_connection* peer) = 0;
+        /** returns the bytes to write for this message, which stay valid while this object and
+         * `built_messages` live; the default builds get_message() and keeps it in `built_messages`
+         */
+        virtual message_to_write get_message_to_write(peer_connection_delegate* node, peer_connection* peer,
+                                                      std::deque<message>& built_messages);
         /** returns roughly the number of bytes of memory the message is consuming while
          * it is sitting on the queue
          */
@@ -156,6 +163,26 @@ namespace graphene { namespace net
         {}
 
         message get_message(peer_connection_delegate* node, peer_connection* peer) override;
+        /// patches the send time in place and writes the queued copy, so the send makes no further copy
+        message_to_write get_message_to_write(peer_connection_delegate* node, peer_connection* peer,
+                                              std::deque<message>& built_messages) override;
+        size_t get_size_in_queue() override;
+      private:
+        void patch_send_time();
+      };
+
+      /* when you queue up a 'queued_transaction_message', only a reference to the transaction is queued;
+       * the bytes written are the transaction's own serialization, shared by every peer it is sent to
+       */
+      struct queued_transaction_message : queued_message
+      {
+        std::shared_ptr<full_transaction_type> full_transaction;
+
+        queued_transaction_message(const std::shared_ptr<full_transaction_type>& full_transaction);
+
+        message get_message(peer_connection_delegate* node, peer_connection* peer) override;
+        message_to_write get_message_to_write(peer_connection_delegate* node, peer_connection* peer,
+                                              std::deque<message>& built_messages) override;
         size_t get_size_in_queue() override;
       };
 
@@ -342,6 +369,8 @@ namespace graphene { namespace net
 
       void send_queueable_message(std::unique_ptr<queued_message>&& message_to_send);
       void send_block_message(const std::shared_ptr<full_block_type>& full_block);
+      /// sends a trx_message for the transaction, written from its cached serialization without a per-peer copy
+      void send_transaction_message(const std::shared_ptr<full_transaction_type>& full_transaction);
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);
       void send_item(const item_id& item_to_send);
       /// Lets queued transaction traffic wait up to `delay` (measured from the oldest queued message) so
@@ -400,8 +429,9 @@ namespace graphene { namespace net
       void send_queued_messages_task();
       bool send_flush_wait_is_over() const;
       void wait_for_transaction_batch_to_grow();
-      /// appends the message to built_messages and returns true, or logs and returns false if it cannot be built
-      bool build_queued_message(queued_message& message_to_build, size_t queue_position, std::vector<message>& built_messages);
+      /// appends the message's bytes to messages_to_write and returns true, or logs and returns false if it cannot be built
+      bool build_queued_message(queued_message& message_to_build, size_t queue_position,
+                                std::vector<message_to_write>& messages_to_write, std::deque<message>& built_messages);
       void accept_connection_task();
       void connect_to_task(const fc::ip::endpoint& remote_endpoint);
     };
