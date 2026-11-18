@@ -480,7 +480,7 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
      "its own peer entry, so a host with both IPv4 and IPv6 addresses is dialed twice; the second handshake is rejected as "
      "already connected once per startup, which is expected and does not delay later connection attempts.")
     ("p2p-transaction-flush-delay-us", bpo::value<uint32_t>(), "Maximum time, in microseconds, that transaction traffic queued for a peer waits for more to go out in the same socket write. "
-     "A queued block, sync or control message, or a full batch, ends the wait at once. Default 5000 (5 ms); 0 writes without waiting. "
+     "A queued block, sync or control message, or a full batch, ends the wait at once. Default 1000 (1 ms); 0 disables the delay and writes without waiting. "
      "Overrides transaction_flush_delay_microseconds in p2p-parameters.")
     ("p2p-fetch-items-minimum-interval-us", bpo::value<uint32_t>(), "Minimum time, in microseconds, between two passes over the items to fetch from peers. "
      "Transaction advertisements arriving within it are handled together in the next pass; a block to fetch starts a pass at once. "
