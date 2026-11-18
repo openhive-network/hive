@@ -42,6 +42,8 @@ struct node_configuration
    int64_t transaction_flush_delay_microseconds = 1000;
    /** how long, at least, between two runs of the fetch items loop that only transactions trigger; 0 = no minimum */
    int64_t fetch_items_minimum_interval_microseconds = 5000;
+   /** how many transactions received from peers may wait for validation at once; at the limit, a peer's next one waits. 0 = no limit */
+   uint32_t maximum_transactions_in_flight = 10000;
 };
 
 } }
@@ -62,4 +64,5 @@ FC_REFLECT(graphene::net::node_configuration,
    (active_ignored_request_timeout_microseconds)
    (transaction_flush_delay_microseconds)
    (fetch_items_minimum_interval_microseconds)
+   (maximum_transactions_in_flight)
 )

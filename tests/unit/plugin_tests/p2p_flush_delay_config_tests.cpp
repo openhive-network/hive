@@ -102,6 +102,39 @@ BOOST_AUTO_TEST_CASE( fetch_items_minimum_interval_option_overrides_p2p_paramete
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( maximum_transactions_in_flight_defaults_to_10000 )
+{
+  try
+  {
+    BOOST_CHECK_EQUAL( configured_parameters( {} ).maximum_transactions_in_flight, 10000u );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+static const std::string p2p_parameters_with_50000_transactions_in_flight =
+  R"({"listen_endpoint":"0.0.0.0:0","accept_incoming_connections":false,"maximum_transactions_in_flight":50000})";
+
+BOOST_AUTO_TEST_CASE( maximum_transactions_in_flight_p2p_parameter_is_applied )
+{
+  try
+  {
+    BOOST_CHECK_EQUAL( configured_parameters(
+      { config_line_t( { "p2p-parameters", { p2p_parameters_with_50000_transactions_in_flight } } ) } ).maximum_transactions_in_flight, 50000u );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( maximum_transactions_in_flight_option_overrides_p2p_parameters )
+{
+  try
+  {
+    BOOST_CHECK_EQUAL( configured_parameters(
+      { config_line_t( { "p2p-parameters", { p2p_parameters_with_50000_transactions_in_flight } } ),
+        config_line_t( { "p2p-max-transactions-in-flight", { "100" } } ) } ).maximum_transactions_in_flight, 100u );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

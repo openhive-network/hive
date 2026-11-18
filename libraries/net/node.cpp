@@ -327,7 +327,7 @@ namespace graphene { namespace net {
 #define NODE_DELEGATE_METHOD_NAMES (has_item) \
                                    (handle_message) \
                                    (handle_block) \
-                                   (handle_transaction) \
+                                   (submit_transaction) \
                                    (get_block_ids) \
                                    (get_item) \
                                    (get_blockchain_synopsis) \
@@ -425,7 +425,8 @@ namespace graphene { namespace net {
       bool has_item( const net::item_id& id ) override;
       void handle_message( const message& ) override;
       block_handling_result handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) override;
-      void handle_transaction(const std::shared_ptr<full_transaction_type>& full_transaction) override;
+      void submit_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
+                              transaction_validated_callback on_validated) override;
       std::vector<item_hash_t> get_block_ids(const std::vector<item_hash_t>& blockchain_synopsis,
                                              uint32_t& remaining_item_count,
                                              uint32_t limit = DEFAULT_MAX_BLOCK_IDS_TO_FETCH) override;
@@ -662,6 +663,21 @@ namespace graphene { namespace net {
 
       std::list<fc::future<void>> _handle_message_calls_in_progress;
       std::set<message_hash_type> _message_ids_currently_being_processed;
+
+      /// the outcome of validating a transaction a peer sent us; it refers to the peer only by node id,
+      /// because the peer may be gone by the time the outcome is applied
+      struct transaction_completion
+      {
+        std::shared_ptr<full_transaction_type> full_transaction;
+        message_hash_type message_hash;
+        fc::time_point received_time;
+        node_id_t originating_peer;
+        fc::time_point validated_time;
+        fc::exception_ptr error;
+      };
+      /// filled by the delegate's validation callbacks on the chain's writer thread, applied on our thread
+      std::shared_ptr<completion_queue<transaction_completion>> _transaction_completions;
+      in_flight_limit _transactions_in_flight;
       std::set<block_id_type> _block_ids_currently_being_processed;
 
       std::atomic_int        _activeCalls;
@@ -814,6 +830,8 @@ namespace graphene { namespace net {
       void process_block_during_normal_operation(peer_connection* originating_peer, const std::shared_ptr<full_block_type>& full_block);
       void process_block_message(peer_connection* originating_peer, const message& message_to_process, const message_hash_type& message_hash);
       void process_trx_message(peer_connection* originating_peer, const trx_message& transaction_message_to_process);
+      void apply_transaction_completions();
+      void apply_transaction_completion(const transaction_completion& completion);
 
       void process_ordinary_message(peer_connection* originating_peer, const message& message_to_process, const message_hash_type& message_hash);
 
@@ -1012,6 +1030,15 @@ namespace graphene { namespace net {
       fc::rand_bytes(&_node_id.data[0], (int)_node_id.size());
 
       _shutdownNotifier = fc::promise<void>::create("Node shutdown notifier");
+
+      // called on the writer thread, and only until close() closes the queue, so this node is still alive
+      _transaction_completions = std::make_shared<completion_queue<transaction_completion>>([this]() {
+        _thread->async([this, completions = _transaction_completions]() {
+          // closing the queue and destroying this node happen on this thread, so an open queue means a live node
+          if (!completions->is_closed())
+            apply_transaction_completions();
+        }, "apply_transaction_completions");
+      });
     }
 
     node_impl::~node_impl()
@@ -1019,6 +1046,8 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       ilog( "cleaning up node" );
       _node_is_shutting_down = true;
+      // a message handler waiting for room to submit a transaction would keep _activeCalls up
+      _transactions_in_flight.close();
 
       if(_activeCalls.load() != 0)
       {
@@ -5035,15 +5064,54 @@ namespace graphene { namespace net {
         if (originating_peer->idle())
           trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
 
-        // Next: have the delegate process the message
-        fc::time_point message_validated_time;
+        // Next: have the delegate validate the transaction; apply_transaction_completion() applies the outcome.
+        // It counts as being processed while we wait for room to submit it, so no other peer is asked for it meanwhile
+        _message_ids_currently_being_processed.insert(message_hash);
         try
         {
-          dlog("passing message containing transaction ${trx} to client", ("trx", full_transaction->get_transaction_id()));
-          _message_ids_currently_being_processed.insert(message_hash);
-          _delegate->handle_transaction(full_transaction);
+          _transactions_in_flight.acquire(_node_configuration.maximum_transactions_in_flight);
+          try
+          {
+            dlog("passing message containing transaction ${trx} to client", ("trx", full_transaction->get_transaction_id()));
+            transaction_completion completion{full_transaction, message_hash, message_receive_time, originating_peer->node_id};
+            _delegate->submit_transaction(full_transaction,
+              [completions = _transaction_completions, completion](const fc::exception_ptr& error) {
+                transaction_completion validated = completion;
+                validated.validated_time = fc::time_point::now();
+                validated.error = error;
+                completions->push(std::move(validated));
+              });
+          }
+          catch (...)
+          {
+            _transactions_in_flight.release(1);
+            throw;
+          }
+        }
+        catch (const fc::canceled_exception&)
+        {
           _message_ids_currently_being_processed.erase(message_hash);
-          message_validated_time = fc::time_point::now();
+          throw;
+        }
+        catch (const fc::exception& e)
+        {
+          _message_ids_currently_being_processed.erase(message_hash);
+          dlog("client did not accept transaction message sent by peer ${peer} for validation, ${e}", ("peer", originating_peer->get_remote_endpoint())(e));
+          // record it so we don't try to fetch this item again
+          _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(trx_message_type, message_hash), fc::time_point::now()));
+        }
+      }
+    }
+
+    void node_impl::apply_transaction_completions()
+    {
+      VERIFY_CORRECT_THREAD();
+      const std::deque<transaction_completion> completions = _transaction_completions->take_all();
+      for (const transaction_completion& completion : completions)
+      {
+        try
+        {
+          apply_transaction_completion(completion);
         }
         catch (const fc::canceled_exception&)
         {
@@ -5051,30 +5119,43 @@ namespace graphene { namespace net {
         }
         catch (const fc::exception& e)
         {
-          dlog("client rejected transaction message sent by peer ${peer}, ${e}", ("peer", originating_peer->get_remote_endpoint())(e));
-          // record it so we don't try to fetch this item again
-          _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(trx_message_type, message_hash), fc::time_point::now()));
-          return;
+          elog("Unexpected exception applying the validation result of transaction ${trx}: ${e}",
+               ("trx", completion.full_transaction->get_transaction_id())("e", e.to_detail_string()));
         }
-        catch (...)
+        catch (const std::exception& e)
         {
-          elog("Caught unexpected unknown exception in process_ordinary_message"); //we don't expect this to happen
-          _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(trx_message_type, message_hash), fc::time_point::now()));
-          return;
+          elog("Unexpected exception applying the validation result of transaction ${trx}: ${e}",
+               ("trx", completion.full_transaction->get_transaction_id())("e", e.what()));
         }
-
-        item_id received_item_id(trx_message_type, message_hash);
-        for (const peer_connection_ptr& active_peer : _active_connections)
-        {
-          ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
-          active_peer->mark_advertised_transaction_received(received_item_id);
-          process_deferred_transaction_advertisements(active_peer.get());
-        }
-
-        // finally, if the delegate validated the message, broadcast it to our other peers
-        message_propagation_data propagation_data{message_receive_time, message_validated_time, originating_peer->node_id};
-        broadcast(full_transaction, propagation_data);
       }
+      _transactions_in_flight.release(completions.size());
+    }
+
+    void node_impl::apply_transaction_completion(const transaction_completion& completion)
+    {
+      VERIFY_CORRECT_THREAD();
+      _message_ids_currently_being_processed.erase(completion.message_hash);
+      const item_id received_item_id(trx_message_type, completion.message_hash);
+
+      if (completion.error)
+      {
+        dlog("client rejected transaction ${trx} sent by peer ${peer}, ${e}",
+             ("trx", completion.full_transaction->get_transaction_id())("peer", completion.originating_peer)("e", completion.error->to_string()));
+        // record it so we don't try to fetch this item again
+        _recently_failed_items.insert(peer_connection::timestamped_item_id(received_item_id, fc::time_point::now()));
+        return;
+      }
+
+      for (const peer_connection_ptr& active_peer : _active_connections)
+      {
+        ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
+        active_peer->mark_advertised_transaction_received(received_item_id);
+        process_deferred_transaction_advertisements(active_peer.get());
+      }
+
+      // finally, as the delegate validated the transaction, broadcast it to our other peers
+      message_propagation_data propagation_data{completion.received_time, completion.validated_time, completion.originating_peer};
+      broadcast(completion.full_transaction, propagation_data);
     }
 
     void node_impl::on_current_time_request_message(peer_connection* originating_peer,
@@ -5428,6 +5509,10 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
 
       _node_is_shutting_down = true;
+
+      // transactions still being validated are discarded when their validation ends
+      _transaction_completions->close();
+      _transactions_in_flight.close();
 
       try
       {
@@ -7239,7 +7324,7 @@ namespace graphene { namespace net {
                        destination_node->delegate->handle_block(full_block, false);
                      },
                      [&](const std::shared_ptr<full_transaction_type>& full_transaction) {
-                       destination_node->delegate->handle_transaction(full_transaction);
+                       destination_node->delegate->submit_transaction(full_transaction, [](const fc::exception_ptr&) {});
                      }
                    }, message_to_deliver);
       }
@@ -7354,9 +7439,10 @@ namespace graphene { namespace net {
       INVOKE_AND_COLLECT_STATISTICS(handle_block, full_block, sync_mode);
     }
 
-    void statistics_gathering_node_delegate_wrapper::handle_transaction(const std::shared_ptr<full_transaction_type>& full_transaction)
+    void statistics_gathering_node_delegate_wrapper::submit_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
+                                                                        transaction_validated_callback on_validated)
     {
-      INVOKE_AND_COLLECT_STATISTICS(handle_transaction, full_transaction);
+      INVOKE_AND_COLLECT_STATISTICS(submit_transaction, full_transaction, std::move(on_validated));
     }
 
     std::vector<item_hash_t> statistics_gathering_node_delegate_wrapper::get_block_ids(const std::vector<item_hash_t>& blockchain_synopsis,
@@ -7521,6 +7607,40 @@ namespace graphene { namespace net {
       }
       _wake_promise.reset();
     }
+  }
+
+  void in_flight_limit::acquire(uint32_t limit)
+  {
+    while (!_closed && limit != 0 && _in_flight >= limit)
+    {
+      if (!_released)
+        _released = fc::promise<void>::create("graphene::net::in_flight_limit");
+      // keep our own reference, wake_waiters() drops the member
+      fc::promise<void>::ptr released = _released;
+      released->wait();
+    }
+    if (_closed)
+      FC_THROW_EXCEPTION(fc::canceled_exception, "no more items are accepted for processing, the node is shutting down");
+    ++_in_flight;
+  }
+
+  void in_flight_limit::release(uint32_t count)
+  {
+    _in_flight -= std::min(count, _in_flight);
+    if (count != 0)
+      wake_waiters();
+  }
+
+  void in_flight_limit::close()
+  {
+    _closed = true;
+    wake_waiters();
+  }
+
+  void in_flight_limit::wake_waiters()
+  {
+    if (_released)
+      std::exchange(_released, nullptr)->set_value();
   }
 
   void fetch_candidate_queue::push(const item_id& item, fc::time_point now, fc::time_point oldest_to_keep)
