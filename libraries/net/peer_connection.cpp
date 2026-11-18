@@ -697,45 +697,28 @@ namespace graphene { namespace net
       VERIFY_CORRECT_THREAD();
       fc::time_point_sec oldest_inventory_to_keep(fc::time_point::now() - fc::minutes(GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES));
 
-      // expire old items from inventory_advertised_to_peer
-      auto oldest_inventory_to_keep_iter = inventory_advertised_to_peer.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
-      auto begin_iter = inventory_advertised_to_peer.get<timestamp_index>().begin();
+      // expire old items from block_inventory_advertised_to_peer
+      auto oldest_inventory_to_keep_iter = block_inventory_advertised_to_peer.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
+      auto begin_iter = block_inventory_advertised_to_peer.get<timestamp_index>().begin();
       unsigned number_of_elements_advertised_to_peer_to_discard = std::distance(begin_iter, oldest_inventory_to_keep_iter);
-      inventory_advertised_to_peer.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
+      block_inventory_advertised_to_peer.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
 
-      // also expire items from inventory_peer_advertised_to_us
-      oldest_inventory_to_keep_iter = inventory_peer_advertised_to_us.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
-      begin_iter = inventory_peer_advertised_to_us.get<timestamp_index>().begin();
+      // also expire items from block_inventory_peer_advertised_to_us
+      oldest_inventory_to_keep_iter = block_inventory_peer_advertised_to_us.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
+      begin_iter = block_inventory_peer_advertised_to_us.get<timestamp_index>().begin();
       unsigned number_of_elements_peer_advertised_to_discard = std::distance(begin_iter, oldest_inventory_to_keep_iter);
-      inventory_peer_advertised_to_us.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
+      block_inventory_peer_advertised_to_us.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
 
       // deferred advertisements this old have most likely fallen out of the peer's cache, so we couldn't fetch them anyway
       oldest_inventory_to_keep_iter = transaction_inventory_deferred.get<timestamp_index>().lower_bound(oldest_inventory_to_keep);
       begin_iter = transaction_inventory_deferred.get<timestamp_index>().begin();
       inventory_advertisements_dropped_since_report += std::distance(begin_iter, oldest_inventory_to_keep_iter);
       transaction_inventory_deferred.get<timestamp_index>().erase(begin_iter, oldest_inventory_to_keep_iter);
-      dlog("Expiring old inventory for peer ${peer}: removing ${to_peer} items advertised to peer (${remain_to_peer} left), and ${to_us} advertised to us (${remain_to_us} left)",
-           ("peer", get_remote_endpoint())
-           ("to_peer", number_of_elements_advertised_to_peer_to_discard)("remain_to_peer", inventory_advertised_to_peer.size())
-           ("to_us", number_of_elements_peer_advertised_to_discard)("remain_to_us", inventory_peer_advertised_to_us.size()));
-    }
-
-    // we have a higher limit for blocks than transactions so we will still fetch blocks even when transactions are throttled
-    bool peer_connection::is_inventory_advertised_to_us_list_full_for_transactions() const
-    {
-      VERIFY_CORRECT_THREAD();
-      return inventory_peer_advertised_to_us.size() > GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60;
-    }
-
-    bool peer_connection::is_inventory_advertised_to_us_list_full() const
-    {
-      VERIFY_CORRECT_THREAD();
-      // allow the total inventory size to be the maximum number of transactions we'll store in the inventory (above)
-      // plus the maximum number of blocks that would be generated in GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES (plus one,
-      // to give us some wiggle room)
-      return inventory_peer_advertised_to_us.size() >
-        GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60 +
-        (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES + 1) * 60 / HIVE_BLOCK_INTERVAL;
+      if (number_of_elements_advertised_to_peer_to_discard > 0 || number_of_elements_peer_advertised_to_discard > 0)
+        dlog("Expiring old block inventory for peer ${peer}: removing ${to_peer} blocks advertised to peer (${remain_to_peer} left), and ${to_us} advertised to us (${remain_to_us} left)",
+             ("peer", get_remote_endpoint())
+             ("to_peer", number_of_elements_advertised_to_peer_to_discard)("remain_to_peer", block_inventory_advertised_to_peer.size())
+             ("to_us", number_of_elements_peer_advertised_to_discard)("remain_to_us", block_inventory_peer_advertised_to_us.size()));
     }
 
     // remember a transaction advertisement we can't record yet because the inventory is full;
@@ -750,18 +733,6 @@ namespace graphene { namespace net
       }
       if (transaction_inventory_deferred.insert(timestamped_item_id(item, fc::time_point::now())).second)
         ++inventory_advertisements_deferred_since_report;
-    }
-
-    // a transaction we have received and validated no longer counts against the limit of advertisements
-    // to us; it is kept in inventory_advertised_to_peer instead, so we still don't advertise it back
-    void peer_connection::mark_advertised_transaction_received(const item_id& item)
-    {
-      VERIFY_CORRECT_THREAD();
-      auto iter = inventory_peer_advertised_to_us.find(item);
-      if (iter == inventory_peer_advertised_to_us.end())
-        return;
-      inventory_advertised_to_peer.insert(*iter);
-      inventory_peer_advertised_to_us.erase(iter);
     }
 
     bool peer_connection::performing_firewall_check() const

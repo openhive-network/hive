@@ -37,6 +37,7 @@
 #include <tuple>
 #include <boost/tuple/tuple.hpp>
 #include <boost/circular_buffer.hpp>
+#include <boost/core/bit.hpp>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -403,6 +404,8 @@ namespace graphene { namespace net {
       /// list of items we know another peer has and we want; each is also in the fetch_candidates of the peers that advertised it
       items_to_fetch_set_type _items_to_fetch;
       peer_connection::timestamped_items_set_type _recently_failed_items; /// list of transactions we've recently pushed and had rejected by the delegate
+      /// what our active peers advertised to us and we advertised to them of recent transactions
+      transaction_inventory _transaction_inventory;
       // @}
 
       /// used by the task that advertises inventory during normal operation
@@ -630,6 +633,19 @@ namespace graphene { namespace net {
       void record_advertised_item(peer_connection* originating_peer, const item_id& advertised_item_id);
       void process_deferred_transaction_advertisements(peer_connection* peer);
       void report_inventory_limit_hits(peer_connection* peer);
+      /// whether @p peer advertised @p item to us and still counts as having it
+      bool peer_advertised_item(const peer_connection* peer, const item_id& item) const;
+      /// @p transaction_record is the record of the transaction in question, or null if there is none
+      static bool peer_advertised_transaction(const peer_connection* peer, const transaction_inventory::record* transaction_record);
+      /// records that @p peer advertised @p item to us; returns whether it had not done so before
+      bool record_item_advertised_to_us(peer_connection* peer, const item_id& item);
+      void forget_item_advertised_to_us(peer_connection* peer, const item_id& item);
+      uint32_t inventory_advertised_to_us_size(const peer_connection* peer) const;
+      // we have a higher limit for blocks than transactions so we will still fetch blocks even when transactions are throttled
+      bool is_inventory_advertised_to_us_list_full_for_transactions(const peer_connection* peer) const;
+      bool is_inventory_advertised_to_us_list_full(const peer_connection* peer) const;
+      void expire_old_transaction_inventory();
+      void release_transaction_inventory_slot(peer_connection* peer);
 
       void on_closing_connection_message( peer_connection* originating_peer,
                                           const closing_connection_message& closing_connection_message_received );
@@ -1416,7 +1432,7 @@ namespace graphene { namespace net {
       auto iter = items_by_id.find(item);
       if (iter == items_by_id.end())
         return fetch_candidate_verdict::drop; // we got it, requested it from another peer, or it expired
-      if (peer->inventory_peer_advertised_to_us.find(item) == peer->inventory_peer_advertised_to_us.end())
+      if (!peer_advertised_item(peer.get(), item))
         return fetch_candidate_verdict::drop; // the peer said it doesn't have it, sent us a bad copy, or advertised it too long ago
       if (item.item_type == graphene::net::block_message_type && peer->is_block_fetching_deprioritized())
       {
@@ -1425,7 +1441,7 @@ namespace graphene { namespace net {
         // ask for it from their own candidates when they are idle, so here they only count as sources
         std::vector<block_source_candidate> candidates{{true, true}};
         for (const peer_connection_ptr& other_peer : _active_connections)
-          if (other_peer != peer && other_peer->inventory_peer_advertised_to_us.find(item) != other_peer->inventory_peer_advertised_to_us.end())
+          if (other_peer != peer && other_peer->block_inventory_peer_advertised_to_us.find(item) != other_peer->block_inventory_peer_advertised_to_us.end())
             candidates.push_back({other_peer->is_block_fetching_deprioritized(), false});
         if (choose_block_source(candidates) != std::optional<size_t>(0))
           return fetch_candidate_verdict::keep; // in case the other sources disconnect without delivering it
@@ -1555,8 +1571,12 @@ namespace graphene { namespace net {
     bool node_impl::queue_item_to_fetch_from_advertisers(const item_id& item)
     {
       bool advertised = false;
+      // a transaction's record is looked up once for all peers
+      const transaction_inventory::record* transaction_record =
+        item.item_type == trx_message_type ? _transaction_inventory.find(item.item_hash) : nullptr;
       for (const peer_connection_ptr& peer : _active_connections)
-        if (peer->inventory_peer_advertised_to_us.find(item) != peer->inventory_peer_advertised_to_us.end())
+        if (item.item_type == trx_message_type ? peer_advertised_transaction(peer.get(), transaction_record)
+                                               : peer->block_inventory_peer_advertised_to_us.find(item) != peer->block_inventory_peer_advertised_to_us.end())
         {
           add_fetch_candidate(peer.get(), item);
           advertised = true;
@@ -1579,7 +1599,7 @@ namespace graphene { namespace net {
       {
         if (queued.item.item_type != graphene::net::block_message_type)
           return false;
-        if (peer->inventory_peer_advertised_to_us.find(queued.item) != peer->inventory_peer_advertised_to_us.end())
+        if (peer->block_inventory_peer_advertised_to_us.find(queued.item) != peer->block_inventory_peer_advertised_to_us.end())
           return true;
       }
       return false;
@@ -1602,51 +1622,73 @@ namespace graphene { namespace net {
         // we're computing the messages)
         std::list<std::pair<peer_connection_ptr, item_ids_inventory_message>> inventory_messages_to_send;
 
+        expire_old_transaction_inventory();
+        const fc::time_point_sec now = fc::time_point::now();
+
+        // don't send a peer anything we've already advertised to it or anything it has advertised to us.
+        // Group the items we need to send by type, because we'll need to send one inventory message per type
+        struct peer_and_items_to_advertise
+        {
+          peer_connection_ptr peer;
+          std::map<uint32_t, std::vector<item_hash_t>> items_to_advertise_by_type;
+          unsigned total_items = 0;
+        };
+        std::vector<peer_and_items_to_advertise> items_by_peer;
+        // only advertise to peers who are in sync with us
+        for (const peer_connection_ptr& peer : _active_connections)
+          if (!peer->peer_needs_sync_items_from_us)
+            items_by_peer.push_back({peer});
+
+        for (peer_and_items_to_advertise& peer_and_items : items_by_peer)
+        {
+          const peer_connection_ptr& peer = peer_and_items.peer;
+          for (const std::shared_ptr<full_block_type>& full_block_to_advertise : block_inventory_to_advertise)
+          {
+            fc::ripemd160 item_hash_for_block = peer->advertise_blocks_by_block_id() ? full_block_to_advertise->get_block_id() 
+                                                                                     : full_block_to_advertise->get_legacy_block_message_hash();
+            item_id item_to_advertise{graphene::net::block_message_type, item_hash_for_block};
+
+            if (peer->block_inventory_advertised_to_peer.find(item_to_advertise) == peer->block_inventory_advertised_to_peer.end() &&
+                peer->block_inventory_peer_advertised_to_us.find(item_to_advertise) == peer->block_inventory_peer_advertised_to_us.end())
+            {
+              peer_and_items.items_to_advertise_by_type[item_to_advertise.item_type].push_back(item_to_advertise.item_hash);
+              peer->block_inventory_advertised_to_peer.insert(peer_connection::timestamped_item_id(item_to_advertise, now));
+              ++peer_and_items.total_items;
+              dlog("advertising block ${id} to peer ${endpoint}", ("id", item_to_advertise.item_hash)("endpoint", peer->get_remote_endpoint()));
+            }
+          }
+        }
+
+        // each transaction's record is looked up once, then every peer is checked by its slot
+        for (const std::shared_ptr<full_transaction_type>& full_transaction_to_advertise : transaction_inventory_to_advertise)
+        {
+          const item_hash_t& item_hash = full_transaction_to_advertise->get_legacy_transaction_message_hash();
+          const transaction_inventory::record& item_record = _transaction_inventory.get(item_hash, now);
+          for (peer_and_items_to_advertise& peer_and_items : items_by_peer)
+          {
+            const peer_connection_ptr& peer = peer_and_items.peer;
+            const transaction_inventory::slot_type slot = *peer->transaction_inventory_slot;
+            if (!item_record.advertised_to_us(slot) && _transaction_inventory.record_advertised_to_peer(item_record, slot, now))
+            {
+              peer_and_items.items_to_advertise_by_type[graphene::net::trx_message_type].push_back(item_hash);
+              ++peer_and_items.total_items;
+              testnetlog("advertising transaction ${id} to peer ${endpoint}", ("id", item_hash)("endpoint", peer->get_remote_endpoint()));
+              dlog("advertising transaction ${id} to peer ${endpoint}", ("id", item_hash)("endpoint", peer->get_remote_endpoint()));
+            }
+          }
+        }
+
+        for (const peer_and_items_to_advertise& peer_and_items : items_by_peer)
+        {
+          dlog("advertising ${count} new item(s) of ${types} type(s) to peer ${endpoint}",
+               ("count", peer_and_items.total_items)("types", peer_and_items.items_to_advertise_by_type.size())
+               ("endpoint", peer_and_items.peer->get_remote_endpoint()));
+          for (const auto& items_group : peer_and_items.items_to_advertise_by_type)
+            inventory_messages_to_send.push_back(std::make_pair(peer_and_items.peer, item_ids_inventory_message(items_group.first, items_group.second)));
+        }
+
         for (const peer_connection_ptr& peer : _active_connections)
         {
-          // only advertise to peers who are in sync with us
-          //wdump((peer->peer_needs_sync_items_from_us));
-          if (!peer->peer_needs_sync_items_from_us)
-          {
-            std::map<uint32_t, std::vector<item_hash_t>> items_to_advertise_by_type;
-            // don't send the peer anything we've already advertised to it
-            // or anything it has advertised to us
-            // group the items we need to send by type, because we'll need to send one inventory message per type
-            unsigned total_items_to_send_to_this_peer = 0;
-            for (const std::shared_ptr<full_block_type>& full_block_to_advertise : block_inventory_to_advertise)
-            {
-              fc::ripemd160 item_hash_for_block = peer->advertise_blocks_by_block_id() ? full_block_to_advertise->get_block_id() 
-                                                                                       : full_block_to_advertise->get_legacy_block_message_hash();
-              item_id item_to_advertise{graphene::net::block_message_type, item_hash_for_block};
-
-              if (peer->inventory_advertised_to_peer.find(item_to_advertise) == peer->inventory_advertised_to_peer.end() &&
-                  peer->inventory_peer_advertised_to_us.find(item_to_advertise) == peer->inventory_peer_advertised_to_us.end())
-              {
-                items_to_advertise_by_type[item_to_advertise.item_type].push_back(item_to_advertise.item_hash);
-                peer->inventory_advertised_to_peer.insert(peer_connection::timestamped_item_id(item_to_advertise, fc::time_point::now()));
-                ++total_items_to_send_to_this_peer;
-                dlog("advertising block ${id} to peer ${endpoint}", ("id", item_to_advertise.item_hash)("endpoint", peer->get_remote_endpoint()));
-              }
-            }
-            for (const std::shared_ptr<full_transaction_type>& full_transaction_to_advertise : transaction_inventory_to_advertise)
-            {
-              item_id item_to_advertise{graphene::net::trx_message_type, full_transaction_to_advertise->get_legacy_transaction_message_hash()};
-
-              if (peer->inventory_advertised_to_peer.find(item_to_advertise) == peer->inventory_advertised_to_peer.end() &&
-                  peer->inventory_peer_advertised_to_us.find(item_to_advertise) == peer->inventory_peer_advertised_to_us.end())
-              {
-                items_to_advertise_by_type[item_to_advertise.item_type].push_back(item_to_advertise.item_hash);
-                peer->inventory_advertised_to_peer.insert(peer_connection::timestamped_item_id(item_to_advertise, fc::time_point::now()));
-                ++total_items_to_send_to_this_peer;
-                testnetlog("advertising transaction ${id} to peer ${endpoint}", ("id", item_to_advertise.item_hash)("endpoint", peer->get_remote_endpoint()));
-                dlog("advertising transaction ${id} to peer ${endpoint}", ("id", item_to_advertise.item_hash)("endpoint", peer->get_remote_endpoint()));
-              }
-            }
-            dlog("advertising ${count} new item(s) of ${types} type(s) to peer ${endpoint}",
-                 ("count", total_items_to_send_to_this_peer)("types", items_to_advertise_by_type.size())("endpoint", peer->get_remote_endpoint()));
-            for (const auto& items_group : items_to_advertise_by_type)
-              inventory_messages_to_send.push_back(std::make_pair(peer, item_ids_inventory_message(items_group.first, items_group.second)));
-          }
           peer->clear_old_inventory();
           process_deferred_transaction_advertisements(peer.get());
         }
@@ -3547,7 +3589,7 @@ namespace graphene { namespace net {
       if (regular_item_iter != originating_peer->items_requested_from_peer.end())
       {
         originating_peer->items_requested_from_peer.erase( regular_item_iter );
-        originating_peer->inventory_peer_advertised_to_us.erase( requested_item );
+        forget_item_advertised_to_us(originating_peer, requested_item);
         // before handing the request to another peer, re-check that we still need the item:
         // the chain may have advanced past it while it was in flight.  (Only possible for
         // block ids -- legacy message hashes carry no block number to reason about.)
@@ -3614,6 +3656,7 @@ namespace graphene { namespace net {
       }
 
       // expire old inventory so we'll be making decisions our about whether to fetch blocks below based only on recent inventory
+      expire_old_transaction_inventory();
       originating_peer->clear_old_inventory();
 
       // Peers don't advertise items to a node they are syncing, but one that can't serve our sync (e.g. a node
@@ -3642,7 +3685,7 @@ namespace graphene { namespace net {
           // But if our copy of a block turns out to have a bad body, refetch_block_from_other_peers() has to
           // know this peer has the block too: it won't advertise it again
           if (item_ids_inventory_message_received.item_type == graphene::net::block_message_type &&
-              !originating_peer->is_inventory_advertised_to_us_list_full())
+              !is_inventory_advertised_to_us_list_full(originating_peer))
             record_advertised_item(originating_peer, advertised_item_id);
           continue;
         }
@@ -3708,12 +3751,12 @@ namespace graphene { namespace net {
         // rather than lost.  We try to allow fetching blocks even when we've stopped fetching transactions.
         if (item_ids_inventory_message_received.item_type == graphene::net::trx_message_type &&
             (!originating_peer->transaction_inventory_deferred.empty() ||
-             originating_peer->is_inventory_advertised_to_us_list_full_for_transactions()))
+             is_inventory_advertised_to_us_list_full_for_transactions(originating_peer)))
         {
           originating_peer->defer_transaction_advertisement(advertised_item_id);
           continue;
         }
-        if (originating_peer->is_inventory_advertised_to_us_list_full())
+        if (is_inventory_advertised_to_us_list_full(originating_peer))
         {
           ++originating_peer->inventory_advertisements_dropped_since_report;
           continue;
@@ -3741,8 +3784,7 @@ namespace graphene { namespace net {
           break;
         }
 
-      status.new_from_this_peer =
-        originating_peer->inventory_peer_advertised_to_us.insert(peer_connection::timestamped_item_id(advertised_item_id, fc::time_point::now())).second;
+      status.new_from_this_peer = record_item_advertised_to_us(originating_peer, advertised_item_id);
       status.recently_failed = _recently_failed_items.find(advertised_item_id) != _recently_failed_items.end();
       auto items_to_fetch_iter = _items_to_fetch.get<item_id_index>().find(advertised_item_id);
       status.queued = items_to_fetch_iter != _items_to_fetch.get<item_id_index>().end();
@@ -3777,7 +3819,7 @@ namespace graphene { namespace net {
       // (they expire from the deferred list meanwhile)
       if (!deferred_by_time.empty() && _delegate->is_at_live_sync())
       {
-        while (!deferred_by_time.empty() && !peer->is_inventory_advertised_to_us_list_full_for_transactions())
+        while (!deferred_by_time.empty() && !is_inventory_advertised_to_us_list_full_for_transactions(peer))
         {
           item_id deferred_item_id = deferred_by_time.begin()->item;
           deferred_by_time.erase(deferred_by_time.begin());
@@ -3810,6 +3852,67 @@ namespace graphene { namespace net {
       peer->inventory_advertisements_deferred_since_report = 0;
       peer->inventory_advertisements_dropped_since_report = 0;
       peer->last_inventory_limit_report_time = now;
+    }
+
+    bool node_impl::peer_advertised_item(const peer_connection* peer, const item_id& item) const
+    {
+      if (item.item_type == trx_message_type)
+        return peer->transaction_inventory_slot && _transaction_inventory.advertised_to_us(*peer->transaction_inventory_slot, item.item_hash);
+      return peer->block_inventory_peer_advertised_to_us.find(item) != peer->block_inventory_peer_advertised_to_us.end();
+    }
+
+    bool node_impl::peer_advertised_transaction(const peer_connection* peer, const transaction_inventory::record* transaction_record)
+    {
+      return transaction_record && peer->transaction_inventory_slot && transaction_record->advertised_to_us(*peer->transaction_inventory_slot);
+    }
+
+    // a peer that is not an active connection holds no slot: we neither fetch from it nor advertise to it
+    bool node_impl::record_item_advertised_to_us(peer_connection* peer, const item_id& item)
+    {
+      if (item.item_type == trx_message_type)
+        return peer->transaction_inventory_slot &&
+               _transaction_inventory.record_advertised_to_us(*peer->transaction_inventory_slot, item.item_hash, fc::time_point::now());
+      return peer->block_inventory_peer_advertised_to_us.insert(peer_connection::timestamped_item_id(item, fc::time_point::now())).second;
+    }
+
+    void node_impl::forget_item_advertised_to_us(peer_connection* peer, const item_id& item)
+    {
+      if (item.item_type != trx_message_type)
+        peer->block_inventory_peer_advertised_to_us.erase(item);
+      else if (peer->transaction_inventory_slot)
+        _transaction_inventory.forget_advertised_to_us(*peer->transaction_inventory_slot, item.item_hash);
+    }
+
+    uint32_t node_impl::inventory_advertised_to_us_size(const peer_connection* peer) const
+    {
+      const uint32_t transactions = peer->transaction_inventory_slot ? _transaction_inventory.advertised_to_us_count(*peer->transaction_inventory_slot) : 0;
+      return transactions + (uint32_t)peer->block_inventory_peer_advertised_to_us.size();
+    }
+
+    bool node_impl::is_inventory_advertised_to_us_list_full_for_transactions(const peer_connection* peer) const
+    {
+      return inventory_advertised_to_us_size(peer) > GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60;
+    }
+
+    bool node_impl::is_inventory_advertised_to_us_list_full(const peer_connection* peer) const
+    {
+      // allow the total inventory size to be the maximum number of transactions we'll store in the inventory (above)
+      // plus the maximum number of blocks that would be generated in GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES (plus one,
+      // to give us some wiggle room)
+      return inventory_advertised_to_us_size(peer) >
+        GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60 +
+        (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES + 1) * 60 / HIVE_BLOCK_INTERVAL;
+    }
+
+    void node_impl::expire_old_transaction_inventory()
+    {
+      _transaction_inventory.expire(fc::time_point_sec(fc::time_point::now() - fc::minutes(GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES)));
+    }
+
+    void node_impl::release_transaction_inventory_slot(peer_connection* peer)
+    {
+      if (peer->transaction_inventory_slot)
+        _transaction_inventory.release_slot(*std::exchange(peer->transaction_inventory_slot, std::nullopt));
     }
 
     void node_impl::on_closing_connection_message( peer_connection* originating_peer, const closing_connection_message& closing_connection_message_received )
@@ -3872,6 +3975,7 @@ namespace graphene { namespace net {
       _closing_connections.erase(originating_peer_ptr);
       _handshaking_connections.erase(originating_peer_ptr);
       _terminating_connections.erase(originating_peer_ptr);
+      release_transaction_inventory_slot(originating_peer);
       if (_active_connections.find(originating_peer_ptr) != _active_connections.end())
       {
         _active_connections.erase(originating_peer_ptr);
@@ -4028,7 +4132,7 @@ namespace graphene { namespace net {
     void node_impl::refetch_block_from_other_peers(peer_connection* peer_that_sent_bad_copy, const item_id& block_item_id)
     {
       VERIFY_CORRECT_THREAD();
-      peer_that_sent_bad_copy->inventory_peer_advertised_to_us.erase(block_item_id);
+      peer_that_sent_bad_copy->block_inventory_peer_advertised_to_us.erase(block_item_id);
       for (const peer_connection_ptr& peer : _active_connections)
         if (peer->items_requested_from_peer.find(block_item_id) != peer->items_requested_from_peer.end())
           return; // another copy is already on its way
@@ -4625,11 +4729,11 @@ namespace graphene { namespace net {
         {
           ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
 
-          auto iter = peer->inventory_peer_advertised_to_us.find(peer->advertise_blocks_by_block_id() ? new_block_message_item_id : legacy_block_message_item_id);
-          if (iter != peer->inventory_peer_advertised_to_us.end())
+          auto iter = peer->block_inventory_peer_advertised_to_us.find(peer->advertise_blocks_by_block_id() ? new_block_message_item_id : legacy_block_message_item_id);
+          if (iter != peer->block_inventory_peer_advertised_to_us.end())
           {
             // this peer offered us the item.  It will eventually expire from the peer's
-            // inventory_peer_advertised_to_us list after some time has passed (currently 2 minutes).
+            // block_inventory_peer_advertised_to_us list after some time has passed (currently 2 minutes).
             // For now, it will remain there, which will prevent us from offering the peer this
             // block back when we rebroadcast the block below
             peer->last_block_delegate_has_seen = block_id;
@@ -4995,10 +5099,10 @@ namespace graphene { namespace net {
         return;
       }
 
+      _transaction_inventory.mark_received(completion.message_hash);
       for (const peer_connection_ptr& active_peer : _active_connections)
       {
         ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
-        active_peer->mark_advertised_transaction_received(received_item_id);
         process_deferred_transaction_advertisements(active_peer.get());
       }
 
@@ -6273,6 +6377,8 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _active_connections.insert(peer);
+      if (!peer->transaction_inventory_slot)
+        peer->transaction_inventory_slot = _transaction_inventory.acquire_slot();
       _handshaking_connections.erase(peer);
       _closing_connections.erase(peer);
       _terminating_connections.erase(peer);
@@ -6285,6 +6391,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _active_connections.erase(peer);
+      release_transaction_inventory_slot(peer.get());
       _handshaking_connections.erase(peer);
       _closing_connections.insert(peer);
       _terminating_connections.erase(peer);
@@ -6297,6 +6404,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _active_connections.erase(peer);
+      release_transaction_inventory_slot(peer.get());
       _handshaking_connections.erase(peer);
       _closing_connections.erase(peer);
       _terminating_connections.insert(peer);
@@ -6447,14 +6555,18 @@ namespace graphene { namespace net {
             ("block_size", _new_block_inventory.size() )("transaction_size", _new_transaction_inventory.size() ) );
       ilog( "node._block_message_cache size: ${size}", ("size", _block_message_cache.size() ) );
       ilog( "node._transaction_message_cache size: ${size}", ("size", _transaction_message_cache.size() ) );
+      ilog( "node._transaction_inventory size: ${size}", ("size", _transaction_inventory.size() ) );
       for( const peer_connection_ptr& peer : _active_connections )
       {
         ilog( "  peer ${endpoint}", ("endpoint", peer->get_remote_endpoint() ) );
         ilog( "    last requested block number for peers on this fork: ${block_num}",("block_num",peer->last_requested_block_number_for_peers_on_this_fork) );
         ilog( "    block number of first id to get: ${block_num}", ("block_num",peer->first_id_block_number) );
         ilog( "    peer.ids_of_items_to_get size: ${size}", ("size", peer->ids_of_items_to_get.size() ) );
-        ilog( "    peer.inventory_peer_advertised_to_us size: ${size}", ("size", peer->inventory_peer_advertised_to_us.size() ) );
-        ilog( "    peer.inventory_advertised_to_peer size: ${size}", ("size", peer->inventory_advertised_to_peer.size() ) );
+        const transaction_inventory::slot_type slot = peer->transaction_inventory_slot.value_or(std::numeric_limits<transaction_inventory::slot_type>::max());
+        ilog( "    peer inventory advertised to us: ${blocks} blocks, ${transactions} transactions",
+              ("blocks", peer->block_inventory_peer_advertised_to_us.size())("transactions", _transaction_inventory.advertised_to_us_count(slot)) );
+        ilog( "    peer inventory advertised to peer: ${blocks} blocks, ${transactions} transactions",
+              ("blocks", peer->block_inventory_advertised_to_peer.size())("transactions", _transaction_inventory.advertised_to_peer_count(slot)) );
         if (!peer->item_ids_requested_from_peer)
           ilog( "    peer.time_since_inventory_requested: no request in progress" );
         else
@@ -7556,6 +7668,154 @@ namespace graphene { namespace net {
   {
     return std::clamp<size_t>(GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / std::max<size_t>(_mean, 1),
                               1, GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION);
+  }
+
+  bool transaction_inventory::record::test(slot_type slot, unsigned kind) const
+  {
+    const size_t word = record::kinds * (slot / 64) + kind;
+    return word < bits.size() && (bits[word] >> (slot % 64)) & 1;
+  }
+
+  bool transaction_inventory::record::set(slot_type slot, unsigned kind) const
+  {
+    const size_t word = record::kinds * (slot / 64) + kind;
+    if (word >= bits.size())
+      bits.resize(record::kinds * (slot / 64 + 1), 0);
+    const uint64_t mask = uint64_t(1) << (slot % 64);
+    const bool was_clear = !(bits[word] & mask);
+    bits[word] |= mask;
+    return was_clear;
+  }
+
+  bool transaction_inventory::record::reset(slot_type slot, unsigned kind) const
+  {
+    const size_t word = record::kinds * (slot / 64) + kind;
+    if (word >= bits.size())
+      return false;
+    const uint64_t mask = uint64_t(1) << (slot % 64);
+    const bool was_set = bits[word] & mask;
+    bits[word] &= ~mask;
+    return was_set;
+  }
+
+  transaction_inventory::slot_type transaction_inventory::acquire_slot()
+  {
+    auto free_slot = std::find_if(_slots.begin(), _slots.end(), [](const slot_state& state) { return !state.in_use; });
+    if (free_slot == _slots.end())
+      free_slot = _slots.insert(_slots.end(), slot_state());
+    free_slot->in_use = true;
+    return (slot_type)(free_slot - _slots.begin());
+  }
+
+  void transaction_inventory::release_slot(slot_type slot)
+  {
+    FC_ASSERT(slot < _slots.size() && _slots[slot].in_use, "releasing transaction inventory slot ${slot}, which is not in use", (slot));
+    for (const record& item_record : _records)
+      for (unsigned kind = 0; kind < record::kinds; ++kind)
+        item_record.reset(slot, kind);
+    _slots[slot] = slot_state();
+  }
+
+  const transaction_inventory::record* transaction_inventory::find(const item_hash_t& item) const
+  {
+    const auto iter = _records.find(item);
+    return iter == _records.end() ? nullptr : &*iter;
+  }
+
+  const transaction_inventory::record& transaction_inventory::get(const item_hash_t& item, fc::time_point_sec now)
+  {
+    const auto [iter, inserted] = _records.insert(record(item));
+    if (inserted)
+      iter->last_recorded = now;
+    return *iter;
+  }
+
+  bool transaction_inventory::advertised_to_us(slot_type slot, const item_hash_t& item) const
+  {
+    const record* item_record = find(item);
+    return item_record && item_record->advertised_to_us(slot);
+  }
+
+  bool transaction_inventory::record_advertised_to_us(slot_type slot, const item_hash_t& item, fc::time_point_sec now)
+  {
+    return set_bit_and_record_time(get(item, now), slot, record::advertised_to_us_kind, now);
+  }
+
+  void transaction_inventory::forget_advertised_to_us(slot_type slot, const item_hash_t& item)
+  {
+    if (const record* item_record = find(item))
+      reset_bit(*item_record, slot, record::advertised_to_us_kind);
+  }
+
+  bool transaction_inventory::record_advertised_to_peer(const record& item_record, slot_type slot, fc::time_point_sec now)
+  {
+    return set_bit_and_record_time(item_record, slot, record::advertised_to_peer_kind, now);
+  }
+
+  // like a set entry moved from one kind to the other, the moved bits don't make the record newer
+  void transaction_inventory::mark_received(const item_hash_t& item)
+  {
+    const record* item_record = find(item);
+    if (!item_record)
+      return;
+    for (size_t word = 0; word < item_record->bits.size(); word += record::kinds)
+      for (uint64_t moving = item_record->bits[word + record::advertised_to_us_kind]; moving != 0; moving &= moving - 1)
+      {
+        const slot_type slot = (slot_type)(64 * (word / record::kinds) + boost::core::countr_zero(moving));
+        reset_bit(*item_record, slot, record::advertised_to_us_kind);
+        set_bit(*item_record, slot, record::advertised_to_peer_kind);
+      }
+  }
+
+  void transaction_inventory::expire(fc::time_point_sec oldest_to_keep)
+  {
+    auto& by_time = _records.get<by_last_recorded>();
+    while (!by_time.empty() && by_time.front().last_recorded < oldest_to_keep)
+    {
+      const record& expiring = by_time.front();
+      for (size_t word = 0; word < expiring.bits.size(); ++word)
+        for (uint64_t remaining = expiring.bits[word]; remaining != 0; remaining &= remaining - 1)
+          --_slots[64 * (word / record::kinds) + boost::core::countr_zero(remaining)].counts[word % record::kinds];
+      by_time.pop_front();
+    }
+  }
+
+  uint32_t transaction_inventory::advertised_to_us_count(slot_type slot) const
+  {
+    return slot < _slots.size() ? _slots[slot].counts[record::advertised_to_us_kind] : 0;
+  }
+
+  uint32_t transaction_inventory::advertised_to_peer_count(slot_type slot) const
+  {
+    return slot < _slots.size() ? _slots[slot].counts[record::advertised_to_peer_kind] : 0;
+  }
+
+  void transaction_inventory::set_bit(const record& item_record, slot_type slot, unsigned kind)
+  {
+    if (item_record.set(slot, kind))
+      ++_slots[slot].counts[kind];
+  }
+
+  // the record moves to the back of the expiry order, which stays sorted as long as the clock doesn't go back;
+  // if it does, records stamped later wait behind it and expire late, never early
+  bool transaction_inventory::set_bit_and_record_time(const record& item_record, slot_type slot, unsigned kind, fc::time_point_sec now)
+  {
+    if (!item_record.set(slot, kind))
+      return false;
+    ++_slots[slot].counts[kind];
+    if (now > item_record.last_recorded)
+    {
+      item_record.last_recorded = now;
+      auto& by_time = _records.get<by_last_recorded>();
+      by_time.relocate(by_time.end(), by_time.iterator_to(item_record));
+    }
+    return true;
+  }
+
+  void transaction_inventory::reset_bit(const record& item_record, slot_type slot, unsigned kind)
+  {
+    if (item_record.reset(slot, kind))
+      --_slots[slot].counts[kind];
   }
 
   void p2p_statistics::record_submission(uint32_t in_flight)

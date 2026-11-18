@@ -39,6 +39,13 @@
 #include <fc/time.hpp>
 #include <fc/variant_object.hpp>
 
+#include <boost/container/small_vector.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
+#include <boost/multi_index/tag.hpp>
+
 #include <array>
 #include <deque>
 #include <functional>
@@ -653,6 +660,103 @@ namespace graphene { namespace net {
 
   private:
     size_t _mean;
+  };
+
+  /**
+   * What the peers are known to have of the transactions relayed within the inventory window: which peers
+   * advertised each transaction to us and which we advertised it to.  One record per transaction, found with
+   * one hash lookup, holds a bitmap of each kind over peer slots, so recording or checking a peer is a bit
+   * operation rather than a lookup in a set of the peer's own.
+   *
+   * A peer holds a slot from acquire_slot() to release_slot(), which clears the slot from every record, so a
+   * reused slot starts with no knowledge.  Slots are reused lowest first and a record's bitmaps are widened
+   * only when a bit past their width is set, so they take one word per kind, inside the record, up to 64 peers.
+   *
+   * A record expires once the inventory window has passed since a peer was last recorded in it (a peer's
+   * knowledge outlives its own advertisement by however much later the last other peer was recorded).
+   * Records are kept in that order, so expire() looks only at the expired ones.  All calls from one thread.
+   */
+  class transaction_inventory
+  {
+  public:
+    using slot_type = uint32_t;
+
+    class record
+    {
+    public:
+      explicit record(const item_hash_t& item) : item(item) {}
+
+      bool advertised_to_us(slot_type slot) const { return test(slot, advertised_to_us_kind); }
+      bool advertised_to_peer(slot_type slot) const { return test(slot, advertised_to_peer_kind); }
+
+    private:
+      friend class transaction_inventory;
+      static constexpr unsigned advertised_to_us_kind = 0;
+      static constexpr unsigned advertised_to_peer_kind = 1;
+      static constexpr unsigned kinds = 2;
+
+      bool test(slot_type slot, unsigned kind) const;
+      /// whether the bit was clear
+      bool set(slot_type slot, unsigned kind) const;
+      /// whether the bit was set
+      bool reset(slot_type slot, unsigned kind) const;
+
+      item_hash_t item;
+      // the records' container only indexes `item`, so the rest may change in place.
+      // Word kinds * w + kind holds the bits of slots 64 * w to 64 * w + 63
+      mutable boost::container::small_vector<uint64_t, kinds> bits;
+      mutable fc::time_point_sec last_recorded;
+    };
+
+    slot_type acquire_slot();
+    void release_slot(slot_type slot);
+
+    /// The record of @p item, or null if there is none.  Valid until the next expire() or release_slot()
+    const record* find(const item_hash_t& item) const;
+    /// The record of @p item, created if there is none.  Valid until the next expire() or release_slot()
+    const record& get(const item_hash_t& item, fc::time_point_sec now);
+
+    bool advertised_to_us(slot_type slot, const item_hash_t& item) const;
+    /// Returns whether the peer in @p slot had not advertised @p item to us yet
+    bool record_advertised_to_us(slot_type slot, const item_hash_t& item, fc::time_point_sec now);
+    /// The peer in @p slot doesn't have @p item after all
+    void forget_advertised_to_us(slot_type slot, const item_hash_t& item);
+    /// Returns whether we had not advertised @p item_record to the peer in @p slot yet
+    bool record_advertised_to_peer(const record& item_record, slot_type slot, fc::time_point_sec now);
+    /// We received and validated @p item: every peer that advertised it to us counts as having been
+    /// advertised it instead, so it no longer counts against the peer's limit of advertisements to us
+    /// but we still don't advertise it back
+    void mark_received(const item_hash_t& item);
+
+    /// Forgets the records nobody was recorded in since before @p oldest_to_keep
+    void expire(fc::time_point_sec oldest_to_keep);
+
+    uint32_t advertised_to_us_count(slot_type slot) const;
+    uint32_t advertised_to_peer_count(slot_type slot) const;
+    size_t size() const { return _records.size(); }
+
+  private:
+    struct slot_state
+    {
+      bool in_use = false;
+      std::array<uint32_t, record::kinds> counts{};
+    };
+    struct by_item{};
+    struct by_last_recorded{};
+    typedef boost::multi_index_container<
+      record,
+      boost::multi_index::indexed_by<
+        boost::multi_index::hashed_unique<boost::multi_index::tag<by_item>,
+                                          boost::multi_index::member<record, item_hash_t, &record::item>,
+                                          std::hash<item_hash_t>>,
+        boost::multi_index::sequenced<boost::multi_index::tag<by_last_recorded>>>> record_set_type;
+
+    void set_bit(const record& item_record, slot_type slot, unsigned kind);
+    bool set_bit_and_record_time(const record& item_record, slot_type slot, unsigned kind, fc::time_point_sec now);
+    void reset_bit(const record& item_record, slot_type slot, unsigned kind);
+
+    record_set_type _records;
+    std::vector<slot_state> _slots;
   };
 
   /**

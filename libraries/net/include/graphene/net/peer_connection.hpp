@@ -318,10 +318,14 @@ namespace graphene { namespace net
                                                                                                             std::hash<item_id> >,
                                                                           boost::multi_index::ordered_non_unique<boost::multi_index::tag<timestamp_index>,
                                                                                                                  boost::multi_index::member<timestamped_item_id, fc::time_point_sec, &timestamped_item_id::timestamp> > > > timestamped_items_set_type;
-      timestamped_items_set_type inventory_peer_advertised_to_us;
-      timestamped_items_set_type inventory_advertised_to_peer;
-      // transactions this peer advertised while inventory_peer_advertised_to_us was full; they are moved
-      // into it (and fetched) once it has room, or dropped when they get too old to still be in the peer's cache
+      // blocks only: what the peer knows of transactions is in the node's transaction_inventory, under this slot,
+      // which the peer holds while it is an active connection
+      timestamped_items_set_type block_inventory_peer_advertised_to_us;
+      timestamped_items_set_type block_inventory_advertised_to_peer;
+      std::optional<transaction_inventory::slot_type> transaction_inventory_slot;
+      // transactions this peer advertised while its inventory of advertisements to us was full; they are recorded
+      // (and fetched) once it has room, or dropped when they get too old to still be in the peer's cache.  Kept
+      // per peer, in the order they came: unlike the inventory, it is empty unless the peer floods us
       timestamped_items_set_type transaction_inventory_deferred;
       // advertisements we couldn't record since the last report: deferred are in transaction_inventory_deferred,
       // dropped are gone (deferred list full, deferred too long, or block advertisements over the limit)
@@ -413,11 +417,9 @@ namespace graphene { namespace net
       /// called once the peer delivered a block we accepted: its copies match their headers again
       void restore_block_fetching_priority();
       fc::sha512 get_shared_secret() const;
+      /// expires the peer's block inventory and deferred transaction advertisements
       void clear_old_inventory();
-      bool is_inventory_advertised_to_us_list_full_for_transactions() const;
-      bool is_inventory_advertised_to_us_list_full() const;
       void defer_transaction_advertisement(const item_id& item);
-      void mark_advertised_transaction_received(const item_id& item);
       bool performing_firewall_check() const;
       fc::optional<fc::ip::endpoint> get_endpoint_for_connecting() const;
       fc::optional<fc::ip::endpoint> get_endpoint_for_db() const;
