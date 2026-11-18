@@ -99,9 +99,7 @@ def test_colony_on_basic_network_structure(
 
     assert witness_node.is_running(), "Witness node didn't work"
     assert colony_node.is_running(), "Colony node didn't work"
-    # Use lower transaction threshold and longer timeout for basic network test -
-    # network coordination overhead means colony may not reach full 5000 txn/block target under CI load
-    wait_for_start_colony(witness_node, min_trx_in_block=2500, timeout=420)
+    wait_for_start_colony(witness_node, min_trx_in_block=5000)
 
 
 @pytest.mark.testnet
@@ -199,9 +197,7 @@ def test_multiple_colony_nodes_communication_with_single_witness_node(
     )
 
     assert all(node.is_running() for node in nodes), "At least one node is not working"
-    # Use lower transaction threshold for multi-node test - network coordination
-    # overhead means colony may not reach full 5000 txn/block target under CI load
-    wait_for_start_colony(witness_node, min_trx_in_block=2500, timeout=420)
+    wait_for_start_colony(witness_node, min_trx_in_block=5000)
 
 
 @pytest.mark.testnet
@@ -317,7 +313,7 @@ def prepare_colony_config(node: tt.ApiNode | tt.InitNode) -> None:
     node.config.colony_transactions_per_block = "5000"
 
 
-def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int = 500, timeout: int = 300) -> None:
+def wait_for_start_colony(node: tt.InitNode | tt.ApiNode, min_trx_in_block: int = 500, timeout: int = 240) -> None:
     def is_colony_started() -> bool:
         return (
             len(node.api.block.get_block(block_num=node.get_last_block_number()).block.transactions) >= min_trx_in_block
