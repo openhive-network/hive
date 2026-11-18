@@ -3530,7 +3530,7 @@ namespace graphene { namespace net {
         assert(reply_transactions.size() == fetch_items_message_received.items_to_fetch.size());
         for (unsigned i = 0; i < reply_transactions.size(); ++i)
           if (reply_transactions[i])
-            originating_peer->send_message(trx_message(reply_transactions[i]));
+            originating_peer->send_transaction_message(reply_transactions[i]);
           else
             originating_peer->send_message(item_not_available_message(item_id(trx_message_type, fetch_items_message_received.items_to_fetch[i])));
       }
