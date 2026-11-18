@@ -351,6 +351,8 @@ namespace graphene { namespace net
         try
         {
           _message_connection.send_messages(messages_to_send);
+          if (!messages_to_send.empty())
+            _node->on_messages_written(messages_to_send.size(), batch_size);
         }
         catch (const fc::canceled_exception&)
         {

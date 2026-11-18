@@ -33,6 +33,9 @@ public:
   std::vector<message> received;
   std::vector<fc::time_point> received_at;
   bool closed = false;
+  size_t batched_writes = 0;
+  size_t messages_written = 0;
+  size_t bytes_written = 0;
 
   void on_message( peer_connection*, const message& received_message ) override
   {
@@ -41,6 +44,12 @@ public:
   }
   void on_connection_closed( peer_connection* ) override { closed = true; }
   std::shared_ptr<hive::chain::full_block_type> get_full_block_by_block_id( const hive::protocol::block_id_type& ) override { return {}; }
+  void on_messages_written( size_t message_count, size_t byte_count ) override
+  {
+    ++batched_writes;
+    messages_written += message_count;
+    bytes_written += byte_count;
+  }
 };
 
 /// Counts the writes a tcp_socket hands to the operating system.
@@ -272,6 +281,14 @@ BOOST_AUTO_TEST_CASE( queued_messages_arrive_intact_and_in_order_in_few_writes )
 
   // one message per write would be at least one write per message, plus extra writes for the block
   BOOST_CHECK_LT( pair.hooks.writes, expected.size() / 4 );
+  // the delegate hears of every batch, with the messages and bytes (headers included) it carried
+  size_t expected_bytes = 0;
+  for( const message& m : expected )
+    expected_bytes += sizeof( graphene::net::message_header ) + m.size;
+  BOOST_CHECK_EQUAL( pair.sender_delegate.messages_written, expected.size() );
+  BOOST_CHECK_EQUAL( pair.sender_delegate.bytes_written, expected_bytes );
+  BOOST_CHECK_GE( pair.sender_delegate.batched_writes, 2u );
+  BOOST_CHECK_LE( pair.sender_delegate.batched_writes, pair.hooks.writes );
   BOOST_CHECK_EQUAL( pair.sender->get_total_bytes_sent(), pair.receiver->get_total_bytes_received() );
 }
 

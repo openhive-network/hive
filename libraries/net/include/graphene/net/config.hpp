@@ -157,10 +157,19 @@
 #define GRAPHENE_NET_INVENTORY_LIMIT_REPORT_INTERVAL_SEC     10
 
 /**
- * How often we log what fetching items during normal operation cost: iterations, fetch candidates
- * examined, items requested and the time spent choosing them
+ * How often the node writes its p2p statistics (fetch scheduling, transaction handoff, send batching,
+ * request sizing) to the GRAPHENE_NET_STATISTICS_LOGGER logger, when that logger is enabled for info
  */
-#define GRAPHENE_NET_FETCH_ITEMS_REPORT_INTERVAL_SEC         30
+#define GRAPHENE_NET_STATISTICS_REPORT_INTERVAL_SEC          30
+#define GRAPHENE_NET_STATISTICS_LOGGER                       "p2p_stats"
+
+/**
+ * One in this many transactions, chosen by message hash so every node picks the same ones, is logged with
+ * a real-clock timestamp when received and when broadcast, to the GRAPHENE_NET_RELAY_SAMPLE_LOGGER logger
+ * when that logger is enabled for info
+ */
+#define GRAPHENE_NET_RELAY_SAMPLE_ONE_IN                     64
+#define GRAPHENE_NET_RELAY_SAMPLE_LOGGER                     "p2p_relay_sample"
 
 /**
  * During normal operation, how many blocks will be fetched from each
