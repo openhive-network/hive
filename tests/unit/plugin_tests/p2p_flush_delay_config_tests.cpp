@@ -39,12 +39,12 @@ struct p2p_flush_delay_fixture : public witness_fixture
 
 BOOST_FIXTURE_TEST_SUITE( p2p_flush_delay_config_tests, p2p_flush_delay_fixture )
 
-BOOST_AUTO_TEST_CASE( flush_delay_defaults_to_5_ms )
+BOOST_AUTO_TEST_CASE( flush_delay_defaults_to_1_ms )
 {
   try
   {
     // witness_fixture passes p2p-parameters without transaction_flush_delay_microseconds
-    BOOST_CHECK_EQUAL( configured_flush_delay( {} ), 5000 );
+    BOOST_CHECK_EQUAL( configured_flush_delay( {} ), 1000 );
   }
   FC_LOG_AND_RETHROW()
 }
