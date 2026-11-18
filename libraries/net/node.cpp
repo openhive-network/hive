@@ -66,6 +66,9 @@
 #include <boost/preprocessor/stringize.hpp>
 
 #include <ifaddrs.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <time.h>
 #include <netinet/in.h>
 #include <cerrno>
 #include <cstring>
@@ -548,16 +551,6 @@ namespace graphene { namespace net {
       unsigned _items_to_fetch_sequence_counter;
       /// list of items we know another peer has and we want; each is also in the fetch_candidates of the peers that advertised it
       items_to_fetch_set_type _items_to_fetch;
-      /// what fetch_items_loop() did since its last report, see report_fetch_items_statistics()
-      struct fetch_items_statistics
-      {
-        uint64_t iterations = 0;
-        uint64_t candidates_examined = 0;
-        uint64_t items_requested = 0;
-        uint64_t items_expired = 0;
-        fc::microseconds scheduling_time;
-        fc::time_point last_report_time;
-      } _fetch_items_statistics;
       peer_connection::timestamped_items_set_type _recently_failed_items; /// list of transactions we've recently pushed and had rejected by the delegate
       // @}
 
@@ -640,6 +633,9 @@ namespace graphene { namespace net {
 
       fc::future<void> _dump_node_status_task_done;
 
+      p2p_statistics _statistics;
+      fc::future<void> _statistics_report_loop_done;
+
       /* We have two alternate paths through the schedule_peer_for_deletion code -- one that
        * uses a mutex to prevent one fiber from adding items to the queue while another is deleting
        * items from it, and one that doesn't.  The one that doesn't is simpler and more efficient
@@ -672,6 +668,7 @@ namespace graphene { namespace net {
         message_hash_type message_hash;
         fc::time_point received_time;
         node_id_t originating_peer;
+        fc::time_point submitted_time;
         fc::time_point validated_time;
         fc::exception_ptr error;
       };
@@ -712,7 +709,6 @@ namespace graphene { namespace net {
       /// drops the items to fetch we heard about too long ago, returning how many
       size_t remove_expired_items_to_fetch();
       fetch_candidate_verdict judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item);
-      void report_fetch_items_statistics();
       void add_fetch_candidate(peer_connection* peer, const item_id& item);
       /// Adds @p item to the items to fetch, and to the fetch candidates of every peer that advertised it,
       /// if any did; returns whether one did
@@ -730,6 +726,7 @@ namespace graphene { namespace net {
       void update_bandwidth_data(uint32_t bytes_read_this_second, uint32_t bytes_written_this_second);
       void bandwidth_monitor_loop();
       void dump_node_status_task();
+      void statistics_report_loop();
 
       bool is_accepting_new_connections();
       bool is_wanting_new_connections();
@@ -908,6 +905,7 @@ namespace graphene { namespace net {
       void                       set_total_bandwidth_limit( uint32_t upload_bytes_per_second, uint32_t download_bytes_per_second );
       fc::variant_object         get_call_statistics() const;
       std::shared_ptr<full_block_type> get_full_block_by_block_id(const block_id_type& block_id) override;
+      void on_messages_written(size_t message_count, size_t byte_count) override;
 
       fc::variant_object         network_get_info() const;
       fc::variant_object         network_get_usage_stats() const;
@@ -1609,26 +1607,8 @@ namespace graphene { namespace net {
       return fetch_candidate_verdict::take;
     }
 
-    void node_impl::report_fetch_items_statistics()
-    {
-      const fc::time_point now = fc::time_point::now();
-      fetch_items_statistics& statistics = _fetch_items_statistics;
-      if (now - statistics.last_report_time < fc::seconds(GRAPHENE_NET_FETCH_ITEMS_REPORT_INTERVAL_SEC))
-        return;
-      if (statistics.iterations > 0)
-        ilog("fetch items in the last ${seconds}s: ${iterations} iterations examined ${examined} candidates and requested "
-             "${requested} items in ${scheduling_us}us of scheduling, ${expired} items expired, ${queued} items are queued",
-             ("seconds", (now - statistics.last_report_time).to_seconds())("iterations", statistics.iterations)
-             ("examined", statistics.candidates_examined)("requested", statistics.items_requested)
-             ("scheduling_us", statistics.scheduling_time.count())("expired", statistics.items_expired)
-             ("queued", _items_to_fetch.size()));
-      statistics = fetch_items_statistics();
-      statistics.last_report_time = now;
-    }
-
     void node_impl::fetch_items_loop()
     {
-      _fetch_items_statistics.last_report_time = fc::time_point::now();
       while (!_fetch_item_loop_done.canceled())
       {
         _fetch_items_loop_trigger.begin_iteration();
@@ -1678,7 +1658,7 @@ namespace graphene { namespace net {
             const std::optional<item_id> item_id_to_fetch =
               peer->fetch_candidates.take_next(peer_and_items.include_transactions,
                                                [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate); },
-                                               _fetch_items_statistics.candidates_examined);
+                                               _statistics.fetch.candidates_examined);
             if (!item_id_to_fetch)
             {
               peer_and_items.done = true;
@@ -1698,14 +1678,16 @@ namespace graphene { namespace net {
           }
         }
 
-        ++_fetch_items_statistics.iterations;
-        _fetch_items_statistics.items_expired += expired_items;
-        _fetch_items_statistics.scheduling_time += fc::time_point::now() - iteration_start;
+        ++_statistics.fetch.wakes;
+        _statistics.fetch.items_expired += expired_items;
+        _statistics.fetch.scheduling_time += fc::time_point::now() - iteration_start;
 
         // we've figured out which peer will be providing each item, now send the messages.
         for (const peer_and_items_to_fetch& peer_and_items : items_by_peer)
         {
-          _fetch_items_statistics.items_requested += peer_and_items.item_ids.size();
+          _statistics.fetch.items_requested += peer_and_items.item_ids.size();
+          if (peer_and_items.transactions > 0)
+            _statistics.record_transaction_request(peer_and_items.transactions, peer_and_items.max_transactions);
           // the item lists are heterogenous and
           // the fetch_items_message can only deal with one item type at a time.
           // Blocks are requested first
@@ -1731,7 +1713,6 @@ namespace graphene { namespace net {
           }
         }
         items_by_peer.clear();
-        report_fetch_items_statistics();
 
         // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited
         _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
@@ -2200,6 +2181,17 @@ namespace graphene { namespace net {
         _dump_node_status_task_done = schedule_task([=, this](){ dump_node_status_task(); },
                                                    fc::time_point::now() + fc::minutes(GRAPHENE_NET_DUMP_NODE_STATUS_INTERVAL_MINUTES),
                                                    "dump_node_status_task");
+    }
+
+    void node_impl::statistics_report_loop()
+    {
+      const fc::variant_object report = _statistics.take_report(fc::time_point::now(), _transactions_in_flight.in_flight(),
+                                                                _items_to_fetch.size());
+      fc_ilog(fc::logger::get(GRAPHENE_NET_STATISTICS_LOGGER), "p2p statistics: ${report}", (report));
+      if (!node_is_shutting_down() && !_statistics_report_loop_done.canceled())
+        _statistics_report_loop_done = schedule_task([this](){ statistics_report_loop(); },
+                                                     fc::time_point::now() + fc::seconds(GRAPHENE_NET_STATISTICS_REPORT_INTERVAL_SEC),
+                                                     "statistics_report_loop");
     }
 
     void node_impl::delayed_peer_deletion_task()
@@ -3592,6 +3584,12 @@ namespace graphene { namespace net {
       {
         wlog("sync: received a list of sync items available, but I didn't ask for any!");
       }
+    }
+
+    void node_impl::on_messages_written(size_t message_count, size_t byte_count)
+    {
+      VERIFY_CORRECT_THREAD();
+      _statistics.record_write(message_count, byte_count);
     }
 
     // this is only called when a peer wants a block from us
@@ -5061,6 +5059,9 @@ namespace graphene { namespace net {
 
       // only process it if we asked for it
       const fc::ripemd160& message_hash = full_transaction->get_legacy_transaction_message_hash();
+      if (is_relay_sample(message_hash))
+        fc_ilog(fc::logger::get(GRAPHENE_NET_RELAY_SAMPLE_LOGGER), "relay sample received ${trx} ${hash} at ${time_us}",
+                ("trx", full_transaction->get_transaction_id())("hash", message_hash)("time_us", raw_realtime_microseconds()));
       auto iter = originating_peer->items_requested_from_peer.find(item_id(trx_message_type, message_hash));
       if (iter == originating_peer->items_requested_from_peer.end())
       {
@@ -5081,11 +5082,19 @@ namespace graphene { namespace net {
         _message_ids_currently_being_processed.insert(message_hash);
         try
         {
-          _transactions_in_flight.acquire(_node_configuration.maximum_transactions_in_flight);
+          // the clock is read only when we wait; otherwise submitting follows receiving at once
+          const uint32_t in_flight_limit = _node_configuration.maximum_transactions_in_flight;
+          const bool waits = in_flight_limit != 0 && _transactions_in_flight.in_flight() >= in_flight_limit;
+          const fc::time_point wait_start = waits ? fc::time_point::now() : message_receive_time;
+          _transactions_in_flight.acquire(in_flight_limit);
+          const fc::time_point submitted_time = waits ? fc::time_point::now() : message_receive_time;
+          if (waits)
+            _statistics.record_limit_wait(submitted_time - wait_start);
+          _statistics.record_submission(_transactions_in_flight.in_flight());
           try
           {
             dlog("passing message containing transaction ${trx} to client", ("trx", full_transaction->get_transaction_id()));
-            transaction_completion completion{full_transaction, message_hash, message_receive_time, originating_peer->node_id};
+            transaction_completion completion{full_transaction, message_hash, message_receive_time, originating_peer->node_id, submitted_time};
             _delegate->submit_transaction(full_transaction,
               [completions = _transaction_completions, completion](const fc::exception_ptr& error) {
                 transaction_completion validated = completion;
@@ -5121,6 +5130,7 @@ namespace graphene { namespace net {
       const std::deque<transaction_completion> completions = _transaction_completions->take_all();
       for (const transaction_completion& completion : completions)
       {
+        _statistics.record_completion(completion.validated_time - completion.submitted_time);
         try
         {
           apply_transaction_completion(completion);
@@ -5835,6 +5845,20 @@ namespace graphene { namespace net {
       {
         wlog( "Exception thrown while terminating Dump node status task, ignoring" );
       }
+
+      try
+      {
+        _statistics_report_loop_done.cancel_and_wait("node_impl::close()");
+        dlog("Statistics report loop terminated");
+      }
+      catch ( const fc::exception& e )
+      {
+        wlog( "Exception thrown while terminating Statistics report loop, ignoring: ${e}", ("e", e) );
+      }
+      catch (...)
+      {
+        wlog( "Exception thrown while terminating Statistics report loop, ignoring" );
+      }
     } // node_impl::close()
 
     void node_impl::accept_connection_task( const peer_connection_ptr& new_peer )
@@ -6321,7 +6345,8 @@ namespace graphene { namespace net {
              !_terminate_inactive_connections_loop_done.valid() &&
              !_fetch_updated_peer_lists_loop_done.valid() &&
              !_bandwidth_monitor_loop_done.valid() &&
-             !_dump_node_status_task_done.valid());
+             !_dump_node_status_task_done.valid() &&
+             !_statistics_report_loop_done.valid());
       if (_node_configuration.accept_incoming_connections)
         _accept_loop_complete = async_task( [=, this](){ accept_loop(); }, "accept_loop");
       _p2p_network_connect_loop_done = async_task( [=, this]() { p2p_network_connect_loop(); }, "p2p_network_connect_loop" );
@@ -6332,6 +6357,9 @@ namespace graphene { namespace net {
       _fetch_updated_peer_lists_loop_done = async_task([=, this](){ fetch_updated_peer_lists_loop(); }, "fetch_updated_peer_lists_loop");
       _bandwidth_monitor_loop_done = async_task([=, this](){ bandwidth_monitor_loop(); }, "bandwidth_monitor_loop");
       _dump_node_status_task_done = async_task([=, this](){ dump_node_status_task(); }, "dump_node_status_task");
+      _statistics_report_loop_done = schedule_task([this](){ statistics_report_loop(); },
+                                                   fc::time_point::now() + fc::seconds(GRAPHENE_NET_STATISTICS_REPORT_INTERVAL_SEC),
+                                                   "statistics_report_loop");
     }
 
     void node_impl::add_node(const fc::ip::endpoint& ep)
@@ -6924,6 +6952,10 @@ namespace graphene { namespace net {
     void node_impl::broadcast(const std::shared_ptr<full_transaction_type>& full_transaction, const message_propagation_data& propagation_data)
     {
       VERIFY_CORRECT_THREAD();
+      if (is_relay_sample(full_transaction->get_legacy_transaction_message_hash()))
+        fc_ilog(fc::logger::get(GRAPHENE_NET_RELAY_SAMPLE_LOGGER), "relay sample broadcast ${trx} ${hash} at ${time_us}",
+                ("trx", full_transaction->get_transaction_id())("hash", full_transaction->get_legacy_transaction_message_hash())
+                ("time_us", raw_realtime_microseconds()));
       _transaction_message_cache.cache_message(full_transaction, propagation_data);
       _new_transaction_inventory.insert(full_transaction);
       trigger_advertise_inventory_loop();
@@ -7697,6 +7729,99 @@ namespace graphene { namespace net {
   {
     return std::clamp<size_t>(GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / std::max<size_t>(_mean, 1),
                               1, GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION);
+  }
+
+  void p2p_statistics::record_submission(uint32_t in_flight)
+  {
+    ++_handoff.submissions;
+    _handoff.max_in_flight = std::max(_handoff.max_in_flight, in_flight);
+    _handoff.in_flight_sum += in_flight;
+  }
+
+  void p2p_statistics::record_limit_wait(fc::microseconds waited)
+  {
+    ++_handoff.limit_waits;
+    _handoff.limit_wait_time += waited;
+  }
+
+  void p2p_statistics::record_completion(fc::microseconds latency)
+  {
+    ++_handoff.completions;
+    const auto bound = std::upper_bound(completion_latency_bounds_us.begin(), completion_latency_bounds_us.end(),
+                                        latency.count());
+    ++_handoff.completion_latency[bound - completion_latency_bounds_us.begin()];
+  }
+
+  void p2p_statistics::record_write(size_t messages, size_t bytes)
+  {
+    ++_sending.writes;
+    _sending.messages += messages;
+    _sending.bytes += bytes;
+  }
+
+  void p2p_statistics::record_transaction_request(size_t transactions, size_t max_transactions)
+  {
+    ++_requests.transaction_requests;
+    _requests.transactions_requested += transactions;
+    if (transactions >= max_transactions && max_transactions < GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION)
+      ++_requests.byte_cap_bound;
+  }
+
+  fc::variant_object p2p_statistics::take_report(fc::time_point now, uint32_t in_flight, size_t items_queued)
+  {
+    const auto mean = [](uint64_t total, uint64_t count) { return count ? double(total) / double(count) : 0.0; };
+
+    fc::mutable_variant_object latency;
+    for (size_t i = 0; i < _handoff.completion_latency.size(); ++i)
+      latency(i < completion_latency_bounds_us.size() ? "lt" + std::to_string(completion_latency_bounds_us[i]) + "us"
+                                                      : "ge" + std::to_string(completion_latency_bounds_us.back()) + "us",
+              _handoff.completion_latency[i]);
+
+    fc::variant_object report = fc::mutable_variant_object()
+      ("seconds", (now - _period_start).to_seconds())
+      ("fetch", fc::mutable_variant_object()
+        ("wakes", fetch.wakes)
+        ("candidates_examined", fetch.candidates_examined)
+        ("items_requested", fetch.items_requested)
+        ("items_expired", fetch.items_expired)
+        ("items_queued", items_queued)
+        ("scheduling_us", fetch.scheduling_time.count()))
+      ("handoff", fc::mutable_variant_object()
+        ("submissions", _handoff.submissions)
+        ("completions", _handoff.completions)
+        ("in_flight", in_flight)
+        ("max_in_flight", _handoff.max_in_flight)
+        ("mean_in_flight", mean(_handoff.in_flight_sum, _handoff.submissions))
+        ("completion_latency", std::move(latency))
+        ("limit_waits", _handoff.limit_waits)
+        ("limit_wait_us", _handoff.limit_wait_time.count()))
+      ("send", fc::mutable_variant_object()
+        ("writes", _sending.writes)
+        ("messages_per_write", mean(_sending.messages, _sending.writes))
+        ("bytes_per_write", mean(_sending.bytes, _sending.writes)))
+      ("transaction_requests", fc::mutable_variant_object()
+        ("requests", _requests.transaction_requests)
+        ("transactions_per_request", mean(_requests.transactions_requested, _requests.transaction_requests))
+        ("byte_cap_bound", _requests.byte_cap_bound));
+
+    fetch = fetch_scheduling();
+    _handoff = transaction_handoff();
+    _sending = send_batching();
+    _requests = request_sizing();
+    _period_start = now;
+    return report;
+  }
+
+  bool is_relay_sample(const message_hash_type& message_hash, uint32_t one_in)
+  {
+    return message_hash._hash[0] % one_in == 0;
+  }
+
+  int64_t raw_realtime_microseconds()
+  {
+    timespec now;
+    syscall(SYS_clock_gettime, CLOCK_REALTIME, &now);
+    return int64_t(now.tv_sec) * 1000000 + now.tv_nsec / 1000;
   }
 
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates)

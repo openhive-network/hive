@@ -72,6 +72,8 @@ namespace graphene { namespace net
                               const message& received_message) = 0;
       virtual void on_connection_closed(peer_connection* originating_peer) = 0;
       virtual std::shared_ptr<full_block_type> get_full_block_by_block_id(const block_id_type& block_id) = 0;
+      /// @p message_count messages of @p byte_count bytes in all (headers included) went out to a peer in one batched write
+      virtual void on_messages_written(size_t /*message_count*/, size_t /*byte_count*/) {}
     };
 
     class peer_connection;

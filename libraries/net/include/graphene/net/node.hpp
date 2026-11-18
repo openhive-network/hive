@@ -26,6 +26,7 @@
  */
 #pragma once
 
+#include <graphene/net/config.hpp>
 #include <graphene/net/core_messages.hpp>
 #include <graphene/net/message.hpp>
 #include <graphene/net/node_configuration.hpp>
@@ -36,7 +37,9 @@
 #include <fc/exception/exception.hpp>
 #include <fc/thread/future.hpp>
 #include <fc/time.hpp>
+#include <fc/variant_object.hpp>
 
+#include <array>
 #include <deque>
 #include <functional>
 #include <list>
@@ -651,6 +654,91 @@ namespace graphene { namespace net {
   private:
     size_t _mean;
   };
+
+  /**
+   * What the node's p2p work cost and how it was batched since the last report, for the periodic
+   * GRAPHENE_NET_STATISTICS_LOGGER report.  Counting is plain arithmetic, cheap enough to do whether or not
+   * the report is written.  All calls must come from one thread.
+   */
+  class p2p_statistics
+  {
+  public:
+    /// fetch_items_loop()
+    struct fetch_scheduling
+    {
+      uint64_t wakes = 0;
+      uint64_t candidates_examined = 0;
+      uint64_t items_requested = 0;
+      uint64_t items_expired = 0;
+      fc::microseconds scheduling_time;
+    };
+
+    /// completion latency bucket upper bounds in microseconds; the last bucket has none
+    static constexpr std::array<int64_t, 6> completion_latency_bounds_us{100, 250, 500, 1000, 2000, 5000};
+
+    /// transactions received from peers and handed to the client for validation
+    struct transaction_handoff
+    {
+      uint64_t submissions = 0;
+      uint64_t completions = 0;
+      uint32_t max_in_flight = 0;
+      uint64_t in_flight_sum = 0; ///< in flight after each submission, for the mean
+      std::array<uint64_t, completion_latency_bounds_us.size() + 1> completion_latency{}; ///< submit -> client result
+      uint64_t limit_waits = 0;   ///< submissions that waited for the in-flight limit
+      fc::microseconds limit_wait_time;
+    };
+
+    /// peer_connection socket writes
+    struct send_batching
+    {
+      uint64_t writes = 0;
+      uint64_t messages = 0;
+      uint64_t bytes = 0;
+    };
+
+    /// fetch_items_message requests for transactions
+    struct request_sizing
+    {
+      uint64_t transaction_requests = 0;
+      uint64_t transactions_requested = 0;
+      uint64_t byte_cap_bound = 0; ///< requests cut short by GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH
+    };
+
+    fetch_scheduling fetch;
+
+    /// @p in_flight counts the submitted transaction
+    void record_submission(uint32_t in_flight);
+    void record_limit_wait(fc::microseconds waited);
+    void record_completion(fc::microseconds latency);
+    void record_write(size_t messages, size_t bytes);
+    /// @p max_transactions is the most the request could ask for: the per-peer limit, or less when the byte cap is lower
+    void record_transaction_request(size_t transactions, size_t max_transactions);
+
+    const transaction_handoff& handoff() const { return _handoff; }
+    const send_batching& sending() const { return _sending; }
+    const request_sizing& requests() const { return _requests; }
+
+    /**
+     * Everything recorded since the last report (or since construction), as of @p now, with @p in_flight
+     * transactions in flight now and @p items_queued items waiting to be fetched; counting starts over.
+     */
+    fc::variant_object take_report(fc::time_point now, uint32_t in_flight, size_t items_queued);
+
+  private:
+    fc::time_point _period_start = fc::time_point::now();
+    transaction_handoff _handoff;
+    send_batching _sending;
+    request_sizing _requests;
+  };
+
+  /// Whether the transaction with @p message_hash is a relay sample: one in @p one_in, the same ones on every node
+  bool is_relay_sample(const message_hash_type& message_hash, uint32_t one_in = GRAPHENE_NET_RELAY_SAMPLE_ONE_IN);
+
+  /**
+   * Microseconds since the epoch on the real-time clock, read with the raw clock_gettime system call so that a
+   * library intercepting the call (libfaketime gives each test node its own offset) cannot shift it
+   */
+  int64_t raw_realtime_microseconds();
 
   /// A peer that advertised a block we want to fetch
   struct block_source_candidate
