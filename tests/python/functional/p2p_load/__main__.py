@@ -83,6 +83,12 @@ def _add_run_options(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--colony-start-delay", type=int, default=30, help="idle blocks before the colonies start")
     parser.add_argument("--mix", choices=("default", "large"), default="default", help="colony transaction mix")
+    parser.add_argument(
+        "--no-p2p-loggers",
+        dest="p2p_loggers",
+        action="store_false",
+        help="do not enable the p2p_stats and p2p_relay_sample loggers, even where the binary has them",
+    )
     parser.add_argument("--image", help="test-tools image (default: P2P_LOAD_IMAGE or .aidev/project.yaml's)")
 
 
@@ -122,6 +128,7 @@ def _spec(args: argparse.Namespace, name: str, hived: Path, label: str) -> RunSp
         netem_ms=args.netem_ms,
         colony_start_delay=args.colony_start_delay,
         mix=args.mix,
+        p2p_loggers=args.p2p_loggers,
     )
     try:
         spec.validate()

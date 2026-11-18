@@ -30,6 +30,7 @@ class RunSpec:
     netem_ms: int = 0
     colony_start_delay: int = 30
     mix: str = "default"
+    p2p_loggers: bool = True
 
     def roles(self) -> list[str]:
         return [

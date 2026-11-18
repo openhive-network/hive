@@ -1,8 +1,8 @@
 # p2p load harness
 
 Floods a small testnet with colony transactions over a chosen p2p topology and measures how the nodes keep up:
-included and received tx/s, underfilled blocks, skew-corrected block offsets, per-thread CPU, send syscalls and
-relay latency. It is the in-repo replacement of the `w877`, `w877x` and `w1075` host directories behind hive#877
+included and received tx/s, underfilled blocks, skew-corrected block offsets, per-thread CPU, send syscalls, relay
+latency and hived's own p2p counters. It is the in-repo replacement of the `w877`, `w877x` and `w1075` host directories behind hive#877
 and its follow-ups (#992, #1060-#1077); reports cite a commit of this directory instead of a host path.
 
 ## What it needs
@@ -38,8 +38,8 @@ COMMON="--block-log /path/to/single_sign_universal_block_log --tools /path/to/bu
 5. copies back only logs and configs (`OUT_ROOT/NAME/generated/<node>/`, no `blockchain/`, no `*.bin`) and removes
    the tmpfs directory, whatever happened. A disk-backed 8-peer run wrote 90-415 GB; this one writes megabytes.
 
-`OUT_ROOT/NAME` then holds `spec.json` (what was asked), `out.json` (roles, binaries, p2p parameters per node,
-blocks, `/proc` samples, link maps), `driver.log`, `generated/`, and `tc.txt` / `sends.txt` when used.
+`OUT_ROOT/NAME` then holds `spec.json` (what was asked), `out.json` (roles, binaries, p2p parameters and p2p
+loggers per node, blocks, `/proc` samples, link maps), `driver.log`, `generated/`, and `tc.txt` / `sends.txt` when used.
 `OUT_ROOT/series.log` records each run's start and end with host, exit code and load average.
 
 Options:
@@ -58,6 +58,7 @@ Options:
 | `--late-observer K` | the observer starts K blocks after the colonies start, its faked clock at the others' current fake time |
 | `--netem-ms D --netem-colonies 0,2` | delay each packet of those colonies' links by D ms each way (RTT + 2D) |
 | `--sends S` | after 6 loaded blocks, count the witness's send syscalls per thread with bpftrace for S seconds |
+| `--no-p2p-loggers` | leave the p2p_stats and p2p_relay_sample loggers off (see below), e.g. to measure what they cost |
 | `--mix large` | colony replies and articles only, 4000..12000 byte bodies (about 255 transactions fill a 2 MiB block) |
 
 ### p2p parameters: only what is given, only where the binary has it
@@ -68,6 +69,14 @@ that predates an option gets no key for it (the report names what was left out).
 compares each node's `config.ini` with what it meant to set and fails the run on any difference. `out.json`
 records the given, applied and left-out parameters and every binary's defaults. This replaces the old drivers'
 "set only when non-zero" rule, which ran a "delay 0" run at the build's 5 ms default once the default changed.
+
+### p2p loggers: on wherever the binary has them
+
+hived since hive#1079 writes a JSON counter report every 30 s to the `p2p_stats` logger and timestamps one in 64
+transactions (picked by message hash, so the same ones on every node) to the `p2p_relay_sample` logger; both are off
+unless configured. The driver adds `log-logger` entries for them at `info`, into the `p2p` log, on every node whose
+binary carries the logger's name, and checks each `config.ini` for them after the replay. An older binary gets no
+entry and runs as before. `out.json` records the loggers each node got.
 
 ## Standard scenarios
 
@@ -117,10 +126,19 @@ work on any finished run directory and need no node and no test-tools.
 - **per-thread CPU**: every thread of every node, by thread name, in % of a core over the loaded window.
 - **send syscalls** (`--sends`): `sendto` / `sendmsg` from every witness thread, `write` / `writev` from `p2p` and
   `asio`, as calls/s and bytes per call.
-- **relay latency**: per node, ms from a sampled transaction's first broadcast to its arrival there, from
-  `RLY BRD id=... t=...` / `RLY RCV id=... t=...` lines (t in microseconds of a clock shared by the nodes). Builds
-  of this tree do not log them yet: the permanent p2p counters of hive#1079 are to provide them, and the report
-  says so when a run has none. Until then the relay part of the A/B example above needs builds that log them.
+- **relay latency**: per node, ms from a sampled transaction's first broadcast to its arrival there (its first
+  `received`, or its `broadcast` when it logs none), from the `p2p_relay_sample` logger's
+  `relay sample received|broadcast <trx id> <message hash> at <us>` lines, or the older measurement patch's
+  `RLY BRD id=... t=...` / `RLY RCV id=... t=...` lines; both stamp the real clock, not the faked one. Samples are
+  matched across nodes by transaction id, and the report counts the ids found on every node that logged samples.
+  Builds without either show none, and the report says so.
+- **p2p counters** (`p2p_stats`): per node, the reports whose whole 30 s period falls in the loaded window (located
+  on the node's own clock by the log times of its Block stats lines), taken together: fetch candidates examined per
+  item requested, items requested and loop wakes per second and the share of time spent scheduling; handoff
+  submissions and completions per second (compare completions with received tx/s), in-flight maximum and mean,
+  completion latency buckets and in-flight limit waits; socket writes per second with messages and bytes per write;
+  transaction requests per second, transactions per request and how many hit the byte cap. `compare` shows them for
+  the witness and the relays, and the witness's p2p CPU per received transaction.
 
 ## Harness rules
 

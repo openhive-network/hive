@@ -23,7 +23,7 @@ from beekeepy.exceptions import CommunicationError
 from beekeepy.interfaces import P2PUrl
 
 import test_tools as tt
-from python.functional.p2p_load import p2p_parameters, procfs
+from python.functional.p2p_load import p2p_loggers, p2p_parameters, procfs
 from python.functional.p2p_load.spec import RunSpec
 from test_tools import complex_networks as ttcn
 
@@ -153,6 +153,18 @@ def _apply_p2p_parameters(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, A
     return {"given": spec.p2p_parameters, "applied": applied, "unsupported": unsupported, "binary_defaults": defaults}
 
 
+def _enable_p2p_loggers(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, list[str]]:
+    """Enable the opt-in p2p loggers (unless the spec turns them off) on every node whose binary has them."""
+    binaries = {spec.binary(r) for r in nodes}
+    available = {path: p2p_loggers.binary_loggers(Path(path)) if spec.p2p_loggers else [] for path in binaries}
+    enabled: dict[str, list[str]] = {}
+    for role, node in nodes.items():
+        enabled[role] = available[spec.binary(role)]
+        if enabled[role]:
+            node.config.log_logger = p2p_loggers.with_loggers(node.config.log_logger, enabled[role])
+    return enabled
+
+
 def _write_json(path: Path, data: Any) -> None:
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(data))
@@ -204,6 +216,7 @@ def run(spec: RunSpec) -> dict[str, Any]:
     nodes = {role: _create_node(spec, role, colony_start_block) for role in spec.roles()}
     _connect(spec, nodes)
     parameters = _apply_p2p_parameters(spec, nodes)
+    loggers = _enable_p2p_loggers(spec, nodes)
     roles = {role: node.directory.name for role, node in nodes.items()}
     _write_json(
         out_dir / "roles.json", {"roles": roles, "directories": {r: str(n.directory) for r, n in nodes.items()}}
@@ -218,6 +231,7 @@ def run(spec: RunSpec) -> dict[str, Any]:
         )
     for role, node in nodes.items():
         p2p_parameters.verify_config(node.config_file_path, parameters["applied"][role])
+        p2p_loggers.verify_config(node.config_file_path, loggers[role])
 
     late = spec.late_observer_blocks > 0
     start_time = block_log.get_head_block_time()
@@ -273,6 +287,7 @@ def run(spec: RunSpec) -> dict[str, Any]:
         "binaries": {role: spec.binary(role) for role in nodes},
         "roles": roles,
         "p2p_parameters": parameters,
+        "p2p_loggers": loggers,
         "colony_start_block": colony_start_block,
         "first": first,
         "last": last,
