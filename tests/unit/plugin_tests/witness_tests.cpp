@@ -1963,6 +1963,146 @@ BOOST_AUTO_TEST_CASE( colony_in_transit_test )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( colony_stuck_test )
+{
+  // limited colony has to keep producing when its own transactions never make a block although blocks have
+  // room for them (in real life the witness rejected them, f.e. as conflicting with transactions of other
+  // colony, while they stay valid on the colony node and are never rebroadcast); here the witness never
+  // reaches them because a wall of foreign transactions that was pushed before colony started always stops
+  // block generation at HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT before colony transactions
+  try
+  {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
+    const uint32_t COLONY_START = 24; // after first schedule sets block size to default 128kB
+    const uint32_t COLONY_TX_PER_BLOCK = 20;
+    const uint32_t FOREIGN_TX_PER_BLOCK = 2; // two foreign transactions fill most of 128kB block, third does not fit
+    const uint32_t WALLED_BLOCKS = 16; // from block that follows the wall to the end of the test
+    const uint32_t FOREIGN_WALL = FOREIGN_TX_PER_BLOCK * WALLED_BLOCKS + HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT + 3;
+    bool test_passed = false;
+
+    initialize( 3, {}, { "initminer" }, {
+      config_line_t( { "plugin", { HIVE_COLONY_PLUGIN_NAME } } ),
+      config_line_t( { "colony-sign-with", { init_account_priv_key.key_to_wif() } } ),
+      config_line_t( { "colony-start-at-block", { std::to_string( COLONY_START ) } } ),
+      config_line_t( { "colony-transactions-per-block", { std::to_string( COLONY_TX_PER_BLOCK ) } } ),
+      config_line_t( { "colony-no-broadcast", { "1" } } ),
+      config_line_t( { "colony-custom", { R"~({"min":0,"max":0,"weight":1,"exponent":1})~" } } ),
+    }, "1G" );
+
+    fc::thread api_thread;
+    auto _future = api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        wait_for_block_num( 1 );
+        BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+
+        for( int i = 0; i < 20 && !theApp.is_interrupt_request(); ++i )
+        {
+          auto account_name = "account" + std::to_string( i );
+          schedule_account_create( account_name );
+          schedule_vest( account_name, ASSET( "1000.000 TESTS" ) );
+        }
+
+        uint32_t foreign_tx_num = 0;
+        auto push_foreign_transaction = [&]()
+        {
+          signed_transaction tx;
+          db->with_read_lock( [&]()
+          {
+            tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION / 2 );
+            tx.set_reference_block( db->head_block_id() );
+          } );
+          const std::string memo = std::to_string( ++foreign_tx_num ) + std::string( 2000, 'x' );
+          for( int i = 0; i < 25; ++i ) // ~51kB
+          {
+            transfer_operation transfer;
+            transfer.from = HIVE_INIT_MINER_NAME;
+            transfer.to = "account0";
+            transfer.amount = ASSET( "0.001 TESTS" );
+            transfer.memo = memo;
+            tx.operations.emplace_back( transfer );
+          }
+          schedule_transaction( tx );
+        };
+        auto colony_pending_count = [&]()
+        {
+          uint32_t count = 0;
+          db->with_read_lock( [&]()
+          {
+            for( const auto& tx : db->_pending_tx )
+              if( tx->get_transaction().operations.front().which() == operation::tag< custom_json_operation >::value )
+                ++count;
+          } );
+          return count;
+        };
+
+        uint32_t block_num = wait_for_block_num( COLONY_START - 2, 3 * COLONY_START + 30 );
+        db->with_read_lock( [&]()
+        {
+          BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_maximum_block_size(), HIVE_MIN_BLOCK_SIZE_LIMIT * 2 );
+        } );
+        for( uint32_t i = 0; i < FOREIGN_WALL; ++i )
+          push_foreign_transaction();
+
+        const auto& block_reader = get_chain_plugin().block_reader();
+        const uint32_t stop = block_num + WALLED_BLOCKS;
+        uint32_t walled_blocks = 0;
+        do
+        {
+          block_num = wait_for_block_change( block_num, [&]()
+          {
+            auto block = block_reader.head_block();
+            uint32_t colony_tx_count = 0;
+            uint32_t foreign_tx_count = 0;
+            for( const auto& tx : block->get_full_transactions() )
+            {
+              const operation& op = tx->get_transaction().operations.front();
+              if( op.which() == operation::tag< custom_json_operation >::value )
+                ++colony_tx_count;
+              else if( op.which() == operation::tag< transfer_operation >::value )
+                ++foreign_tx_count;
+            }
+            ilog( "Block #${b} has ${c} colony and ${f} foreign transactions",
+              ( "b", block->get_block_num() )( "c", colony_tx_count )( "f", foreign_tx_count ) );
+            if( block->get_block_num() >= COLONY_START )
+            {
+              // the wall has to hold for the whole test, otherwise it does not test stuck transactions
+              BOOST_CHECK_EQUAL( colony_tx_count, 0u );
+              ++walled_blocks;
+            }
+          } );
+        }
+        while( block_num < stop && !theApp.is_interrupt_request() );
+
+        BOOST_REQUIRE_GE( walled_blocks, WALLED_BLOCKS - 3 );
+        // stuck transactions count as overflow for a few blocks and then no longer lower the quota, so colony
+        // resumes production; if they kept counting until expiration, colony would stop after two blocks
+        const uint32_t stuck_count = colony_pending_count();
+        ilog( "${s} colony transactions are stuck in pending", ( "s", stuck_count ) );
+        BOOST_CHECK_GE( stuck_count, 3 * COLONY_TX_PER_BLOCK );
+        test_passed = !theApp.is_interrupt_request();
+      }
+      CATCH( "API" )
+    } );
+
+    _future.wait();
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( colony_no_workers_test )
 {
   // this test checks reaction of colony with delayed start on lack of suitable worker accounts
