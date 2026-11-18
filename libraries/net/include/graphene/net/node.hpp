@@ -33,14 +33,18 @@
 
 #include <hive/protocol/types.hpp>
 
+#include <fc/exception/exception.hpp>
 #include <fc/thread/future.hpp>
 #include <fc/time.hpp>
 
 #include <deque>
+#include <functional>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace appbase {
@@ -80,6 +84,13 @@ namespace graphene { namespace net {
     switched_forks, ///< the block made us switch to the fork it is on
     ignored         ///< the block was stored on a shorter fork without being validated
   };
+
+  /**
+   * Called exactly once, from the thread that validated it, when a transaction handed over by
+   * node_delegate::submit_transaction() has been validated.  @p error is null if the transaction was accepted.
+   * It must not block.
+   */
+  typedef std::function<void(const fc::exception_ptr& error)> transaction_validated_callback;
 
    /**
     *  @class node_delegate
@@ -124,12 +135,17 @@ namespace graphene { namespace net {
          virtual block_handling_result handle_block(const std::shared_ptr<full_block_type>& full_block, bool sync_mode) = 0;
 
          /**
-          *  @brief Called when a new transaction comes in from the network
+          *  @brief Called when a new transaction comes in from the network; hands it over for validation
+          *         without waiting for the result
           *
-          *  @throws exception if error validating the item, otherwise the item is
-          *          safe to broadcast on.
+          *  Transactions are validated in the order they are submitted.  Once one is validated, @p on_validated
+          *  is called; if it reports no error, the transaction is safe to broadcast on.
+          *
+          *  @throws exception if the transaction can't be submitted (e.g. the client is shutting down);
+          *          @p on_validated is not called then
           */
-         virtual void handle_transaction(const std::shared_ptr<full_transaction_type>& full_transaction) = 0;
+         virtual void submit_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
+                                         transaction_validated_callback on_validated) = 0;
 
          /**
           *  @brief Called when a new message comes in from the network other than a
@@ -447,6 +463,91 @@ namespace graphene { namespace net {
     bool _triggered = false;
     bool _urgent = false;
     fc::promise<void>::ptr _wake_promise;
+  };
+
+  /**
+   * Hands results produced on other threads to one consumer, in the order they were pushed.  The first push
+   * after the consumer last took the results calls the scheduling function given at construction, so results
+   * that arrive before the consumer gets to them share one take.  Once closed, pushes are discarded and the
+   * scheduling function is not called any more.  Thread-safe.
+   */
+  template<typename Completion>
+  class completion_queue
+  {
+  public:
+    /// @p schedule_take must arrange for take_all() to be called; it is called with the queue's lock held
+    explicit completion_queue(std::function<void()> schedule_take) : _schedule_take(std::move(schedule_take)) {}
+
+    void push(Completion completion)
+    {
+      std::lock_guard<std::mutex> guard(_mutex);
+      if (_closed)
+        return;
+      _completions.push_back(std::move(completion));
+      if (!_take_scheduled)
+      {
+        _take_scheduled = true;
+        _schedule_take();
+      }
+    }
+
+    /// Every result pushed since the last call, oldest first
+    std::deque<Completion> take_all()
+    {
+      std::lock_guard<std::mutex> guard(_mutex);
+      _take_scheduled = false;
+      return std::exchange(_completions, {});
+    }
+
+    /// Discards the results not taken yet and every later push.  Once it returns, the scheduling function is not called again.
+    void close()
+    {
+      std::lock_guard<std::mutex> guard(_mutex);
+      _closed = true;
+      _completions.clear();
+    }
+
+    bool is_closed() const
+    {
+      std::lock_guard<std::mutex> guard(_mutex);
+      return _closed;
+    }
+
+  private:
+    const std::function<void()> _schedule_take;
+    mutable std::mutex _mutex;
+    std::deque<Completion> _completions;
+    bool _take_scheduled = false;
+    bool _closed = false;
+  };
+
+  /**
+   * Counts the items handed over for processing whose results have not been applied yet, and makes the tasks
+   * that would hand over more wait while the count is at the limit.  All calls must come from one thread.
+   */
+  class in_flight_limit
+  {
+  public:
+    /**
+     * Waits, letting other tasks run, until fewer than @p limit items are in flight (0 for no limit), then counts one more.
+     * @throws fc::canceled_exception once closed
+     */
+    void acquire(uint32_t limit);
+
+    /// Counts @p count items fewer in flight
+    void release(uint32_t count);
+
+    /// Wakes the waiting tasks; acquire() throws from now on
+    void close();
+
+    uint32_t in_flight() const { return _in_flight; }
+
+  private:
+    void wake_waiters();
+
+    uint32_t _in_flight = 0;
+    bool _closed = false;
+    fc::promise<void>::ptr _released;
   };
 
   /// What fetch_candidate_queue::take_next() does with the entry it looks at

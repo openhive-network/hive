@@ -39,6 +39,24 @@ using hive::protocol::block_id_type;
 
 namespace detail {
 
+/// Reports to the p2p node, from the writer thread, how validating a transaction it received ended
+class p2p_transaction_flow_control final : public chain::transaction_flow_control
+{
+public:
+  p2p_transaction_flow_control( const std::shared_ptr<hive::chain::full_transaction_type>& _tx,
+                                graphene::net::transaction_validated_callback _on_validated )
+    : transaction_flow_control( _tx ), on_validated( std::move( _on_validated ) ) {}
+
+  virtual void on_worker_done( appbase::application& app ) const override
+  {
+    transaction_flow_control::on_worker_done( app );
+    on_validated( get_exception() );
+  }
+
+private:
+  const graphene::net::transaction_validated_callback on_validated;
+};
+
 /// how often unresolved seed node hostnames are retried while the node runs
 constexpr uint32_t HIVE_P2P_SEED_RESOLVE_RETRY_SECONDS = 60;
 
@@ -76,7 +94,8 @@ public:
   // node_delegate interface
   virtual bool has_item( const graphene::net::item_id& ) override;
   virtual graphene::net::block_handling_result handle_block(const std::shared_ptr<hive::chain::full_block_type>& full_block, bool) override;
-  virtual void handle_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction) override;
+  virtual void submit_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction,
+                                  graphene::net::transaction_validated_callback on_validated) override;
   virtual void handle_message( const graphene::net::message& ) override;
   virtual std::vector< graphene::net::item_hash_t > get_block_ids( const std::vector< graphene::net::item_hash_t >&, uint32_t&, uint32_t ) override;
   virtual std::shared_ptr<chain::full_block_type> get_full_block(const block_id_type&) override;
@@ -108,6 +127,7 @@ public:
   uint32_t max_connections = 0;
   fc::optional<uint32_t> transaction_flush_delay_us;
   fc::optional<uint32_t> fetch_items_minimum_interval_us;
+  fc::optional<uint32_t> max_transactions_in_flight;
   bool force_validate = false;
   bool block_producer = false;
 
@@ -233,7 +253,8 @@ graphene::net::block_handling_result p2p_plugin_impl::handle_block(const std::sh
   return graphene::net::block_handling_result::ignored;
 } FC_CAPTURE_AND_RETHROW((sync_mode)) }
 
-void p2p_plugin_impl::handle_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction)
+void p2p_plugin_impl::submit_transaction(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction,
+                                         graphene::net::transaction_validated_callback on_validated)
 {
   if (shutdown_helper.is_running())
   {
@@ -241,7 +262,8 @@ void p2p_plugin_impl::handle_transaction(const std::shared_ptr<hive::chain::full
     {
       action_catcher ac( shutdown_helper, hive_p2p_handler_type::HIVE_P2P_TRANSACTION_HANDLER );
 
-      chain.accept_transaction(full_transaction, chain::chain_plugin::lock_type::fc);
+      chain.queue_transaction(std::make_shared<p2p_transaction_flow_control>(full_transaction, std::move(on_validated)),
+                              chain::chain_plugin::lock_type::fc);
 
     } FC_CAPTURE_AND_RETHROW((full_transaction->get_transaction()))
   }
@@ -485,6 +507,9 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-fetch-items-minimum-interval-us", bpo::value<uint32_t>(), "Minimum time, in microseconds, between two passes over the items to fetch from peers. "
      "Transaction advertisements arriving within it are handled together in the next pass; a block to fetch starts a pass at once. "
      "Default 5000 (5 ms); 0 starts a pass on every advertisement. Overrides fetch_items_minimum_interval_microseconds in p2p-parameters.")
+    ("p2p-max-transactions-in-flight", bpo::value<uint32_t>(), "Maximum number of transactions received from peers that may wait for validation at once. "
+     "At the limit, the next transaction a peer sends waits until one is validated, and so does reading anything further from that peer. "
+     "Default 10000; 0 for no limit. Overrides maximum_transactions_in_flight in p2p-parameters.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
@@ -509,6 +534,9 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count( "p2p-fetch-items-minimum-interval-us" ) )
     my->fetch_items_minimum_interval_us = options.at( "p2p-fetch-items-minimum-interval-us" ).as< uint32_t >();
+
+  if( options.count( "p2p-max-transactions-in-flight" ) )
+    my->max_transactions_in_flight = options.at( "p2p-max-transactions-in-flight" ).as< uint32_t >();
 
   if (options.count("p2p-seed-node"))
   {
@@ -623,6 +651,14 @@ void p2p_plugin::plugin_finalize_startup()
         ilog( "Overriding advanded_node_parameters[ \"fetch_items_minimum_interval_microseconds\" ] with ${us}", ("us", *my->fetch_items_minimum_interval_us) );
 
       my->config.set( "fetch_items_minimum_interval_microseconds", fc::variant( *my->fetch_items_minimum_interval_us ) );
+    }
+
+    if( my->max_transactions_in_flight )
+    {
+      if( my->config.find( "maximum_transactions_in_flight" ) != my->config.end() )
+        ilog( "Overriding advanded_node_parameters[ \"maximum_transactions_in_flight\" ] with ${count}", ("count", *my->max_transactions_in_flight) );
+
+      my->config.set( "maximum_transactions_in_flight", fc::variant( *my->max_transactions_in_flight ) );
     }
 
     ilog("Setting parameters");
