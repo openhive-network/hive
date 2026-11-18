@@ -1718,6 +1718,15 @@ build_combined_testing_block_logs_image:
     - job: generate_testing_block_logs
       optional: false
   script:
+    # GitLab can start this job before the generate_testing_block_logs jobs have succeeded (seen when it
+    # enqueued a whole pipeline at creation, ignoring needs), and then hands it no checksum artifacts.
+    - |
+      if ! ls $CI_PROJECT_DIR/testing_block_logs/checksums/*.env >/dev/null 2>&1; then
+        echo "No checksum env files from generate_testing_block_logs in $CI_PROJECT_DIR/testing_block_logs/checksums/." >&2
+        echo "This job ran without the artifacts of successful generate_testing_block_logs jobs." >&2
+        echo "Retry it once every generate_testing_block_logs job of this pipeline has succeeded." >&2
+        exit 1
+      fi
     - echo "Listing all checksum env files:"
     - ls -la $CI_PROJECT_DIR/testing_block_logs/checksums/
     - cat $CI_PROJECT_DIR/testing_block_logs/checksums/*.env > $CI_PROJECT_DIR/testing_block_logs/combined_checksums.env
