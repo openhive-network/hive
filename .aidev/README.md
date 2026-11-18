@@ -3,10 +3,14 @@
 AIDEV verifies changes to this repository through the slots in `project.yaml`,
 integrates them into `aidev/integration`, and people merge that into `develop`
 through merge requests (as in hive/haf), **keeping the source branch**
-(`aidev/integration` is protected). GitLab CI doesn't run for AIDEV branches
-(`ai/*`, `session/*`, pushes to `aidev/integration`); see `.gitlab-ci.yaml`
-`workflow:`. `develop` requires a successful pipeline, so start one on
-`aidev/integration` (web or API) before merging its MR.
+(`aidev/integration` is protected). Pushes to AIDEV branches (`ai/*`,
+`session/*`, `aidev/integration`) start no GitLab CI pipeline, and `ai/*` never
+runs CI: AIDEV's own gates verify that work; see `.gitlab-ci.yaml` `workflow:`.
+A `session/*` branch runs CI only in a pipeline started through the API
+(`aidev ci run`) or the web, for when a lead wants CI evidence on a session tip
+(before promote, say). It uses hive's shared runners, so start one on request
+only, not for every landing. `develop` requires a successful pipeline, so start
+one on `aidev/integration` (web or API) before merging its MR.
 
 ## Suites
 
