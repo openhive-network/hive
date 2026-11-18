@@ -6,7 +6,9 @@
 
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 
+#include <algorithm>
 #include <functional>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -162,7 +164,14 @@ BOOST_AUTO_TEST_CASE( submitted_transactions_are_relayed_once_validated )
       leaving.advertise( hashes_of( left_behind ) );
       BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return leaving.closed(); }, fc::seconds( 10 ) ),
                              "the leaving peer was not asked for its transactions" );
-      BOOST_CHECK_MESSAGE( wait_until( [&]() { return all_advertised( observer, left_behind ); }, fc::seconds( 10 ) ),
+      // a new peer is first asked for only as many transactions as fit the request byte limit at the largest
+      // transaction size, so it delivers just those before it leaves
+      std::vector< full_transaction_ptr > delivered;
+      std::copy_if( left_behind.begin(), left_behind.end(), std::back_inserter( delivered ), [&]( const full_transaction_ptr& transaction ) {
+        return leaving.was_requested( transaction->get_legacy_transaction_message_hash() );
+      } );
+      BOOST_REQUIRE( !delivered.empty() );
+      BOOST_CHECK_MESSAGE( wait_until( [&]() { return all_advertised( observer, delivered ); }, fc::seconds( 10 ) ),
                            "transactions of a peer that disconnected were not relayed" );
     } );
   }
