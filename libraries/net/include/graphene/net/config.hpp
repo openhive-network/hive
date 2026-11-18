@@ -136,6 +136,15 @@
 #define GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS        20
 
 /**
+ * Number of transactions the transaction message cache's message hash index is sized for
+ * when the node starts, so it does not rehash on the p2p thread while the cache fills.
+ * It covers GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS blocks of about 13k
+ * transactions each (over 4k tx/s); a busier network still works, the index just
+ * grows once more.  Costs one bucket pointer per item, 2 MB.
+ */
+#define GRAPHENE_NET_TRANSACTION_MESSAGE_CACHE_EXPECTED_SIZE (256 * 1024)
+
+/**
  * We prevent a peer from offering us a list of blocks which, if we fetched them
  * all, would result in a blockchain that extended into the future.
  * This parameter gives us some wiggle room, allowing a peer to give us blocks
