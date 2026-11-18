@@ -101,10 +101,15 @@
 #define GRAPHENE_NET_DEFAULT_PEER_CONNECTION_RETRY_TIME      30 // seconds
 
 /**
- * AFter trying all peers, how long to wait before we check to
- * see if there are peers we can try again.
+ * The connect loop runs again when it is triggered (a peer was added or learned, a connection closed or
+ * failed), but at most once per GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS: a peer that accepts the
+ * handshake and drops us, or whose address pair is still held by our previous connection, is due again
+ * at once and triggers the loop each time, so the interval bounds how often such a peer is redialed.
+ * Without a trigger it runs again GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC after an iteration, for
+ * state changes that do not trigger it (a peer's retry delay expiring).
  */
-#define GRAPHENE_PEER_DATABASE_RETRY_DELAY                   15 // seconds
+#define GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS        1000
+#define GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC           10
 
 #define GRAPHENE_NET_PEER_HANDSHAKE_INACTIVITY_TIMEOUT       5
 

@@ -125,4 +125,64 @@ BOOST_AUTO_TEST_CASE( many_triggers_coalesce_into_few_iterations )
   BOOST_CHECK_GT( triggers, 3 * iterations );
 }
 
+/// A trigger made while an iteration runs, before the loop waits, is not lost: the next iteration starts once the
+/// minimum interval has passed instead of at the deadline.
+BOOST_AUTO_TEST_CASE( trigger_during_the_iteration_skips_the_deadline )
+{
+  coalescing_loop_trigger trigger;
+  trigger.begin_iteration();
+  trigger.trigger( false );
+  fc::usleep( fc::milliseconds( 30 ) ); // the rest of the iteration, longer than the interval
+  const fc::microseconds waited = time_to_wake( trigger, fc::milliseconds( 20 ), fc::time_point::now() + fc::seconds( 10 ) );
+  BOOST_CHECK_LT( waited.count(), fc::milliseconds( 10 ).count() );
+}
+
+/// Without a trigger the deadline is the fallback; a trigger after an iteration that started more than the interval
+/// ago ends the wait at once.
+BOOST_AUTO_TEST_CASE( deadline_is_the_fallback_without_a_trigger )
+{
+  coalescing_loop_trigger trigger;
+  trigger.begin_iteration();
+  fc::microseconds waited = time_to_wake( trigger, fc::milliseconds( 5 ), fc::time_point::now() + fc::milliseconds( 40 ) );
+  BOOST_CHECK_GE( waited.count(), fc::milliseconds( 35 ).count() );
+  BOOST_CHECK_LT( waited.count(), fc::milliseconds( 500 ).count() );
+
+  trigger.begin_iteration();
+  fc::usleep( fc::milliseconds( 10 ) );
+  fc::future<void> peer_added = fc::async( [&]() {
+    fc::usleep( fc::milliseconds( 20 ) );
+    trigger.trigger( false );
+  }, "peer_added" );
+  waited = time_to_wake( trigger, fc::milliseconds( 5 ), fc::time_point::now() + fc::seconds( 10 ) );
+  BOOST_CHECK_GE( waited.count(), fc::milliseconds( 15 ).count() );
+  BOOST_CHECK_LT( waited.count(), fc::milliseconds( 500 ).count() );
+  peer_added.wait();
+}
+
+/// Canceling a loop that waits for a trigger ends it promptly with fc::canceled_exception, as node shutdown needs,
+/// and triggering it after it exited is harmless.
+BOOST_AUTO_TEST_CASE( canceling_a_waiting_loop_ends_it_promptly )
+{
+  coalescing_loop_trigger trigger;
+  uint32_t iterations = 0;
+  fc::future<void> loop = fc::async( [&]() {
+    for( ;; )
+    {
+      trigger.begin_iteration();
+      ++iterations;
+      trigger.wait( fc::milliseconds( 1 ), fc::time_point::now() + fc::seconds( 10 ) );
+    }
+  }, "connect_loop" );
+  fc::usleep( fc::milliseconds( 20 ) );
+
+  const fc::time_point start = fc::time_point::now();
+  loop.cancel_and_wait( "test shutdown" );
+  BOOST_CHECK_LT( ( fc::time_point::now() - start ).count(), fc::milliseconds( 500 ).count() );
+  BOOST_CHECK_EQUAL( iterations, 1u );
+
+  trigger.trigger( false );
+  trigger.trigger( true );
+  BOOST_CHECK_EQUAL( iterations, 1u );
+}
+
 BOOST_AUTO_TEST_SUITE_END()

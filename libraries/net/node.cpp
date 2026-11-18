@@ -331,7 +331,7 @@ namespace graphene { namespace net {
       std::list<potential_peer_record> _add_once_node_list; /// list of peers we want to connect to as soon as possible
 
       peer_database             _potential_peer_db;
-      fc::promise<void>::ptr    _retrigger_connect_loop_promise;
+      coalescing_loop_trigger   _connect_loop_trigger;
       bool                      _potential_peer_database_updated;
       fc::future<void>          _p2p_network_connect_loop_done;
       /// cached results of the per-address route probe (see can_route_to); entries expire so
@@ -1092,6 +1092,7 @@ namespace graphene { namespace net {
     {
       while (!_p2p_network_connect_loop_done.canceled() && !node_is_shutting_down())
       {
+        _connect_loop_trigger.begin_iteration();
         try
         {
           dlog("Starting an iteration of p2p_network_connect_loop().");
@@ -1190,32 +1191,6 @@ namespace graphene { namespace net {
             ilog("Breaking p2p_network_connect_loop loop because node is shutting down");
             break;
           }
-          // if we broke out of the while loop, that means either we have connected to enough nodes, or
-          // we don't have any good candidates to connect to right now.
-#if 0
-          try
-          {
-            _retrigger_connect_loop_promise = fc::promise<void>::ptr( new fc::promise<void>("graphene::net::retrigger_connect_loop") );
-            if( is_wanting_new_connections() || !_add_once_node_list.empty() )
-            {
-              if( is_wanting_new_connections() )
-                dlog( "Still want to connect to more nodes, but I don't have any good candidates.  Trying again in 15 seconds" );
-              else
-                dlog( "I still have some \"add once\" nodes to connect to.  Trying again in 15 seconds" );
-              _retrigger_connect_loop_promise->wait_until( fc::time_point::now() + fc::seconds(GRAPHENE_PEER_DATABASE_RETRY_DELAY ) );
-            }
-            else
-            {
-              dlog( "I don't need any more connections, waiting forever until something changes" );
-              _retrigger_connect_loop_promise->wait();
-            }
-          }
-          catch ( fc::timeout_exception& ) //intentionally not logged
-          {
-          }  // catch
-#else
-          fc::usleep(fc::seconds(10));
-#endif
         }
         catch (const fc::canceled_exception&)
         {
@@ -1225,6 +1200,10 @@ namespace graphene { namespace net {
         {
           edump((e));
         }
+        // either we have connected to enough nodes, or we don't have any good candidates to connect to
+        // right now: wait for something to change, or for retry delays to expire
+        _connect_loop_trigger.wait(fc::milliseconds(GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS),
+                                   fc::time_point::now() + fc::seconds(GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC));
       }// while(!canceled)
     }
 
@@ -1232,10 +1211,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _potential_peer_database_updated = true; // if we are looking for peers, this says to retry the loop
-#if 0 // disabled because it doesn't trigger the loop any more      
-      if( _retrigger_connect_loop_promise )
-        _retrigger_connect_loop_promise->set_value();
-#endif
+      _connect_loop_trigger.trigger(false);
     }
 
     bool node_impl::have_already_received_sync_item(const item_hash_t& item_hash)
