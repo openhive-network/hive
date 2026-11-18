@@ -7,7 +7,6 @@ every node's data under it. Writes roles.json as soon as the nodes exist and out
 
 from __future__ import annotations
 
-import itertools
 import json
 import os
 import shutil
@@ -16,7 +15,7 @@ import threading
 import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import timedelta
 from functools import partial
 from pathlib import Path
@@ -26,7 +25,7 @@ from beekeepy.exceptions import CommunicationError
 from beekeepy.interfaces import P2PUrl
 
 import test_tools as tt
-from python.functional.p2p_load import p2p_loggers, p2p_parameters, procfs, replay_template
+from python.functional.p2p_load import p2p_loggers, p2p_parameters, procfs, replay_template, topology
 from python.functional.p2p_load.spec import RunSpec
 from test_tools import complex_networks as ttcn
 
@@ -45,6 +44,10 @@ _SEED_LINK_POLL_S = 1
 _START_WAVE_S = 1
 # replayed-state templates kept (2.6 GiB of tmpfs each): the three plugin sets (witness, API node, colony) of an A/B
 _KEEP_TEMPLATES = 6
+# a two-host run: how long a host whose nodes are replayed waits for the other's, and the start signal
+_GO_TIMEOUT_S = 1800
+_GO_POLL_S = 0.2
+_STOP_POLL_S = 1
 # The colony tests' setup (functional/colony), repeated here: the driver runs with the test-tools of the image, which
 # hive_local_tools' helpers may have outgrown, so it imports nothing from the functional tests.
 _WITNESSES = [f"witness-{w}" for w in range(20)]
@@ -90,75 +93,42 @@ def _create_node(spec: RunSpec, role: str, colony_start_block: int) -> _Node:
     return node
 
 
-@dataclass
-class _Topology:
-    witness: _Node
-    observer: _Node
-    colonies: list[_Node]
-    relays: list[_Node]
-    endpoint: dict[int, P2PUrl]  # id(node) -> its p2p endpoint
-    links: list[tuple[_Node, _Node]] = field(default_factory=list)  # (node, a seed of it)
-
-    def seed(self, node: _Node, *peers: _Node) -> None:
-        node.config.p2p_seed_node = [self.endpoint[id(peer)] for peer in peers]
-        self.links.extend((node, peer) for peer in peers)
-
-    def address(self, node: _Node) -> str | None:
-        """host:port the node listens on for p2p, as hived names its peers; None for a node that does not listen."""
-        endpoint = self.endpoint.get(id(node))
-        return None if endpoint is None else endpoint.as_string(with_protocol=False)
+@dataclass(frozen=True)
+class _Endpoint:
+    listen: P2PUrl  # what the node's p2p-endpoint binds
+    address: str  # host:port its peers dial, as hived names its peers
 
 
-def _connect_mesh(t: _Topology) -> None:
-    for node in [t.observer, *t.colonies]:
-        t.seed(node, t.witness)
-
-
-def _connect_star(t: _Topology) -> None:
-    t.seed(t.witness, *t.colonies)
-    t.seed(t.observer, t.witness)
-
-
-def _connect_strict(t: _Topology) -> None:
-    _connect_star(t)
-    for node in [t.observer, *t.colonies]:
-        node.config.p2p_max_connections = 1
-
-
-def _connect_chain(t: _Topology) -> None:
-    # colony0 -> relay1 -> ... -> relayN -> witness -> observer; the connection limits leave peer exchange
-    # no room for a shortcut
-    for previous, following in itertools.pairwise([t.colonies[0], *t.relays, t.witness]):
-        t.seed(following, previous)
-    t.colonies[0].config.p2p_max_connections = 1
-    for node in [*t.relays, t.witness]:
-        node.config.p2p_max_connections = 2
-    t.seed(t.observer, t.witness)
-    t.observer.config.p2p_max_connections = 1
-
-
-_TOPOLOGIES = {"mesh": _connect_mesh, "star": _connect_star, "strict": _connect_strict, "chain": _connect_chain}
-
-
-def _connect(spec: RunSpec, nodes: dict[str, _Node]) -> _Topology:
-    free = iter(ttcn.generate_free_addresses(len(nodes)))
-    endpoint: dict[int, P2PUrl] = {}
-    for role, node in nodes.items():
-        if role == "observer":
-            continue
+def _endpoints(spec: RunSpec) -> dict[str, _Endpoint]:
+    """Every listening node's p2p endpoint (the observer does not listen): on loopback, or on the hosts' network."""
+    listening = [role for role in spec.roles() if role != "observer"]
+    if spec.remote_host:
+        return {
+            role: _Endpoint(P2PUrl(f"0.0.0.0:{spec.endpoints[role].rpartition(':')[2]}"), spec.endpoints[role])
+            for role in listening
+        }
+    free = iter(ttcn.generate_free_addresses(len(listening)))
+    endpoints: dict[str, _Endpoint] = {}
+    for role in listening:
         port = spec.colony_ports.get(role.removeprefix("colony")) if role.startswith("colony") else None
         # a netem-delayed colony listens on the port the host side filters on
-        endpoint[id(node)] = P2PUrl(f"127.0.0.1:{port}" if port else next(free))
-        node.config.p2p_endpoint = endpoint[id(node)]
-    topology = _Topology(
-        witness=nodes["witness"],
-        observer=nodes["observer"],
-        colonies=[nodes[f"colony{i}"] for i in range(spec.colonies)],
-        relays=[nodes[f"relay{i + 1}"] for i in range(spec.relays)],
-        endpoint=endpoint,
-    )
-    _TOPOLOGIES[spec.topology](topology)
-    return topology
+        url = P2PUrl(f"127.0.0.1:{port}" if port else next(free))
+        endpoints[role] = _Endpoint(url, url.as_string(with_protocol=False))
+    return endpoints
+
+
+def _wire(spec: RunSpec, nodes: dict[str, _Node]) -> tuple[topology.Wiring, dict[str, _Endpoint]]:
+    """Configure the p2p endpoint, seeds and connection limit of every node of this host."""
+    wiring = topology.wire(spec)
+    endpoints = _endpoints(spec)
+    for role, node in nodes.items():
+        if role in endpoints:
+            node.config.p2p_endpoint = endpoints[role].listen
+        if wiring.seeds.get(role):
+            node.config.p2p_seed_node = [P2PUrl(endpoints[peer].address) for peer in wiring.seeds[role]]
+        if role in wiring.max_connections:
+            node.config.p2p_max_connections = wiring.max_connections[role]
+    return wiring, endpoints
 
 
 def _peer_hosts(node: _Node) -> set[str]:
@@ -186,49 +156,34 @@ def _add_node(node: _Node, endpoint: str) -> None:
         raise RuntimeError(f"{node}: network_node_api.add_node({endpoint}) failed: {result['error']}")
 
 
-def _wait_for_seed_links(topology: _Topology, nodes: list[_Node]) -> float:
+def _wait_for_seed_links(
+    links: list[tuple[str, str]], running: dict[str, _Node], endpoints: dict[str, _Endpoint]
+) -> float:
     """
-    Redial the seeds of `nodes` until each node is linked to every seed of it; return how long that took.
+    Redial the seeds of the `running` nodes until each is linked to every seed of it; return how long that took.
 
     A link is up when either end lists the other's p2p endpoint as a peer: hived keeps one connection per pair of
-    nodes, so the seed may hold the connection it dialed itself. Raise RuntimeError naming the links still down
-    after _SEED_LINK_TIMEOUT_S.
+    nodes, so the seed may hold the connection it dialed itself. A seed on the other host of a two-host run is only
+    dialed; its own host checks its side. Raise RuntimeError naming the links still down after _SEED_LINK_TIMEOUT_S.
     """
-    running = {id(node) for node in nodes}
-    links = [(node, seed) for node, seed in topology.links if id(node) in running and id(seed) in running]
+    links = [(role, seed) for role, seed in links if role in running]
     started = time.time()
     while True:
-        hosts = {id(node): _peer_hosts(node) for node in nodes}
+        hosts = {role: _peer_hosts(node) for role, node in running.items()}
         down = [
-            (node, seed)
-            for node, seed in links
-            if topology.address(seed) not in hosts[id(node)] and topology.address(node) not in hosts[id(seed)]
+            (role, seed)
+            for role, seed in links
+            if endpoints[seed].address not in hosts[role]
+            and not (seed in running and endpoints.get(role) and endpoints[role].address in hosts[seed])
         ]
         if not down:
             return time.time() - started
         if time.time() - started > _SEED_LINK_TIMEOUT_S:
-            names = ", ".join(f"{node} -> {seed}" for node, seed in down)
+            names = ", ".join(f"{role} -> {seed}" for role, seed in down)
             raise RuntimeError(f"p2p links still down {_SEED_LINK_TIMEOUT_S} s after the nodes started: {names}")
-        for node, seed in down:
-            _add_node(node, str(topology.address(seed)))
+        for role, seed in down:
+            _add_node(running[role], endpoints[seed].address)
         time.sleep(_SEED_LINK_POLL_S)
-
-
-def _start_waves(topology: _Topology, nodes: list[_Node]) -> list[list[_Node]]:
-    """Group `nodes` into start waves, each node one wave after the latest of its seeds (the topologies have no cycle)."""
-    starting = {id(node) for node in nodes}
-    wave: dict[int, int] = {}
-
-    def wave_of(node: _Node) -> int:
-        if id(node) not in wave:
-            seeds = [seed for dialer, seed in topology.links if dialer is node and id(seed) in starting]
-            wave[id(node)] = 1 + max((wave_of(seed) for seed in seeds), default=-1)
-        return wave[id(node)]
-
-    waves: list[list[_Node]] = [[] for _ in range(1 + max(map(wave_of, nodes)))]
-    for node in nodes:
-        waves[wave_of(node)].append(node)
-    return waves
 
 
 def _apply_p2p_parameters(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, Any]:
@@ -266,13 +221,15 @@ def _write_json(path: Path, data: Any) -> None:
 
 class _Sampler(threading.Thread):
     """
-    Every few seconds: the witness head, every node's per-thread CPU ticks and the host's busy ticks next to the
+    Every few seconds: a node's head, every node's per-thread CPU ticks and the host's busy ticks next to the
     driver's own (its whole process tree: every node, the colonies, the driver); now and then the p2p link map.
+
+    The head is the witness's, or on the remote host of a two-host run that of one of its own nodes.
     """
 
-    def __init__(self, witness: _Node, pids: dict[str, int]) -> None:
+    def __init__(self, head_node: _Node, pids: dict[str, int]) -> None:
         super().__init__(daemon=True)
-        self._witness = witness
+        self._head_node = head_node
         self.pids = pids
         self.samples: list[dict[str, Any]] = []
         self.links: list[dict[str, Any]] = []
@@ -282,7 +239,7 @@ class _Sampler(threading.Thread):
         while not self._stop_event.is_set():
             pids = dict(self.pids)
             try:
-                head = self._witness.get_last_block_number()
+                head = self._head_node.get_last_block_number()
                 # read back to back, so their difference is the CPU spent outside the run up to the same moment
                 t, host_busy, own = time.time(), procfs.host_busy_ticks(), procfs.tree_ticks(os.getpid())
                 ticks = {role: procfs.thread_ticks(pid) for role, pid in pids.items()}
@@ -403,15 +360,45 @@ def _prepare_state(
     }
 
 
-def run(spec: RunSpec) -> dict[str, Any]:
+def _wait_for_go(out_dir: Path, part: str) -> float:
+    """
+    Report this host's nodes replayed and wait for the shared start of a two-host run; return its moment.
+
+    The host side writes `<part>.go` once both hosts are ready, holding a moment a few seconds ahead on this host's
+    clock (corrected for the measured offset between the hosts), so both hosts start their nodes, and so their
+    faked clocks, at the same real time.
+    """
+    _write_json(out_dir / f"{part}.ready", {"t": time.time()})
+    go = out_dir / f"{part}.go"
+    deadline = time.time() + _GO_TIMEOUT_S
+    while not go.is_file():
+        if time.time() > deadline:
+            raise RuntimeError(f"no start signal {_GO_TIMEOUT_S} s after this host's nodes were ready")
+        time.sleep(_GO_POLL_S)
+    t0 = float(json.loads(go.read_text())["t0"])
+    time.sleep(max(0.0, t0 - time.time()))
+    return t0
+
+
+def _wait_for_end(node: _Node, end_block: int, stop: Path) -> None:
+    """The remote part's end: its node has the run's last block, or the local part, finished, wrote `stop`."""
+    deadline = time.time() + (end_block - node.get_last_block_number()) * 3 * 4 + 120
+    while node.get_last_block_number() < end_block and not stop.is_file():
+        if time.time() > deadline:
+            raise RuntimeError(f"{node} did not reach block {end_block}, and the local part did not finish")
+        time.sleep(_STOP_POLL_S)
+
+
+def run(spec: RunSpec, part: str = "local") -> dict[str, Any]:
+    """Run the nodes of `part` ("local": the witness's host and the whole of a single-host run, or "remote")."""
     run_started = time.time()
     out_dir = Path(spec.out_dir)
     block_log = tt.BlockLog(Path(spec.block_log), "auto")
     chain_specs = tt.AlternateChainSpecs.parse_file(Path(spec.block_log) / tt.AlternateChainSpecs.FILENAME)
     colony_start_block = block_log.get_head_block_number() + spec.colony_start_delay
 
-    nodes = {role: _create_node(spec, role, colony_start_block) for role in spec.roles()}
-    topology = _connect(spec, nodes)
+    nodes = {role: _create_node(spec, role, colony_start_block) for role in spec.roles_on(part)}
+    wiring, endpoints = _wire(spec, nodes)
     parameters = _apply_p2p_parameters(spec, nodes)
     loggers = _enable_p2p_loggers(spec, nodes)
     roles = {role: node.directory.name for role, node in nodes.items()}
@@ -425,47 +412,51 @@ def run(spec: RunSpec) -> dict[str, Any]:
         p2p_parameters.verify_config(node.config_file_path, parameters["applied"][role])
         p2p_loggers.verify_config(node.config_file_path, loggers[role])
 
-    late = spec.late_observer_blocks > 0
+    late = spec.late_observer_blocks > 0 and "observer" in nodes
     start_time = block_log.get_head_block_time()
-    starting = [node for role, node in nodes.items() if not (late and role == "observer")]
-    started = time.time()
+    starting = {role: node for role, node in nodes.items() if not (late and role == "observer")}
+    # both hosts of a two-host run wave the whole run's nodes alike, so their faked clocks agree
+    waves = wiring.start_waves([r for r in spec.roles() if not (spec.late_observer_blocks and r == "observer")])
+    started = _wait_for_go(out_dir, part) if spec.remote_host else time.time()
     with ThreadPoolExecutor(max_workers=len(starting)) as pool:
         futures = []
-        for number, wave in enumerate(_start_waves(topology, starting)):
+        for number, wave in enumerate(waves):
             # each wave's faked clock starts as much later as the wave does, so the clocks still agree
             offset = timedelta(seconds=number * _START_WAVE_S)
             time.sleep(max(0.0, started + offset.total_seconds() - time.time()))
             futures += [
                 pool.submit(
-                    node.run,
+                    starting[role].run,
                     timeout=_NODE_TIMEOUT_S,
                     wait_for_live=False,
                     alternate_chain_specs=chain_specs,
                     time_control=tt.StartTimeControl(start_time=start_time + offset),
                 )
-                for node in wave
+                for role in wave
+                if role in starting
             ]
         for future in futures:
             future.result()
     # a seed slow to listen still costs its dialer the connect loop tick; the colonies must not wait out the backoff
-    seed_links_s = _wait_for_seed_links(topology, starting)
-    for node in starting:
+    seed_links_s = _wait_for_seed_links(wiring.links, starting, endpoints)
+    for node in starting.values():
         node.wait_for_live_mode(timeout=_NODE_TIMEOUT_S)
     live_s = time.time() - started
     tt.logger.info(f"every node live {live_s:.1f} s after the start, seed links up after {seed_links_s:.1f} s")
-    witness = nodes["witness"]
-    pids = {role: _pid_of(node) for role, node in nodes.items() if not (late and role == "observer")}
-    first = witness.get_last_block_number()
-    sampler = _Sampler(witness, pids)
+    head_node = nodes["witness"] if part == "local" else next(iter(starting.values()))
+    pids = {role: _pid_of(node) for role, node in starting.items()}
+    first = head_node.get_last_block_number()
+    sampler = _Sampler(head_node, pids)
     sampler.start()
 
     late_observer: dict[str, Any] | None = None
     if late:
+        witness = nodes["witness"]
         join_block = colony_start_block + spec.late_observer_blocks
         witness.wait_for_block_with_number(join_block, timeout=(join_block - first) * 3 * 4 + 120)
         joined_at = witness.get_last_block_number()
         joining = time.time()
-        # the others' faked clocks started at start_time when they were started; the observer's starts where theirs are
+        # the others' faked clocks read start_time at `started`; the observer's starts where theirs are
         nodes["observer"].run(
             timeout=600,
             wait_for_live=True,
@@ -481,9 +472,14 @@ def run(spec: RunSpec) -> dict[str, Any]:
         }
 
     end_block = colony_start_block + spec.blocks
-    witness.wait_for_block_with_number(end_block, timeout=(end_block - witness.get_last_block_number()) * 3 * 4 + 120)
+    if part == "local":
+        head_node.wait_for_block_with_number(
+            end_block, timeout=(end_block - head_node.get_last_block_number()) * 3 * 4 + 120
+        )
+    else:
+        _wait_for_end(head_node, end_block, out_dir / f"{part}.stop")
     sampler.stop()
-    last = witness.get_last_block_number()
+    last = head_node.get_last_block_number()
     closing = time.time()
     _in_parallel([node.close for node in nodes.values()])
     timings = {
@@ -497,7 +493,8 @@ def run(spec: RunSpec) -> dict[str, Any]:
     tt.logger.info(f"phase timings: {json.dumps(timings)}")
     return {
         **asdict(spec),
-        "binaries": {role: spec.binary(role) for role in nodes},
+        "part": part,
+        "binaries": {role: spec.binary(role) for role in spec.roles()},
         "roles": roles,
         "p2p_parameters": parameters,
         "p2p_loggers": loggers,
@@ -520,7 +517,7 @@ def run(spec: RunSpec) -> dict[str, Any]:
     }
 
 
-def main(spec_path: Path) -> None:
+def main(spec_path: Path, part: str = "local") -> None:
     spec = RunSpec(**json.loads(spec_path.read_text()))
-    result = run(spec)
+    result = run(spec, part)
     _write_json(Path(spec.out_dir) / "out.json", result)

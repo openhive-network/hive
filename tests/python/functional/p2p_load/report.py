@@ -41,6 +41,7 @@ def summarize(
         "blocks": [meta["first"], meta["last"]],
         "window": analysis.window_shortfall(run),
         "host_load": analysis.host_load(run, busy_cores),
+        "remote_host_load": analysis.host_load(run, busy_cores, "remote") if run.remote_roles else None,
         "rates": analysis.rates(run, blocks_per_window),
         "underfilled": {"below_txs": threshold, "blocks": analysis.underfilled(run, threshold)},
         "offsets": analysis.corrected_offsets(run),
@@ -54,6 +55,24 @@ def summarize(
         "late_observer": meta.get("late_observer"),
         "timings": meta.get("timings"),
         "replay": meta.get("replay"),
+        "placement": _placement(run),
+    }
+
+
+def _placement(run: analysis.Run) -> dict[str, Any] | None:
+    """A two-host run's hosts with their nodes and the measured offset of their clocks; None for a single-host run."""
+    meta = run.meta
+    if not run.remote_roles:
+        return None
+    clock = meta["clock"]
+    return {
+        "local": {"host": meta.get("host"), "roles": [role for role in run.roles if role not in run.remote_roles]},
+        "remote": {"host": meta["remote_host"], "roles": run.remote_roles},
+        "endpoints": meta.get("endpoints", {}),
+        "clock": {
+            key: clock.get(key)
+            for key in ("offset_s", "uncertainty_s", "min_rtt_s", "median_rtt_s", "probes", "ntp_offset_s")
+        },
     }
 
 
@@ -100,21 +119,29 @@ def _format_all_counters(summary: dict[str, Any]) -> list[str]:
     return [line for role, counters in summary["p2p_counters"].items() for line in _format_counters(role, counters)]
 
 
-def _format_host_load(load: dict[str, Any] | None) -> list[str]:
+def _format_host_load(load: dict[str, Any] | None, host: str = "host") -> list[str]:
     if load is None:
-        return ["   host: no host CPU in the samples (recorded before the harness sampled it)"]
+        return [f"   {host}: no host CPU in the samples (recorded before the harness sampled it)"]
     lines = [
         (
-            f"   host: {load['other_busy_cores']:.1f} cores busy outside the run "
+            f"   {host}: {load['other_busy_cores']:.1f} cores busy outside the run "
             f"(max {load['max_other_busy_cores']:.1f} over a sample interval), "
             f"host {load['host_busy_cores']:.1f} of {_fmt(load['nproc'])} cores busy, run {load['run_cores']:.1f}"
         )
     ]
     if load["busy"]:
         lines.append(
-            f"   BUSY HOST: {load['other_busy_cores']:.1f} cores busy outside the run, over {load['busy_cores']:g}; "
+            f"   BUSY {host.upper()}: {load['other_busy_cores']:.1f} cores busy outside the run, "
+            f"over {load['busy_cores']:g}; "
             "block offsets and CPU shares are inflated, leave the run out of A/B conclusions"
         )
+    return lines
+
+
+def _format_host_loads(summary: dict[str, Any]) -> list[str]:
+    lines = _format_host_load(summary["host_load"])
+    if summary["placement"] is not None:
+        lines.extend(_format_host_load(summary["remote_host_load"], "remote host"))
     return lines
 
 
@@ -138,6 +165,22 @@ def _format_timings(summary: dict[str, Any]) -> list[str]:
             f"   driver {timings['total_s']:.0f} s: state {timings['state_s']:.1f} s ({state}), "
             f"start to live {timings['start_to_live_s']:.1f} s, live to end {timings['live_to_end_s']:.0f} s, "
             f"close {timings['close_s']:.1f} s"
+        )
+    ]
+
+
+def _format_placement(placement: dict[str, Any] | None) -> list[str]:
+    if placement is None:
+        return []
+    clock = placement["clock"]
+    ntp = clock["ntp_offset_s"]
+    return [
+        (
+            f"   two hosts: {placement['local']['host']} ({','.join(placement['local']['roles'])}) and "
+            f"{placement['remote']['host']} ({','.join(placement['remote']['roles'])}); remote clock "
+            f"{clock['offset_s'] * 1000:+.3f} ms +-{clock['uncertainty_s'] * 1000:.3f} ms (NTP "
+            f"{'-' if ntp is None else f'{ntp * 1000:+.3f} ms'}), probe RTT min {clock['min_rtt_s'] * 1000:.3f} "
+            f"median {clock['median_rtt_s'] * 1000:.3f} ms; relay samples corrected by the offset"
         )
     ]
 
@@ -190,7 +233,8 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
                 else ""
             )
         )
-    lines.extend(_format_host_load(summary["host_load"]))
+    lines.extend(_format_host_loads(summary))
+    lines.extend(_format_placement(summary["placement"]))
     under = summary["underfilled"]
     lines.append(f"   underfilled (<{under['below_txs']} tx): {len(under['blocks'])} {under['blocks'][:20]}")
     for role, off in summary["offsets"].items():
@@ -250,6 +294,7 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
         "short windows": lambda s: int(s["window"]["short"]),
         "busy host runs": lambda s: int(_busy(s)),
         "cores busy outside the run": lambda s: (s["host_load"] or {}).get("other_busy_cores"),
+        "remote cores busy outside the run": lambda s: (s["remote_host_load"] or {}).get("other_busy_cores"),
         "included tx/s": lambda s: s["rates"]["included_tx_s"],
         "received tx/s": lambda s: s["rates"]["received_tx_s"],
         "underfilled blocks": lambda s: len(s["underfilled"]["blocks"]),
@@ -281,7 +326,8 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
 
 
 def _busy(summary: dict[str, Any]) -> bool:
-    return bool(summary["host_load"] and summary["host_load"]["busy"])
+    """On a busy host: either host of a two-host run."""
+    return any(load and load["busy"] for load in (summary["host_load"], summary["remote_host_load"]))
 
 
 def format_comparison(summaries: list[dict[str, Any]]) -> str:
