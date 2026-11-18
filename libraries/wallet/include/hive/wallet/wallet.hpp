@@ -1401,7 +1401,8 @@ class wallet_api
     fc::signal<void(bool)> lock_changed;
 
     /**
-    *  Delegate Rc
+    *  Delegate Rc. Since HF29 the transaction contains delegate_rc_operation,
+    *  before HF29 the operation is embedded in custom_json_operation with id "rc".
     *
     *  @param from The source account
     *  @param delegatees The destination accounts
