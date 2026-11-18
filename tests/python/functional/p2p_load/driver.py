@@ -238,7 +238,10 @@ def _write_json(path: Path, data: Any) -> None:
 
 
 class _Sampler(threading.Thread):
-    """Every few seconds: the witness head and every node's per-thread CPU ticks; now and then the p2p link map."""
+    """
+    Every few seconds: the witness head, every node's per-thread CPU ticks and the host's busy ticks next to the
+    driver's own (its whole process tree: every node, the colonies, the driver); now and then the p2p link map.
+    """
 
     def __init__(self, witness: _Node, pids: dict[str, int]) -> None:
         super().__init__(daemon=True)
@@ -253,8 +256,10 @@ class _Sampler(threading.Thread):
             pids = dict(self.pids)
             try:
                 head = self._witness.get_last_block_number()
+                # read back to back, so their difference is the CPU spent outside the run up to the same moment
+                t, host_busy, own = time.time(), procfs.host_busy_ticks(), procfs.tree_ticks(os.getpid())
                 ticks = {role: procfs.thread_ticks(pid) for role, pid in pids.items()}
-                self.samples.append({"t": time.time(), "head": head, "ticks": ticks})
+                self.samples.append({"t": t, "head": head, "ticks": ticks, "host_busy": host_busy, "own": own})
                 if len(self.samples) % _LINKS_EVERY_N_SAMPLES == 1:
                     self.links.append({"head": head, "links": procfs.tcp_links(pids)})
             except (OSError, CommunicationError) as error:  # a missed sample must not abort the measured run
@@ -368,6 +373,7 @@ def run(spec: RunSpec) -> dict[str, Any]:
         "late_observer": late_observer,
         "pids": pids,
         "tck": os.sysconf("SC_CLK_TCK"),
+        "nproc": procfs.cpu_count(),
         "container_host": socket.gethostname(),
         "samples": sampler.samples,
         "links": sampler.links,

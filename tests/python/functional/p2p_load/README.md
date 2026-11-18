@@ -41,7 +41,7 @@ COMMON="--block-log /path/to/single_sign_universal_block_log --tools /path/to/bu
    the tmpfs directory, whatever happened. A disk-backed 8-peer run wrote 90-415 GB; this one writes megabytes.
 
 `OUT_ROOT/NAME` then holds `spec.json` (what was asked), `out.json` (roles, binaries, p2p parameters and p2p
-loggers per node, blocks, `/proc` samples, link maps), `driver.log`, `generated/`, and `tc.txt` / `sends.txt` when used.
+loggers per node, blocks, `/proc` samples of node threads and host CPU, link maps), `driver.log`, `generated/`, and `tc.txt` / `sends.txt` when used.
 `OUT_ROOT/series.log` records each run's start and end with host, exit code and load average.
 
 Options:
@@ -122,6 +122,19 @@ work on any finished run directory and need no node and no test-tools.
   at the colonies' start block once every node was live (`late_start` in `out.json`: the colonies started late).
   `report --json` carries it as `window`, and `compare` counts loaded blocks and short windows per label; leave
   short runs out of conclusions.
+- **busy host**: the harness hosts also carry aidev session stacks and other analyses' series, and host load alone
+  moves block offsets: on steem-13 (hive#1090) a run hit by another workload spent 89-93 ms instead of 70 ms
+  generating a block on the witness, applied blocks later on the observer, and landed 40-45 ms late, for either
+  build. Every sample records the host's busy CPU ticks (`/proc/stat`, all but idle and iowait; the container sees
+  the host's) next to those of the driver's process tree (every node, the colonies and the driver itself). Over the
+  loaded window, the difference is the cores busy outside the run; the report prints it with its maximum over one
+  3 s sample interval, the host's busy cores out of its CPU count and the run's own, and flags the run
+  `BUSY HOST` when the window's mean exceeds `--busy-cores` (default 4: on steem-2/4/5/13, 84 s windows of quiet
+  stretches stayed at 0.1-3.3 cores outside any harness run, other workloads' episodes at 6-12). `report --json`
+  carries it as `host_load`. Once any run of a comparison is busy, `compare` counts busy runs per label, marks their values `*`
+  and gives each label's mean without them (`quiet`) next to the mean over all runs; draw A/B conclusions from the
+  quiet means, or name the busy runs. Runs recorded before the samples carried host ticks show none and are never
+  flagged.
 - **tx/s**: included (transactions in witness blocks) and received (`before.inc` of the witness's Block stats:
   transactions it applied between blocks), over the loaded window and per `--window-blocks` blocks (default 10).
   The loaded window starts two blocks after the first witness block with transactions.

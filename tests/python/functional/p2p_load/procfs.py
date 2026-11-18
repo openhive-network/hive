@@ -1,4 +1,4 @@
-"""What /proc tells about running hived processes: which one serves a data dir, per-thread CPU, p2p links."""
+"""What /proc tells about running hived processes and the host: which one serves a data dir, CPU ticks, p2p links."""
 
 from __future__ import annotations
 
@@ -38,6 +38,49 @@ def thread_ticks(pid: int) -> dict[str, list[str | int]]:
         fields = stat[stat.rindex(")") + 2 :].split()
         out[task.name] = [name, int(fields[11]) + int(fields[12])]
     return out
+
+
+def host_busy_ticks() -> int:
+    """Return the clock ticks every CPU of the host spent busy (all but idle and iowait) since boot, from /proc/stat."""
+    fields = [int(value) for value in (_PROC / "stat").read_text().splitlines()[0].split()[1:]]
+    # user nice system idle iowait irq softirq steal; guest time is counted in user and nice already
+    user, nice, system, _, _, irq, softirq, steal = fields[:8]
+    return user + nice + system + irq + softirq + steal
+
+
+def cpu_count() -> int:
+    """Return how many CPUs /proc/stat counts, the CPUs host_busy_ticks covers."""
+    lines = (_PROC / "stat").read_text().splitlines()
+    return sum(1 for line in lines if line.startswith("cpu") and line[3].isdigit())
+
+
+def tree_ticks(root: int) -> int:
+    """
+    Return the user+system clock ticks of the process `root` and every descendant of it, waited-for children included.
+
+    A child that exits and is waited for moves its ticks into its parent's, so the sum does not drop when it ends.
+    """
+    parent: dict[int, int] = {}
+    ticks: dict[int, int] = {}
+    for entry in _PROC.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            stat = (entry / "stat").read_text()
+        except OSError:  # the process exited while we looked
+            continue
+        fields = stat[stat.rindex(")") + 2 :].split()
+        parent[int(entry.name)] = int(fields[1])
+        ticks[int(entry.name)] = sum(int(value) for value in fields[11:15])  # utime stime cutime cstime
+    children: dict[int, list[int]] = {}
+    for pid, ppid in parent.items():
+        children.setdefault(ppid, []).append(pid)
+    total, pending = 0, [root]
+    while pending:
+        pid = pending.pop()
+        total += ticks.get(pid, 0)
+        pending.extend(children.get(pid, []))
+    return total
 
 
 def _socket_owners(pids: dict[str, int]) -> dict[str, str]:
