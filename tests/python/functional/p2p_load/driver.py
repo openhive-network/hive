@@ -10,6 +10,7 @@ from __future__ import annotations
 import itertools
 import json
 import os
+import shutil
 import socket
 import threading
 import time
@@ -17,16 +18,20 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from datetime import timedelta
+from functools import partial
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from beekeepy.exceptions import CommunicationError
 from beekeepy.interfaces import P2PUrl
 
 import test_tools as tt
-from python.functional.p2p_load import p2p_loggers, p2p_parameters, procfs
+from python.functional.p2p_load import p2p_loggers, p2p_parameters, procfs, replay_template
 from python.functional.p2p_load.spec import RunSpec
 from test_tools import complex_networks as ttcn
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _SAMPLE_INTERVAL_S = 3
 _LINKS_EVERY_N_SAMPLES = 10
@@ -35,6 +40,11 @@ _NODE_TIMEOUT_S = 300
 # them until every link is up, this long at most
 _SEED_LINK_TIMEOUT_S = 60
 _SEED_LINK_POLL_S = 1
+# even redialed, a refused node dials again only on hived's next 10 s connect loop tick, so nodes start in waves
+# this far apart (whole seconds: faketime's start time has no fraction), each one wave after its seeds
+_START_WAVE_S = 1
+# replayed-state templates kept (2.6 GiB of tmpfs each): the three plugin sets (witness, API node, colony) of an A/B
+_KEEP_TEMPLATES = 6
 # The colony tests' setup (functional/colony), repeated here: the driver runs with the test-tools of the image, which
 # hive_local_tools' helpers may have outgrown, so it imports nothing from the functional tests.
 _WITNESSES = [f"witness-{w}" for w in range(20)]
@@ -204,6 +214,23 @@ def _wait_for_seed_links(topology: _Topology, nodes: list[_Node]) -> float:
         time.sleep(_SEED_LINK_POLL_S)
 
 
+def _start_waves(topology: _Topology, nodes: list[_Node]) -> list[list[_Node]]:
+    """Group `nodes` into start waves, each node one wave after the latest of its seeds (the topologies have no cycle)."""
+    starting = {id(node) for node in nodes}
+    wave: dict[int, int] = {}
+
+    def wave_of(node: _Node) -> int:
+        if id(node) not in wave:
+            seeds = [seed for dialer, seed in topology.links if dialer is node and id(seed) in starting]
+            wave[id(node)] = 1 + max((wave_of(seed) for seed in seeds), default=-1)
+        return wave[id(node)]
+
+    waves: list[list[_Node]] = [[] for _ in range(1 + max(map(wave_of, nodes)))]
+    for node in nodes:
+        waves[wave_of(node)].append(node)
+    return waves
+
+
 def _apply_p2p_parameters(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, Any]:
     defaults = {path: p2p_parameters.binary_defaults(Path(path)) for path in {spec.binary(r) for r in nodes}}
     applied: dict[str, dict[str, Any]] = {}
@@ -278,7 +305,106 @@ def _pid_of(node: _Node) -> int:
     return pid
 
 
+def _replay(node: _Node, block_log: tt.BlockLog, chain_specs: tt.AlternateChainSpecs) -> None:
+    node.run(
+        replay_from=block_log,
+        timeout=_NODE_TIMEOUT_S,
+        alternate_chain_specs=chain_specs,
+        exit_before_synchronization=True,
+    )
+
+
+def _initialize(node: _Node, chain_specs: tt.AlternateChainSpecs) -> None:
+    """Have test-tools set up the node's directory and config: hived opens an empty state and exits at once."""
+    node.run(timeout=_NODE_TIMEOUT_S, alternate_chain_specs=chain_specs, exit_before_synchronization=True)
+
+
+def _in_parallel(calls: list[Callable[[], object]]) -> None:
+    if not calls:
+        return
+    with ThreadPoolExecutor(max_workers=len(calls)) as pool:
+        for future in [pool.submit(call) for call in calls]:
+            future.result()
+
+
+def _template_keys(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, str]:
+    fixture = replay_template.fixture_digest(Path(spec.block_log))
+    return {
+        role: replay_template.template_key(
+            Path(spec.binary(role)),
+            fixture,
+            node.config.plugin,
+            node.config.shared_file_size,
+            node.config.block_log_split,
+        )
+        for role, node in nodes.items()
+    }
+
+
+def _prepare_state(
+    spec: RunSpec, nodes: dict[str, _Node], block_log: tt.BlockLog, chain_specs: tt.AlternateChainSpecs
+) -> dict[str, Any]:
+    """
+    Give every node the state of the replayed block log, stopped before syncing; return what was replayed or reused.
+
+    Without a template store every node replays, all in parallel. With one, a node whose template exists gets a copy
+    of it; otherwise one node per missing template replays (in parallel with the others' setup) and its state
+    becomes the template the others of its key get.
+    """
+    started = time.time()
+    if not spec.replay_templates:
+        _in_parallel([partial(_replay, node, block_log, chain_specs) for node in nodes.values()])
+        replay_s = time.time() - started
+        tt.logger.info(f"replayed every node in parallel in {replay_s:.1f} s")
+        return {"templates": None, "replayed": list(nodes), "replay_s": replay_s, "copy_s": 0.0, "state_s": replay_s}
+
+    store = replay_template.TemplateStore(Path(spec.replay_templates))
+    keys = _template_keys(spec, nodes)
+    templates = {key: store.find(key) for key in set(keys.values())}
+    replayers = {key: next(r for r, k in keys.items() if k == key) for key, path in templates.items() if path is None}
+    copied = [role for role in nodes if role not in replayers.values()]
+    _in_parallel([
+        *(partial(_replay, nodes[role], block_log, chain_specs) for role in replayers.values()),
+        *(partial(_initialize, nodes[role], chain_specs) for role in copied),
+    ])
+    replay_s = time.time() - started
+    for key, role in replayers.items():
+        info = {"hived": spec.binary(role), "fixture": spec.block_log, "replayed_by": role, "replay_s": replay_s}
+        store.save(key, nodes[role].directory / "blockchain", info)
+        templates[key] = store.find(key)
+    if replayers:
+        removed = store.prune(_KEEP_TEMPLATES, protect=templates)
+        if removed:
+            tt.logger.info(f"removed the least recently used replay templates {removed}")
+
+    def copy_template(role: str) -> None:
+        template = templates[keys[role]]
+        if template is None:
+            raise RuntimeError(f"replay template {keys[role]} vanished before {role} got its copy")
+        shutil.rmtree(nodes[role].directory / "blockchain")
+        replay_template.copy_state(template, nodes[role].directory / "blockchain")
+
+    copying = time.time()
+    _in_parallel([partial(copy_template, role) for role in copied])
+    copy_s = time.time() - copying
+    tt.logger.info(
+        f"state: replayed on {sorted(replayers.values()) or 'no node'} in {replay_s:.1f} s, "
+        f"copied replay templates into {len(copied)} nodes in {copy_s:.1f} s"
+    )
+    return {
+        "templates": {
+            key: {"reused": key not in replayers, "roles": sorted(r for r, k in keys.items() if k == key)}
+            for key in templates
+        },
+        "replayed": sorted(replayers.values()),
+        "replay_s": replay_s,
+        "copy_s": copy_s,
+        "state_s": time.time() - started,
+    }
+
+
 def run(spec: RunSpec) -> dict[str, Any]:
+    run_started = time.time()
     out_dir = Path(spec.out_dir)
     block_log = tt.BlockLog(Path(spec.block_log), "auto")
     chain_specs = tt.AlternateChainSpecs.parse_file(Path(spec.block_log) / tt.AlternateChainSpecs.FILENAME)
@@ -293,37 +419,40 @@ def run(spec: RunSpec) -> dict[str, Any]:
         out_dir / "roles.json", {"roles": roles, "directories": {r: str(n.directory) for r, n in nodes.items()}}
     )
 
-    for node in nodes.values():
-        node.run(
-            replay_from=block_log,
-            timeout=_NODE_TIMEOUT_S,
-            alternate_chain_specs=chain_specs,
-            exit_before_synchronization=True,
-        )
+    created_s = time.time() - run_started
+    state = _prepare_state(spec, nodes, block_log, chain_specs)
     for role, node in nodes.items():
         p2p_parameters.verify_config(node.config_file_path, parameters["applied"][role])
         p2p_loggers.verify_config(node.config_file_path, loggers[role])
 
     late = spec.late_observer_blocks > 0
     start_time = block_log.get_head_block_time()
-    started = time.time()
     starting = [node for role, node in nodes.items() if not (late and role == "observer")]
+    started = time.time()
     with ThreadPoolExecutor(max_workers=len(starting)) as pool:
-        for future in [
-            pool.submit(
-                node.run,
-                timeout=_NODE_TIMEOUT_S,
-                wait_for_live=False,
-                alternate_chain_specs=chain_specs,
-                time_control=tt.StartTimeControl(start_time=start_time),
-            )
-            for node in starting
-        ]:
+        futures = []
+        for number, wave in enumerate(_start_waves(topology, starting)):
+            # each wave's faked clock starts as much later as the wave does, so the clocks still agree
+            offset = timedelta(seconds=number * _START_WAVE_S)
+            time.sleep(max(0.0, started + offset.total_seconds() - time.time()))
+            futures += [
+                pool.submit(
+                    node.run,
+                    timeout=_NODE_TIMEOUT_S,
+                    wait_for_live=False,
+                    alternate_chain_specs=chain_specs,
+                    time_control=tt.StartTimeControl(start_time=start_time + offset),
+                )
+                for node in wave
+            ]
+        for future in futures:
             future.result()
-    # started together, a node may dial a seed that does not listen yet; the colonies must not wait out the backoff
+    # a seed slow to listen still costs its dialer the connect loop tick; the colonies must not wait out the backoff
     seed_links_s = _wait_for_seed_links(topology, starting)
     for node in starting:
         node.wait_for_live_mode(timeout=_NODE_TIMEOUT_S)
+    live_s = time.time() - started
+    tt.logger.info(f"every node live {live_s:.1f} s after the start, seed links up after {seed_links_s:.1f} s")
     witness = nodes["witness"]
     pids = {role: _pid_of(node) for role, node in nodes.items() if not (late and role == "observer")}
     first = witness.get_last_block_number()
@@ -355,8 +484,17 @@ def run(spec: RunSpec) -> dict[str, Any]:
     witness.wait_for_block_with_number(end_block, timeout=(end_block - witness.get_last_block_number()) * 3 * 4 + 120)
     sampler.stop()
     last = witness.get_last_block_number()
-    for node in nodes.values():
-        node.close()
+    closing = time.time()
+    _in_parallel([node.close for node in nodes.values()])
+    timings = {
+        "create_s": created_s,
+        "state_s": state["state_s"],
+        "start_to_live_s": live_s,
+        "live_to_end_s": closing - started - live_s,
+        "close_s": time.time() - closing,
+        "total_s": time.time() - run_started,
+    }
+    tt.logger.info(f"phase timings: {json.dumps(timings)}")
     return {
         **asdict(spec),
         "binaries": {role: spec.binary(role) for role in nodes},
@@ -365,6 +503,8 @@ def run(spec: RunSpec) -> dict[str, Any]:
         "p2p_loggers": loggers,
         "colony_start_block": colony_start_block,
         "seed_links_s": seed_links_s,
+        "replay": state,
+        "timings": timings,
         "first": first,
         # the colonies start loading at colony_start_block: a witness already there when every node was live means
         # they started late, and the loaded window is short

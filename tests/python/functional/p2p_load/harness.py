@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     from python.functional.p2p_load.spec import RunSpec
 
 TMPFS_ROOT = Path("/dev/shm/hive-p2p-load")
+# replayed node state reused by later runs (see replay_template.py); outlives the runs, unlike TMPFS_ROOT/<run>
+TEMPLATE_ROOT = Path("/dev/shm/hive-p2p-load-templates")
 REPO_ROOT = Path(__file__).resolve().parents[4]
 CONTAINER_PYTHON = "/opt/test-tools-venv/bin/python3"
 _IMAGE_IN_PROJECT = re.compile(r"registry\.gitlab\.syncad\.com/hive/hive/aidev-tests@sha256:[0-9a-f]{64}")
@@ -93,7 +95,12 @@ def _docker_command(spec: RunSpec, image: str, tmp_dir: Path, tools: dict[str, P
     out_dir = Path(spec.out_dir)
     binaries = {Path(spec.binary(role)) for role in spec.roles()}
     read_only = {REPO_ROOT, *(b.parent for b in binaries), *(t.parent for t in tools.values())}
-    writable = {out_dir, tmp_dir, Path(spec.block_log)}
+    writable = {
+        out_dir,
+        tmp_dir,
+        Path(spec.block_log),
+        *([Path(spec.replay_templates)] if spec.replay_templates else []),
+    }
     env = {
         "HOME": "/tmp",
         "PYTHONPATH": str(REPO_ROOT / "tests"),
@@ -149,13 +156,8 @@ class _SendsCapture(threading.Thread):
             self.error = f"bpftrace exited {result.returncode} (see sends.txt)"
 
 
-def execute_run(spec: RunSpec, out_root: Path, image: str, tools: dict[str, Path], sends_seconds: int = 0) -> int:
-    """
-    Run one measurement with node data under TMPFS_ROOT; return the driver's exit code.
-
-    The caller holds the host lock. Logs, configs, spec.json, out.json and driver.log end up in out_root/<name>;
-    the tmpfs directory is removed whatever happens.
-    """
+def _make_run_directories(spec: RunSpec) -> tuple[Path, Path]:
+    """Create the run's result and tmpfs directories, refusing names in use, and the template directory it mounts."""
     if not _RUN_NAME.match(spec.name):
         raise HarnessSetupError(f"run name {spec.name!r} must be letters, digits, '.', '_' or '-'")
     out_dir, tmp_dir = Path(spec.out_dir), TMPFS_ROOT / spec.name
@@ -164,8 +166,22 @@ def execute_run(spec: RunSpec, out_root: Path, image: str, tools: dict[str, Path
             raise HarnessSetupError(f"{directory} exists; pick another run name or remove it")
     out_dir.mkdir(parents=True)
     tmp_dir.mkdir(parents=True)
+    if spec.replay_templates:
+        Path(spec.replay_templates).mkdir(parents=True, exist_ok=True)
+    return out_dir, tmp_dir
+
+
+def execute_run(spec: RunSpec, out_root: Path, image: str, tools: dict[str, Path], sends_seconds: int = 0) -> int:
+    """
+    Run one measurement with node data under TMPFS_ROOT; return the driver's exit code.
+
+    The caller holds the host lock. Logs, configs, spec.json, out.json and driver.log end up in out_root/<name>;
+    the tmpfs directory is removed whatever happens.
+    """
+    out_dir, tmp_dir = _make_run_directories(spec)
     (out_dir / "spec.json").write_text(json.dumps(asdict(spec), indent=1))
     _append_series_log(out_root, f"start {spec.name} label={spec.label}")
+    started = time.time()
     exit_code = -1
     try:
         with contextlib.ExitStack() as stack:
@@ -190,5 +206,5 @@ def execute_run(spec: RunSpec, out_root: Path, image: str, tools: dict[str, Path
         if (tmp_dir / "generated").is_dir():
             shutil.copytree(tmp_dir / "generated", out_dir / "generated", symlinks=True, ignore=_NOT_COPIED)
         shutil.rmtree(tmp_dir)
-        _append_series_log(out_root, f"end {spec.name} exit={exit_code}")
+        _append_series_log(out_root, f"end {spec.name} exit={exit_code} wall={time.time() - started:.0f}s")
     return exit_code

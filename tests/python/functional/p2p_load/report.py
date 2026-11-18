@@ -44,6 +44,7 @@ def summarize(
         "rates": analysis.rates(run, blocks_per_window),
         "underfilled": {"below_txs": threshold, "blocks": analysis.underfilled(run, threshold)},
         "offsets": analysis.corrected_offsets(run),
+        "skew_idle_blocks": analysis.skew_idle_blocks(run),
         "thread_cpu": analysis.thread_cpu(run),
         "sends": analysis.sends(run),
         "relay": analysis.relay_latency(run),
@@ -51,6 +52,8 @@ def summarize(
         "p2p_loggers": meta.get("p2p_loggers", {}),
         "p2p_counters": analysis.p2p_counters(run),
         "late_observer": meta.get("late_observer"),
+        "timings": meta.get("timings"),
+        "replay": meta.get("replay"),
     }
 
 
@@ -115,6 +118,44 @@ def _format_host_load(load: dict[str, Any] | None) -> list[str]:
     return lines
 
 
+def _format_timings(summary: dict[str, Any]) -> list[str]:
+    timings, replay = summary["timings"], summary["replay"]
+    if timings is None or replay is None:
+        return []  # recorded before the driver timed its phases
+    if replay["templates"] is None:
+        state = f"replayed on every node in parallel {replay['replay_s']:.1f} s"
+    else:
+        reused = sum(1 for t in replay["templates"].values() if t["reused"])
+        replayed = (
+            f", replayed on {', '.join(replay['replayed'])} {replay['replay_s']:.1f} s" if replay["replayed"] else ""
+        )
+        state = (
+            f"replay templates reused {reused}/{len(replay['templates'])}{replayed}, "
+            f"copied into nodes {replay['copy_s']:.1f} s"
+        )
+    return [
+        (
+            f"   driver {timings['total_s']:.0f} s: state {timings['state_s']:.1f} s ({state}), "
+            f"start to live {timings['start_to_live_s']:.1f} s, live to end {timings['live_to_end_s']:.0f} s, "
+            f"close {timings['close_s']:.1f} s"
+        )
+    ]
+
+
+def _format_skew_idle_blocks(skew: dict[str, Any]) -> list[str]:
+    counts = skew["per_node"]
+    if not counts:
+        return []
+    lines = [f"   skew idle blocks: fewest {skew['fewest']}, most {max(counts.values())} per node"]
+    if skew["few"]:
+        lines.append(
+            "   FEW IDLE BLOCKS for the skew: "
+            + ", ".join(f"{role} {counts[role]}" for role in skew["few"])
+            + f" (wants {analysis.STABLE_IDLE_BLOCKS}; under {analysis.MIN_IDLE_BLOCKS} no offset is corrected)"
+        )
+    return lines
+
+
 def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
     rates = summary["rates"]
     setup = summary["setup"]
@@ -160,6 +201,7 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
                 f"   offset {role:10} median {off['median_ms']:7.1f} ms  p95 {off['p95_ms']:7.1f} ms  "
                 f"(skew {off['skew_ms']:.1f} ms over {off['idle_blocks']} idle blocks, {off['blocks']} blocks)"
             )
+    lines.extend(_format_skew_idle_blocks(summary["skew_idle_blocks"]))
     for role, threads in summary["thread_cpu"].items():
         shown = "  ".join(f"{name}={pct:.1f}" for name, pct in threads.items() if pct >= min_thread_pct)
         lines.append(f"   cpu% {role:10} {shown}")
@@ -182,6 +224,7 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
     lines.extend(_format_all_counters(summary))
     if summary["late_observer"]:
         lines.append(f"   late observer: {summary['late_observer']}")
+    lines.extend(_format_timings(summary))
     return "\n".join(lines)
 
 
@@ -210,6 +253,7 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
         "included tx/s": lambda s: s["rates"]["included_tx_s"],
         "received tx/s": lambda s: s["rates"]["received_tx_s"],
         "underfilled blocks": lambda s: len(s["underfilled"]["blocks"]),
+        "fewest skew idle blocks": lambda s: s["skew_idle_blocks"]["fewest"],
         "witness p2p cpu%": cpu_of("p2p"),
         "witness total cpu%": cpu_of("TOTAL"),
         "witness p2p cpu us/received tx": p2p_cpu_us_per_received_tx,
@@ -232,6 +276,7 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
             f"{role} tx/request": counter_of(role, "transaction_requests", "transactions_per_request"),
             f"{role} byte cap hit %": counter_of(role, "transaction_requests", "byte_cap_bound_pct"),
         })
+    rows["driver wall s"] = lambda s: (s["timings"] or {}).get("total_s")
     return rows
 
 

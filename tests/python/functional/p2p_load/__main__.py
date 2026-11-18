@@ -11,7 +11,14 @@ from pathlib import Path
 from typing import Any
 
 from python.functional.p2p_load import analysis, report
-from python.functional.p2p_load.harness import HarnessSetupError, default_image, execute_run, find_tools, free_port
+from python.functional.p2p_load.harness import (
+    TEMPLATE_ROOT,
+    HarnessSetupError,
+    default_image,
+    execute_run,
+    find_tools,
+    free_port,
+)
 from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
 from python.functional.p2p_load.spec import TOPOLOGIES, RunSpec
 
@@ -81,13 +88,23 @@ def _add_run_options(parser: argparse.ArgumentParser) -> None:
         metavar="SECONDS",
         help="count the witness's send syscalls with bpftrace for SECONDS once loaded",
     )
-    parser.add_argument("--colony-start-delay", type=int, default=30, help="idle blocks before the colonies start")
+    parser.add_argument(
+        "--colony-start-delay",
+        type=int,
+        default=12,
+        help="blocks after the block log's head before the colonies start (the nodes link up in the first ~4)",
+    )
     parser.add_argument("--mix", choices=("default", "large"), default="default", help="colony transaction mix")
     parser.add_argument(
         "--no-p2p-loggers",
         dest="p2p_loggers",
         action="store_false",
         help="do not enable the p2p_stats and p2p_relay_sample loggers, even where the binary has them",
+    )
+    parser.add_argument(
+        "--fresh-replay",
+        action="store_true",
+        help=f"replay the block log on every node instead of copying the replayed state kept in {TEMPLATE_ROOT}",
     )
     parser.add_argument("--image", help="test-tools image (default: P2P_LOAD_IMAGE or .aidev/project.yaml's)")
 
@@ -129,6 +146,7 @@ def _spec(args: argparse.Namespace, name: str, hived: Path, label: str) -> RunSp
         colony_start_delay=args.colony_start_delay,
         mix=args.mix,
         p2p_loggers=args.p2p_loggers,
+        replay_templates="" if args.fresh_replay else str(TEMPLATE_ROOT),
     )
     try:
         spec.validate()
