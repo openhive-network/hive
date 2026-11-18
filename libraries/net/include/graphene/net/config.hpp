@@ -163,17 +163,38 @@
 #define GRAPHENE_NET_FETCH_ITEMS_REPORT_INTERVAL_SEC         30
 
 /**
- * During normal operation, how many items will be fetched from each
+ * During normal operation, how many blocks will be fetched from each
+ * peer at a time.  A request that reaches this many blocks asks for
+ * no transactions.
+ */
+#define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION  100
+
+/**
+ * During normal operation, how many transactions will be fetched from each
  * peer at a time.  This will only come into play when the network
  * is being flooded -- typically transactions will be fetched as soon
  * as we find out about them, so only one item will be requested
- * at a time.
- *
- * No tests have been done to find the optimal value for this
- * parameter, so consider increasing or decreasing it if performance
- * during flooding is lacking.
+ * at a time.  The next request goes out only once the whole reply has
+ * arrived, so on a high-latency link this bounds the transactions a
+ * single peer carries per round trip.  GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH
+ * lowers it for a peer sending large transactions.
  */
-#define GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION  100
+#define GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION  400
+
+/**
+ * How many bytes of transactions we expect a single transaction request to bring back, at most.
+ * The peer queues its whole reply at once and drops us when its queue passes
+ * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, so this leaves it room for other traffic and for
+ * transactions larger than the peer's recent mean.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH         (512 * 1024)
+
+/**
+ * The transaction size assumed for a peer that has not sent us a transaction yet: the largest
+ * transaction, so the first requests stay within GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH whatever the
+ * peer sends.  Needs hive/protocol/config.hpp where it is used.
+ */
+#define GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE       HIVE_MAX_TRANSACTION_SIZE
 
 /**
  * Instead of fetching all item IDs from a peer, then fetching all blocks

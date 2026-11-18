@@ -1649,6 +1649,9 @@ namespace graphene { namespace net {
         {
           peer_connection_ptr peer;
           bool include_transactions;
+          size_t max_transactions;
+          size_t blocks = 0;
+          size_t transactions = 0;
           bool done = false;
           std::vector<item_id> item_ids;
         };
@@ -1660,7 +1663,8 @@ namespace graphene { namespace net {
             if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions())
               next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
             peer->fetch_candidates.begin_pass();
-            items_by_peer.push_back({peer, !transaction_fetching_inhibited});
+            items_by_peer.push_back({peer, !transaction_fetching_inhibited,
+                                     peer->received_transaction_size.max_transactions_per_request()});
           }
 
         for (bool item_taken = true; item_taken;)
@@ -1682,7 +1686,14 @@ namespace graphene { namespace net {
             }
             peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(*item_id_to_fetch, fc::time_point::now()));
             peer_and_items.item_ids.push_back(*item_id_to_fetch);
-            peer_and_items.done = peer_and_items.item_ids.size() >= GRAPHENE_NET_MAX_ITEMS_PER_PEER_DURING_NORMAL_OPERATION;
+            // the peer's blocks are all taken before its first transaction, so a peer that reaches
+            // its transaction limit has nothing more to give in this pass
+            if (item_id_to_fetch->item_type == graphene::net::block_message_type)
+              ++peer_and_items.blocks;
+            else
+              ++peer_and_items.transactions;
+            peer_and_items.done = peer_and_items.blocks >= GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION ||
+                                  peer_and_items.transactions >= peer_and_items.max_transactions;
             item_taken = true;
           }
         }
@@ -5061,6 +5072,7 @@ namespace graphene { namespace net {
       else
       {
         originating_peer->items_requested_from_peer.erase(iter);
+        originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
         if (originating_peer->idle())
           trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
 
@@ -7667,6 +7679,24 @@ namespace graphene { namespace net {
     _blocks.clear();
     _transactions.clear();
     begin_pass();
+  }
+
+  transaction_size_estimate::transaction_size_estimate() :
+    _mean(GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE)
+  {}
+
+  void transaction_size_estimate::record(size_t transaction_size)
+  {
+    if (transaction_size > _mean)
+      _mean += (transaction_size - _mean + 3) / 4;
+    else
+      _mean -= (_mean - transaction_size) / 16;
+  }
+
+  size_t transaction_size_estimate::max_transactions_per_request() const
+  {
+    return std::clamp<size_t>(GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / std::max<size_t>(_mean, 1),
+                              1, GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION);
   }
 
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates)

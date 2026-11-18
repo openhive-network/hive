@@ -631,6 +631,27 @@ namespace graphene { namespace net {
     size_t _transactions_kept = 0;
   };
 
+  /**
+   * A peer's recent mean transaction size, from the transactions it sent us, and how many transactions one
+   * request may ask it for so the expected reply stays within GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH.
+   * Until the peer sends a transaction its mean is taken to be GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE.
+   * A transaction larger than the mean moves it a quarter of the way, a smaller one a sixteenth, so a burst of
+   * large transactions shrinks the next request quickly and requests grow back over a few round trips.
+   */
+  class transaction_size_estimate
+  {
+  public:
+    transaction_size_estimate();
+
+    void record(size_t transaction_size);
+    size_t mean() const { return _mean; }
+    /// at least 1, at most GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION
+    size_t max_transactions_per_request() const;
+
+  private:
+    size_t _mean;
+  };
+
   /// A peer that advertised a block we want to fetch
   struct block_source_candidate
   {
