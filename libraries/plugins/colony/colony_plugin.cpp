@@ -23,6 +23,7 @@
 #include <boost/scope_exit.hpp>
 
 #include <mutex>
+#include <random>
 #include <unordered_map>
 
 #define COLONY_COMMENT_BUFFER 10000 // number of recent comments kept as targets for replies/votes
@@ -37,6 +38,8 @@
 #define COLONY_OVERFLOW_TOLERANCE_MIN 100 // minimum margin of overflowing transactions
 #define COLONY_OVERFLOW_TOLERANCE_MAX 500 // maximum margin of overflowing transactions
 #define COLONY_OVERFLOW_TOLERANCE_RATE 500 // percentage rate of allowed overflowing transactions (in BP)
+#define COLONY_STUCK_OWN_TX_BLOCKS 4 // number of consecutive blocks that had room for own transaction but did not
+  // include it, after which the transaction is assumed rejected by the witness and no longer counted as overflow
 
 namespace hive { namespace plugins { namespace colony {
 
@@ -212,12 +215,16 @@ class colony_plugin_impl
     // transactions produced by this colony that did not reach a block yet (limited production only); lets
     // _overflowing_tx count own overflow and not transactions of other nodes that are pending at block time
     // just because they are still in transit to the witness; entries that never reach a block (dropped from
-    // pending) are pruned at expiration, so the map is bounded by own production within expiration window
+    // pending) are pruned at expiration, so the map is bounded by own production within expiration window;
+    // entries that miss COLONY_STUCK_OWN_TX_BLOCKS blocks in a row that had room for them are pruned too: they
+    // stay valid locally but the witness rejected them (f.e. as conflicting with transaction of other colony)
+    // and since pending transactions are not rebroadcast, they would lower the quota until expiration
     struct own_pending_tx
     {
       fc::time_point_sec expiration;
       uint32_t           size = 0;
       bool               missed_block = false; // was left out of at least one block already
+      uint32_t           missed_with_room = 0; // number of consecutive blocks that were not full and left it out
       // left out of last block although it could have been in it: either the block was full (some own
       // transaction would not fit in the room it left) or it was already pending at previous block (so it
       // is not in transit anymore); own transaction missing from a block that had room for it was produced
@@ -226,6 +233,7 @@ class colony_plugin_impl
     };
     mutable std::mutex                                   _own_tx_mutex;
     mutable std::unordered_map< transaction_id_type, own_pending_tx > _own_pending_tx; // updated under _own_tx_mutex
+    mutable uint64_t                                     _stuck_own_tx = 0; // updated under _own_tx_mutex
 };
 
 void transaction_builder::finalize()
@@ -285,7 +293,6 @@ void transaction_builder::init( int starting_point )
   std::advance( _current_account, starting_point % _accounts.size() );
   _worker.async( [this]()
   {
-    std::srand( std::time( 0 ) + _id );
     ilog( "Starting thread ${n} with ${w} workers.",
       ( "n", _worker.name() )( "w", _accounts.size() ) );
     build_transaction();
@@ -877,7 +884,10 @@ void colony_plugin_impl::start_workers()
       _p2p_ptr = _p2p_plugin;
   }
 
-  std::srand( std::time( 0 ) );
+  // not seeded with time: nodes started together (f.e. under one libfaketime start) would all get the same
+  // random sequence and starting accounts, and would produce conflicting near duplicates of each other's
+  // transactions, which witness rejects while each of them keeps its own copy pending
+  std::srand( std::random_device{}() );
   for( auto& thread : _threads )
   {
     // randomize starting point to make it easier for multiple colony nodes to run concurrently on the same set of accounts
@@ -952,10 +962,26 @@ void colony_plugin_impl::forget_own_transactions_in_block( const full_block_type
       ++it;
     }
   }
-  for( auto& own_tx : _own_pending_tx )
+  uint32_t stuck = 0;
+  for( auto it = _own_pending_tx.begin(); it != _own_pending_tx.end(); )
   {
-    own_tx.second.overflowing = block_full || own_tx.second.missed_block;
-    own_tx.second.missed_block = true;
+    own_pending_tx& own_tx = it->second;
+    own_tx.missed_with_room = block_full ? 0 : own_tx.missed_with_room + 1;
+    if( own_tx.missed_with_room >= COLONY_STUCK_OWN_TX_BLOCKS )
+    {
+      it = _own_pending_tx.erase( it );
+      ++stuck;
+      continue;
+    }
+    own_tx.overflowing = block_full || own_tx.missed_block;
+    own_tx.missed_block = true;
+    ++it;
+  }
+  if( stuck > 0 )
+  {
+    _stuck_own_tx += stuck;
+    ilog( "${s} own transactions missed ${n} blocks that had room for them - no longer counted as overflow "
+      "(${t} in total)", ( "s", stuck )( "n", COLONY_STUCK_OWN_TX_BLOCKS )( "t", _stuck_own_tx ) );
   }
 }
 
