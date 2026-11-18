@@ -182,7 +182,10 @@ def _ab(args: argparse.Namespace) -> int:
 
 
 def _summaries(args: argparse.Namespace) -> list[dict[str, Any]]:
-    return [report.summarize(analysis.Run.load(path), args.full_txs, args.window_blocks) for path in args.run_dirs]
+    return [
+        report.summarize(analysis.Run.load(path), args.full_txs, args.window_blocks, args.busy_cores)
+        for path in args.run_dirs
+    ]
 
 
 def _report(args: argparse.Namespace) -> int:
@@ -231,6 +234,12 @@ def _parser() -> argparse.ArgumentParser:
             "--full-txs", type=int, help="blocks with fewer transactions are underfilled (default 90%% of tpb)"
         )
         sub.add_argument("--window-blocks", type=int, default=10, help="blocks per tx/s window")
+        sub.add_argument(
+            "--busy-cores",
+            type=float,
+            default=analysis.BUSY_CORES,
+            help="flag BUSY HOST above this many cores busy outside the run (default %(default)s)",
+        )
         sub.set_defaults(handler=handler)
     commands.choices["report"].add_argument("--json", action="store_true")
 

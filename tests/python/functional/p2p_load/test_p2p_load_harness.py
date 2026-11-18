@@ -9,7 +9,7 @@ import pytest
 
 import test_tools as tt
 from python.functional.p2p_load import __main__ as cli
-from python.functional.p2p_load import p2p_loggers, p2p_parameters, report
+from python.functional.p2p_load import p2p_loggers, p2p_parameters, procfs, report
 from python.functional.p2p_load.analysis import Run
 from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
 from python.functional.p2p_load.spec import RunSpec
@@ -408,6 +408,102 @@ def test_a_short_loaded_window_is_flagged(
     text = report.format_summary(summary)
     assert ("SHORT WINDOW" in text) is short
     assert ("started late" in text) is late_start
+
+
+def _with_host_ticks(run_dir: Path, host_busy: list[int], own: list[int]) -> Path:
+    """Samples every 30 s from head 105 (before the loaded window) on, with the given host and driver tree ticks."""
+    samples = [
+        {"t": 1000.0 + 30 * i, "head": 105 + 10 * i, "ticks": {}, "host_busy": busy, "own": tree}
+        for i, (busy, tree) in enumerate(zip(host_busy, own, strict=True))
+    ]
+    _edit_meta(run_dir, samples=samples, nproc=48)
+    return run_dir
+
+
+# tck 100, 30 s per sample: 3000 ticks are one core; the driver's tree uses 2 cores; what the host did before the
+# window (head 105 -> 115) is left out
+_QUIET_HOST = [0, 900_000, 909_000, 918_000]  # 3 cores busy: 1 outside the run
+_BUSY_HOST = [0, 900_000, 909_000, 942_000]  # then 11: 9 outside the run, 5 on average over the window
+_OWN = [0, 6000, 12_000, 18_000]
+
+
+@pytest.mark.parametrize(
+    ("host_busy", "other", "peak", "busy"),
+    [(_QUIET_HOST, 1.0, 1.0, False), (_BUSY_HOST, 5.0, 9.0, True)],
+)
+def test_cores_busy_outside_the_run_over_the_loaded_window_flag_a_busy_host(
+    tmp_path: Path, host_busy: list[int], other: float, peak: float, busy: bool
+) -> None:
+    run_dir = _with_host_ticks(_make_run(tmp_path / "chain-a-1"), host_busy, _OWN)
+
+    summary = report.summarize(Run.load(run_dir))
+
+    load = summary["host_load"]
+    assert load["other_busy_cores"] == pytest.approx(other)
+    assert load["max_other_busy_cores"] == pytest.approx(peak)
+    assert load["run_cores"] == pytest.approx(2.0)
+    assert load["host_busy_cores"] == pytest.approx(other + 2.0)
+    assert load["nproc"] == 48
+    assert load["seconds"] == pytest.approx(60)
+    assert load["busy"] is busy
+    text = report.format_summary(summary)
+    assert f"host: {other:.1f} cores busy outside the run (max {peak:.1f}" in text
+    assert ("BUSY HOST" in text) is busy
+
+
+def test_the_busy_host_threshold_is_an_option_of_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    run_dir = _with_host_ticks(_make_run(tmp_path / "chain-a-1"), _BUSY_HOST, _OWN)
+
+    assert cli.main(["report", str(run_dir)]) == 0
+    assert "BUSY HOST: 5.0 cores busy outside the run, over 4;" in capsys.readouterr().out
+    assert cli.main(["report", "--busy-cores", "6", str(run_dir)]) == 0
+    assert "BUSY HOST" not in capsys.readouterr().out
+    assert cli.main(["report", "--json", str(run_dir)]) == 0
+    load = json.loads(capsys.readouterr().out)["host_load"]
+    assert load["busy"] is True
+    assert load["other_busy_cores"] == pytest.approx(5.0)
+
+
+def test_a_run_recorded_without_host_ticks_is_never_busy(tmp_path: Path) -> None:
+    summary = report.summarize(Run.load(_make_run(tmp_path / "chain-a-1")), busy_cores=0)
+
+    assert summary["host_load"] is None
+    text = report.format_summary(summary)
+    assert "BUSY HOST" not in text
+    assert "host: no host CPU in the samples" in text
+
+
+def test_comparison_counts_busy_runs_and_gives_the_mean_without_them(tmp_path: Path) -> None:
+    summaries = [
+        dict(report.summarize(Run.load(_with_host_ticks(_make_run(tmp_path / name), host, _OWN))), label=label)
+        for name, label, host in (("a1", "a", _QUIET_HOST), ("a2", "a", _BUSY_HOST), ("b1", "b", _QUIET_HOST))
+    ]
+    summaries.append(dict(report.summarize(Run.load(_make_run(tmp_path / "b2"))), label="b"))  # no host ticks
+
+    rows = {line[:40].strip(): line[40:].split() for line in report.format_comparison(summaries).splitlines()}
+
+    assert rows["busy host runs"] == ["0.5", "quiet", "0.0", "(0/1*)", "0.0", "quiet", "0.0", "(0/0)"]
+    assert rows["cores busy outside the run"] == ["3.0", "quiet", "1.0", "(1/5*)", "1.0", "quiet", "1.0", "(1)"]
+    assert rows["observer corrected offset median ms"][:3] == ["450.0", "quiet", "450.0"]
+
+
+def test_host_and_process_tree_ticks_from_proc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # user nice system idle iowait irq softirq steal guest guest_nice
+    (tmp_path / "stat").write_text(
+        "cpu  100 20 30 5000 400 6 7 8 90 9\ncpu0 50 10 15 2500 200 3 3 4 45 4\ncpu1 50 10 15 2500 200 3 4 4 45 5\n"
+        "intr 12345\n"
+    )
+    # the driver (10), a node it started (11) and that node's child (12); 13 is not of the run
+    for pid, ppid in ((10, 1), (11, 10), (12, 11), (13, 1)):
+        (tmp_path / str(pid)).mkdir()
+        fields = ["S", str(ppid), *["0"] * 9, str(pid), "1", "2", "3", *["0"] * 30]
+        (tmp_path / str(pid) / "stat").write_text(f"{pid} (hived x) {' '.join(fields)}\n")
+    monkeypatch.setattr(procfs, "_PROC", tmp_path)
+
+    assert procfs.host_busy_ticks() == 100 + 20 + 30 + 6 + 7 + 8
+    assert procfs.cpu_count() == 2
+    assert procfs.tree_ticks(10) == (10 + 6) + (11 + 6) + (12 + 6)
+    assert procfs.tree_ticks(13) == 13 + 6
 
 
 def test_a_series_counts_an_unreportable_run_as_failed_and_compares_the_rest(

@@ -12,11 +12,17 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-def summarize(run: analysis.Run, full_txs: int | None = None, blocks_per_window: int = 10) -> dict[str, Any]:
+def summarize(
+    run: analysis.Run,
+    full_txs: int | None = None,
+    blocks_per_window: int = 10,
+    busy_cores: float = analysis.BUSY_CORES,
+) -> dict[str, Any]:
     """
     Every metric of one run.
 
-    `full_txs` is the transaction count below which a block counts as underfilled (default 90% of the target).
+    `full_txs` is the transaction count below which a block counts as underfilled (default 90% of the target);
+    `busy_cores` the cores busy outside the run above which the host counts as busy.
     """
     meta = run.meta
     threshold = full_txs if full_txs is not None else meta["tpb"] * 9 // 10
@@ -34,6 +40,7 @@ def summarize(run: analysis.Run, full_txs: int | None = None, blocks_per_window:
         },
         "blocks": [meta["first"], meta["last"]],
         "window": analysis.window_shortfall(run),
+        "host_load": analysis.host_load(run, busy_cores),
         "rates": analysis.rates(run, blocks_per_window),
         "underfilled": {"below_txs": threshold, "blocks": analysis.underfilled(run, threshold)},
         "offsets": analysis.corrected_offsets(run),
@@ -90,6 +97,24 @@ def _format_all_counters(summary: dict[str, Any]) -> list[str]:
     return [line for role, counters in summary["p2p_counters"].items() for line in _format_counters(role, counters)]
 
 
+def _format_host_load(load: dict[str, Any] | None) -> list[str]:
+    if load is None:
+        return ["   host: no host CPU in the samples (recorded before the harness sampled it)"]
+    lines = [
+        (
+            f"   host: {load['other_busy_cores']:.1f} cores busy outside the run "
+            f"(max {load['max_other_busy_cores']:.1f} over a sample interval), "
+            f"host {load['host_busy_cores']:.1f} of {_fmt(load['nproc'])} cores busy, run {load['run_cores']:.1f}"
+        )
+    ]
+    if load["busy"]:
+        lines.append(
+            f"   BUSY HOST: {load['other_busy_cores']:.1f} cores busy outside the run, over {load['busy_cores']:g}; "
+            "block offsets and CPU shares are inflated, leave the run out of A/B conclusions"
+        )
+    return lines
+
+
 def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
     rates = summary["rates"]
     setup = summary["setup"]
@@ -124,6 +149,7 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
                 else ""
             )
         )
+    lines.extend(_format_host_load(summary["host_load"]))
     under = summary["underfilled"]
     lines.append(f"   underfilled (<{under['below_txs']} tx): {len(under['blocks'])} {under['blocks'][:20]}")
     for role, off in summary["offsets"].items():
@@ -179,6 +205,8 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
     rows: dict[str, Callable[[dict[str, Any]], float | None]] = {
         "loaded blocks": lambda s: s["rates"]["blocks"],
         "short windows": lambda s: int(s["window"]["short"]),
+        "busy host runs": lambda s: int(_busy(s)),
+        "cores busy outside the run": lambda s: (s["host_load"] or {}).get("other_busy_cores"),
         "included tx/s": lambda s: s["rates"]["included_tx_s"],
         "received tx/s": lambda s: s["rates"]["received_tx_s"],
         "underfilled blocks": lambda s: len(s["underfilled"]["blocks"]),
@@ -207,17 +235,36 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
     return rows
 
 
+def _busy(summary: dict[str, Any]) -> bool:
+    return bool(summary["host_load"] and summary["host_load"]["busy"])
+
+
 def format_comparison(summaries: list[dict[str, Any]]) -> str:
-    """Mean of each headline metric per label, with the per-run values, in run order."""
+    """
+    Mean of each headline metric per label, with the per-run values, in run order.
+
+    When any run is on a busy host, each cell also gives the mean without the busy runs (`quiet`), and the busy runs'
+    values are marked with `*`.
+    """
     by_label: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for summary in summaries:
         by_label[summary["label"] or "-"].append(summary)
-    lines = ["metric".ljust(40) + "".join(label.rjust(28) for label in by_label)]
+    any_busy = any(map(_busy, summaries))
+    width = 40 if any_busy else 28
+    lines = ["metric".ljust(40) + "".join(label.rjust(width) for label in by_label)]
+    if any_busy:
+        lines.append("(* a run on a busy host; quiet: the mean without those runs)")
     for metric, value_of in _comparison_rows(summaries).items():
         cells = []
         for runs in by_label.values():
-            values = [v for v in map(value_of, runs) if v is not None]
-            mean = statistics.mean(values) if values else None
-            cells.append(f"{_fmt(mean, 1)} ({'/'.join(_fmt(v) for v in values)})".rjust(28))
+            measured = [(v, _busy(s)) for s, v in zip(runs, map(value_of, runs), strict=True) if v is not None]
+            mean = statistics.mean(v for v, _ in measured) if measured else None
+            if any_busy:
+                quiet = [v for v, busy in measured if not busy]
+                values = "/".join(_fmt(v) + ("*" if busy else "") for v, busy in measured)
+                cell = f"{_fmt(mean, 1)} quiet {_fmt(statistics.mean(quiet) if quiet else None, 1)} ({values})"
+            else:
+                cell = f"{_fmt(mean, 1)} ({'/'.join(_fmt(v) for v, _ in measured)})"
+            cells.append(cell.rjust(width))
         lines.append(metric.ljust(40) + "".join(cells))
     return "\n".join(lines)

@@ -7,6 +7,7 @@ last block; idle blocks are the witness's empty blocks before that first loaded 
 
 from __future__ import annotations
 
+import itertools
 import json
 import re
 import statistics
@@ -25,6 +26,9 @@ BLOCK_INTERVAL_S = 3
 RAMP_BLOCKS = 2
 MIN_IDLE_BLOCKS = 5
 MIN_RELAY_SAMPLES = 20
+# cores busy outside the run above which a run is on a busy host: on steem-2/4/5/13 (2026-11-18) 84 s windows of quiet
+# stretches stayed at 0.1-3.3 cores, while other workloads' episodes ran at 6-12
+BUSY_CORES = 4.0
 # a p2p statistics report gives its period in whole seconds, so its start is known only to about a second
 _REPORT_PERIOD_SLACK_S = 1.0
 _BPFTRACE_COUNTER = re.compile(r"^@(calls|bytes)\[(\w+), (.+)\]: (\d+)$")
@@ -141,6 +145,40 @@ def window_shortfall(run: Run) -> dict[str, Any]:
         "expected_blocks": expected,
         "late_start": late_start,
         "short": late_start or (expected is not None and loaded < expected),
+    }
+
+
+def host_load(run: Run, busy_cores: float = BUSY_CORES) -> dict[str, Any] | None:
+    """
+    How busy the host was outside the run over the loaded window, in cores, and whether that makes it a busy host.
+
+    Other-busy cores are the host's busy ticks (/proc/stat) minus those of the driver's process tree (every node, the
+    colonies and the driver itself), per second of the window: their mean over the window and their maximum over one
+    sample interval. `busy`: the mean exceeds `busy_cores`. None for runs recorded before the samples carried host
+    ticks, which are never busy, and for runs with fewer than two samples in the window.
+    """
+    samples = [s for s in run.meta["samples"] if s["head"] >= run.window.start and "host_busy" in s]
+    if len(samples) < 2:
+        return None
+
+    def cores(first: dict[str, Any], last: dict[str, Any], key: str) -> float:
+        ticks: float = last[key] - first[key]
+        seconds: float = last["t"] - first["t"]
+        return ticks / float(run.meta["tck"]) / seconds
+
+    first, last = samples[0], samples[-1]
+    other = cores(first, last, "host_busy") - cores(first, last, "own")
+    return {
+        "other_busy_cores": other,
+        "max_other_busy_cores": max(
+            cores(a, b, "host_busy") - cores(a, b, "own") for a, b in itertools.pairwise(samples)
+        ),
+        "host_busy_cores": cores(first, last, "host_busy"),
+        "run_cores": cores(first, last, "own"),
+        "nproc": run.meta.get("nproc"),
+        "seconds": last["t"] - first["t"],
+        "busy_cores": busy_cores,
+        "busy": other > busy_cores,
     }
 
 
