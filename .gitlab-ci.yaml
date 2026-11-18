@@ -54,13 +54,19 @@ variables:
   TEST_WITH_LATEST_DEPENDENCIES: "false"
   STATIC_ANALYSIS_WITH_LATEST_DEPENDENCIES: "false"
 
-# AIDEV branches don't run CI: AIDEV's own gates verify ai/* and session/*
-# work, and pushes to aidev/integration run CI only when started from the web
-# or the API (to qualify an aidev/integration -> develop MR). See .aidev/README.md.
+# AIDEV's own gates verify ai/* and session/* work, so pushes to AIDEV branches
+# don't run CI and keep them off the shared runners. ai/* never runs CI.
+# session/* and aidev/integration run CI only when started from the web or the
+# API: a session pipeline on request (`aidev ci run`) when a lead wants CI
+# evidence for a session tip, an aidev/integration one to qualify an
+# aidev/integration -> develop MR. See .aidev/README.md. The first matching rule
+# wins, so the `never` rules stay first.
 # This replaces the workflow: rules of the Branch-Pipelines template below.
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH =~ /^(ai|session)\//
+    - if: $CI_COMMIT_BRANCH =~ /^ai\//
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^session\// && $CI_PIPELINE_SOURCE !~ /^(web|api)$/
       when: never
     - if: $CI_COMMIT_BRANCH == "aidev/integration" && $CI_PIPELINE_SOURCE !~ /^(web|api)$/
       when: never
