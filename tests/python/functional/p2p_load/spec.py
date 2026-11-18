@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 TOPOLOGIES = ("mesh", "star", "strict", "chain")
+# where a two-host run's nodes run: "local" with the witness and the run's command, "remote" on --remote-host
+PARTS = ("local", "remote")
 
 
 @dataclass
@@ -31,6 +33,10 @@ class RunSpec:
     colony_start_delay: int = 30
     mix: str = "default"
     p2p_loggers: bool = True
+    remote_host: str = ""
+    remote_roles: list[str] = field(default_factory=list)
+    # two-host runs: the address:port each listening node is dialed at, on its host's network address
+    endpoints: dict[str, str] = field(default_factory=dict)
 
     def roles(self) -> list[str]:
         return [
@@ -39,6 +45,10 @@ class RunSpec:
             *(f"colony{i}" for i in range(self.colonies)),
             *(f"relay{i + 1}" for i in range(self.relays)),
         ]
+
+    def roles_on(self, part: str) -> list[str]:
+        """The roles whose nodes run on `part`'s host ("local" or "remote")."""
+        return [role for role in self.roles() if (role in self.remote_roles) == (part == "remote")]
 
     def binary(self, role: str) -> str:
         return self.node_hived.get(role, self.hived)
@@ -64,3 +74,22 @@ class RunSpec:
             raise ValueError("netem colony index beyond the number of colonies")
         if self.late_observer_blocks >= self.blocks:
             raise ValueError("the late observer must join before the last measured block")
+        self._validate_placement()
+
+    def _validate_placement(self) -> None:
+        if bool(self.remote_host) != bool(self.remote_roles):
+            raise ValueError("a remote host needs remote roles, and remote roles a remote host")
+        if not self.remote_host:
+            return
+        unknown = set(self.remote_roles) - set(self.roles())
+        if unknown:
+            raise ValueError(f"remote roles this run does not have: {sorted(unknown)}")
+        if "witness" in self.remote_roles:
+            raise ValueError("the witness runs on the local host: it measures the run")
+        if self.netem_ms:
+            raise ValueError("netem delays loopback links; a two-host run's links cross the network")
+        if self.late_observer_blocks and "observer" in self.remote_roles:
+            raise ValueError("a late observer must run on the local host")
+        missing = {role for role in self.roles() if role != "observer"} - set(self.endpoints)
+        if missing:
+            raise ValueError(f"no p2p endpoint for {sorted(missing)}")

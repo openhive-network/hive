@@ -67,8 +67,20 @@ class Run:
     def roles(self) -> list[str]:
         return list(self.meta["roles"])
 
+    @property
+    def remote_roles(self) -> list[str]:
+        """The roles whose nodes ran on the remote host of a two-host run (none for a single-host run)."""
+        return list(self.meta.get("remote_roles", []))
+
     def node_dir(self, role: str) -> Path:
-        return self.directory / "generated" / str(self.meta["roles"][role])
+        host_dir = self.directory / "remote" if role in self.remote_roles else self.directory
+        return host_dir / "generated" / str(self.meta["roles"][role])
+
+    def _clock_shift_us(self, role: str) -> int:
+        """What to subtract from the node's real-clock timestamps to put them on the local host's clock."""
+        if role not in self.remote_roles:
+            return 0
+        return round(float(self.meta["clock"]["offset_s"]) * 1e6)
 
     def stats(self, role: str) -> dict[int, dict[str, Any]]:
         if role not in self._stats:
@@ -88,11 +100,17 @@ class Run:
 
     @cached_property
     def relay_samples(self) -> dict[str, dict[str, dict[str, int]]]:
-        """{sampled transaction id: {role: {"RCV"/"BRD": timestamp in us}}} over every node."""
+        """
+        {sampled transaction id: {role: {"RCV"/"BRD": timestamp in us}}} over every node, on the local host's clock.
+
+        The timestamps are real-clock ones; a two-host run's remote nodes' are corrected by the clock offset measured
+        before the run.
+        """
         seen: dict[str, dict[str, dict[str, int]]] = defaultdict(dict)
         for role in self.roles:
+            shift = self._clock_shift_us(role)
             for tx_id, stamps in node_logs.relay_samples(self.node_dir(role)).items():
-                seen[tx_id][role] = stamps
+                seen[tx_id][role] = {kind: stamp - shift for kind, stamp in stamps.items()}
         return dict(seen)
 
     @cached_property

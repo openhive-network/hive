@@ -51,6 +51,24 @@ def summarize(
         "p2p_loggers": meta.get("p2p_loggers", {}),
         "p2p_counters": analysis.p2p_counters(run),
         "late_observer": meta.get("late_observer"),
+        "placement": _placement(run),
+    }
+
+
+def _placement(run: analysis.Run) -> dict[str, Any] | None:
+    """A two-host run's hosts with their nodes and the measured offset of their clocks; None for a single-host run."""
+    meta = run.meta
+    if not run.remote_roles:
+        return None
+    clock = meta["clock"]
+    return {
+        "local": {"host": meta.get("host"), "roles": [role for role in run.roles if role not in run.remote_roles]},
+        "remote": {"host": meta["remote_host"], "roles": run.remote_roles},
+        "endpoints": meta.get("endpoints", {}),
+        "clock": {
+            key: clock.get(key)
+            for key in ("offset_s", "uncertainty_s", "min_rtt_s", "median_rtt_s", "probes", "ntp_offset_s")
+        },
     }
 
 
@@ -115,6 +133,22 @@ def _format_host_load(load: dict[str, Any] | None) -> list[str]:
     return lines
 
 
+def _format_placement(placement: dict[str, Any] | None) -> list[str]:
+    if placement is None:
+        return []
+    clock = placement["clock"]
+    ntp = clock["ntp_offset_s"]
+    return [
+        (
+            f"   two hosts: {placement['local']['host']} ({','.join(placement['local']['roles'])}) and "
+            f"{placement['remote']['host']} ({','.join(placement['remote']['roles'])}); remote clock "
+            f"{clock['offset_s'] * 1000:+.3f} ms +-{clock['uncertainty_s'] * 1000:.3f} ms (NTP "
+            f"{'-' if ntp is None else f'{ntp * 1000:+.3f} ms'}), probe RTT min {clock['min_rtt_s'] * 1000:.3f} "
+            f"median {clock['median_rtt_s'] * 1000:.3f} ms; relay samples corrected by the offset"
+        )
+    ]
+
+
 def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
     rates = summary["rates"]
     setup = summary["setup"]
@@ -150,6 +184,7 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
             )
         )
     lines.extend(_format_host_load(summary["host_load"]))
+    lines.extend(_format_placement(summary["placement"]))
     under = summary["underfilled"]
     lines.append(f"   underfilled (<{under['below_txs']} tx): {len(under['blocks'])} {under['blocks'][:20]}")
     for role, off in summary["offsets"].items():
