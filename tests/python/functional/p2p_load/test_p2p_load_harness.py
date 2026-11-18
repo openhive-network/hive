@@ -118,8 +118,7 @@ def test_spec_validation(changes: dict[str, Any], error: str) -> None:
         hived="/h",
         tpb=10,
         blocks=5,
-        topology="strict",
-        **changes,
+        **{"topology": "strict", **changes},
     )
     with pytest.raises(ValueError, match=error):
         spec.validate()
