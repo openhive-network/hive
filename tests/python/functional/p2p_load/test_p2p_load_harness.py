@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
 import test_tools as tt
-from python.functional.p2p_load import p2p_parameters, report
+from python.functional.p2p_load import p2p_loggers, p2p_parameters, report
 from python.functional.p2p_load.analysis import Run
 from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
 from python.functional.p2p_load.spec import RunSpec
@@ -122,6 +123,14 @@ def test_spec_validation(changes: dict[str, Any], error: str) -> None:
         spec.validate()
 
 
+_T0 = 1_763_445_600  # 2025-11-18T06:00:00 UTC: when block 100 is logged; every block 3 s later
+
+
+def _log_time(seconds: float, digits: int) -> str:
+    stamp = datetime.fromtimestamp(_T0 + seconds, UTC)
+    return stamp.strftime("%Y-%m-%dT%H:%M:%S.%f")[: 20 + digits]
+
+
 def _block_stats(num: int, txs: int, offset_us: int, arrival_us: int, inc: int, kind: str) -> str:
     stats = {
         "num": num,
@@ -131,15 +140,73 @@ def _block_stats(num: int, txs: int, offset_us: int, arrival_us: int, inc: int, 
         "before": {"inc": inc},
         "exec": {"offset": arrival_us},
     }
-    return f"2026-11-18T06:00:00.000 info Block stats:{json.dumps(stats)}\n"
+    prefix = f"{_log_time(3 * (num - 100), 6)} block_flow_control.cpp:127 on_end_of_apply_block ] "
+    return f"{prefix}Block stats:{json.dumps(stats)}\n"
 
 
-def _make_run(directory: Path) -> Path:
+def _p2p_statistics(logged_at: int, requested: int, examined: int, completions: int) -> str:
+    """A report as fc writes it: large integers and every double as strings."""
+    report = {
+        "seconds": 30,
+        "fetch": {
+            "wakes": 300,
+            "candidates_examined": examined,
+            "items_requested": requested,
+            "items_expired": 0,
+            "items_queued": 5,
+            "scheduling_us": 300_000,
+        },
+        "handoff": {
+            "submissions": completions,
+            "completions": completions,
+            "in_flight": 3,
+            "max_in_flight": 700 if examined == requested else 9000,
+            "mean_in_flight": "120.00000000000000000",
+            "completion_latency": {
+                "lt100us": 0,
+                "lt250us": completions // 4,
+                "lt500us": completions // 2,
+                "lt1000us": completions // 4,
+                "lt2000us": 0,
+                "lt5000us": 0,
+                "ge5000us": 0,
+            },
+            "limit_waits": 0,
+            "limit_wait_us": 0,
+        },
+        "send": {
+            "writes": 600,
+            "messages_per_write": "2.50000000000000000",
+            "bytes_per_write": "1000.00000000000000000",
+        },
+        "transaction_requests": {
+            "requests": 200,
+            "transactions_per_request": "60.00000000000000000",
+            "byte_cap_bound": 10,
+        },
+    }
+    prefix = f"{_log_time(logged_at, 3)} node.cpp:2190                  statistics_report_loop ] "
+    return f"{prefix}p2p statistics: {json.dumps(report)}\n"
+
+
+def _relay_line(relay_format: str, kind: str, i: int, stamp: int) -> str:
+    if relay_format == "patch":
+        return f"RLY {kind} id={i:016x} t={stamp}\n"
+    event = {"BRD": "broadcast", "RCV": "received"}[kind]
+    return (
+        f"{_log_time(0, 3)} node.cpp:5063 process_trx_message ] relay sample {event} {i:040x} {i + 7:040x} at {stamp}\n"
+    )
+
+
+def _make_run(directory: Path, relay_format: str = "patch") -> Path:
     """
     A finished chain run: blocks 100-109 idle, 110-140 loaded with 1000 tx (block 120 only 500).
 
     The observer's clock is 20 ms ahead of the witness's and blocks reach it 50 ms after the witness is ready;
-    sampled transactions reach relay1 51 ms after colony0 broadcast them.
+    sampled transactions reach relay1 51 ms after colony0 broadcast them, in the measurement patch's `RLY` lines or
+    in the p2p_relay_sample logger's lines (which also have them reach the witness 80 ms after). The witness logs
+    p2p statistics every 30 s; the reports logged at 90 s and 120 s cover the loaded window (blocks 111-140 are
+    logged at 33-120 s), the others carry figures the report must not show.
     """
     roles = {"witness": "WitnessNode0", "observer": "ApiNode0", "colony0": "ApiNode1", "relay1": "ApiNode2"}
     generated = directory / "generated"
@@ -157,10 +224,17 @@ def _make_run(directory: Path) -> Path:
     for name, lines in (("WitnessNode0", witness_lines), ("ApiNode0", observer_lines)):
         (generated / name / "stderr_1.log").write_text("".join(lines))
         (generated / name / "stderr.log").symlink_to(generated / name / "stderr_1.log")
-    colony_log = "".join(f"RLY BRD id={i:016x} t={1_000_000 + i * 1000}\n" for i in range(25))
-    relay_log = "".join(f"RLY RCV id={i:016x} t={1_051_000 + i * 1000}\n" for i in range(25))
+    colony_log = "".join(_relay_line(relay_format, "BRD", i, 1_000_000 + i * 1000) for i in range(25))
+    relay_log = "".join(_relay_line(relay_format, "RCV", i, 1_051_000 + i * 1000) for i in range(25))
+    witness_log = "".join(
+        _p2p_statistics(logged_at, 3000, 3000 if 90 <= logged_at <= 120 else 99_000, 12_000)
+        for logged_at in (30, 60, 90, 120, 150)
+    )
+    if relay_format == "sample":
+        witness_log += "".join(_relay_line(relay_format, "RCV", i, 1_080_000 + i * 1000) for i in range(25))
     (generated / "ApiNode1" / "logs" / "p2p" / "p2p.log").write_text(colony_log)
     (generated / "ApiNode2" / "logs" / "p2p" / "p2p.log").write_text(relay_log)
+    (generated / "WitnessNode0" / "logs" / "p2p" / "p2p.log").write_text(witness_log)
 
     witness_ticks = [{"1": ["p2p", 0], "2": ["chain", 0]}, {"1": ["p2p", 300], "2": ["chain", 600]}]
     meta = {
@@ -177,6 +251,7 @@ def _make_run(directory: Path) -> Path:
         "binaries": {},
         "roles": roles,
         "p2p_parameters": {"given": {}, "unsupported": {}},
+        "p2p_loggers": {role: list(p2p_loggers.LOGGERS) for role in roles},
         "first": 100,
         "last": 140,
         "tck": 100,
@@ -189,8 +264,9 @@ def _make_run(directory: Path) -> Path:
     return directory
 
 
-def test_report_of_a_finished_run(tmp_path: Path) -> None:
-    summary = report.summarize(Run.load(_make_run(tmp_path / "chain-a-1")))
+@pytest.mark.parametrize("relay_format", ["patch", "sample"])
+def test_report_of_a_finished_run(tmp_path: Path, relay_format: str) -> None:
+    summary = report.summarize(Run.load(_make_run(tmp_path / "chain-a-1", relay_format)))
 
     rates = summary["rates"]
     assert rates["blocks"] == 29  # 112-140: the loaded window starts two blocks after the first loaded one
@@ -211,6 +287,67 @@ def test_report_of_a_finished_run(tmp_path: Path) -> None:
     assert summary["sends"] is None
     assert "relay relay1" in report.format_summary(summary)
 
+    counters = summary["p2p_counters"]
+    assert list(counters) == ["witness"]  # the only node logging p2p statistics
+    witness = counters["witness"]
+    assert witness["reports"] == 2
+    assert witness["seconds"] == 60
+    assert witness["fetch"]["examined_per_requested"] == pytest.approx(1.0)
+    assert witness["fetch"]["scheduling_pct"] == pytest.approx(1.0)
+    assert witness["handoff"]["completions_s"] == pytest.approx(rates["received_tx_s"])
+    assert witness["handoff"]["max_in_flight"] == 700
+    assert witness["handoff"]["mean_in_flight"] == pytest.approx(120)
+    assert witness["handoff"]["latency_pct"]["lt500us"] == pytest.approx(50)
+    assert witness["send"]["writes_s"] == pytest.approx(20)
+    assert witness["send"]["messages_per_write"] == pytest.approx(2.5)
+    assert witness["send"]["bytes_per_write"] == pytest.approx(1000)
+    assert witness["transaction_requests"]["transactions_per_request"] == pytest.approx(60)
+    assert witness["transaction_requests"]["byte_cap_bound_pct"] == pytest.approx(5)
+    assert "p2p stats witness" in report.format_summary(summary)
+
+
+def test_relay_samples_of_the_p2p_relay_sample_logger_match_across_nodes(tmp_path: Path) -> None:
+    summary = report.summarize(Run.load(_make_run(tmp_path / "chain-a-1", "sample")))
+
+    assert summary["relay"]["relay1"]["median_ms"] == pytest.approx(51)
+    assert summary["relay"]["witness"]["median_ms"] == pytest.approx(80)
+    assert summary["relay"]["witness"]["n"] == 25
+    assert summary["relay_coverage"] == {"nodes": 3, "sampled": 25, "on_every_node": 25}
+    assert "25 on every one of them" in report.format_summary(summary)
+
+
+def test_a_run_of_a_build_without_the_p2p_loggers_reports_no_counters(tmp_path: Path) -> None:
+    run_dir = _make_run(tmp_path / "chain-a-1")
+    (run_dir / "generated" / "WitnessNode0" / "logs" / "p2p" / "p2p.log").write_text("")
+    meta = json.loads((run_dir / "out.json").read_text())
+    del meta["p2p_loggers"]  # recorded by drivers that know the loggers only
+    (run_dir / "out.json").write_text(json.dumps(meta))
+
+    summary = report.summarize(Run.load(run_dir))
+
+    assert summary["p2p_counters"] == {}
+    assert summary["relay"]["relay1"]["median_ms"] == pytest.approx(51)
+    assert "p2p_stats enabled on no node" in report.format_summary(summary)
+
+
+def test_p2p_loggers_are_enabled_only_where_the_binary_has_them(tmp_path: Path) -> None:
+    current, older = tmp_path / "hived-current", tmp_path / "hived-older"
+    current.write_bytes(b"\x7fELF\0p2p\0p2p_stats\0relay sample\0p2p_relay_sample\0sync\0")
+    older.write_bytes(b"\x7fELF\0p2p\0sync\0p2p_stats_unrelated\0")
+    assert p2p_loggers.binary_loggers(current) == ["p2p_stats", "p2p_relay_sample"]
+    assert p2p_loggers.binary_loggers(older) == []
+
+    default = '{"name":"default","level":"info","appender":"stderr"} {"name":"p2p","level":"info","appender":"p2p"}'
+    config = tmp_path / "config.ini"
+    config.write_text(
+        f"p2p-endpoint = 127.0.0.1:2001\nlog-logger = {p2p_loggers.with_loggers(default, ['p2p_stats'])}\n"
+    )
+    p2p_loggers.verify_config(config, ["p2p_stats"])
+    with pytest.raises(p2p_loggers.P2pLoggersError):
+        p2p_loggers.verify_config(config, ["p2p_stats", "p2p_relay_sample"])
+    config.write_text(f"log-logger = {default}\n")
+    p2p_loggers.verify_config(config, [])
+
 
 def test_comparison_groups_runs_by_label(tmp_path: Path) -> None:
     first = report.summarize(Run.load(_make_run(tmp_path / "a1")))
@@ -221,3 +358,5 @@ def test_comparison_groups_runs_by_label(tmp_path: Path) -> None:
     header, *rows = table.splitlines()
     assert header.split() == ["metric", "a", "b"]
     assert any(row.startswith("relay1 relay median ms") and row.count("51.0") == 2 for row in rows)
+    assert any(row.startswith("witness fetch examined/requested") and row.count("1.0") == 2 for row in rows)
+    assert any(row.startswith("witness send messages/write") and row.count("2.5") == 2 for row in rows)

@@ -39,12 +39,54 @@ def summarize(run: analysis.Run, full_txs: int | None = None, blocks_per_window:
         "thread_cpu": analysis.thread_cpu(run),
         "sends": analysis.sends(run),
         "relay": analysis.relay_latency(run),
+        "relay_coverage": analysis.relay_coverage(run),
+        "p2p_loggers": meta.get("p2p_loggers", {}),
+        "p2p_counters": analysis.p2p_counters(run),
         "late_observer": meta.get("late_observer"),
     }
 
 
 def _fmt(value: float | None, digits: int = 0) -> str:
     return "-" if value is None else f"{value:.{digits}f}"
+
+
+def _format_counters(role: str, counters: dict[str, Any] | None) -> list[str]:
+    if counters is None:
+        return [f"   p2p stats {role:10} - (no report period wholly inside the loaded window)"]
+    fetch, handoff = counters["fetch"], counters["handoff"]
+    send, requests = counters["send"], counters["transaction_requests"]
+    latency = " ".join(f"{bucket} {_fmt(pct)}%" for bucket, pct in handoff["latency_pct"].items())
+    indent = " " * 25
+    return [
+        (
+            f"   p2p stats {role:10} {counters['reports']} reports, {counters['seconds']:.0f} s: "
+            f"fetch {_fmt(fetch['examined_per_requested'], 2)} examined/requested, "
+            f"{fetch['items_requested_s']:.0f} requested/s, {fetch['wakes_s']:.0f} wakes/s, "
+            f"scheduling {fetch['scheduling_pct']:.1f}%, {fetch['items_expired']:.0f} expired"
+        ),
+        (
+            f"{indent}handoff {handoff['submissions_s']:.0f} submitted/s, {handoff['completions_s']:.0f} completed/s, "
+            f"in flight max {handoff['max_in_flight']:.0f} mean {_fmt(handoff['mean_in_flight'], 1)}, "
+            f"{handoff['limit_waits']:.0f} limit waits ({handoff['limit_wait_ms']:.0f} ms); latency {latency}"
+        ),
+        (
+            f"{indent}send {send['writes_s']:.0f} writes/s, {_fmt(send['messages_per_write'], 2)} messages/write, "
+            f"{_fmt(send['bytes_per_write'])} B/write; transaction requests {requests['requests_s']:.0f}/s, "
+            f"{_fmt(requests['transactions_per_request'], 1)} tx/request, byte cap hit "
+            f"{requests['byte_cap_bound']:.0f} ({_fmt(requests['byte_cap_bound_pct'], 1)}%)"
+        ),
+    ]
+
+
+def _format_all_counters(summary: dict[str, Any]) -> list[str]:
+    if not summary["p2p_counters"]:
+        with_loggers = sorted(role for role, loggers in summary["p2p_loggers"].items() if "p2p_stats" in loggers)
+        return [
+            f"   p2p stats: no reports in the logs (p2p_stats enabled on {', '.join(with_loggers)})"
+            if with_loggers
+            else "   p2p stats: none (p2p_stats enabled on no node: off, or no binary has it)"
+        ]
+    return [line for role, counters in summary["p2p_counters"].items() for line in _format_counters(role, counters)]
 
 
 def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
@@ -92,8 +134,15 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
             f"   relay {role:10} n={lat['n']:5d} ms after origin: median {lat['median_ms']:7.1f} "
             f"p90 {lat['p90_ms']:7.1f} p99 {lat['p99_ms']:7.1f}"
         )
-    if not summary["relay"]:
+    coverage = summary["relay_coverage"]
+    if summary["relay"]:
+        lines.append(
+            f"   relay samples: {coverage['sampled']} ids over {coverage['nodes']} nodes, "
+            f"{coverage['on_every_node']} on every one of them"
+        )
+    else:
         lines.append("   relay: no sampled transaction timestamps in the logs")
+    lines.extend(_format_all_counters(summary))
     if summary["late_observer"]:
         lines.append(f"   late observer: {summary['late_observer']}")
     return "\n".join(lines)
@@ -109,17 +158,39 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
     def cpu_of(thread: str) -> Callable[[dict[str, Any]], float | None]:
         return lambda s: s["thread_cpu"].get("witness", {}).get(thread)
 
+    def p2p_cpu_us_per_received_tx(s: dict[str, Any]) -> float | None:
+        cpu_pct, received = s["thread_cpu"].get("witness", {}).get("p2p"), s["rates"]["received_tx_s"]
+        return cpu_pct * 1e4 / received if cpu_pct is not None and received else None
+
+    def counter_of(role: str, group: str, key: str) -> Callable[[dict[str, Any]], float | None]:
+        return lambda s: ((s["p2p_counters"].get(role) or {}).get(group) or {}).get(key)
+
     rows: dict[str, Callable[[dict[str, Any]], float | None]] = {
         "included tx/s": lambda s: s["rates"]["included_tx_s"],
         "received tx/s": lambda s: s["rates"]["received_tx_s"],
         "underfilled blocks": lambda s: len(s["underfilled"]["blocks"]),
         "witness p2p cpu%": cpu_of("p2p"),
         "witness total cpu%": cpu_of("TOTAL"),
+        "witness p2p cpu us/received tx": p2p_cpu_us_per_received_tx,
     }
     roles = sorted({role for s in summaries for role in s["offsets"]})
     rows.update({f"{role} corrected offset median ms": offset_of(role) for role in roles})
     relay_roles = sorted({role for s in summaries for role in s["relay"]})
     rows.update({f"{role} relay median ms": relay_of(role) for role in relay_roles})
+    # the relaying nodes' counters; the colonies' and the observer's are in each run's report
+    counter_roles = sorted({
+        role for s in summaries for role in s["p2p_counters"] if role == "witness" or role.startswith("relay")
+    })
+    for role in counter_roles:
+        rows.update({
+            f"{role} fetch examined/requested": counter_of(role, "fetch", "examined_per_requested"),
+            f"{role} handoff completed/s": counter_of(role, "handoff", "completions_s"),
+            f"{role} handoff in flight max": counter_of(role, "handoff", "max_in_flight"),
+            f"{role} send messages/write": counter_of(role, "send", "messages_per_write"),
+            f"{role} send bytes/write": counter_of(role, "send", "bytes_per_write"),
+            f"{role} tx/request": counter_of(role, "transaction_requests", "transactions_per_request"),
+            f"{role} byte cap hit %": counter_of(role, "transaction_requests", "byte_cap_bound_pct"),
+        })
     return rows
 
 

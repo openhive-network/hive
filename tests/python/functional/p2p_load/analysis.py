@@ -18,12 +18,15 @@ from typing import TYPE_CHECKING, Any
 from python.functional.p2p_load import node_logs
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
 
 BLOCK_INTERVAL_S = 3
 RAMP_BLOCKS = 2
 MIN_IDLE_BLOCKS = 5
 MIN_RELAY_SAMPLES = 20
+# a p2p statistics report gives its period in whole seconds, so its start is known only to about a second
+_REPORT_PERIOD_SLACK_S = 1.0
 _BPFTRACE_COUNTER = re.compile(r"^@(calls|bytes)\[(\w+), (.+)\]: (\d+)$")
 
 
@@ -78,6 +81,15 @@ class Run:
         if not loaded or loaded[0] + RAMP_BLOCKS > self.meta["last"]:
             raise RunDataError(f"{self.name}: the witness produced no loaded blocks after the ramp")
         return range(loaded[0] + RAMP_BLOCKS, self.meta["last"] + 1)
+
+    @cached_property
+    def relay_samples(self) -> dict[str, dict[str, dict[str, int]]]:
+        """{sampled transaction id: {role: {"RCV"/"BRD": timestamp in us}}} over every node."""
+        seen: dict[str, dict[str, dict[str, int]]] = defaultdict(dict)
+        for role in self.roles:
+            for tx_id, stamps in node_logs.relay_samples(self.node_dir(role)).items():
+                seen[tx_id][role] = stamps
+        return dict(seen)
 
     @cached_property
     def idle_blocks(self) -> list[int]:
@@ -196,12 +208,8 @@ def relay_latency(run: Run) -> dict[str, dict[str, float]]:
     Arrival is the node's RCV timestamp, or its own BRD when it logs no RCV. Only transactions seen on at least two
     nodes count, and only nodes with MIN_RELAY_SAMPLES of them are reported. Empty when the build logs no samples.
     """
-    seen: dict[str, dict[str, dict[str, int]]] = defaultdict(dict)
-    for role in run.roles:
-        for tx_id, stamps in node_logs.relay_samples(run.node_dir(role)).items():
-            seen[tx_id][role] = stamps
     latency: dict[str, list[float]] = defaultdict(list)
-    for nodes in seen.values():
+    for nodes in run.relay_samples.values():
         broadcasts = [(stamps["BRD"], role) for role, stamps in nodes.items() if "BRD" in stamps]
         if len(nodes) < 2 or not broadcasts:
             continue
@@ -219,3 +227,108 @@ def relay_latency(run: Run) -> dict[str, dict[str, float]]:
         for role, ms in sorted(latency.items())
         if len(ms) >= MIN_RELAY_SAMPLES
     }
+
+
+def relay_coverage(run: Run) -> dict[str, int]:
+    """
+    How many sampled transactions the nodes logged: on any node and on every node that logged samples.
+
+    The sampled transactions are chosen by message hash, so every node should log the same ones.
+    """
+    per_node: dict[str, set[str]] = defaultdict(set)
+    for tx_id, nodes in run.relay_samples.items():
+        for role in nodes:
+            per_node[role].add(tx_id)
+    return {
+        "nodes": len(per_node),
+        "sampled": len(run.relay_samples),
+        "on_every_node": len(set.intersection(*per_node.values())) if per_node else 0,
+    }
+
+
+def _loaded_period(run: Run, role: str) -> tuple[float, float] | None:
+    """The loaded window on the node's own clock: from its log of the block before the window to that of its last."""
+    logged = {num: s["log_time"] for num, s in run.stats(role).items() if s.get("log_time") is not None}
+    nums = [num for num in range(run.window.start - 1, run.window.stop) if num in logged]
+    return (logged[nums[0]], logged[nums[-1]]) if len(nums) >= 2 else None
+
+
+def _counter_totals(reports: list[dict[str, Any]]) -> dict[str, Any]:
+    secs = sum(float(r["seconds"]) for r in reports)
+
+    def total(group: str, key: str) -> float:
+        return sum(float(r[group][key]) for r in reports)
+
+    def per(numerator: float, denominator: float) -> float | None:
+        return numerator / denominator if denominator else None
+
+    def weighted(group: str, key: str, weight: Callable[[dict[str, Any]], float]) -> float | None:
+        return per(sum(float(r[group][key]) * weight(r) for r in reports), sum(weight(r) for r in reports))
+
+    handoff_latency = {
+        bucket: sum(float(r["handoff"]["completion_latency"][bucket]) for r in reports)
+        for bucket in reports[0]["handoff"]["completion_latency"]
+    }
+    completions = total("handoff", "completions")
+    requests = total("transaction_requests", "requests")
+    return {
+        "reports": len(reports),
+        "seconds": secs,
+        "fetch": {
+            "wakes_s": total("fetch", "wakes") / secs,
+            "items_requested_s": total("fetch", "items_requested") / secs,
+            "examined_per_requested": per(total("fetch", "candidates_examined"), total("fetch", "items_requested")),
+            "items_expired": total("fetch", "items_expired"),
+            "scheduling_pct": total("fetch", "scheduling_us") / (secs * 1e6) * 100,
+        },
+        "handoff": {
+            "submissions_s": total("handoff", "submissions") / secs,
+            "completions_s": completions / secs,
+            "max_in_flight": max(float(r["handoff"]["max_in_flight"]) for r in reports),
+            "mean_in_flight": weighted("handoff", "mean_in_flight", lambda r: float(r["handoff"]["submissions"])),
+            "latency_pct": {bucket: per(n * 100, completions) for bucket, n in handoff_latency.items()},
+            "limit_waits": total("handoff", "limit_waits"),
+            "limit_wait_ms": total("handoff", "limit_wait_us") / 1000,
+        },
+        "send": {
+            "writes_s": total("send", "writes") / secs,
+            "messages_per_write": weighted("send", "messages_per_write", lambda r: float(r["send"]["writes"])),
+            "bytes_per_write": weighted("send", "bytes_per_write", lambda r: float(r["send"]["writes"])),
+        },
+        "transaction_requests": {
+            "requests_s": requests / secs,
+            "transactions_per_request": weighted(
+                "transaction_requests",
+                "transactions_per_request",
+                lambda r: float(r["transaction_requests"]["requests"]),
+            ),
+            "byte_cap_bound": total("transaction_requests", "byte_cap_bound"),
+            "byte_cap_bound_pct": per(total("transaction_requests", "byte_cap_bound") * 100, requests),
+        },
+    }
+
+
+def p2p_counters(run: Run) -> dict[str, dict[str, Any] | None]:
+    """
+    Per node, its p2p statistics over the loaded window: the reports whose whole period lies in it, taken together.
+
+    Rates are per second of those periods; ratios (examined per requested, messages and bytes per write,
+    transactions per request) are over all of them. Nodes that logged no report are left out; None for a node with
+    reports but none wholly inside the loaded window.
+    """
+    out: dict[str, dict[str, Any] | None] = {}
+    for role in run.roles:
+        reports = node_logs.p2p_statistics(run.node_dir(role))
+        if not reports:
+            continue
+        period = _loaded_period(run, role)
+        inside = [
+            r
+            for r in reports
+            if period is not None
+            and r["log_time"] is not None
+            and r["log_time"] - float(r["seconds"]) >= period[0] - _REPORT_PERIOD_SLACK_S
+            and r["log_time"] <= period[1] + _REPORT_PERIOD_SLACK_S
+        ]
+        out[role] = _counter_totals(inside) if inside else None
+    return out

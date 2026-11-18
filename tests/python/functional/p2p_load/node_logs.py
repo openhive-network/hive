@@ -1,9 +1,13 @@
-"""The lines the harness reads from a node's logs: Block stats, p2p block arrival offsets and sampled relay timestamps."""
+"""
+The lines the harness reads from a node's logs: Block stats, p2p block arrival offsets, sampled relay timestamps and
+the periodic p2p statistics.
+"""
 
 from __future__ import annotations
 
 import json
 import re
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -12,8 +16,14 @@ if TYPE_CHECKING:
 
 _BLOCK_STATS = re.compile(r"Block stats:(\{.*\})\s*$")
 _P2P_OFFSET = re.compile(r"Got (\d+) transactions on block (\d+) by (\S+) -- Block Time Offset: (-?\d+) ms")
-# one sampled transaction: BRD when a node broadcasts it (origin and every relay), RCV when one receives it from a peer
+# one sampled transaction: BRD when a node broadcasts it (origin and every relay), RCV when one receives it from a peer;
+# the measurement patch's format, then the p2p_relay_sample logger's (with the message hash, which the id matches 1:1)
 _RELAY = re.compile(r"RLY (RCV|BRD) id=(\w+) t=(\d+)")
+_RELAY_SAMPLE = re.compile(r"relay sample (received|broadcast) (\w+) \w+ at (\d+)")
+_RELAY_SAMPLE_KINDS = {"received": "RCV", "broadcast": "BRD"}
+_P2P_STATISTICS = re.compile(r"p2p statistics: (\{.*\})\s*$")
+# what every appender line starts with (after a console color code, if any): the node's (faked) clock, in ms or us
+_LOG_TIME = re.compile(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d+))?")
 
 
 def log_files(node_dir: Path) -> list[Path]:
@@ -36,8 +46,18 @@ def _lines(node_dir: Path) -> Iterator[str]:
             yield from file
 
 
+def _log_time(line: str) -> float | None:
+    """Return the seconds since the epoch, on the node's clock, at which a log line was written (None: no time)."""
+    match = _LOG_TIME.search(line)
+    if match is None:
+        return None
+    stamp = datetime.strptime(match.group(1), "%Y-%m-%dT%H:%M:%S").replace(tzinfo=UTC).timestamp()
+    fraction = match.group(2) or "0"
+    return stamp + float(f"0.{fraction}")
+
+
 def block_stats(node_dir: Path) -> dict[int, dict[str, Any]]:
-    """Return the last `Block stats` report per block number."""
+    """Return the last `Block stats` report per block number, with the time its line was logged as `log_time`."""
     stats: dict[int, dict[str, Any]] = {}
     for line in _lines(node_dir):
         match = _BLOCK_STATS.search(line)
@@ -47,6 +67,7 @@ def block_stats(node_dir: Path) -> dict[int, dict[str, Any]]:
             report = json.loads(match.group(1))
         except json.JSONDecodeError:  # a line cut by the node's exit
             continue
+        report["log_time"] = _log_time(line)
         stats[report["num"]] = report
     return stats
 
@@ -62,9 +83,37 @@ def p2p_offsets(node_dir: Path) -> dict[int, dict[str, int]]:
 
 
 def relay_samples(node_dir: Path) -> dict[str, dict[str, int]]:
-    """Return {sampled transaction id: {"RCV"/"BRD": first timestamp in us}} for one node."""
+    """
+    Return {sampled transaction id: {"RCV"/"BRD": first timestamp in us}} for one node.
+
+    Reads both the measurement patch's `RLY` lines and the p2p_relay_sample logger's `relay sample` lines.
+    """
     samples: dict[str, dict[str, int]] = {}
     for line in _lines(node_dir):
-        for kind, tx_id, stamp in _RELAY.findall(line):
+        found = _RELAY.findall(line) + [
+            (_RELAY_SAMPLE_KINDS[kind], tx_id, stamp) for kind, tx_id, stamp in _RELAY_SAMPLE.findall(line)
+        ]
+        for kind, tx_id, stamp in found:
             samples.setdefault(tx_id, {}).setdefault(kind, int(stamp))
     return samples
+
+
+def p2p_statistics(node_dir: Path) -> list[dict[str, Any]]:
+    """
+    Return the node's `p2p statistics` reports in log order, each with the time its line was logged as `log_time`.
+
+    A report covers the `seconds` before that time; fc writes large integers and every double as JSON strings, which
+    are left as they are.
+    """
+    reports: list[dict[str, Any]] = []
+    for line in _lines(node_dir):
+        match = _P2P_STATISTICS.search(line)
+        if match is None:
+            continue
+        try:
+            report = json.loads(match.group(1))
+        except json.JSONDecodeError:  # a line cut by the node's exit
+            continue
+        report["log_time"] = _log_time(line)
+        reports.append(report)
+    return reports
