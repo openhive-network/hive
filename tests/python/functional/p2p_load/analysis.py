@@ -25,6 +25,9 @@ if TYPE_CHECKING:
 BLOCK_INTERVAL_S = 3
 RAMP_BLOCKS = 2
 MIN_IDLE_BLOCKS = 5
+# the fewest idle blocks shown to give the skew of 30 within a millisecond (hive#1098: 28 runs, 111 nodes, at most
+# 0.78 ms off); a run with fewer is flagged
+STABLE_IDLE_BLOCKS = 8
 MIN_RELAY_SAMPLES = 20
 # cores busy outside the run above which a run is on a busy host: on steem-2/4/5/13 (2026-11-18) 84 s windows of quiet
 # stretches stayed at 0.1-3.3 cores, while other workloads' episodes ran at 6-12
@@ -188,6 +191,13 @@ def underfilled(run: Run, full_txs: int) -> list[tuple[int, int]]:
     return [(num, witness[num]["txs"]) for num in run.window if num in witness and witness[num]["txs"] < full_txs]
 
 
+def _idle_skews(run: Run, role: str) -> list[float]:
+    """Per idle block the node received over p2p: its arrival offset minus the witness's ready offset, in us."""
+    witness = run.stats("witness")
+    received = {num: s for num, s in run.stats(role).items() if s.get("type") == "p2p"}
+    return [received[n]["exec"]["offset"] - witness[n]["offset"] for n in run.idle_blocks if n in received]
+
+
 def corrected_offsets(run: Run) -> dict[str, dict[str, float] | None]:
     """
     Block offsets of every non-witness node with the clock skew between it and the witness taken out.
@@ -197,13 +207,12 @@ def corrected_offsets(run: Run) -> dict[str, dict[str, float] | None]:
     difference of the two nodes' faked clocks. A node's corrected offset is its ready offset minus that skew.
     None for a node with fewer than MIN_IDLE_BLOCKS idle blocks (a late joiner, for one).
     """
-    witness = run.stats("witness")
     out: dict[str, dict[str, float] | None] = {}
     for role in run.roles:
         if role == "witness":
             continue
         received = {num: s for num, s in run.stats(role).items() if s.get("type") == "p2p"}
-        idle = [received[n]["exec"]["offset"] - witness[n]["offset"] for n in run.idle_blocks if n in received]
+        idle = _idle_skews(run, role)
         loaded = [n for n in run.window if n in received]
         if len(idle) < MIN_IDLE_BLOCKS or not loaded:
             out[role] = None
@@ -218,6 +227,21 @@ def corrected_offsets(run: Run) -> dict[str, dict[str, float] | None]:
             "p95_ms": percentile(corrected, 95),
         }
     return out
+
+
+def skew_idle_blocks(run: Run) -> dict[str, Any]:
+    """
+    How many idle blocks each non-witness node's skew estimate used, the fewest, and the nodes with fewer than
+    STABLE_IDLE_BLOCKS. A late observer joins after the idle blocks by design and counts in neither of the last two.
+    """
+    counts = {role: len(_idle_skews(run, role)) for role in run.roles if role != "witness"}
+    late = run.meta.get("late_observer_blocks", 0) > 0
+    counted = {role: n for role, n in counts.items() if not (late and role == "observer")}
+    return {
+        "per_node": counts,
+        "fewest": min(counted.values(), default=None),
+        "few": sorted(role for role, n in counted.items() if n < STABLE_IDLE_BLOCKS),
+    }
 
 
 def thread_cpu(run: Run) -> dict[str, dict[str, float]]:

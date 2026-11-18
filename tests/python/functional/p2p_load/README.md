@@ -8,7 +8,8 @@ and its follow-ups (#992, #1060-#1077); reports cite a commit of this directory 
 ## What it needs
 
 - A Linux host with Docker, `python3` (3.11 or newer) and `/dev/shm` large enough for every node's state
-  (4 GiB shared file per node; about 1-2 GiB of it is used).
+  (4 GiB shared file per node; up to about 2.8 GiB of it is used) and the replay templates (2.6 GiB each, at most 6
+  kept; see below).
 - A testnet hived (`-DBUILD_HIVE_TESTNET=ON`), and `get_dev_key` and `block_log_util` from a testnet build. `--tools`
   takes a flat directory or a build tree; by default they are looked up next to `--hived` and in its build tree.
 - The `single_sign_universal_block_log` fixture: CI's testing block log image carries it, or generate it with
@@ -32,17 +33,34 @@ COMMON="--block-log /path/to/single_sign_universal_block_log --tools /path/to/bu
 1. takes the host lock (see the rules below) or refuses with exit code 2;
 2. creates `/dev/shm/hive-p2p-load/NAME` for the node data and `OUT_ROOT/NAME` for the results;
 3. installs the `tc netem` delay when asked, then starts the driver in container `p2p-load-NAME`;
-4. the driver creates the nodes (`witness`, `observer`, `colony0..`, `relay1..`), wires the topology, replays the
-   block log on every node, checks each node's `config.ini`, starts them together under libfaketime from the
-   block log's head time, redials every node's seeds until each seed link is up (a node started before its seed
-   listens would otherwise wait out the 60-120 s p2p retry backoff; links still down after 60 s fail the run), waits
+4. the driver creates the nodes (`witness`, `observer`, `colony0..`, `relay1..`), wires the topology, gives every
+   node the replayed block log's state (copied from a replay template, see below), checks each node's
+   `config.ini`, starts them under libfaketime from the block log's head time in waves 1 s apart, each node one wave
+   after its seeds and its faked clock started as much later (a node dials its seeds once as it starts and, refused,
+   even when redialed, again only on hived's next 10 s connect loop tick: a 3-hop chain started all at once took
+   30-40 s to link),
+   redials every node's seeds until each seed link is up (links still down after 60 s fail the run), waits
    until every node is live, samples every 3 s and waits until `--blocks` blocks after the colonies started;
 5. copies back only logs and configs (`OUT_ROOT/NAME/generated/<node>/`, no `blockchain/`, no `*.bin`) and removes
    the tmpfs directory, whatever happened. A disk-backed 8-peer run wrote 90-415 GB; this one writes megabytes.
 
 `OUT_ROOT/NAME` then holds `spec.json` (what was asked), `out.json` (roles, binaries, p2p parameters and p2p
 loggers per node, blocks, `/proc` samples of node threads and host CPU, link maps), `driver.log`, `generated/`, and `tc.txt` / `sends.txt` when used.
-`OUT_ROOT/series.log` records each run's start and end with host, exit code and load average.
+`OUT_ROOT/series.log` records each run's start and end with host, exit code, load average and wall time.
+
+### Replay templates: replay once per binary, copy for every run
+
+Replaying the fixture takes about 20 s per node; the old drivers replayed it on every node, one after another
+(about 210 s of a 400 s 8-peer run). The driver now keeps each replayed state in
+`/dev/shm/hive-p2p-load-templates/<key>/` and copies it (sparse, about 2.5 s for 10 nodes) into every node of later
+runs. The key covers the hived binary's content, the fixture's block log and `alternate-chain-spec.json`, and the
+node's plugins, shared file size and block log layout, so a run has one template per plugin set (witness, API
+node, colony). A key without a template is replayed by one of its nodes, all such replays in parallel, and that
+node's state becomes the template: a rebuilt binary or a new fixture replays on its first run and is reused after.
+The 6 most recently used templates are kept. `--fresh-replay` skips templates and replays on every node in
+parallel (for a host short of tmpfs); `rm -rf /dev/shm/hive-p2p-load-templates` frees them while no run is active.
+Each report ends with the driver's phase times: state (replays, templates reused, copy), start to live, live
+to the end of the run (idle and loaded blocks), close.
 
 Options:
 
@@ -54,7 +72,8 @@ Options:
 | `--topology chain` | colony0 -> relay1 -> ... -> relayN -> witness -> observer; connection limits leave peer exchange no shortcut |
 | `--tpb N` | colony transactions per block, split evenly over the colonies |
 | `--colonies N`, `--relays N` | relays exist only in `chain`, which has one colony |
-| `--blocks N` | loaded blocks measured, counted from the colonies' start (default 30); `--colony-start-delay` idle blocks (default 30) come first |
+| `--blocks N` | loaded blocks measured, counted from the colonies' start (default 30); `--colony-start-delay` blocks after the block log's head (default 12) come first: the nodes link up in about 4 of them, the rest are the idle blocks the skew needs |
+| `--fresh-replay` | replay the block log on every node (in parallel) instead of copying replay templates |
 | `--node-hived ROLE=PATH` | a different hived for one node (mixed versions); the others use `--hived` |
 | `--flush-us`, `--fetch-us`, `--inflight`, `--p2p-parameter KEY=JSON` | p2p parameters, see below |
 | `--late-observer K` | the observer starts K blocks after the colonies start, its faked clock at the others' current fake time |
@@ -142,7 +161,10 @@ work on any finished run directory and need no node and no test-tools.
   for saturated runs).
 - **skew-corrected offsets** (the #992 method): per node and run, skew is the median, over the idle blocks before
   the load, of the node's arrival offset minus the witness's ready offset; a block's corrected offset is the node's
-  ready offset minus that skew. A node without 5 idle blocks (a late joiner) shows `-`. On a netem-delayed link
+  ready offset minus that skew. A node without 5 idle blocks (a late joiner) shows `-`. The report gives the idle
+  blocks each skew used and flags nodes below 8 (`FEW IDLE BLOCKS`): over 28 earlier runs (111 nodes) the median of
+  the first 8 idle blocks after the nodes were live was at most 0.78 ms (median 0.04 ms) off the median of all 27-30,
+  which is why the default start delay now leaves about 8-9 idle blocks, not 27. On a netem-delayed link
   the idle transfer time (about three one-way delays: advertisement, request, block) lands in the skew too, so
   there the corrected offset shows only what the load adds.
 - **per-thread CPU**: every thread of every node, by thread name, in % of a core over the loaded window.

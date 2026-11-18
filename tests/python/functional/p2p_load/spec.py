@@ -28,9 +28,10 @@ class RunSpec:
     late_observer_blocks: int = 0
     colony_ports: dict[str, int] = field(default_factory=dict)
     netem_ms: int = 0
-    colony_start_delay: int = 30
+    colony_start_delay: int = 12
     mix: str = "default"
     p2p_loggers: bool = True
+    replay_templates: str = ""  # replayed-state template directory; "" replays the block log on every node
 
     def roles(self) -> list[str]:
         return [

@@ -9,8 +9,9 @@ import pytest
 
 import test_tools as tt
 from python.functional.p2p_load import __main__ as cli
-from python.functional.p2p_load import p2p_loggers, p2p_parameters, procfs, report
-from python.functional.p2p_load.analysis import Run
+from python.functional.p2p_load import p2p_loggers, p2p_parameters, procfs, replay_template, report
+from python.functional.p2p_load.analysis import STABLE_IDLE_BLOCKS, Run
+from python.functional.p2p_load.harness import TEMPLATE_ROOT
 from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
 from python.functional.p2p_load.spec import RunSpec
 
@@ -199,9 +200,9 @@ def _relay_line(relay_format: str, kind: str, i: int, stamp: int) -> str:
     )
 
 
-def _make_run(directory: Path, relay_format: str = "patch") -> Path:
+def _make_run(directory: Path, relay_format: str = "patch", first_idle: int = 100) -> Path:
     """
-    A finished chain run: blocks 100-109 idle, 110-140 loaded with 1000 tx (block 120 only 500).
+    A finished chain run: blocks 100-109 idle (from `first_idle` on), 110-140 loaded with 1000 tx (block 120 only 500).
 
     The observer's clock is 20 ms ahead of the witness's and blocks reach it 50 ms after the witness is ready;
     sampled transactions reach relay1 51 ms after colony0 broadcast them, in the measurement patch's `RLY` lines or
@@ -215,7 +216,7 @@ def _make_run(directory: Path, relay_format: str = "patch") -> Path:
         (generated / name / "logs" / "p2p").mkdir(parents=True)
         (generated / name / "stderr_0.log").write_text("replay\n")
     witness_lines, observer_lines = [], []
-    for num in range(100, 141):
+    for num in range(first_idle, 141):
         txs = 0 if num < 110 else 500 if num == 120 else 1000
         witness_lines.append(_block_stats(num, txs, 400_000, 0, 1200 if txs else 0, "gen"))
         loaded_delay = 50_000 if txs else 0
@@ -542,3 +543,132 @@ def test_a_series_counts_an_unreportable_run_as_failed_and_compares_the_rest(
     assert [line.split()[1] for line in out.splitlines() if line.startswith("== ")] == ["s-a-1", "s-a-2", "s-b-2"]
     loaded_row = next(line for line in out.splitlines() if line.startswith("loaded blocks"))
     assert loaded_row.split()[2:] == ["29.0", "(29/29)", "29.0", "(29)"]
+
+
+def _fixture(directory: Path) -> Path:
+    directory.mkdir()
+    (directory / "block_log_part.0001").write_bytes(b"blocks 1-1000")
+    (directory / "block_log_part.0001.artifacts").write_bytes(b"index")
+    (directory / "alternate-chain-spec.json").write_text('{"genesis_time": 1}')
+    return directory
+
+
+def test_a_changed_binary_fixture_or_state_configuration_gets_another_template_key(tmp_path: Path) -> None:
+    hived, fixture = tmp_path / "hived", _fixture(tmp_path / "block_log")
+    hived.write_bytes(b"build 1")
+
+    def key(plugins: tuple[str, ...] = ("chain", "p2p", "witness"), shared_file_size: str = "4G") -> str:
+        return replay_template.template_key(
+            hived, replay_template.fixture_digest(fixture), plugins, shared_file_size, None
+        )
+
+    original = key()
+    assert key(("witness", "chain", "p2p")) == original  # the plugins' order changes no state
+    (fixture / "block_log_part.0001.artifacts").write_bytes(b"regenerated index")
+    assert key() == original
+
+    assert key(("chain", "p2p", "witness", "colony")) != original
+    assert key(shared_file_size="8G") != original
+    hived.write_bytes(b"build 2, rebuilt in place")
+    rebuilt = key()
+    assert rebuilt != original
+    (fixture / "alternate-chain-spec.json").write_text('{"genesis_time": 2}')
+    respecified = key()
+    assert respecified not in {original, rebuilt}
+    (fixture / "block_log_part.0001").write_bytes(b"blocks 1-1001")
+    assert key() not in {original, rebuilt, respecified}
+
+
+def test_a_saved_template_is_found_copied_sparse_and_pruned_least_recently_used_first(tmp_path: Path) -> None:
+    store = replay_template.TemplateStore(tmp_path / "templates")
+    state = tmp_path / "node" / "blockchain"
+    (state / "comments-rocksdb-storage").mkdir(parents=True)
+    (state / "comments-rocksdb-storage" / "CURRENT").write_text("MANIFEST-1\n")
+    with (state / "shared_memory.bin").open("wb") as shared_memory:
+        shared_memory.truncate(256 << 20)
+        shared_memory.write(b"state")
+
+    assert store.find("a") is None
+    store.save("a", state, {"replayed_by": "witness"})
+    template = store.find("a")
+    assert template is not None
+    copy = tmp_path / "other-node" / "blockchain"
+    copy.parent.mkdir()
+    replay_template.copy_state(template, copy)
+    assert (copy / "comments-rocksdb-storage" / "CURRENT").read_text() == "MANIFEST-1\n"
+    assert (copy / "shared_memory.bin").stat().st_size == 256 << 20
+    assert (copy / "shared_memory.bin").stat().st_blocks * 512 < 16 << 20  # the holes stayed holes
+
+    for key in ("b", "c"):
+        store.save(key, state, {})
+    (tmp_path / "templates" / ".partial-d").mkdir()  # left by a run killed while saving
+    store.find("a")  # used last: kept before b and c
+    assert store.prune(keep=2, protect=["b"]) == ["c"]
+    assert sorted(path.name for path in (tmp_path / "templates").iterdir()) == ["a", "b"]
+    assert store.find("c") is None
+
+
+@pytest.mark.parametrize(
+    ("first_idle", "late_observer_blocks", "observer_flagged"),
+    [(100, 0, False), (104, 0, True), (104, 3, False)],  # 10 idle blocks; 6; 6, but the observer joins late
+)
+def test_the_idle_blocks_behind_each_skew_are_reported_and_too_few_flagged(
+    tmp_path: Path, first_idle: int, late_observer_blocks: int, observer_flagged: bool
+) -> None:
+    run_dir = _make_run(tmp_path / "chain-a-1", first_idle=first_idle)
+    _edit_meta(run_dir, late_observer_blocks=late_observer_blocks)
+
+    summary = report.summarize(Run.load(run_dir))
+
+    idle = summary["skew_idle_blocks"]
+    assert idle["per_node"]["observer"] == 110 - first_idle
+    assert summary["offsets"]["observer"]["idle_blocks"] == 110 - first_idle
+    assert ("observer" in idle["few"]) is observer_flagged
+    assert idle["few"] == sorted(["colony0", "relay1", *(["observer"] if observer_flagged else [])])
+    few_line = next(line for line in report.format_summary(summary).splitlines() if "FEW IDLE BLOCKS" in line)
+    assert (f"observer {110 - first_idle}" in few_line) is observer_flagged
+    assert f"wants {STABLE_IDLE_BLOCKS}" in few_line
+
+
+def test_a_report_shows_the_phase_timings_and_which_replay_templates_were_reused(tmp_path: Path) -> None:
+    run_dir = _make_run(tmp_path / "chain-a-1")
+    timings = {"create_s": 3, "state_s": 23.5, "start_to_live_s": 10.9, "live_to_end_s": 117, "close_s": 1.2}
+    templates = {"k1": {"reused": True, "roles": ["witness"]}, "k2": {"reused": False, "roles": ["colony0"]}}
+    replay = {"templates": templates, "replayed": ["colony0"], "replay_s": 21.0, "copy_s": 1.5, "state_s": 23.5}
+    _edit_meta(run_dir, timings={**timings, "total_s": 156}, replay=replay)
+
+    text = report.format_summary(report.summarize(Run.load(run_dir)))
+
+    assert (
+        "driver 156 s: state 23.5 s (replay templates reused 1/2, replayed on colony0 21.0 s, copied into nodes "
+        "1.5 s), start to live 10.9 s, live to end 117 s, close 1.2 s"
+    ) in text
+    _edit_meta(run_dir, replay={**replay, "templates": None})
+    assert "replayed on every node in parallel 21.0 s" in report.format_summary(report.summarize(Run.load(run_dir)))
+
+
+@pytest.mark.parametrize(("flags", "templates"), [([], str(TEMPLATE_ROOT)), (["--fresh-replay"], "")])
+def test_runs_reuse_replay_templates_unless_asked_for_a_fresh_replay(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flags: list[str], templates: str
+) -> None:
+    block_log = _fixture(tmp_path / "block_log")
+    hived = tmp_path / "hived"
+    hived.write_text("#!/bin/sh\n")
+    hived.chmod(0o755)
+    specs: list[RunSpec] = []
+
+    def execute_run(spec: RunSpec, *_: object) -> int:
+        specs.append(spec)
+        return 1
+
+    monkeypatch.setattr(cli, "execute_run", execute_run)
+    monkeypatch.setattr(cli, "find_tools", lambda *_: {})
+    monkeypatch.setattr(cli, "HostLock", contextlib.nullcontext)
+
+    cli.main([
+        *("run", "r", "--block-log", str(block_log), "--out-root", str(tmp_path / "runs"), "--tpb", "1000"),
+        *("--hived", str(hived), "--image", "test-image", *flags),
+    ])
+
+    assert [spec.replay_templates for spec in specs] == [templates]
+    assert specs[0].colony_start_delay == 12
