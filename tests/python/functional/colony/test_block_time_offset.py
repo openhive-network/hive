@@ -10,7 +10,7 @@ import test_tools as tt
 from hive_local_tools.functional import simultaneous_node_startup
 from test_tools import complex_networks as ttcn
 
-from .test_colony import WITNESSES, prepare_colony_config, wait_for_start_colony
+from .test_colony import WITNESSES, enable_production_on_replayed_head, prepare_colony_config, wait_for_start_colony
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -41,6 +41,7 @@ def test_block_time_offset_under_sustained_load(
     for witness in WITNESSES:
         witness_node.config.private_key.append(tt.Account(witness).private_key)
     witness_node.config.private_key.append(tt.Account("initminer").private_key)
+    enable_production_on_replayed_head(witness_node)
 
     colony_node = tt.ApiNode()
     colony_node.config.shared_file_size = "4G"
