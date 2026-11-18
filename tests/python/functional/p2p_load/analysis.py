@@ -70,8 +70,20 @@ class Run:
     def roles(self) -> list[str]:
         return list(self.meta["roles"])
 
+    @property
+    def remote_roles(self) -> list[str]:
+        """The roles whose nodes ran on the remote host of a two-host run (none for a single-host run)."""
+        return list(self.meta.get("remote_roles", []))
+
     def node_dir(self, role: str) -> Path:
-        return self.directory / "generated" / str(self.meta["roles"][role])
+        host_dir = self.directory / "remote" if role in self.remote_roles else self.directory
+        return host_dir / "generated" / str(self.meta["roles"][role])
+
+    def _clock_shift_us(self, role: str) -> int:
+        """What to subtract from the node's real-clock timestamps to put them on the local host's clock."""
+        if role not in self.remote_roles:
+            return 0
+        return round(float(self.meta["clock"]["offset_s"]) * 1e6)
 
     def stats(self, role: str) -> dict[int, dict[str, Any]]:
         if role not in self._stats:
@@ -91,11 +103,17 @@ class Run:
 
     @cached_property
     def relay_samples(self) -> dict[str, dict[str, dict[str, int]]]:
-        """{sampled transaction id: {role: {"RCV"/"BRD": timestamp in us}}} over every node."""
+        """
+        {sampled transaction id: {role: {"RCV"/"BRD": timestamp in us}}} over every node, on the local host's clock.
+
+        The timestamps are real-clock ones; a two-host run's remote nodes' are corrected by the clock offset measured
+        before the run.
+        """
         seen: dict[str, dict[str, dict[str, int]]] = defaultdict(dict)
         for role in self.roles:
+            shift = self._clock_shift_us(role)
             for tx_id, stamps in node_logs.relay_samples(self.node_dir(role)).items():
-                seen[tx_id][role] = stamps
+                seen[tx_id][role] = {kind: stamp - shift for kind, stamp in stamps.items()}
         return dict(seen)
 
     @cached_property
@@ -151,23 +169,29 @@ def window_shortfall(run: Run) -> dict[str, Any]:
     }
 
 
-def host_load(run: Run, busy_cores: float = BUSY_CORES) -> dict[str, Any] | None:
+def host_load(run: Run, busy_cores: float = BUSY_CORES, part: str = "local") -> dict[str, Any] | None:
     """
-    How busy the host was outside the run over the loaded window, in cores, and whether that makes it a busy host.
+    How busy `part`'s host was outside the run over the loaded window, in cores, and whether that makes it busy.
 
     Other-busy cores are the host's busy ticks (/proc/stat) minus those of the driver's process tree (every node, the
     colonies and the driver itself), per second of the window: their mean over the window and their maximum over one
     sample interval. `busy`: the mean exceeds `busy_cores`. None for runs recorded before the samples carried host
-    ticks, which are never busy, and for runs with fewer than two samples in the window.
+    ticks, which are never busy, and for runs with fewer than two samples in the window. `part`: "local", the host
+    of the witness (and of a whole single-host run), or "remote", the other host of a two-host run.
     """
-    samples = [s for s in run.meta["samples"] if s["head"] >= run.window.start and "host_busy" in s]
+    meta = run.meta if part == "local" else run.meta["remote"]
+    samples = [
+        s
+        for s in run.meta["samples"]
+        if s.get("part", "local") == part and s["head"] >= run.window.start and "host_busy" in s
+    ]
     if len(samples) < 2:
         return None
 
     def cores(first: dict[str, Any], last: dict[str, Any], key: str) -> float:
         ticks: float = last[key] - first[key]
         seconds: float = last["t"] - first["t"]
-        return ticks / float(run.meta["tck"]) / seconds
+        return ticks / float(meta["tck"]) / seconds
 
     first, last = samples[0], samples[-1]
     other = cores(first, last, "host_busy") - cores(first, last, "own")
@@ -178,7 +202,7 @@ def host_load(run: Run, busy_cores: float = BUSY_CORES) -> dict[str, Any] | None
         ),
         "host_busy_cores": cores(first, last, "host_busy"),
         "run_cores": cores(first, last, "own"),
-        "nproc": run.meta.get("nproc"),
+        "nproc": meta.get("nproc"),
         "seconds": last["t"] - first["t"],
         "busy_cores": busy_cores,
         "busy": other > busy_cores,

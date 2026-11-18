@@ -1,8 +1,12 @@
-"""Command line of the p2p load harness: run, ab, report, compare (and drive, which the run's container calls)."""
+"""
+Command line of the p2p load harness: run, ab, report, compare (and drive, which the run's container calls; part and
+hold-lock, which a two-host run calls on its remote host).
+"""
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import socket
@@ -15,12 +19,15 @@ from python.functional.p2p_load.harness import (
     TEMPLATE_ROOT,
     HarnessSetupError,
     default_image,
+    execute_part,
     execute_run,
     find_tools,
     free_port,
+    free_ports,
 )
 from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
-from python.functional.p2p_load.spec import TOPOLOGIES, RunSpec
+from python.functional.p2p_load.remote import HARNESS_PATHS, RemoteHost, RemoteHostError, local_address_towards
+from python.functional.p2p_load.spec import PARTS, TOPOLOGIES, RunSpec
 
 # shorthand flags for the p2p-parameters keys the #877 measurements vary; --p2p-parameter sets any other
 _P2P_FLAGS = {
@@ -107,6 +114,16 @@ def _add_run_options(parser: argparse.ArgumentParser) -> None:
         help=f"replay the block log on every node instead of copying the replayed state kept in {TEMPLATE_ROOT}",
     )
     parser.add_argument("--image", help="test-tools image (default: P2P_LOAD_IMAGE or .aidev/project.yaml's)")
+    parser.add_argument("--remote-host", help="run the --remote-roles nodes on this host (ssh), the others here")
+    parser.add_argument(
+        "--remote-roles",
+        type=lambda text: [role for role in text.split(",") if role],
+        default=[],
+        metavar="ROLE,...",
+        help="the nodes --remote-host runs (colonyN, relayN, observer); the witness runs here",
+    )
+    parser.add_argument("--remote-address", help="IPv4 address the nodes dial the remote host's at (default: DNS)")
+    parser.add_argument("--local-address", help="IPv4 address the nodes dial this host's at (default: the route's)")
 
 
 def _p2p_parameters(args: argparse.Namespace) -> dict[str, Any]:
@@ -122,7 +139,31 @@ def _p2p_parameters(args: argparse.Namespace) -> dict[str, Any]:
     return given
 
 
-def _spec(args: argparse.Namespace, name: str, hived: Path, label: str) -> RunSpec:
+class _Placement:
+    """Where a two-host run's nodes listen: each host's address, and a free port there for every listening node."""
+
+    def __init__(self, args: argparse.Namespace, remote: RemoteHost) -> None:
+        self.remote = remote
+        self.remote_address = args.remote_address or remote.address()
+        self.local_address = args.local_address or local_address_towards(self.remote_address)
+        if self.local_address == self.remote_address:
+            raise HarnessSetupError(f"{remote.host} is this host ({self.local_address}); pick another remote host")
+        self.remote_roles = list(args.remote_roles)
+
+    def endpoints(self, roles: list[str]) -> dict[str, str]:
+        listening = [role for role in roles if role != "observer"]
+        remote = [role for role in listening if role in self.remote_roles]
+        local = [role for role in listening if role not in self.remote_roles]
+        ports = {
+            **dict(zip(remote, self.remote.free_ports(len(remote)), strict=True)),
+            **dict(zip(local, free_ports(len(local)), strict=True)),
+        }
+        return {
+            role: f"{self.remote_address if role in remote else self.local_address}:{ports[role]}" for role in listening
+        }
+
+
+def _spec(args: argparse.Namespace, name: str, hived: Path, label: str, placement: _Placement | None) -> RunSpec:
     if not (args.block_log / "alternate-chain-spec.json").is_file():
         raise HarnessSetupError(f"{args.block_log} has no alternate-chain-spec.json; is it a universal block log?")
     netem_colonies = [int(i) for i in args.netem_colonies.split(",") if i] if args.netem_ms else []
@@ -147,7 +188,11 @@ def _spec(args: argparse.Namespace, name: str, hived: Path, label: str) -> RunSp
         mix=args.mix,
         p2p_loggers=args.p2p_loggers,
         replay_templates="" if args.fresh_replay else str(TEMPLATE_ROOT),
+        remote_host=placement.remote.host if placement else "",
+        remote_roles=placement.remote_roles if placement else [],
     )
+    if placement is not None:
+        spec.endpoints = placement.endpoints(spec.roles())
     try:
         spec.validate()
     except ValueError as error:
@@ -155,19 +200,50 @@ def _spec(args: argparse.Namespace, name: str, hived: Path, label: str) -> RunSp
     return spec
 
 
+def _prepare_remote(args: argparse.Namespace, builds: list[tuple[str, Path]], tools: dict[str, Path]) -> RemoteHost:
+    """Copy to the remote host what its nodes need, at the same paths as here."""
+    if args.remote_host is None or not args.remote_roles:
+        raise HarnessSetupError("--remote-host and --remote-roles go together")
+    remote = RemoteHost(args.remote_host)
+    binaries = {Path(path) for role, path in args.node_hived if role in args.remote_roles}
+    remote.copy([*HARNESS_PATHS, *(hived for _, hived in builds), *binaries, *tools.values(), args.block_log.resolve()])
+    return remote
+
+
+def _report_clock(remote: RemoteHost) -> None:
+    clock = remote.measure_clock()
+    ntp = clock["ntp_offset_s"]
+    print(
+        f"clock: {remote.host} is {clock['offset_s'] * 1000:+.3f} ms ahead of {socket.gethostname()} "
+        f"(+-{clock['uncertainty_s'] * 1000:.3f} ms, min/median probe RTT {clock['min_rtt_s'] * 1000:.3f}/"
+        f"{clock['median_rtt_s'] * 1000:.3f} ms; NTP: {'-' if ntp is None else f'{ntp * 1000:+.3f}'} ms)",
+        flush=True,
+    )
+
+
 def _series(args: argparse.Namespace, builds: list[tuple[str, Path]], reps: int) -> int:
-    """Run every build `reps` times, alternating builds, under one host lock; print the reports."""
+    """
+    Run every build `reps` times, alternating builds, under one host lock (both hosts' for a two-host run); print
+    the reports.
+    """
     args.out_root.mkdir(parents=True, exist_ok=True)
     image = args.image or default_image()
     tools = find_tools(args.tools, builds[0][1])
     finished: list[dict[str, Any]] = []
     failed = 0
-    with HostLock():
+    with contextlib.ExitStack() as locks:
+        locks.enter_context(HostLock())
+        remote, placement = None, None
+        if args.remote_host or args.remote_roles:
+            remote = _prepare_remote(args, builds, tools)
+            locks.enter_context(remote.hold_lock())
+            placement = _Placement(args, remote)
+            _report_clock(remote)
         for rep in range(1, reps + 1):
             for label, hived in builds:
                 name = f"{args.name}-{label}-{rep}" if len(builds) > 1 or reps > 1 else args.name
-                spec = _spec(args, name, hived, label)
-                exit_code = execute_run(spec, args.out_root, image, tools, args.sends)
+                spec = _spec(args, name, hived, label, placement)
+                exit_code = execute_run(spec, args.out_root, image, tools, args.sends, remote)
                 if exit_code != 0:
                     failed += 1
                     print(f"{name}: driver exited {exit_code}; see {spec.out_dir}/driver.log", file=sys.stderr)
@@ -221,7 +297,34 @@ def _drive(args: argparse.Namespace) -> int:
     # imported here: it needs test-tools, which only the run's container has
     from python.functional.p2p_load.driver import main
 
-    main(args.spec)
+    main(args.spec, args.part)
+    return 0
+
+
+def _part(args: argparse.Namespace) -> int:
+    request = json.loads(sys.stdin.readline())
+    spec = RunSpec(**request["spec"])
+    try:
+        spec.validate()
+    except ValueError as error:
+        raise HarnessSetupError(str(error)) from error
+    tools = {variable: Path(path) for variable, path in request["tools"].items()}
+
+    def say(line: str) -> None:
+        print(line, flush=True)
+
+    return execute_part(spec, request["image"], tools, sys.stdin, say)
+
+
+def _free_ports(args: argparse.Namespace) -> int:
+    print(" ".join(map(str, free_ports(args.count))))
+    return 0
+
+
+def _hold_lock(args: argparse.Namespace) -> int:
+    with HostLock():
+        print("locked", flush=True)
+        sys.stdin.read()  # until the run's host closes the connection
     return 0
 
 
@@ -263,7 +366,16 @@ def _parser() -> argparse.ArgumentParser:
 
     drive = commands.add_parser("drive", help="(inside the run's container) execute a spec.json")
     drive.add_argument("spec", type=Path)
+    drive.add_argument("--part", choices=PARTS, default="local", help="this host's nodes of a two-host run")
     drive.set_defaults(handler=_drive)
+
+    part = commands.add_parser("part", help="(on a two-host run's remote host) its part, steered over stdin")
+    part.set_defaults(handler=_part)
+    hold_lock = commands.add_parser("hold-lock", help="(on a two-host run's remote host) hold the host lock")
+    hold_lock.set_defaults(handler=_hold_lock)
+    ports = commands.add_parser("free-ports", help="(on a two-host run's remote host) print free p2p ports")
+    ports.add_argument("count", type=int)
+    ports.set_defaults(handler=_free_ports)
     return parser
 
 
@@ -274,7 +386,7 @@ def main(argv: list[str] | None = None) -> int:
     except HarnessBusyError as error:
         print(f"not starting: {error}", file=sys.stderr)
         return 2
-    except (HarnessSetupError, analysis.RunDataError) as error:
+    except (HarnessSetupError, RemoteHostError, analysis.RunDataError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
 

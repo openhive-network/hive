@@ -81,6 +81,7 @@ Options:
 | `--sends S` | after 6 loaded blocks, count the witness's send syscalls per thread with bpftrace for S seconds |
 | `--no-p2p-loggers` | leave the p2p_stats and p2p_relay_sample loggers off (see below), e.g. to measure what they cost |
 | `--mix large` | colony replies and articles only, 4000..12000 byte bodies (about 255 transactions fill a 2 MiB block) |
+| `--remote-host H --remote-roles R,...` | run those nodes on host H, the rest here: see "Two hosts" below |
 
 ### p2p parameters: only what is given, only where the binary has it
 
@@ -98,6 +99,66 @@ transactions (picked by message hash, so the same ones on every node) to the `p2
 unless configured. The driver adds `log-logger` entries for them at `info`, into the `p2p` log, on every node whose
 binary carries the logger's name, and checks each `config.ini` for them after the replay. An older binary gets no
 entry and runs as before. `out.json` records the loggers each node got.
+
+## Two hosts
+
+`--remote-host HOST --remote-roles colony0,colony1,...` runs the named nodes on HOST and the others (always the
+witness) on the host the command runs on, so the p2p traffic between the two groups crosses a real NIC and network
+instead of loopback. Every other option works as on one host, except `--netem-ms` (it delays loopback links) and a
+late observer on the remote host.
+
+```
+# colonies on steem-2, witness and observer here (steem-4)
+$P run star8-split $COMMON --hived $HIVED --label split --topology strict --colonies 8 --tpb 20000 \
+    --remote-host steem-2 --remote-roles colony0,colony1,colony2,colony3,colony4,colony5,colony6,colony7
+# 3-hop chain, colony0 and relay1 on steem-2: colony0 -> relay1 cross no host, relay1 -> relay2 does
+$P run chain3-split $COMMON --hived $HIVED --label split --topology chain --relays 2 --tpb 1000 \
+    --remote-host steem-2 --remote-roles colony0,relay1
+```
+
+What it needs: `ssh HOST` without a password from this host (an agent or a key), python3 3.11+, rsync and Docker on
+both hosts, the test-tools image on HOST under the same reference as here (`--image`; a local tag works), and
+the hosts able to reach each other's p2p ports (ephemeral ones).
+Every path is the same on both hosts: the series copies (rsync, only what changed) this harness, the builds, the
+tools and the block log to the same absolute paths on HOST before its first run, and the remote part writes its
+results under the same `--out-root`.
+
+For each series and each run:
+
+1. **Both host locks.** The series takes this host's lock, then HOST's: `p2p-load hold-lock` there holds it for as
+   long as its ssh connection lasts, so it goes with the series however the series ends. Either host busy: exit 2.
+2. **Addresses.** Nodes listen on `0.0.0.0` and dial each other at the hosts' IPv4 addresses (HOST's from DNS, this
+   host's the source address of the route to it; `--remote-address` / `--local-address` override). Ports are
+   picked free on each host from 20000 up, below its ephemeral port range, so that no outgoing connection or
+   node webserver takes one before its node listens. Seeds between nodes of one host use that host's address too.
+3. **Clock offset.** Relay latency compares real-clock timestamps of nodes on different hosts. Before each series,
+   and again before each run, the harness measures HOST's clock minus this one's: 50 probes over one ssh
+   connection, the one with the shortest round trip taken (the error is at most half that round trip, printed as
+   `+-`), next to the same offset as both hosts' NTP clients see it (chrony, or systemd-timesyncd). The series prints it; each run keeps it in
+   `clock.json` and `out.json`'s `clock`.
+4. **One start.** Each host's driver (container `p2p-load-NAME` on both) gives its own nodes the replayed state,
+   from that host's own replay templates (each host keeps its templates in its own
+   `/dev/shm/hive-p2p-load-templates`; `--fresh-replay` applies to both), then waits. Once both are ready the
+   harness sends both the same moment, 5 s ahead, as each host's own clock reads it (HOST's corrected by the
+   measured offset). The start waves count from then on both hosts: both drivers group every node of the run into
+   the same waves and start their own nodes in theirs, each wave's faked clock that many seconds past the block
+   log's head time, so the faked clocks of both hosts agree to within the clock offset's error. The seed redial and
+   live wait follow on each host for its own nodes.
+5. **End.** The remote part samples its nodes' CPU and its host's busy ticks with the head of one of its nodes, and
+   ends when its nodes have the run's last block or the local part ends. Either part failing ends the other.
+6. **Logs.** Each host copies its nodes' logs and configs to its run directory and removes its tmpfs directory;
+   the remote run directory is then copied back to `OUT_ROOT/NAME/remote/` (`generated/`, `driver.log`, its own
+   `out.json`), and its nodes, samples (marked `"part": "remote"`) and parameters are merged into
+   `OUT_ROOT/NAME/out.json` (`remote_roles`, `remote` and `clock` say what ran where). The ssh session's stderr is `part.log`.
+
+The report reads the remote nodes' logs from `remote/generated/`, shifts their relay sample timestamps by the
+measured offset onto this host's clock, and prints a `two hosts:` line with each host's nodes and the offset, and
+a `remote host:` load line next to the `host:` one (`BUSY REMOTE HOST` past `--busy-cores`; either host busy makes
+the run a busy one for `compare`). The
+block offsets need no correction: their skew correction already takes out each node's clock difference.
+
+To compare a split run with the same run on one host, alternate them in one shell loop with `--label split` and
+`--label single` (no `--remote-host`) and read them with `compare`: the comparison groups by label.
 
 ## Standard scenarios
 
@@ -188,7 +249,8 @@ work on any finished run directory and need no node and no test-tools.
 
 - **One series per host.** `run` and `ab` hold an flock on `/dev/shm/hive-p2p-load.lock` for the whole series
   and refuse while another checkout holds it, or while a `p2p-load-*` container or one of the old harnesses'
-  `w877*` containers runs. The lock goes with its process; a killed run cannot leave it behind.
+  `w877*` containers runs. The lock goes with its process; a killed run cannot leave it behind. A two-host series
+  holds the lock of both hosts.
 - **tmpfs only.** Node data lives in `/dev/shm`; never point the harness at the steem hosts' RAID disks.
 - **A/B on one host, alternating.** Compare builds only within one host and one series (`ab`), never across
   hosts or days; the order alternates so drift in host load spreads over both builds. Results record the host.
