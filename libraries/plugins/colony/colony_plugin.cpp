@@ -160,8 +160,8 @@ class colony_plugin_impl
     bool tracks_own_transactions() const { return _max_tx_per_block != 0; }
     void remember_own_transaction( const full_transaction_type& tx ) const;
     void forget_own_transaction( const transaction_id_type& id ) const;
-    bool is_own_pending_transaction( const transaction_id_type& id ) const;
-    void forget_own_transactions_in_block( const full_block_type& block ) const;
+    bool is_own_overflowing_transaction( const transaction_id_type& id ) const;
+    void forget_own_transactions_in_block( const full_block_type& block, uint64_t room_left_in_block ) const;
 
     chain::chain_plugin&          _chain;
     plugins::p2p::p2p_plugin*     _p2p_ptr = nullptr;
@@ -182,7 +182,8 @@ class colony_plugin_impl
     uint32_t                                             _total_weight = 0;
     uint32_t                                             _max_tx_per_block = -1;
     uint32_t                                             _dynamic_tx_per_block = -1; // updated under _common_mutex
-    uint32_t                                             _overflowing_tx = 0; // own transactions reapplied after last block; updated under db write lock but not always under _common_mutex
+    uint32_t                                             _overflowing_tx = 0; // own transactions reapplied after last block that could have been in it; updated under db write lock but not always under _common_mutex
+    uint64_t                                             _max_block_size = 0; // limit in effect when last block was produced; updated in post_apply_block
     uint32_t                                             _start_at_block = 0;
     uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
     bool                                                 _disable_broadcast = false;
@@ -212,8 +213,19 @@ class colony_plugin_impl
     // _overflowing_tx count own overflow and not transactions of other nodes that are pending at block time
     // just because they are still in transit to the witness; entries that never reach a block (dropped from
     // pending) are pruned at expiration, so the map is bounded by own production within expiration window
+    struct own_pending_tx
+    {
+      fc::time_point_sec expiration;
+      uint32_t           size = 0;
+      bool               missed_block = false; // was left out of at least one block already
+      // left out of last block although it could have been in it: either the block was full (some own
+      // transaction would not fit in the room it left) or it was already pending at previous block (so it
+      // is not in transit anymore); own transaction missing from a block that had room for it was produced
+      // too late to reach the witness in time and should make next block, so it is not overflow
+      bool               overflowing = false;
+    };
     mutable std::mutex                                   _own_tx_mutex;
-    mutable std::unordered_map< transaction_id_type, fc::time_point_sec > _own_pending_tx; // updated under _own_tx_mutex
+    mutable std::unordered_map< transaction_id_type, own_pending_tx > _own_pending_tx; // updated under _own_tx_mutex
 };
 
 void transaction_builder::finalize()
@@ -682,6 +694,7 @@ void colony_plugin_impl::start( uint32_t block_num )
   ilog( "Colony plugin starting at block #${block_num}", ( block_num ) );
   _head_block_id = _db.head_block_id();
   _head_block_time = _db.head_block_time();
+  _max_block_size = _db.get_dynamic_global_properties().get_maximum_block_size();
 
   flat_set<public_key_type> common_keys;
   for( const auto& key : _sign_with )
@@ -896,7 +909,7 @@ void colony_plugin_impl::remember_own_transaction( const full_transaction_type& 
   if( not tracks_own_transactions() )
     return;
   std::lock_guard< std::mutex > guard( _own_tx_mutex );
-  _own_pending_tx.emplace( tx.get_transaction_id(), tx.get_transaction().expiration );
+  _own_pending_tx.emplace( tx.get_transaction_id(), own_pending_tx{ tx.get_transaction().expiration, (uint32_t)tx.get_transaction_size() } );
 }
 
 void colony_plugin_impl::forget_own_transaction( const transaction_id_type& id ) const
@@ -907,13 +920,14 @@ void colony_plugin_impl::forget_own_transaction( const transaction_id_type& id )
   _own_pending_tx.erase( id );
 }
 
-bool colony_plugin_impl::is_own_pending_transaction( const transaction_id_type& id ) const
+bool colony_plugin_impl::is_own_overflowing_transaction( const transaction_id_type& id ) const
 {
   std::lock_guard< std::mutex > guard( _own_tx_mutex );
-  return _own_pending_tx.count( id ) != 0;
+  auto it = _own_pending_tx.find( id );
+  return it != _own_pending_tx.end() && it->second.overflowing;
 }
 
-void colony_plugin_impl::forget_own_transactions_in_block( const full_block_type& block ) const
+void colony_plugin_impl::forget_own_transactions_in_block( const full_block_type& block, uint64_t room_left_in_block ) const
 {
   if( not tracks_own_transactions() )
     return;
@@ -922,19 +936,33 @@ void colony_plugin_impl::forget_own_transactions_in_block( const full_block_type
   for( const auto& tx : block.get_full_transactions() )
     _own_pending_tx.erase( tx->get_transaction_id() );
   // transactions that were dropped from pending without reaching a block are not reported to us
+  bool block_full = false;
   for( auto it = _own_pending_tx.begin(); it != _own_pending_tx.end(); )
   {
-    if( it->second < head_block_time )
+    if( it->second.expiration < head_block_time )
+    {
       it = _own_pending_tx.erase( it );
+    }
     else
+    {
+      // block producer skips transaction when it would make block size reach the limit, and after
+      // HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT skips it stops, so smaller ones that would fit in the
+      // room that is left might not have been tried at all
+      block_full = block_full || it->second.size >= room_left_in_block;
       ++it;
+    }
+  }
+  for( auto& own_tx : _own_pending_tx )
+  {
+    own_tx.second.overflowing = block_full || own_tx.second.missed_block;
+    own_tx.second.missed_block = true;
   }
 }
 
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )
 {
   // the counter will not cover postponed transactions, but it is better than nothing
-  if( tracks_own_transactions() && _db.is_reapplying_one_tx() && is_own_pending_transaction( note.transaction_id ) )
+  if( tracks_own_transactions() && _db.is_reapplying_one_tx() && is_own_overflowing_transaction( note.transaction_id ) )
     ++_overflowing_tx;
 }
 
@@ -958,7 +986,9 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
 
   _head_block_id = _db.head_block_id();
   _head_block_time = _db.head_block_time();
-  forget_own_transactions_in_block( *note.full_block );
+  const uint64_t block_size = note.full_block->get_uncompressed_block_size();
+  forget_own_transactions_in_block( *note.full_block, _max_block_size > block_size ? _max_block_size - block_size : 0 );
+  _max_block_size = _db.get_dynamic_global_properties().get_maximum_block_size();
   uint32_t fit_in_block = note.full_block->get_full_transactions().size();
   uint32_t margin = ( (uint64_t)fit_in_block * COLONY_OVERFLOW_TOLERANCE_RATE ) / HIVE_100_PERCENT;
   if( margin < COLONY_OVERFLOW_TOLERANCE_MIN )
