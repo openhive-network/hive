@@ -67,6 +67,8 @@ def block_stats(node_dir: Path) -> dict[int, dict[str, Any]]:
             report = json.loads(match.group(1))
         except json.JSONDecodeError:  # a line cut by the node's exit
             continue
+        if "num" not in report:  # hived reports `{}` for a block flow it has no block for
+            continue
         report["log_time"] = _log_time(line)
         stats[report["num"]] = report
     return stats

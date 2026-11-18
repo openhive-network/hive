@@ -308,6 +308,21 @@ def test_report_of_a_finished_run(tmp_path: Path, relay_format: str) -> None:
     assert "p2p stats witness" in report.format_summary(summary)
 
 
+def test_an_empty_block_stats_line_is_skipped(tmp_path: Path) -> None:
+    run_dir = _make_run(tmp_path / "chain-a-1")
+    for name in ("WitnessNode0", "ApiNode0"):
+        log = run_dir / "generated" / name / "stderr_1.log"
+        lines = log.read_text().splitlines(keepends=True)
+        empty = f"{_log_time(3 * 15, 6)} block_flow_control.cpp:127 on_end_of_apply_block ] Block stats:{{}}\n"
+        log.write_text("".join([*lines[:15], empty, *lines[15:]]))
+
+    summary = report.summarize(Run.load(run_dir))
+
+    assert summary["rates"]["blocks"] == 29
+    assert summary["rates"]["included_tx_s"] == pytest.approx((28 * 1000 + 500) / (3 * 29))
+    assert summary["offsets"]["observer"]["idle_blocks"] == 10
+
+
 def test_relay_samples_of_the_p2p_relay_sample_logger_match_across_nodes(tmp_path: Path) -> None:
     summary = report.summarize(Run.load(_make_run(tmp_path / "chain-a-1", "sample")))
 
