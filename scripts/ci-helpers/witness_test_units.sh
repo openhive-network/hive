@@ -16,8 +16,9 @@
 #   colony         colony_foreign_pending_test 114, colony_in_transit_test 132,
 #                  colony_stuck_test 117, colony_no_workers_test 17,
 #                  colony_queen_test 14, basic_queen_test 0; 394 together
-#   rest           the 17 other cases, 474 together; the longest are
-#                  inventory_limit_deferral_test 74 and four cases of ~65
+#   rest           the 21 other cases (474 for the 17 timed when sharding), the longest
+#                  inventory_limit_deferral_test 74 and four cases of ~65; the p2p
+#                  inbound accept cases take about 10 and 15
 
 set -euo pipefail
 
