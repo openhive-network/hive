@@ -2,7 +2,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../db_fixture/witness_fixture.hpp"
-#include "p2p_test_peer.hpp"
+#include "../db_fixture/p2p_test_peer.hpp"
 
 #include <hive/chain/notifications.hpp>
 #include <hive/plugins/p2p/p2p_plugin.hpp>
