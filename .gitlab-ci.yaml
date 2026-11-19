@@ -546,9 +546,13 @@ plugin_test_api:
 # under test and scripted in-process peers. The suite is disabled by default, so plugin_test_api
 # leaves it out; this job names it. It runs on develop, master and tags, and on branches whose
 # changes touch the p2p code or the suite; elsewhere it is manual. Each case is its own process,
-# one at a time: several cases wait for the node's timeouts against the wall clock.
+# one at a time: several cases wait for the node's timeouts against the wall clock. The cases are
+# split between two shards by their place in the list, every other case each.
 plugin_test_p2p_protocol:
   extends: .unit_tests_base
+  parallel:
+    matrix:
+      - SHARD: [ "1", "2" ]
   rules:
     - if: $FORCE_FULL_PIPELINE == "true"
     - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
@@ -566,8 +570,9 @@ plugin_test_p2p_protocol:
     - when: manual
       allow_failure: true
   variables:
-    # seconds before one case is killed (and reported failed): about 2.4x the longest case
-    # (inactivity_test, 51 s on an idle host; it waits for the hard-coded 30 s + 20 s timeouts)
+    # seconds before one case is killed (and reported failed): about 1.8x the longest case
+    # (stalled_head_resync_test, ~65 s on an idle host; it waits for a hard-coded 60 s interval,
+    # as disconnect_breakers_test does)
     UNIT_TIMEOUT: "120"
   script:
     - curl -fsSL "${CI_SERVER_URL}/${CI_PROJECT_PATH}/-/raw/${CI_COMMIT_SHA}/scripts/run_chain_tests_parallel.sh" -o run_chain_tests_parallel.sh
@@ -575,10 +580,12 @@ plugin_test_p2p_protocol:
     - |
       ./hived-testnet-binaries/plugin_test --list_content 2>&1 | awk '
         /^[^ ]/ { suite = $1; sub(/[*:].*/, "", suite); next }
-        suite == "p2p_protocol_tests" && /^    [^ ]/ { name = $1; sub(/[*:].*/, "", name); print "p2p_protocol_tests/" name }' > p2p_protocol_units.txt
+        suite == "p2p_protocol_tests" && /^    [^ ]/ { name = $1; sub(/[*:].*/, "", name); print "p2p_protocol_tests/" name }' |
+        awk -v shard="$SHARD" 'NR % 2 == shard % 2' > p2p_protocol_units.txt
       test -s p2p_protocol_units.txt
-    # The 45 cases take ~185 s together on an idle host (~4 min as separate processes); 12m
-    # leaves room for a loaded runner and still lets a wedged case reach its own UNIT_TIMEOUT.
+    # The 62 cases take ~9 min as separate processes on an idle host, ~5.2 min for shard 1 and
+    # ~4.1 min for shard 2; 12m leaves room for a loaded runner and still lets a wedged case reach
+    # its own UNIT_TIMEOUT.
     # -k: as in plugin_test_witness, SIGKILL 1m after a missed SIGTERM.
     - timeout -k 1m 12m ./run_chain_tests_parallel.sh ./hived-testnet-binaries/plugin_test 1 p2p_protocol_units.txt "$UNIT_TIMEOUT"
   artifacts:
