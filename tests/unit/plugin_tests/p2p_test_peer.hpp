@@ -59,6 +59,8 @@ public:
 
   /// true once the node asked us for blocks and we told it we have nothing it doesn't
   bool in_sync() const { return _in_sync; }
+  /// true once the node accepted our hello
+  bool accepted() const { return _accepted; }
   bool closed() const { return _closed; }
   /// the endpoint the node sees this peer at
   const fc::ip::endpoint& endpoint() const { return _local_endpoint; }
@@ -170,6 +172,7 @@ public:
       peer->send_message( connection_accepted_message() );
       break;
     case core_message_type_enum::connection_accepted_message_type:
+      _accepted = true;
       peer->send_message( address_request_message() );
       break;
     case core_message_type_enum::address_request_message_type:
@@ -316,6 +319,7 @@ private:
   graphene::net::peer_connection_ptr _connection;
   fc::ip::endpoint _local_endpoint;
   std::atomic< bool > _in_sync = false;
+  std::atomic< bool > _accepted = false;
   std::atomic< bool > _closed = false;
   std::atomic< bool > _node_considers_us_in_sync = false;
   hive::protocol::block_id_type _told_head;
