@@ -162,4 +162,23 @@ BOOST_AUTO_TEST_CASE( clear_discards_every_entry )
   BOOST_CHECK_EQUAL( examined, 0u );
 }
 
+/// A queued block is found among the entries until it is taken; transactions are not looked through.
+BOOST_AUTO_TEST_CASE( has_block_finds_queued_blocks_only )
+{
+  fetch_candidate_queue queue;
+  queue.push( block( 1 ), start, keep_all );
+  queue.push( transaction( 2 ), start, keep_all );
+  queue.push( block( 3 ), start, keep_all );
+  BOOST_CHECK( queue.has_block( block( 1 ) ) );
+  BOOST_CHECK( queue.has_block( block( 3 ) ) );
+  BOOST_CHECK( !queue.has_block( block( 2 ) ) );
+  BOOST_CHECK( !queue.has_block( transaction( 2 ) ) );
+
+  uint64_t examined = 0;
+  queue.begin_pass();
+  BOOST_CHECK( queue.take_next( false, take_any, examined ) == std::optional<item_id>( block( 1 ) ) );
+  BOOST_CHECK( !queue.has_block( block( 1 ) ) );
+  BOOST_CHECK( queue.has_block( block( 3 ) ) );
+}
+
 BOOST_AUTO_TEST_SUITE_END()

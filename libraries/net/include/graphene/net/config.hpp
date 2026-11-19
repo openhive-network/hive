@@ -220,10 +220,14 @@
 
 /**
  * How many bytes of transactions we expect all the requests outstanding with one peer to bring back, at
- * most.  The peer queues each reply at once, so this bounds what our replies take of its send queue;
- * kept at one request's worth, the peer's queue holds no more of our replies than with one request at a time.
+ * most, unless one full request (see GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH) expects more.  The peer
+ * queues each reply at once, and the expectation is the peer's mean transaction size, which learns of larger
+ * transactions only as their replies arrive: the whole window may have been requested before.  A sixth of
+ * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES keeps the peer's queue within its limit even if every
+ * outstanding transaction turns out to be several times the mean (a mix settled at 300 B turning into 1.4 KB
+ * ones queues about 800 KB), while transactions of a few hundred bytes still fill several requests per round trip.
  */
-#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER  GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH
+#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER  (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 6)
 
 /**
  * How many bytes of transactions we expect a single transaction request to bring back, at most.
