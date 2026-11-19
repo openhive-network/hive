@@ -137,6 +137,30 @@ BOOST_AUTO_TEST_CASE( records_expire_after_the_last_peer_was_recorded )
   BOOST_CHECK( inventory.record_advertised_to_us( first, transaction( 1 ), start + 70 ) );
 }
 
+/// A record kept while its transaction is outstanding with a peer lives a window from then, whoever advertised it.
+BOOST_AUTO_TEST_CASE( kept_record_expires_a_window_after_it_was_kept )
+{
+  transaction_inventory inventory;
+  const auto advertiser = inventory.acquire_slot();
+  inventory.record_advertised_to_us( advertiser, transaction( 1 ), start );
+  inventory.record_advertised_to_us( advertiser, transaction( 2 ), start );
+  inventory.keep( transaction( 1 ), start + 3 );
+  inventory.keep( transaction( 1 ), start + 2 ); // never makes it older
+  inventory.keep( transaction( 3 ), start + 3 ); // nor creates one
+  BOOST_CHECK( inventory.find( transaction( 3 ) ) == nullptr );
+
+  inventory.expire( start + 1 );
+  BOOST_CHECK( inventory.find( transaction( 2 ) ) == nullptr );
+  BOOST_CHECK( inventory.advertised_to_us( advertiser, transaction( 1 ) ) );
+  BOOST_CHECK_EQUAL( inventory.advertised_to_us_count( advertiser ), 1u );
+
+  inventory.expire( start + 3 );
+  BOOST_CHECK( inventory.advertised_to_us( advertiser, transaction( 1 ) ) );
+  inventory.expire( start + 4 );
+  BOOST_CHECK_EQUAL( inventory.size(), 0u );
+  BOOST_CHECK_EQUAL( inventory.advertised_to_us_count( advertiser ), 0u );
+}
+
 /// A released slot is cleared from every record, so the next peer given the slot knows nothing.
 BOOST_AUTO_TEST_CASE( reused_slot_inherits_no_knowledge )
 {

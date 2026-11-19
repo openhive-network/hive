@@ -223,14 +223,16 @@ BOOST_AUTO_TEST_CASE( window_is_one_request_unless_the_peer_defers_replies )
 }
 
 /// An outstanding transaction times out only once the peer has answered no transaction request for the timeout,
-/// however long ago it was requested, up to the ceiling; a block times out from its request whatever the peer sends.
+/// however long ago it was requested, up to the ceiling, which ends well within the life of the records of who else
+/// advertised it.
 BOOST_AUTO_TEST_CASE( transaction_request_times_out_on_lack_of_progress )
 {
   const fc::microseconds timeout = fc::seconds( 6 );
   const fc::time_point start = fc::time_point::now();
   const auto at = [&]( double seconds ) { return start + fc::microseconds( int64_t( seconds * 1000000 ) ); };
   const item_id transaction( graphene::net::trx_message_type, fc::ripemd160::hash( std::string( "slow" ) ) );
-  const item_id block( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "slow" ) ) );
+  const double ceiling = 6.0 * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING;
+  BOOST_CHECK_LE( 2 * ceiling, 60.0 * GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES );
 
   requested_items requested;
   requested.insert( transaction, start );
@@ -238,28 +240,68 @@ BOOST_AUTO_TEST_CASE( transaction_request_times_out_on_lack_of_progress )
   BOOST_CHECK( requested.timed_out( at( 6.1 ), timeout ) == transaction ); // nothing delivered: as before
 
   // replies to other requests, every second, keep it waiting past the timeout
-  for( int second = 1; second < 6 * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING; ++second )
+  for( int second = 1; second < ceiling; ++second )
   {
-    requested.record_transaction_reply( at( second ) );
+    requested.record_transaction_reply( at( second ), start );
     BOOST_CHECK( !requested.timed_out( at( second + 0.5 ), timeout ) );
   }
   // until the replies stop for the timeout
-  const double last_reply = 30;
+  const double last_reply = 10;
   requested_items stopped;
   stopped.insert( transaction, start );
-  stopped.record_transaction_reply( at( last_reply ) );
+  stopped.record_transaction_reply( at( last_reply ), start );
   BOOST_CHECK( !stopped.timed_out( at( last_reply + 5.9 ), timeout ) );
   BOOST_CHECK( stopped.timed_out( at( last_reply + 6.1 ), timeout ) == transaction );
 
   // or the ceiling passes since it was requested
-  const double ceiling = 6.0 * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING;
-  requested.record_transaction_reply( at( ceiling + 0.05 ) );
+  requested.record_transaction_reply( at( ceiling + 0.05 ), start );
   BOOST_CHECK( requested.timed_out( at( ceiling + 0.1 ), timeout ) == transaction );
+}
 
-  requested_items with_block;
-  with_block.insert( block, start );
-  with_block.record_transaction_reply( at( 6 ) );
-  BOOST_CHECK( with_block.timed_out( at( 6.1 ), timeout ) == block );
+/// A block asked for behind transaction replies we are still owed waits while those replies arrive, as they do over a
+/// slow link (here 576 KiB of them at about 0.5 Mbit/s), up to the ceiling.  A block the peer ignores times out from
+/// its request as before: when the peer answers nothing, or only transactions asked for with or after the block.
+BOOST_AUTO_TEST_CASE( block_request_waits_for_the_transaction_replies_ahead_of_it )
+{
+  const fc::microseconds timeout = fc::seconds( 6 );
+  const fc::time_point start = fc::time_point::now();
+  const auto at = [&]( double seconds ) { return start + fc::microseconds( int64_t( seconds * 1000000 ) ); };
+  const item_id block( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "behind" ) ) );
+  const item_id transaction( graphene::net::trx_message_type, fc::ripemd160::hash( std::string( "after" ) ) );
+  const fc::time_point earlier = at( -1 );
+  const double ceiling = 6.0 * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING;
+
+  requested_items behind_replies;
+  behind_replies.insert( block, start );
+  for( int second = 1; second <= 9; ++second )
+  {
+    behind_replies.record_transaction_reply( at( second ), earlier );
+    BOOST_CHECK( !behind_replies.timed_out( at( second + 0.5 ), timeout ) );
+  }
+  // its turn came with the last reply ahead of it: from then it waits the timeout, as one asked of an idle peer
+  BOOST_CHECK( !behind_replies.timed_out( at( 9 + 5.9 ), timeout ) );
+  BOOST_CHECK( behind_replies.timed_out( at( 9 + 6.1 ), timeout ) == block );
+
+  requested_items trickled;
+  trickled.insert( block, start );
+  for( int second = 1; second < ceiling; ++second )
+    trickled.record_transaction_reply( at( second ), earlier );
+  BOOST_CHECK( !trickled.timed_out( at( ceiling - 0.5 ), timeout ) );
+  trickled.record_transaction_reply( at( ceiling ), earlier );
+  BOOST_CHECK( trickled.timed_out( at( ceiling + 0.1 ), timeout ) == block );
+
+  requested_items ignored;
+  ignored.insert( block, start );
+  BOOST_CHECK( !ignored.timed_out( at( 5.9 ), timeout ) );
+  BOOST_CHECK( ignored.timed_out( at( 6.1 ), timeout ) == block );
+
+  requested_items skipped;
+  skipped.insert( block, start );
+  skipped.insert( transaction, start );
+  skipped.record_transaction_reply( at( 6 ), earlier );
+  skipped.erase( skipped.find( transaction ) );
+  skipped.record_transaction_reply( at( 6 ), start ); // asked for with the block, so sent after it
+  BOOST_CHECK( skipped.timed_out( at( 6.1 ), timeout ) == block );
 }
 
 /// The requested items count their transactions, which is what the window is judged on, and the blocks apart.
