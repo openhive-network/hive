@@ -12,6 +12,7 @@
 #include <functional>
 #include <iterator>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -339,6 +340,48 @@ BOOST_AUTO_TEST_CASE( pipelined_requests_are_refetched_when_the_peer_leaves )
       BOOST_CHECK_MESSAGE( wait_until( [&]() { return all_advertised( observer, withheld ); }, fc::seconds( 30 ) ),
                            "transactions outstanding with a peer that left were not all fetched from another peer that advertised them" );
       BOOST_CHECK( all_requested( sender, withheld ) );
+    } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// A peer asking in one request for more transaction bytes than the node's send queue holds for it stays
+/// connected and gets every one of them, each once, as the queue drains.
+BOOST_AUTO_TEST_CASE( request_larger_than_the_send_queue_is_answered_in_full )
+{
+  try
+  {
+    run( {}, [&]( fc::thread&, test_peer& sender, test_peer& observer )
+    {
+      std::vector< full_transaction_ptr > large;
+      for( int i = 0; i < 700; ++i )
+      {
+        const std::string memo = "large " + std::to_string( i ) + " ";
+        large.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                         memo + std::string( HIVE_MAX_MEMO_SIZE - 1 - memo.size(), 'x' ), get_default_expiration() ) );
+      }
+      size_t requested_bytes = 0;
+      for( const full_transaction_ptr& transaction : large )
+        requested_bytes += transaction->get_transaction_size();
+      BOOST_REQUIRE_GT( requested_bytes, size_t( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES ) );
+
+      sender.provide( large );
+      sender.advertise( hashes_of( large ) );
+      BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return all_advertised( observer, large ); }, fc::seconds( 60 ) ),
+                             "the large transactions were not accepted and relayed" );
+
+      observer.send( graphene::net::fetch_items_message( graphene::net::trx_message_type, hashes_of( large ) ) );
+      BOOST_CHECK_MESSAGE( observer.wait_for( graphene::net::trx_message_type, fc::seconds( 30 ), large.size() ),
+                           "only " << observer.count( graphene::net::trx_message_type ) << " of " << large.size() << " transactions arrived" );
+      fc::usleep( fc::milliseconds( 500 ) );
+
+      BOOST_CHECK( !observer.closed() );
+      BOOST_CHECK_EQUAL( observer.count( graphene::net::item_not_available_message_type ), 0u );
+      std::set< graphene::net::item_hash_t > received;
+      for( const p2p_tests::received_message& r : observer.received( graphene::net::trx_message_type ) )
+        BOOST_CHECK( received.insert( r.msg.id() ).second );
+      const std::vector< graphene::net::item_hash_t > requested = hashes_of( large );
+      BOOST_CHECK( received == std::set< graphene::net::item_hash_t >( requested.begin(), requested.end() ) );
     } );
   }
   FC_LOG_AND_RETHROW()

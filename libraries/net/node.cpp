@@ -3642,11 +3642,22 @@ namespace graphene { namespace net {
           reply_transactions.push_back(std::move(full_transaction));
         }
         assert(reply_transactions.size() == ids_to_answer.size());
+        // replies that would take the send queue over its reply budget wait for it to drain rather than close the
+        // connection (send_transaction_reply()), so the requester gets every transaction we have, however much
+        // larger they are than it expected; only a peer with far more replies waiting than any window is told no
+        size_t refused = 0;
         for (unsigned i = 0; i < reply_transactions.size() && !connection_is_closing(); ++i)
-          if (reply_transactions[i])
-            originating_peer->send_transaction_message(reply_transactions[i]);
-          else
+          if (!reply_transactions[i] || !originating_peer->send_transaction_reply(reply_transactions[i]))
+          {
+            if (reply_transactions[i])
+              ++refused;
             originating_peer->send_message(item_not_available_message(item_id(trx_message_type, ids_to_answer[i])));
+          }
+        if (refused > 0)
+          wlog("answered ${refused} of ${count} requested transactions as not available to peer ${endpoint}: "
+               "${max} replies are already waiting for its send queue to drain",
+               ("refused", refused)("count", reply_transactions.size())
+               ("max", GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER)("endpoint", originating_peer->get_remote_endpoint()));
       }
       else
         FC_THROW("Peer requested an item that wasn't a block or a transaction");
