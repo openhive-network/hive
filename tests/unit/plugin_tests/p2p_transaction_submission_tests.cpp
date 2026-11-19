@@ -416,12 +416,23 @@ BOOST_AUTO_TEST_CASE( peer_delivering_steadily_is_kept_past_the_request_timeout 
 {
   try
   {
+    const fc::microseconds timeout = fc::seconds( 2 );
+    const fc::microseconds ceiling = fc::microseconds( timeout.count() * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING );
     const std::string p2p_parameters =
-      R"({"listen_endpoint":"127.0.0.1:0","accept_incoming_connections":true,"active_ignored_request_timeout_microseconds":1000000})";
+      R"({"listen_endpoint":"127.0.0.1:0","accept_incoming_connections":true,"active_ignored_request_timeout_microseconds":)" +
+      std::to_string( timeout.count() ) + "}";
     run( {}, [&]( fc::thread& peer_thread, test_peer&, test_peer& observer )
     {
+      // as many as the first request to a new peer asks for (GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE), so
+      // however the node batches its requests no more than these wait at once, and delivering them in request order
+      // one per pace keeps every wait within transaction_count * pace, while the last of a full request waits
+      // more than the timeout
+      const int64_t transaction_count = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE;
+      const fc::microseconds pace = fc::milliseconds( 350 );
+      BOOST_REQUIRE_GT( ( transaction_count - 1 ) * pace.count(), timeout.count() );
+      BOOST_REQUIRE_LE( transaction_count * pace.count(), ceiling.count() / 2 );
       std::vector< full_transaction_ptr > transactions;
-      for( int i = 0; i < 24; ++i )
+      for( int64_t i = 0; i < transaction_count; ++i )
         transactions.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
                                                 "trickled " + std::to_string( i ), get_default_expiration() ) );
       std::map< graphene::net::item_hash_t, full_transaction_ptr > by_hash;
@@ -430,28 +441,26 @@ BOOST_AUTO_TEST_CASE( peer_delivering_steadily_is_kept_past_the_request_timeout 
 
       test_peer trickler( peer_thread, db->get_chain_id(), "trickler" );
       std::mutex requests_mutex;
-      std::deque< graphene::net::item_hash_t > requested;
+      std::deque< std::pair< graphene::net::item_hash_t, fc::time_point > > requested;
       trickler.on( graphene::net::fetch_items_message_type, [&]( test_peer&, const graphene::net::message& m )
       {
         const graphene::net::fetch_items_message request = m.as< graphene::net::fetch_items_message >();
+        const fc::time_point now = fc::time_point::now();
         std::lock_guard< std::mutex > guard( requests_mutex );
-        requested.insert( requested.end(), request.items_to_fetch.begin(), request.items_to_fetch.end() );
+        for( const graphene::net::item_hash_t& item : request.items_to_fetch )
+          requested.emplace_back( item, now );
       } );
       trickler.connect( node_endpoint() );
       BOOST_REQUIRE( wait_until( [&]() { return trickler.in_sync(); }, fc::seconds( 10 ) ) );
       trickler.advertise( hashes_of( transactions ) );
 
-      // a new peer is asked for several of its transactions at once (GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE),
-      // so the last of them waits about two timeouts for its reply, within the ceiling
-      const fc::microseconds pace = fc::milliseconds( 250 );
       const fc::time_point start = fc::time_point::now();
-      size_t most_waiting = 0;
+      fc::microseconds longest_wait;
       for( size_t delivered = 0; delivered < transactions.size() && !trickler.closed(); )
       {
-        fc::optional< graphene::net::item_hash_t > next;
+        fc::optional< std::pair< graphene::net::item_hash_t, fc::time_point > > next;
         {
           std::lock_guard< std::mutex > guard( requests_mutex );
-          most_waiting = std::max( most_waiting, requested.size() );
           if( !requested.empty() )
           {
             next = requested.front();
@@ -460,14 +469,18 @@ BOOST_AUTO_TEST_CASE( peer_delivering_steadily_is_kept_past_the_request_timeout 
         }
         if( next )
         {
-          trickler.send( graphene::net::trx_message( by_hash.at( *next ) ) );
+          trickler.send( graphene::net::trx_message( by_hash.at( next->first ) ) );
+          longest_wait = std::max( longest_wait, fc::time_point::now() - next->second );
           ++delivered;
         }
         fc::usleep( pace );
       }
-      BOOST_TEST_MESSAGE( "delivered in " << ( fc::time_point::now() - start ).count() / 1000 << " ms, at most " << most_waiting << " waiting" );
-      BOOST_CHECK_GT( most_waiting, 3u ); // the last one waited more than the timeout
+      BOOST_TEST_MESSAGE( "delivered in " << ( fc::time_point::now() - start ).count() / 1000 << " ms, the longest after waiting "
+                          << longest_wait.count() / 1000 << " ms, timeout " << timeout.count() / 1000 << " ms, ceiling "
+                          << ceiling.count() / 1000 << " ms" );
       BOOST_CHECK_MESSAGE( !trickler.closed(), "a peer delivering its replies steadily was dropped" );
+      BOOST_CHECK_MESSAGE( longest_wait > timeout, "no transaction waited longer than the timeout for its reply" );
+      BOOST_CHECK_MESSAGE( longest_wait < ceiling, "a transaction waited past the ceiling for its reply" );
       BOOST_CHECK_MESSAGE( wait_until( [&]() { return all_advertised( observer, transactions ); }, fc::seconds( 10 ) ),
                            "the trickled transactions were not accepted and relayed" );
       BOOST_CHECK( !trickler.closed() );
@@ -480,7 +493,7 @@ BOOST_AUTO_TEST_CASE( peer_delivering_steadily_is_kept_past_the_request_timeout 
       BOOST_REQUIRE( wait_until( [&]() { return ignorer.in_sync(); }, fc::seconds( 10 ) ) );
       ignorer.advertise( { ignored->get_legacy_transaction_message_hash() } );
       BOOST_REQUIRE( wait_until( [&]() { return ignorer.was_requested( ignored->get_legacy_transaction_message_hash() ); }, fc::seconds( 10 ) ) );
-      BOOST_CHECK_MESSAGE( wait_until( [&]() { return ignorer.closed(); }, fc::seconds( 5 ) ),
+      BOOST_CHECK_MESSAGE( wait_until( [&]() { return ignorer.closed(); }, timeout + fc::seconds( 5 ) ),
                            "a peer that delivered nothing it was asked for was not dropped" );
     }, p2p_parameters );
   }
