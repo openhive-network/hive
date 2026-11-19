@@ -140,7 +140,7 @@ struct condenser_api_fixture : hived_fixture
    *  request_account_recovery_operation, recover_account_operation,
    *  account_update_operation & account_update2_operation
    * 
-   * Note that reset_account_operation & set_reset_account_operation have been disabled and do not occur in blockchain.
+   * Note that set_reset_account_operation has been disabled and does not occur in blockchain.
    */
   void account_scenario( check_point_tester_t check_point_tester );
 

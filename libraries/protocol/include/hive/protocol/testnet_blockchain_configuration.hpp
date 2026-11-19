@@ -45,6 +45,9 @@ class configuration
   uint32_t hive_feed_interval_blocks = 20; // blocks, originally 60*60/3
   // time before feed expires
   uint32_t hive_max_feed_age_seconds = 60*24*7; // originally 60*60*24*7, see comment to set_feed_related_values
+  // how many times above or below the market median a price feed taken in by the node may be (0: no limit);
+  // off by default on testnet, where the genesis median is an arbitrary 1:1 (mainnet: 100, see hive_evaluator.cpp)
+  uint32_t hive_max_feed_deviation_from_median = 0;
   // time before savings are withdrawn
   uint32_t hive_savings_withdraw_time = 60*60*24*3; // seconds, originally 3 days
   // Minimum number of hours between recurrent transfers.
@@ -114,6 +117,7 @@ class configuration
 
     uint32_t get_hive_feed_interval_blocks() const { return hive_feed_interval_blocks; }
     uint32_t get_hive_max_feed_age_seconds() const { return hive_max_feed_age_seconds; }
+    uint32_t get_hive_max_feed_deviation_from_median() const { return hive_max_feed_deviation_from_median; }
 
     uint32_t get_hive_savings_withdraw_time() const { return hive_savings_withdraw_time; }
     uint16_t get_hive_min_recurrent_transfers_recurrence() const { return hive_min_recurrent_transfers_recurrence; }
@@ -178,6 +182,18 @@ class configuration
     {
       configuration clear;
       set_feed_related_values( clear.get_hive_feed_interval_blocks(), clear.get_hive_max_feed_age_seconds() );
+    }
+
+    /** limit of the price feed check of hive_evaluator.cpp; 0 turns the check off */
+    void set_max_feed_deviation_from_median( uint32_t max_deviation )
+    {
+      hive_max_feed_deviation_from_median = max_deviation;
+    }
+
+    void reset_max_feed_deviation_from_median()
+    {
+      configuration clear;
+      set_max_feed_deviation_from_median( clear.get_hive_max_feed_deviation_from_median() );
     }
 
     /**

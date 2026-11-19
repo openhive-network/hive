@@ -865,6 +865,22 @@ void post_push_virtual_operation( database& db, const operation& op, const fc::o
   db.notify_post_apply_operation( note );
 }
 
+void push_interpreted_operation( database& db, const operation& op )
+{
+  FC_ASSERT( !is_virtual_operation( op ) && "on push interpreted" );
+  const operation_notification* carrier = db.get_current_applied_operation_info();
+  FC_ASSERT( carrier != nullptr && "interpreted operation needs carrier" );
+  operation_notification note( op );
+  note.trx_id       = carrier->trx_id;
+  note.block        = carrier->block;
+  note.timestamp    = carrier->timestamp;
+  note.trx_in_block = carrier->trx_in_block;
+  note.op_in_trx    = carrier->op_in_trx; // not _current_op_in_trx - carrier might have emitted virtual operations
+  note.virtual_op   = false;
+  db.notify_pre_apply_operation( note );
+  db.notify_post_apply_operation( note );
+}
+
 void database::notify_pre_apply_operation( const operation_notification& note )
 {
   comments_handler::lookup_path_scope lookup_scope( comments_handler::lookup_path::operation_notification );
@@ -2167,6 +2183,16 @@ void database::apply_block( const std::shared_ptr<full_block_type>& full_block, 
 { try {
   //fc::time_point begin_time = fc::time_point::now();
 
+  // Skipping the duplicate check (replay, blocks under a checkpoint) also skips the records the check relies on later,
+  // so a node that has just replayed or synced under a checkpoint would take a transaction that is already in a block
+  // while every live node refuses it until it expires.  Keep the check, and so the records, for blocks whose
+  // transactions can still be unexpired: a transaction expires at most HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION
+  // after its block (one more hour of margin for the clock).  Valid history never fails the check.
+  if( ( skip & skip_transaction_dupe_check ) &&
+      fc::time_point( full_block->get_block_header().timestamp ) >
+        fc::time_point::now() - fc::seconds( HIVE_MAX_TIME_UNTIL_SIGNATURE_EXPIRATION + HIVE_MAX_TIME_UNTIL_EXPIRATION ) )
+    skip &= ~skip_transaction_dupe_check;
+
   detail::with_skip_flags( *this, skip, [&]()
   {
     _apply_block( full_block, block_ctrl );
@@ -3030,6 +3056,16 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   }
 
   const uint32_t new_approved_block_number = block_header::num_from_id( block_approve_op.block_id );
+  // An approval is counted only for a block this node holds.  One for a block it doesn't hold is kept only if the
+  // block can be just about to arrive (a few blocks above our head); any other is refused, so it is neither stored,
+  // where it would stand for the witness's vote until the last irreversible block passes its number, nor relayed.
+  constexpr uint32_t max_blocks_ahead_of_unknown_approved_block = 3;
+  if (new_approved_block_number > head_block_num() + max_blocks_ahead_of_unknown_approved_block)
+    FC_ASSERT(_block_writer->get_block_reader().is_known_block(block_approve_op.block_id),
+              "Fast-confirm from witness ${witness} for block #${new_approved_block_number}, which this node doesn't have, "
+              "more than ${max_blocks_ahead_of_unknown_approved_block} blocks above its head #${head}",
+              ("witness", block_approve_op.witness)(new_approved_block_number)(max_blocks_ahead_of_unknown_approved_block)
+              ("head", head_block_num()));
   if (auto iter = _my->_last_fast_approved_block_by_witness.find(block_approve_op.witness);
       iter != _my->_last_fast_approved_block_by_witness.end())
   {

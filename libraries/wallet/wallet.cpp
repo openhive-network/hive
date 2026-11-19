@@ -2713,16 +2713,25 @@ wallet_signed_transaction wallet_api::delegate_rc(
   dro.delegatees = delegatees;
   dro.max_rc = hive::protocol::delegated_rc_from_variant( max_rc );
 
-  custom_json_operation op;
-  op.json = fc::json::to_string( hive::protocol::rc_custom_operation( dro ) );
-  op.id = HIVE_RC_CUSTOM_OPERATION_ID;
-
-  flat_set< account_name_type > required_auths;
-  dro.get_required_posting_authorities( required_auths );
-  op.required_posting_auths = required_auths;
-
   signed_transaction trx;
-  trx.operations.push_back( op );
+  protocol::hardfork_version hf_version = my->_remote_wallet_bridge_api->get_hardfork_version( {}, LOCK );
+  if( hf_version >= HIVE_HARDFORK_1_29_VERSION ) // see HIVE_HARDFORK_1_29_DELEGATE_RC_OPERATION
+  {
+    trx.operations.push_back( dro );
+  }
+  else
+  {
+    FC_TODO( "Remove the custom_json_operation wrapper along with the hardfork condition once HF29 is active" );
+    custom_json_operation op;
+    op.json = fc::json::to_string( hive::protocol::rc_custom_operation( dro ) );
+    op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+
+    flat_set< account_name_type > required_auths;
+    dro.get_required_posting_authorities( required_auths );
+    op.required_posting_auths = required_auths;
+
+    trx.operations.push_back( op );
+  }
   trx.validate();
   return { my->sign_transaction( trx, broadcast ) };
 }

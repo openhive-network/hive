@@ -468,6 +468,13 @@ void full_block_type::decode_block() const
     datastream.seekp(signed_block_header_size);
     fc::unsigned_int number_of_transactions;
     fc::raw::unpack(datastream, number_of_transactions);
+    // the vectors below are sized from that count before any transaction is read, so check first that the
+    // bytes left can hold that many transactions: a serialized transaction takes at least as many bytes as an
+    // empty one (reference block, expiration and three empty vectors)
+    static const size_t smallest_transaction_size = fc::raw::pack_size(hive::protocol::signed_transaction());
+    FC_ASSERT(number_of_transactions.value <= datastream.remaining() / smallest_transaction_size,
+              "Block claims ${number_of_transactions} transactions, more than its remaining ${bytes_left} bytes can hold",
+              ("number_of_transactions", number_of_transactions.value)("bytes_left", datastream.remaining()));
     decoded_block_storage->block->transactions.resize(number_of_transactions.value);
     full_transactions.resize(number_of_transactions.value);
     for (unsigned i = 0; i < number_of_transactions.value; ++i)

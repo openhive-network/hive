@@ -85,10 +85,12 @@
 #include <hive/utilities/tempdir.hpp>
 #include <hive/utilities/database_configuration.hpp>
 
+#include <fc/bitutil.hpp>
 #include <fc/crypto/digest.hpp>
 #include <fc/scoped_exit.hpp>
 
 #include <atomic>
+#include <limits>
 #include <thread>
 
 #include "../db_fixture/clean_database_fixture.hpp"
@@ -365,6 +367,51 @@ BOOST_AUTO_TEST_CASE( fork_blocks )
 
 namespace
 {
+  /// An empty block on top of @p previous, produced by @p witness
+  std::shared_ptr<full_block_type> empty_block_on( const block_id_type& previous, const std::string& witness )
+  {
+    signed_block block;
+    block.previous = previous;
+    block.witness = witness;
+    return full_block_type::create_from_signed_block( block );
+  }
+}
+
+/// A block whose producer name is longer than any account name is refused before the fork database stores it,
+/// whether it links or not, so the walk over the stored blocks never meets such a name.
+BOOST_AUTO_TEST_CASE( fork_database_refuses_overlong_producer_name )
+{
+  try {
+    fork_database fork_db;
+    const auto first = empty_block_on( block_id_type(), HIVE_INIT_MINER_NAME );
+    fork_db.start_block( first );
+    const std::string longest_name( HIVE_MAX_ACCOUNT_NAME_LENGTH, 'a' );
+    const std::string overlong_name( HIVE_MAX_ACCOUNT_NAME_LENGTH + 1, 'a' );
+
+    const auto linked = empty_block_on( first->get_block_id(), overlong_name );
+    BOOST_CHECK_THROW( fork_db.push_block( linked ), block_validate_exception );
+    BOOST_CHECK( !fork_db.is_known_block( linked->get_block_id() ) );
+
+    // its parent is not stored, so this one would be kept among the blocks that don't link yet
+    const auto unlinked = empty_block_on( linked->get_block_id(), overlong_name );
+    BOOST_CHECK_THROW( fork_db.push_block( unlinked ), block_validate_exception );
+    BOOST_CHECK( !fork_db.is_known_block( unlinked->get_block_id() ) );
+
+    const auto sibling = empty_block_on( first->get_block_id(), longest_name );
+    fork_db.push_block( sibling );
+    BOOST_CHECK( fork_db.is_known_block( sibling->get_block_id() ) );
+
+    const auto last_block_by_witness = fork_db.get_last_block_generated_by_each_witness();
+    BOOST_CHECK_EQUAL( last_block_by_witness.size(), 2u );
+    BOOST_CHECK( last_block_by_witness.at( account_name_type( longest_name ) ) == sibling->get_block_id() );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+namespace
+{
   /// A copy of @p genuine with the same header, and therefore the same id, but with a body that
   /// doesn't hash to the header's transaction_merkle_root
   std::shared_ptr<full_block_type> copy_with_corrupted_body( const std::shared_ptr<full_block_type>& genuine )
@@ -528,6 +575,52 @@ BOOST_AUTO_TEST_CASE( known_bad_merkle_roots_are_acceptable )
   }
   BOOST_CHECK( is_acceptable_merkle_root( 5, header_root, header_root ) );
   BOOST_CHECK( !is_acceptable_merkle_root( 5, header_root, other_root ) );
+}
+
+namespace
+{
+  /// A block in its serialized form: @p header, then the transaction count @p claimed_count, then @p transactions
+  /// (which may be fewer than the count claims)
+  std::shared_ptr<full_block_type> block_claiming_transaction_count( const signed_block_header& header, uint32_t claimed_count,
+                                                                     const std::vector<signed_transaction>& transactions )
+  {
+    std::vector<char> bytes = fc::raw::pack_to_vector( header );
+    const std::vector<char> count = fc::raw::pack_to_vector( fc::unsigned_int( claimed_count ) );
+    bytes.insert( bytes.end(), count.begin(), count.end() );
+    for( const signed_transaction& trx : transactions )
+    {
+      const std::vector<char> packed = fc::raw::pack_to_vector( trx );
+      bytes.insert( bytes.end(), packed.begin(), packed.end() );
+    }
+    std::unique_ptr<char[]> raw_bytes( new char[ bytes.size() ] );
+    memcpy( raw_bytes.get(), bytes.data(), bytes.size() );
+    return full_block_type::create_from_uncompressed_block_data( std::move( raw_bytes ), bytes.size() );
+  }
+}
+
+/// The transaction count of a block is checked against the bytes that follow it before anything is sized from
+/// it; a block made of the smallest possible transactions still decodes.
+BOOST_AUTO_TEST_CASE( transaction_count_is_checked_against_block_size )
+{
+  try {
+    signed_block_header header;
+    header.witness = HIVE_INIT_MINER_NAME;
+    const std::vector<signed_transaction> smallest_transactions( 10 );
+    BOOST_REQUIRE_EQUAL( fc::raw::pack_size( smallest_transactions.front() ), 13u );
+
+    const auto exact = block_claiming_transaction_count( header, 10, smallest_transactions );
+    BOOST_CHECK_EQUAL( exact->get_block().transactions.size(), 10u );
+    BOOST_CHECK_EQUAL( exact->get_full_transactions().size(), 10u );
+
+    const auto one_more_than_fits = block_claiming_transaction_count( header, 11, smallest_transactions );
+    BOOST_CHECK_THROW( one_more_than_fits->get_block(), fc::assert_exception );
+
+    const auto largest_count = block_claiming_transaction_count( header, std::numeric_limits<uint32_t>::max(), {} );
+    BOOST_CHECK_THROW( largest_count->get_block(), fc::assert_exception );
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
 }
 
 BOOST_AUTO_TEST_CASE( switch_forks_undo_create )
@@ -950,6 +1043,49 @@ BOOST_AUTO_TEST_CASE(switch_forks_using_fast_confirm)
   catch (const fc::exception& e)
   {
     edump((e));
+    throw;
+  }
+}
+
+// A fast-confirm for a block far above the head that this node doesn't hold is refused: stored, it would stand for
+// the witness's vote, and six such approvals would hold the last irreversible block back (16 of 21 votes are needed).
+BOOST_AUTO_TEST_CASE(fast_confirm_of_unknown_block_far_above_head_is_refused)
+{
+  try
+  {
+    SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( 1 )
+    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
+    fixture1.generate_blocks(63); // let the real witnesses become active
+    BOOST_REQUIRE_EQUAL(db1.head_block_num(), 65);
+
+    const auto unknown_block_id = [](uint32_t block_num) {
+      block_id_type id = fc::ripemd160::hash(std::string("not a block of this chain"));
+      id._hash[0] = fc::endian_reverse_u32(block_num);
+      return id;
+    };
+    const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
+    BOOST_REQUIRE_GE(wso_for_irreversibility.num_scheduled_witnesses, 6);
+    for (int i = 0; i < 6; ++i)
+    {
+      witness_block_approve_operation fast_confirm_op;
+      fast_confirm_op.witness = wso_for_irreversibility.current_shuffled_witnesses[i];
+      fast_confirm_op.block_id = unknown_block_id(0xFFFFFFFFu); // the highest block number
+      BOOST_CHECK_THROW(fixture1.push_transaction(fast_confirm_op, init_account_priv_key), fc::exception);
+    }
+
+    // an approval of a block just above the head is kept (its block may simply not have arrived yet)
+    witness_block_approve_operation near_op;
+    near_op.witness = wso_for_irreversibility.current_shuffled_witnesses[0];
+    near_op.block_id = unknown_block_id(db1.head_block_num() + 1);
+    fixture1.push_transaction(near_op, init_account_priv_key);
+
+    const uint32_t last_irreversible_before = db1.get_last_irreversible_block_num();
+    fixture1.generate_blocks(2 * HIVE_MAX_WITNESSES);
+    BOOST_CHECK_GE(db1.get_last_irreversible_block_num(), last_irreversible_before + HIVE_MAX_WITNESSES);
+  }
+  catch (fc::exception& e)
+  {
+    edump((e.to_detail_string()));
     throw;
   }
 }

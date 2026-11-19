@@ -1,5 +1,7 @@
 
-Delegate Rc
+Delegate Rc. Since HF29 the transaction contains delegate_rc_operation,
+before HF29 the operation is embedded in custom_json_operation with id
+"rc".
 
 Parameters:
     from: The source account (type: const account_name_type &)

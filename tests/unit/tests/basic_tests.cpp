@@ -74,6 +74,7 @@
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 
 #include <hive/chain/util/reward.hpp>
+#include <hive/chain/witness_schedule.hpp>
 #include <hive/chain/util/balance.hpp>
 
 #include <hive/chain/util/decoded_types_data_storage.hpp>
@@ -3896,5 +3897,146 @@ BOOST_FIXTURE_TEST_CASE( reaction_to_virtual_operation, clean_database_fixture )
   FC_LOG_AND_RETHROW()
 }
 
+
+BOOST_AUTO_TEST_SUITE_END()
+
+
+BOOST_AUTO_TEST_SUITE( witness_version_tally_tests )
+
+namespace
+{
+  using hive::chain::witness_version_report;
+  using hive::chain::tally_witness_versions;
+  using hive::protocol::version;
+  using hive::protocol::hardfork_version;
+
+  const uint32_t hf28_time = 1763557200; // 2025-11-19T13:00:00, the vote for HF28 on mainnet
+  const uint32_t hf29_time = 1800000000;
+  const uint32_t far_future = 4102444800;
+
+  witness_version_report make_report( const version& running, const hardfork_version& vote, uint32_t vote_time )
+  {
+    witness_version_report report;
+    report.running_version = running;
+    report.hardfork_version_vote = vote;
+    report.hardfork_time_vote = fc::time_point_sec( vote_time );
+    return report;
+  }
+}
+
+/// What the mainnet schedule reported when the canonical tally was introduced: 20 witnesses on 1.28.8, one on 1.28.7,
+/// all 21 voting for HF28. The result equals the stored one (majority 1.28.8, next hardfork 1.28 at its time).
+BOOST_AUTO_TEST_CASE( schedule_of_today_gives_the_stored_result )
+{
+  std::vector< witness_version_report > reports( 20, make_report( version( 1, 28, 8 ), hardfork_version( 1, 28 ), hf28_time ) );
+  reports.push_back( make_report( version( 1, 28, 7 ), hardfork_version( 1, 28 ), hf28_time ) );
+  const auto tally = tally_witness_versions( reports, 17 );
+  BOOST_REQUIRE( tally.majority_version.valid() );
+  BOOST_REQUIRE_EQUAL( tally.majority_version->v_num, version( 1, 28, 8 ).v_num );
+  BOOST_REQUIRE( tally.hardfork_vote.valid() );
+  BOOST_REQUIRE_EQUAL( tally.hardfork_vote->first.v_num, hardfork_version( 1, 28 ).v_num );
+  BOOST_REQUIRE_EQUAL( tally.hardfork_vote->second.sec_since_epoch(), hf28_time );
+}
+
+/// A vote spelled 0.29 counts as 1.29 wherever it stands in the schedule, so five such votes next to sixteen 1.29 votes
+/// give one vote of 21 in the 1.29 spelling (the original tally could keep the first voter's 0.29 spelling, which
+/// process_hardforks never activates).
+BOOST_AUTO_TEST_CASE( vote_in_the_legacy_spelling_counts_as_the_current_one )
+{
+  for( size_t first_rogue = 0; first_rogue <= 16; ++first_rogue )
+  {
+    std::vector< witness_version_report > reports( 21, make_report( version( 1, 28, 9 ), hardfork_version( 1, 29 ), hf29_time ) );
+    for( size_t i = first_rogue; i < first_rogue + 5; ++i )
+      reports[ i ].hardfork_version_vote = hardfork_version( 0, 29 );
+    const auto tally = tally_witness_versions( reports, 17 );
+    BOOST_REQUIRE( tally.hardfork_vote.valid() );
+    BOOST_REQUIRE_EQUAL( tally.hardfork_vote->first.v_num, hardfork_version( 1, 29 ).v_num );
+    BOOST_REQUIRE_EQUAL( tally.hardfork_vote->second.sec_since_epoch(), hf29_time );
+  }
+}
+
+/// The inputs of the container-level probe of the audit: (0.30, HF29 time), (0.29, far future) and 19 x (1.29, HF29
+/// time). The original tally gave different buckets depending on the order and on the Boost release; this one gives
+/// the 1.29 vote of 19 for every placement of the two odd votes (all 420 ordered pairs of positions).
+BOOST_AUTO_TEST_CASE( mixed_majors_give_one_result_in_every_order )
+{
+  for( size_t a = 0; a < 21; ++a )
+    for( size_t b = 0; b < 21; ++b )
+    {
+      if( a == b )
+        continue;
+      std::vector< witness_version_report > reports( 21, make_report( version( 1, 28, 9 ), hardfork_version( 1, 29 ), hf29_time ) );
+      reports[ a ].hardfork_version_vote = hardfork_version( 0, 30 );
+      reports[ b ].hardfork_version_vote = hardfork_version( 0, 29 );
+      reports[ b ].hardfork_time_vote = fc::time_point_sec( far_future );
+      const auto tally = tally_witness_versions( reports, 17 );
+      BOOST_REQUIRE( tally.hardfork_vote.valid() );
+      BOOST_REQUIRE_EQUAL( tally.hardfork_vote->first.v_num, hardfork_version( 1, 29 ).v_num );
+      BOOST_REQUIRE_EQUAL( tally.hardfork_vote->second.sec_since_epoch(), hf29_time );
+      BOOST_REQUIRE( tally.majority_version.valid() );
+      BOOST_REQUIRE_EQUAL( tally.majority_version->v_num, version( 1, 28, 9 ).v_num );
+    }
+}
+
+/// A running version spelled 0.x counts as 1.x, so a few witnesses that report a high version in any spelling do not
+/// move the majority, which needs 17 witnesses on that version or a newer one.
+BOOST_AUTO_TEST_CASE( few_high_running_versions_do_not_move_the_majority )
+{
+  for( size_t odd = 1; odd <= 4; ++odd )
+    for( size_t first = 0; first + odd <= 21; ++first )
+    {
+      std::vector< witness_version_report > reports( 21, make_report( version( 1, 28, 9 ), hardfork_version( 1, 28 ), hf28_time ) );
+      for( size_t i = first; i < first + odd; ++i )
+        reports[ i ].running_version = ( i % 2 ) ? version( 0, 30, 0 ) : version( 1, 30, 0 );
+      const auto tally = tally_witness_versions( reports, 17 );
+      BOOST_REQUIRE( tally.majority_version.valid() );
+      BOOST_REQUIRE_EQUAL( tally.majority_version->v_num, version( 1, 28, 9 ).v_num );
+    }
+
+  // 17 witnesses on 1.28.9 or newer (any spelling) make 1.28.9 the majority, 16 do not
+  std::vector< witness_version_report > reports( 21, make_report( version( 1, 28, 8 ), hardfork_version( 1, 28 ), hf28_time ) );
+  for( size_t i = 0; i < 16; ++i )
+    reports[ i ].running_version = ( i < 8 ) ? version( 1, 28, 9 ) : version( 0, 29, 0 );
+  auto tally = tally_witness_versions( reports, 17 );
+  BOOST_REQUIRE_EQUAL( tally.majority_version->v_num, version( 1, 28, 8 ).v_num );
+  reports[ 16 ].running_version = version( 1, 28, 9 );
+  tally = tally_witness_versions( reports, 17 );
+  BOOST_REQUIRE_EQUAL( tally.majority_version->v_num, version( 1, 28, 9 ).v_num );
+}
+
+/// Witnesses that never voted keep the default vote (0.0 at time 0), which stays 0.0 and never forms a vote with the
+/// others; without 17 equal votes there is no vote at all; witnesses that never reported a version count as 0.0.0.
+BOOST_AUTO_TEST_CASE( default_votes_and_no_majority )
+{
+  std::vector< witness_version_report > reports( 21, make_report( version( 1, 28, 8 ), hardfork_version( 1, 28 ), hf28_time ) );
+  for( size_t i = 0; i < 4; ++i )
+    reports[ i ].hardfork_version_vote = hardfork_version( 0, 0 ), reports[ i ].hardfork_time_vote = fc::time_point_sec( 0 );
+  auto tally = tally_witness_versions( reports, 17 );
+  BOOST_REQUIRE( tally.hardfork_vote.valid() );
+  BOOST_REQUIRE_EQUAL( tally.hardfork_vote->first.v_num, hardfork_version( 1, 28 ).v_num );
+
+  reports[ 4 ].hardfork_version_vote = hardfork_version( 0, 0 ), reports[ 4 ].hardfork_time_vote = fc::time_point_sec( 0 );
+  tally = tally_witness_versions( reports, 17 );
+  BOOST_REQUIRE( !tally.hardfork_vote.valid() );
+
+  tally = tally_witness_versions( std::vector< witness_version_report >( 3, reports[ 5 ] ), 17 );
+  BOOST_REQUIRE( !tally.hardfork_vote.valid() );
+  BOOST_REQUIRE( !tally.majority_version.valid() );
+
+  // a fresh chain: nobody reported or voted yet; the tally keeps 0.0.0 and the default vote, as the original one did
+  std::vector< witness_version_report > fresh( 21, make_report( version(), hardfork_version(), 0 ) );
+  tally = tally_witness_versions( fresh, 17 );
+  BOOST_REQUIRE( tally.majority_version.valid() );
+  BOOST_REQUIRE_EQUAL( tally.majority_version->v_num, 0u );
+  BOOST_REQUIRE( tally.hardfork_vote.valid() );
+  BOOST_REQUIRE_EQUAL( tally.hardfork_vote->first.v_num, 0u );
+  BOOST_REQUIRE_EQUAL( tally.hardfork_vote->second.sec_since_epoch(), 0u );
+
+  // ten witnesses on 1.29.0, eleven that never reported: the majority is 0.0.0, as in the original tally
+  for( size_t i = 0; i < 10; ++i )
+    fresh[ i ].running_version = version( 1, 29, 0 );
+  tally = tally_witness_versions( fresh, 17 );
+  BOOST_REQUIRE_EQUAL( tally.majority_version->v_num, 0u );
+}
 
 BOOST_AUTO_TEST_SUITE_END()

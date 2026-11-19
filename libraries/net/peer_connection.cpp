@@ -131,6 +131,9 @@ namespace graphene { namespace net
     }
     message peer_connection::virtual_queued_block_message::get_message(peer_connection_delegate* node, peer_connection* peer)
     {
+      prepare(node, peer);
+      if (!full_block)
+        return item_not_available_message(item_id(block_message_type, requested_item));
       if (peer->supports_compressed_blocks())
       {
         // the peer can handle some form of compressed data.
@@ -146,9 +149,35 @@ namespace graphene { namespace net
         return block_message(full_block);
     }
 
+    void peer_connection::virtual_queued_block_message::prepare(peer_connection_delegate* node, peer_connection* peer)
+    {
+      if (looked_up)
+        return;
+      looked_up = true;
+      try
+      {
+        full_block = node->get_block_to_send(peer, requested_item);
+      }
+      catch (const fc::canceled_exception&)
+      {
+        throw;
+      }
+      catch (const fc::exception& e)
+      {
+        // the peer is told we don't have the block, rather than the send queue stopping at this message
+        wlog("Unable to look up block ${id} requested by peer ${peer}: ${e}",
+             ("id", requested_item)("peer", peer->get_remote_endpoint())("e", e.to_string()));
+      }
+      catch (const std::exception& e)
+      {
+        wlog("Unable to look up block ${id} requested by peer ${peer}: ${e}",
+             ("id", requested_item)("peer", peer->get_remote_endpoint())("e", e.what()));
+      }
+    }
+
     size_t peer_connection::virtual_queued_block_message::get_size_in_queue()
     {
-      return sizeof(full_block);
+      return sizeof(*this);
     }
 
     peer_connection::peer_connection(peer_connection_delegate* delegate) :
@@ -372,6 +401,11 @@ namespace graphene { namespace net
       {
         wait_for_transaction_batch_to_grow();
 
+        // start the lookups (and the worker-thread compression) of the next few queued blocks before their turn;
+        // only this task removes messages from the queue, so the ones prepared here are still queued or in the batch
+        for (size_t i = 0; i < _queued_messages.size() && i < GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD; ++i)
+          _queued_messages[i]->prepare(_node, this);
+
         // take everything queued, up to the batch bound, so it goes out in one socket write;
         // get_message_to_write() is still called here, at send time, because block messages are built lazily
         std::vector<std::unique_ptr<queued_message>> batch;
@@ -387,7 +421,7 @@ namespace graphene { namespace net
         do
         {
           batch.emplace_back(std::move(_queued_messages.front()));
-          _queued_messages.pop();
+          _queued_messages.pop_front();
           if (!batch.back()->may_wait_for_batch)
             --_queued_messages_not_waiting_for_batch;
           batch.back()->transmission_start_time = fc::time_point::now();
@@ -395,7 +429,6 @@ namespace graphene { namespace net
             break; // send what was built before it; the rest of the queue goes in the next batch
           batch_size += sizeof(message_header) + messages_to_send.back().header.size;
         } while (!_queued_messages.empty() && batch_size < GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES);
-
         try
         {
           _message_connection.send_messages(messages_to_send);
@@ -498,14 +531,16 @@ namespace graphene { namespace net
     void peer_connection::send_queueable_message(std::unique_ptr<queued_message>&& message_to_send)
     {
       VERIFY_CORRECT_THREAD();
-      _total_queued_messages_size += message_to_send->get_size_in_queue();
-      if (!message_to_send->may_wait_for_batch)
-        ++_queued_messages_not_waiting_for_batch;
-      _queued_messages.emplace(std::move(message_to_send));
-      if (_total_queued_messages_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
+      // once the queue has reached its limit the connection is closed, so nothing queued after that would ever
+      // be sent: it isn't queued at all, however much the peer's last request asked for
+      if (_send_queue_limit_exceeded)
+        return;
+      const size_t message_size = message_to_send->get_size_in_queue();
+      if (_total_queued_messages_size + message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
       {
+        _send_queue_limit_exceeded = true;
         elog("send queue exceeded maximum size of ${max} bytes (current size ${current} bytes)",
-             ("max", GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)("current", _total_queued_messages_size));
+             ("max", GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)("current", _total_queued_messages_size + message_size));
         try
         {
           close_connection();
@@ -516,6 +551,10 @@ namespace graphene { namespace net
         }
         return;
       }
+      _total_queued_messages_size += message_size;
+      if (!message_to_send->may_wait_for_batch)
+        ++_queued_messages_not_waiting_for_batch;
+      _queued_messages.emplace_back(std::move(message_to_send));
 
       if( _send_queued_messages_done.valid() && _send_queued_messages_done.canceled() )
         FC_THROW_EXCEPTION(fc::exception, "Attempting to send a message on a connection that is being shut down");
@@ -551,10 +590,10 @@ namespace graphene { namespace net
       _send_flush_delay = delay;
     }
 
-    void peer_connection::send_block_message(const std::shared_ptr<full_block_type>& full_block)
+    void peer_connection::send_block_message(const item_hash_t& requested_item)
     {
       VERIFY_CORRECT_THREAD();
-      send_queueable_message(std::make_unique<virtual_queued_block_message>(full_block));
+      send_queueable_message(std::make_unique<virtual_queued_block_message>(requested_item));
     }
 
     void peer_connection::send_transaction_message(const std::shared_ptr<full_transaction_type>& full_transaction)

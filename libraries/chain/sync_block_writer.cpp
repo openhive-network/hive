@@ -98,7 +98,8 @@ bool sync_block_writer::push_block(const std::shared_ptr<full_block_type>& full_
       const auto blocks = _fork_db.fetch_block_by_number(height);
       if (blocks.size() > 1)
       {
-        vector<std::pair<account_name_type, fc::time_point_sec>> witness_time_pairs;
+        // the names are logged as stored, without a conversion that could throw here
+        vector<std::pair<std::string, fc::time_point_sec>> witness_time_pairs;
         witness_time_pairs.reserve(blocks.size());
         for (const auto& b : blocks)
           witness_time_pairs.push_back(std::make_pair(b->get_block_header().witness, b->get_block_header().timestamp));
@@ -310,8 +311,12 @@ sync_block_writer::find_new_last_irreversible_block(
     std::optional<block_id_type> best_block_id_for_this_witness;
     if (fast_approval_iter != last_fast_approved_block_by_witness.end())
     {
+      // a vote for a block we don't hold (yet) is not counted below, so it must not take the place of the witness's
+      // produced block, which is
+      const bool approved_block_is_known = (bool)_fork_db.fetch_block(fast_approval_iter->second, true /* linked blocks only */);
       if (last_block_iter != last_block_generated_by_witness.end()) // they have cast a fast-confirm vote and produced a block, choose the most recent
-        best_block_id_for_this_witness = block_header::num_from_id(fast_approval_iter->second) > block_header::num_from_id(last_block_iter->second) ?
+        best_block_id_for_this_witness = approved_block_is_known &&
+                                         block_header::num_from_id(fast_approval_iter->second) > block_header::num_from_id(last_block_iter->second) ?
                                          fast_approval_iter->second : last_block_iter->second;
       else // no generated blocks, but they have cast votes
         best_block_id_for_this_witness = fast_approval_iter->second;

@@ -122,6 +122,13 @@
 #define GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS                 200
 
 #define GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES        (1024 * 1024)
+/**
+ * A block a peer asks for is queued for sending as its id, and looked up only once it is one of
+ * this many messages at the front of the peer's send queue: the lookups (and the compression the
+ * worker threads may do for that peer) run ahead of the message being sent, while the blocks held
+ * for one peer stay this few however many it asks for
+ */
+#define GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD           4
 
 /**
  * A peer's queued messages are written to its socket together until the batch reaches this many

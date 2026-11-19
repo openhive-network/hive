@@ -180,13 +180,6 @@ namespace hive { namespace converter {
     return op;
   }
 
-  const hp::reset_account_operation& convert_operations_visitor::operator()( hp::reset_account_operation& op )const
-  {
-    converter.add_second_authority( op.new_owner_authority, authority::owner );
-
-    return op;
-  }
-
   const hp::recover_account_operation& convert_operations_visitor::operator()( hp::recover_account_operation& op )const
   {
     converter.add_second_authority( op.new_owner_authority, authority::owner );

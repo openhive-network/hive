@@ -286,6 +286,15 @@ struct get_impacted_account_visitor
       _owner_impacted->insert( op.from );
   }
 
+  void operator()( const delegate_rc_operation& op )
+  {
+    _impacted.insert( op.from );
+    for( const auto& delegatee : op.delegatees )
+      _impacted.insert( delegatee );
+    if( _owner_impacted )
+      _owner_impacted->insert( op.from );
+  }
+
   // vops
 
   /**

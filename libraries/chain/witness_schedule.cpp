@@ -12,11 +12,77 @@
 
 #include <hive/protocol/config.hpp>
 
+#include <map>
+
 namespace hive { namespace chain {
 
 using hive::chain::util::rd_system_params;
 using hive::chain::util::rd_user_params;
 using hive::chain::util::rd_validate_user_params;
+
+namespace
+{
+  /// 0.N and 1.N name the same release (see version.hpp); the tally uses the 1.N spelling. 0.0.0, the value of a
+  /// witness that never reported a version or voted, stays as it is.
+  uint32_t canonical_version_num( uint32_t v_num )
+  {
+    return ( v_num & 0xFF000000 ) == 0 && v_num != 0 ? ( v_num | 0x01000000 ) : v_num;
+  }
+
+  /// Rounds from this time on are tallied by tally_witness_versions; earlier rounds keep the original tally, so a
+  /// replay of existing blocks is unchanged (for the witnesses scheduled at that time both give the same result).
+  /// Kept out of config.hpp on purpose: every define there is part of the blockchain configuration that is stored in
+  /// the state and compared at startup.
+  fc::time_point_sec canonical_version_tally_time()
+  {
+#ifdef IS_TEST_NET
+    return fc::time_point_sec( 0 );
+#else
+    return fc::time_point_sec( 1794441600 ); // 2026-11-12T00:00:00 UTC
+#endif
+  }
+}
+
+witness_version_tally tally_witness_versions( const std::vector< witness_version_report >& reports, uint32_t required )
+{
+  std::map< uint32_t, uint32_t, std::greater< uint32_t > > versions; // canonical running version -> witnesses
+  std::map< std::pair< uint32_t, uint32_t >, uint32_t > hardfork_votes; // (canonical version, time) -> witnesses
+  for( const auto& report : reports )
+  {
+    ++versions[ canonical_version_num( report.running_version.v_num ) ];
+    ++hardfork_votes[ std::make_pair( canonical_version_num( report.hardfork_version_vote.v_num ),
+                                      report.hardfork_time_vote.sec_since_epoch() ) ];
+  }
+
+  witness_version_tally result;
+
+  // from the highest version down, until enough witnesses run that version or a newer one
+  uint32_t witnesses_on_version = 0;
+  for( const auto& version_count : versions )
+  {
+    witnesses_on_version += version_count.second;
+    if( witnesses_on_version >= required )
+    {
+      protocol::version majority;
+      majority.v_num = version_count.first;
+      result.majority_version = majority;
+      break;
+    }
+  }
+
+  for( const auto& vote_count : hardfork_votes )
+  {
+    if( vote_count.second >= required )
+    {
+      protocol::hardfork_version voted;
+      voted.v_num = vote_count.first.first;
+      result.hardfork_vote = std::make_pair( voted, fc::time_point_sec( vote_count.first.second ) );
+      break;
+    }
+  }
+
+  return result;
+}
 
 void reset_virtual_schedule_time( database& db )
 { try {
@@ -263,12 +329,24 @@ void update_witness_schedule4(database& db, const witness_schedule_object& wso)
 
   if( db.has_hardfork( HIVE_HARDFORK_0_5__54 ) )
   {
+    // the original tally below keys the counts by version with comparisons that are not a strict order across majors
+    // (0.N == 1.N but 1.N != 0.N), so its buckets depended on the order of the witnesses and on the container
+    // implementation; rounds from canonical_version_tally_time() on use tally_witness_versions instead
+    const bool canonical_tally = db.head_block_time() >= canonical_version_tally_time();
+    std::vector< witness_version_report > reports;
+
     flat_map< version, uint32_t, std::greater< version > > witness_versions;
     flat_map< std::tuple< hardfork_version, time_point_sec >, uint32_t > hardfork_version_votes;
 
     for( uint32_t i = 0; i < wso.num_scheduled_witnesses; i++ )
     {
       auto& witness = db.get_witness( wso.current_shuffled_witnesses[ i ] );
+      if( canonical_tally )
+      {
+        reports.push_back( { witness.running_version, witness.hardfork_version_vote, witness.hardfork_time_vote } );
+        continue;
+      }
+
       if( witness_versions.find( witness.running_version ) == witness_versions.end() )
         witness_versions[ witness.running_version ] = 1;
       else
@@ -298,6 +376,35 @@ void update_witness_schedule4(database& db, const witness_schedule_object& wso)
           _hpo.next_hardfork = HIVE_HARDFORK_0_23_VERSION;
           _hpo.next_hardfork_time = fc::time_point_sec(HIVE_HARDFORK_0_23_TIME);
         });
+      }
+    }
+    else if( canonical_tally )
+    {
+      const witness_version_tally tally = tally_witness_versions( reports, wso.hardfork_required_witnesses );
+
+      if( tally.majority_version.valid() )
+        majority_version = *tally.majority_version;
+
+      if( tally.hardfork_vote.valid() )
+      {
+        // compared by v_num, so that a vote stored in another spelling (0.N) is replaced by the canonical one
+        if( hpo.next_hardfork.v_num != tally.hardfork_vote->first.v_num ||
+          hpo.next_hardfork_time != tally.hardfork_vote->second )
+        {
+          db.modify( hpo, [&]( hardfork_property_object& _hpo )
+          {
+            _hpo.next_hardfork = tally.hardfork_vote->first;
+            _hpo.next_hardfork_time = tally.hardfork_vote->second;
+          } );
+        }
+      }
+      else
+      {
+        // We no longer have a majority
+        db.modify( hpo, [&]( hardfork_property_object& _hpo )
+        {
+          _hpo.next_hardfork = _hpo.current_hardfork_version;
+        } );
       }
     }
     else

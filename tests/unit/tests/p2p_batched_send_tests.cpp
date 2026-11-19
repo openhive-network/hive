@@ -18,6 +18,7 @@
 #include <fc/thread/thread.hpp>
 
 #include <algorithm>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -38,6 +39,8 @@ public:
   size_t batched_writes = 0;
   size_t messages_written = 0;
   size_t bytes_written = 0;
+  /// the blocks get_block_to_send() serves, by id
+  std::map<graphene::net::item_hash_t, std::shared_ptr<hive::chain::full_block_type>> blocks_to_send;
 
   void on_message( peer_connection*, const message& received_message ) override
   {
@@ -46,6 +49,11 @@ public:
   }
   void on_connection_closed( peer_connection* ) override { closed = true; }
   std::shared_ptr<hive::chain::full_block_type> get_full_block_by_block_id( const hive::protocol::block_id_type& ) override { return {}; }
+  std::shared_ptr<hive::chain::full_block_type> get_block_to_send( peer_connection*, const graphene::net::item_hash_t& requested_item ) override
+  {
+    const auto found = blocks_to_send.find( requested_item );
+    return found == blocks_to_send.end() ? nullptr : found->second;
+  }
   void on_messages_written( size_t message_count, size_t byte_count ) override
   {
     ++batched_writes;
@@ -140,6 +148,13 @@ struct connected_pair
     receiver->close_connection();
     sender->destroy_connection( __FUNCTION__ );
     receiver->destroy_connection( __FUNCTION__ );
+  }
+
+  /// queues @p block for the receiver, as a node answers a block request: by id, looked up shortly before it is sent
+  void send_block( const std::shared_ptr<hive::chain::full_block_type>& block )
+  {
+    sender_delegate.blocks_to_send[ block->get_block_id() ] = block;
+    sender->send_block_message( block->get_block_id() );
   }
 
   void wait_for_messages( size_t count, fc::microseconds timeout = fc::seconds( 30 ) )
@@ -283,7 +298,7 @@ BOOST_AUTO_TEST_CASE( queued_messages_arrive_intact_and_in_order_in_few_writes )
   for( const message& m : expected )
   {
     if( m.msg_type == graphene::net::block_message_type )
-      pair.sender->send_block_message( block );
+      pair.send_block( block );
     else
       pair.sender->send_message( m );
   }
@@ -429,7 +444,7 @@ BOOST_AUTO_TEST_CASE( queued_block_is_sent_without_the_flush_delay )
   const fc::time_point queued_at = fc::time_point::now();
   pair.sender->send_message( make_transaction_message( 'a' ) );
   pair.sender->send_message( make_transaction_message( 'b' ) );
-  pair.sender->send_block_message( block );
+  pair.send_block( block );
   pair.wait_for_messages( 3 );
 
   BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 3u );
@@ -453,7 +468,7 @@ BOOST_AUTO_TEST_CASE( message_arriving_during_the_wait_ends_it )
       BOOST_REQUIRE( pair.receiver_delegate.received.empty() );
 
       if( send_block )
-        pair.sender->send_block_message( make_small_block() );
+        pair.send_block( make_small_block() );
       else
         pair.sender->send_message( message( graphene::net::fetch_blockchain_item_ids_message( graphene::net::block_message_type, {} ) ) );
       pair.wait_for_messages( 2 );

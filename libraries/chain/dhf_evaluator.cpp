@@ -7,13 +7,28 @@
 #include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/dhf_objects_multiindex.hpp>
+#include <hive/chain/detail/state/witness_objects.hpp>
 
 #include <hive/chain/evaluator_registry.hpp>
 #include <hive/chain/util/dhf_helper.hpp>
 
 #include <hive/protocol/hive_specialised_exceptions.hpp>
 
+#include <limits>
+
 namespace hive { namespace chain {
+
+namespace
+{
+  /// The checks of every id of remove_proposal_operation (see remove_proposal_evaluator) apply to blocks too in any round
+  /// in which at least HIVE_HARDFORK_REQUIRED_WITNESSES of the scheduled witnesses run this version or a newer one
+  /// (majority_version of the witness schedule, recomputed every round from the versions the producers report in their
+  /// blocks). Before that, and in any round in which fewer run it, they apply only to transactions the node takes in or
+  /// produces itself, and blocks are valid exactly as before. HF29 makes the checks part of the rules for good.
+  /// Kept out of config.hpp on purpose: every define there is part of the blockchain configuration that is stored in
+  /// the state and compared at startup.
+  const protocol::version remove_proposal_check_all_ids_version( 1, 28, 9 );
+}
 
 HIVE_DEFINE_EVALUATOR( create_proposal )
 HIVE_DEFINE_EVALUATOR( update_proposal )
@@ -241,9 +256,23 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
     const auto& proposal_idx = _db.get_index< proposal_index, by_proposal_id >();
     const auto& proposal_vote_idx = _db.get_index< proposal_vote_index, by_proposal_voter >();
 
+    /// Every listed id has to be a proposal id, and the proposal has to belong to proposal_owner also after the removal
+    /// budget is spent: for transactions this node takes in or produces, in blocks while enough witnesses run the version
+    /// that brought the check (see remove_proposal_check_all_ids_version), and for good with HF29
+    const bool check_all_ids = _db.is_in_control() ||
+                               _db.get_witness_schedule_object().majority_version >= remove_proposal_check_all_ids_version ||
+                               _db.has_hardfork( HIVE_HARDFORK_1_29_VALIDATE_ALL_PROPOSAL_IDS );
+
     /// Validate all proposal ids and mark them as candidate for removal. Once exception is thrown, property value will be restored by chainbase
     for( auto proposal_id : op.proposal_ids )
     {
+      if( check_all_ids )
+      {
+        // proposals are looked up by the low 32 bits of the id, so a negative or a larger id would name another proposal
+        const bool id_in_range = proposal_id >= 0 && proposal_id <= std::numeric_limits< uint32_t >::max();
+        FC_ASSERT( id_in_range && "proposal id out of range", "Proposal id ${pid} is out of range", ("pid", proposal_id) );
+      }
+
       auto found_proposal = proposal_idx.find( proposal_id );
 
       if( found_proposal == proposal_idx.end() )
@@ -259,7 +288,7 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
              ("pid", proposal_id) );
         }
 
-        if( _db.has_hardfork( HIVE_HARDFORK_1_29_VALIDATE_ALL_PROPOSAL_IDS ) || obj_perf.done() == false )
+        if( check_all_ids || obj_perf.done() == false )
           FC_ASSERT( found_proposal->creator == op.proposal_owner, "Only proposal owner can remove it..." );
 
         /// Do not mark again proposal already flagged for removal, e.g. when someone pushed multiple operations referencing the same proposal.

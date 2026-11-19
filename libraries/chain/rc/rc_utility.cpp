@@ -4,10 +4,12 @@
 #include <hive/chain/detail/state/account_object_multiindex.hpp>
 #include <hive/chain/detail/state/state_stamp_data_object_multiindex.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_virtual_operations.hpp>
 #include <hive/chain/full_transaction.hpp>
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
 #include <hive/chain/generic_custom_operation_interpreter.hpp>
+#include <hive/chain/hive_evaluator.hpp>
 #include <hive/chain/util/remove_guard.hpp>
 
 #include <appbase/application.hpp>
@@ -38,29 +40,32 @@ resource_credits::report_output resource_credits::auto_report_output = resource_
 uint16_t resource_credits::flood_level = 20;
 uint16_t resource_credits::flood_surcharge = HIVE_100_PERCENT;
 
-void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
+namespace {
+
+/**
+  * Applies RC delegation - common part of evaluation of delegate_rc_operation, no matter if it was
+  * embedded in custom_json_operation (delegate_rc_evaluator) or used directly as regular operation
+  * (delegate_rc_operation_evaluator). RC cost of each form is collected by its caller.
+  */
+void do_delegate_rc( database& db, const delegate_rc_operation& op )
 {
-  if( !_db.has_hardfork( HIVE_HARDFORK_1_26 ) )
-  {
-    dlog( "Ineffective RC delegation @${b} ${op}", ( "b", _db.head_block_num() + 1 )( op ) );
-    return;
-  }
+  // before HF29 below rules were only enforced for new transactions, so blocks can contain (effective)
+  // RC delegations that break them
+  const bool strict_rules = db.is_in_control() || db.has_hardfork( HIVE_HARDFORK_1_29_STRICT_RC_DELEGATION_RULES );
 
-  _db.rc().handle_operation_discount< rc_custom_operation >( op );
-
-  const dynamic_global_property_object& gpo = _db.get_dynamic_global_properties();
-  if( op.max_rc != 0 && _db.is_in_control() )
+  const dynamic_global_property_object& gpo = db.get_dynamic_global_properties();
+  if( op.max_rc != 0 && strict_rules )
   {
-    const auto& wso = _db.get_witness_schedule_object();
+    const auto& wso = db.get_witness_schedule_object();
     auto min_delegation = ( ( wso.median_props.account_creation_fee / 3 ) * gpo.get_vesting_share_price() ).amount.value;
 
     FC_ASSERT( op.max_rc >= min_delegation, "Cannot delegate less than ${min_delegation} rc", (min_delegation) );
   }
 
   auto now = gpo.get_head_block_time();
-  const account_object& from_account = _db.get_account( op.from );
-  _db.rc().regenerate_rc_mana( from_account, now );
-  FC_ASSERT( !_db.is_in_control() || !_db.rc().has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
+  const account_object& from_account = db.get_account( op.from );
+  db.rc().regenerate_rc_mana( from_account, now );
+  FC_ASSERT( !strict_rules || !db.rc().has_expired_delegation( from_account ), "Cannot delegate RC while processing of previous delegation has not finished." );
     // above is not strictly needed - we can handle new delegations during delayed undelegating just fine, however we want to discourage users
     // from using the scheme to temporarily "pump" amount of RC, also if it is not intentional they might be confused about fresh delegations
     // disappearing right after being formed (which might happen if we allow fresh delegations while previous were not yet cleared)
@@ -71,17 +76,17 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 
   for (const account_name_type& to:op.delegatees)
   {
-    const account_object& to_account = _db.get_account( to );
-    _db.rc().regenerate_rc_mana( to_account, now );
+    const account_object& to_account = db.get_account( to );
+    db.rc().regenerate_rc_mana( to_account, now );
 
-    const rc_direct_delegation_object* delegation = _db.find<rc_direct_delegation_object, by_from_to>(
+    const rc_direct_delegation_object* delegation = db.find<rc_direct_delegation_object, by_from_to>(
       boost::make_tuple( from_account.get_id(), to_account.get_id() ) );
 
     share_type delta = op.max_rc;
     if( delegation == nullptr ) // delegation is being created
     {
       FC_ASSERT( op.max_rc != 0, "Cannot delegate 0 if you are creating new rc delegation" );
-      _db.create<rc_direct_delegation_object>( from_account, to_account, op.max_rc );
+      db.create<rc_direct_delegation_object>( from_account, to_account, op.max_rc );
     }
     else // delegation is being increased, decreased or deleted
     {
@@ -93,11 +98,11 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
 
       if( op.max_rc == 0 )
       {
-        _db.remove( *delegation );
+        db.remove( *delegation );
       }
       else
       {
-        _db.modify<rc_direct_delegation_object>( *delegation, [&]( rc_direct_delegation_object& delegation )
+        db.modify<rc_direct_delegation_object>( *delegation, [&]( rc_direct_delegation_object& delegation )
         {
           delegation.delegated_rc = op.max_rc;
         } );
@@ -118,14 +123,14 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
         "Account ${a} has insufficient RC (have ${h}, needs more than ${n} for ${c} accounts)",
         ( "a", op.from )( "h", from_delegable_rc )( "n", max_int64 )( "c", op.delegatees.size() ) );
     }
-    _db.rc().update_account_after_rc_delegation( to_account, now, delta );
+    db.rc().update_account_after_rc_delegation( to_account, now, delta );
     delta_total += delta;
   }
 
   // We do this assert at the end instead of in the loop because depending on the ordering of the accounts the delta can start off as from_delegable_rc < delta_total and then be valid as some delegations may get modified to take less rc
   FC_ASSERT( from_delegable_rc >= delta_total, "Account ${a} has insufficient RC (have ${h}, needs ${n})", ( "a", op.from )( "h", from_delegable_rc )( "n", delta_total ) );
 
-  _db.modify< account_object >( from_account, [&]( account_object& acc )
+  db.modify< account_object >( from_account, [&]( account_object& acc )
   {
     // Do not give mana back when deleting/reducing rc delegation (note that regular delegations behave differently)
     if( delta_total > 0 )
@@ -136,8 +141,38 @@ void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
     acc.delegated_rc += delta_total;
     acc.last_max_rc = acc.get_maximum_rc();
   } );
+}
 
-  _db.rc().handle_custom_op_usage( op, gpo.get_head_block_time() ); //we have to handle it here because later we'd have to reinterpret json into concrete custom op
+} // namespace
+
+void delegate_rc_evaluator::do_apply( const delegate_rc_operation& op )
+{
+  if( !_db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+  {
+    dlog( "Ineffective RC delegation @${b} ${op}", ( "b", _db.head_block_num() + 1 )( op ) );
+    return;
+  }
+
+  _db.rc().handle_operation_discount< rc_custom_operation >( op );
+
+  do_delegate_rc( _db, op );
+
+  _db.rc().handle_custom_op_usage( op, _db.head_block_time() ); //we have to handle it here because later we'd have to reinterpret json into concrete custom op
+}
+
+void delegate_rc_operation_evaluator::do_apply( const delegate_rc_operation& op )
+{
+  HIVE_CHAIN_HARDFORK_ASSERT( _db.has_hardfork( HIVE_HARDFORK_1_29_DELEGATE_RC_OPERATION ),
+    "delegate_rc_operation is not enabled as regular operation until hardfork ${hf}, use custom_json_operation with id '${id}'",
+    ( "hf", HIVE_HARDFORK_1_29 )( "id", HIVE_RC_CUSTOM_OPERATION_ID ) );
+
+  // discount and RC cost of regular operation are handled by database, just like for all other regular operations
+  do_delegate_rc( _db, op );
+}
+
+void register_rc_evaluators( evaluator_registry< operation >& registry )
+{
+  registry.register_evaluator< delegate_rc_operation_evaluator >();
 }
 
 void resource_credits::set_auto_report( const std::string& _option_type, const std::string& _option_output )
@@ -770,14 +805,81 @@ void resource_credits::handle_auto_report( uint32_t block_num, int64_t global_re
   } );
 }
 
+/**
+  * Interpreter of custom_json_operation with HIVE_RC_CUSTOM_OPERATION_ID.
+  * Embedded operations are applied in separate undo session - when one of them fails, changes in state made
+  * by all of them are reverted (and when custom_json_operation is already part of a block, it remains valid).
+  * Since HF29 the same happens to RC usage collected by the embedded operations (state discount and extra
+  * usage), so transaction only pays for the custom_json_operation itself. Before HF29 such RC usage remains,
+  * because changing it retroactively would change past RC values.
+  * Embedded operations that became effective are reported (f.e. to account history) as if they were regular
+  * operations placed in transaction right after their custom_json_operation (issue #867).
+  */
+class rc_custom_operation_interpreter final : public generic_custom_operation_interpreter< rc_custom_operation >
+{
+  struct push_interpreted_operation_visitor
+  {
+    typedef void result_type;
+
+    database& db;
+
+    template< typename OpType >
+    void operator()( const OpType& op ) const { push_interpreted_operation( db, operation( op ) ); }
+  };
+
+  protected:
+    virtual void post_apply_operations( const vector< rc_custom_operation >& custom_operations ) override
+    {
+      // before HF26 embedded RC delegations were ignored (see delegate_rc_evaluator), so there is nothing to report;
+      // reporting itself is not consensus related, so it is not tied to HF29 - past delegations are reported too
+      if( !_db.has_hardfork( HIVE_HARDFORK_1_26 ) )
+        return;
+      // Notifications of embedded operations are sent only here, after all of them were applied, so handlers
+      // of both pre- and post-notification see the state after the changes.
+      // Virtual operations are different - push_virtual_operation sends them right away, so if evaluator of
+      // embedded operation (or any code it calls) ever starts emitting them:
+      // - when the interpretation fails later (f.e. one of following embedded operations fails), the virtual
+      //   operation was already reported; account history on live node reverts it, but account history during
+      //   replay and HAF keep it,
+      // - when the interpretation succeeds, the virtual operation is reported before the embedded operation that
+      //   caused it, and with greater op_in_trx (it moved the counter, while embedded operation shares op_in_trx
+      //   of its carrier).
+      // Possible solution: collect notifications of virtual operations during interpretation and send them here,
+      // each right after its embedded operation (and drop them when interpretation fails). Don't guard against it
+      // with an assertion - in a block the interpreter would treat it as a failure of the embedded operation,
+      // which changes consensus.
+      for( const rc_custom_operation& custom_op : custom_operations )
+        custom_op.visit( push_interpreted_operation_visitor{ _db } );
+    }
+
+  public:
+    rc_custom_operation_interpreter( database& db )
+      : generic_custom_operation_interpreter< rc_custom_operation >( db, HIVE_RC_CUSTOM_OPERATION_ID ) {}
+
+    virtual void apply( const custom_json_operation& outer_o ) override
+    {
+      const resource_count_type usage = _db.rc().tx_info.usage;
+      try
+      {
+        generic_custom_operation_interpreter< rc_custom_operation >::apply( outer_o );
+      }
+      catch( ... )
+      {
+        if( _db.has_hardfork( HIVE_HARDFORK_1_29_REVERT_RC_USAGE_OF_FAILED_CUSTOM_OPS ) )
+          _db.rc().tx_info.usage = usage;
+        throw;
+      }
+    }
+    // note: no need (yet) to handle custom_binary_operation - it is disallowed and never reaches interpreter
+};
+
 void resource_credits::initialize_evaluators()
 {
   // we only need to register evaluator once, when database is reopened in the same 'database' object
   // we already have the evaluator (by the way, that is also true from custom evaluators from plugins)
   if( _custom_operation_interpreter.get() == nullptr )
   {
-    _custom_operation_interpreter = std::make_shared<
-      generic_custom_operation_interpreter< hive::protocol::rc_custom_operation > >( db, HIVE_RC_CUSTOM_OPERATION_ID );
+    _custom_operation_interpreter = std::make_shared< rc_custom_operation_interpreter >( db );
 
     // register evaluator for each custom operation (we have just one at the moment)
     _custom_operation_interpreter->register_evaluator< delegate_rc_evaluator >( nullptr );

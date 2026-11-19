@@ -223,11 +223,6 @@ private:
     collect_one(op, op.new_owner_authority, hive::app::key_t::OWNER, op.account_to_recover);
   }
 
-  result_type operator()( const reset_account_operation& op)
-  {
-    collect_one(op, op.new_owner_authority, hive::app::key_t::OWNER, op.account_to_reset);
-  }
-
   result_type operator()( const witness_set_properties_operation& op )
   {
     // "key" is the current signing key that authorizes the operation. When "new_signing_key" is present

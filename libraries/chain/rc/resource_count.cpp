@@ -437,8 +437,8 @@ struct count_operation_visitor
   void operator()( const custom_json_operation& op )const
   {
     execution_time_count += _e.custom_json_time;
-    //note: extra cost for delegate_rc_operation and (future) similar ops was already collected during
-    //on_post_apply_custom_operation signal handling
+    //note: extra cost for delegate_rc_operation and (future) similar ops embedded in custom_json was
+    //already collected during their evaluation (see handle_custom_op_usage)
   }
 
   void operator()( const custom_binary_operation& o )const
@@ -545,6 +545,8 @@ struct count_operation_visitor
     execution_time_count += _e.recover_account_time;
   }
 
+  //used for both forms of delegate_rc_operation - regular (since HF29) and embedded in custom_json
+  //(on top of cost of custom_json_operation itself)
   void operator()( const delegate_rc_operation& op ) const
   {
     if( op.max_rc != 0 )
@@ -555,7 +557,6 @@ struct count_operation_visitor
   // Time critical or simply operations that were outdated when RC was started in HF20 - no extra cost
   void operator()( const pow_operation& ) const {}
   void operator()( const pow2_operation& ) const {}
-  void operator()( const reset_account_operation& ) const {}
   void operator()( const set_reset_account_operation& ) const {}
 
   // Virtual Ops (their costs, be it hived or HM, should be added to operations that spawn them)
