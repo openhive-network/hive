@@ -18,9 +18,10 @@
 #   - chain-smoke     chain_test basic_tests
 #   - chain-tests     every chain_test suite, in parallel (scripts/run_chain_tests_parallel.sh)
 #   - plugin-api      plugin_test without witness_tests (CI's plugin_test_api)
-#   - plugin-tests    all of plugin_test (CI's plugin_test_api + plugin_test_witness), in
-#                     parallel: the suites other than witness_tests as one process,
-#                     each witness_tests case as its own
+#   - plugin-tests    all of plugin_test (CI's plugin_test_api + plugin_test_witness +
+#                     plugin_test_p2p_protocol), in parallel: the suites other than
+#                     witness_tests and p2p_protocol_tests as one process, each case of
+#                     those two as its own
 #   - integration     the tests/integration scripts the diff selects (.aidev/integration.sh),
 #                     each against a hived image built from the checkout, one junit case
 #                     per script; off unless HIVE_AIDEV_INTEGRATION=1, and needs a docker
@@ -456,14 +457,18 @@ chain_tests() {
 # p2p on no fixed port) is its own. colony_basic_test alone takes ~7.5 min, the
 # rest together less, so it starts first and bounds the step. Its units' timeout
 # floor is 900 s: chain_test's 600 s leaves colony_basic_test too little headroom.
+# p2p_protocol_tests is disabled by default (CI runs it in a job of its own), so
+# "!witness_tests" leaves it out; each of its cases is a unit of its own too.
 plugin_units() {  # BINARY
     "$1" --list_content 2>&1 | awk -v first=colony_basic_test '
         /^[^ ]/ { suite = $1; sub(/[*:].*/, "", suite)
-                  if (suite != "witness_tests" && /\*/) others = 1; next }
+                  if (suite != "witness_tests" && suite != "p2p_protocol_tests" && /\*/) others = 1; next }
         suite == "witness_tests" && /^    [^ ]/ && /\*/ { name = $1; sub(/[*:].*/, "", name); n++; witness[n] = name }
+        suite == "p2p_protocol_tests" && /^    [^ ]/ { name = $1; sub(/[*:].*/, "", name); m++; p2p[m] = name }
         END { for (i = 1; i <= n; i++) if (witness[i] == first) print "witness_tests/" first
               if (others) print "!witness_tests"
-              for (i = 1; i <= n; i++) if (witness[i] != first) print "witness_tests/" witness[i] }'
+              for (i = 1; i <= n; i++) if (witness[i] != first) print "witness_tests/" witness[i]
+              for (i = 1; i <= m; i++) print "p2p_protocol_tests/" p2p[i] }'
 }
 
 plugin_tests() {
