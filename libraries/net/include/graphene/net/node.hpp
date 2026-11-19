@@ -602,6 +602,8 @@ namespace graphene { namespace net {
     }
 
     bool has_blocks() const { return !_blocks.empty(); }
+    /// whether block @p item is among the entries; looks through the blocks, which are few
+    bool has_block(const item_id& item) const;
     bool has_transactions() const { return !_transactions.empty(); }
     size_t size() const { return _blocks.size() + _transactions.size(); }
     void clear();
@@ -663,8 +665,9 @@ namespace graphene { namespace net {
      * How many more transactions the peer may be asked for while @p in_flight are outstanding with it, in requests
      * of at most max_transactions_per_request() each: as many as keeps the outstanding ones within
      * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER and their expected bytes within
-     * GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER.  While some are outstanding it is 0 until there is
-     * room for half a request, so a peer kept busy is asked in batches rather than a few transactions at a time.
+     * GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER, though always one full request.  While some are
+     * outstanding it is 0 until there is room for half a request, so a peer kept busy is asked in batches rather
+     * than a few transactions at a time.
      */
     size_t transactions_to_request(size_t in_flight) const;
 
@@ -885,13 +888,16 @@ namespace graphene { namespace net {
   {
     bool deprioritized = false;    ///< peer_connection::is_block_fetching_deprioritized()
     bool can_take_request = false; ///< we may send the peer another request now
+    bool idle = false;             ///< nothing is outstanding with the peer, not even transactions
   };
 
   /**
    * Which of @p candidates, every peer that advertised a block, to request the block from now; none means wait.
    * Candidates come in the order we would rather ask them (least loaded first).  A deprioritized peer is
    * asked only when no other peer advertised the block: while one did but cannot take a request yet, the
-   * block waits for it.  The returned index is always that of a candidate that can take a request.
+   * block waits for it.  Among the others an idle one is asked before one with transactions outstanding,
+   * whose replies the peer would send ahead of the block; one with transactions outstanding is asked only
+   * if no idle one can take the request.  The returned index is always that of a candidate that can take a request.
    */
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates);
 

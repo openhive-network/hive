@@ -562,7 +562,9 @@ namespace graphene { namespace net {
       fc::time_point oldest_item_timestamp_to_fetch() const;
       /// drops the items to fetch we heard about too long ago, returning how many
       size_t remove_expired_items_to_fetch();
-      fetch_candidate_verdict judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item);
+      /// @p idle_peers: the peers of the fetch pass that had nothing outstanding when it began
+      fetch_candidate_verdict judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item,
+                                                    const std::unordered_set<const peer_connection*>& idle_peers);
       void add_fetch_candidate(peer_connection* peer, const item_id& item);
       /// Adds @p item to the items to fetch, and to the fetch candidates of every peer that advertised it,
       /// if any did; returns whether one did
@@ -1427,7 +1429,8 @@ namespace graphene { namespace net {
     }
 
     // expired items are removed from _items_to_fetch before the candidates are judged, so they are dropped here
-    fetch_candidate_verdict node_impl::judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item)
+    fetch_candidate_verdict node_impl::judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item,
+                                                             const std::unordered_set<const peer_connection*>& idle_peers)
     {
       auto& items_by_id = _items_to_fetch.get<item_id_index>();
       auto iter = items_by_id.find(item);
@@ -1435,15 +1438,22 @@ namespace graphene { namespace net {
         return fetch_candidate_verdict::drop; // we got it, requested it from another peer, or it expired
       if (!peer_advertised_item(peer.get(), item))
         return fetch_candidate_verdict::drop; // the peer said it doesn't have it, sent us a bad copy, or advertised it too long ago
-      if (item.item_type == graphene::net::block_message_type && peer->is_block_fetching_deprioritized())
+      if (item.item_type == graphene::net::block_message_type &&
+          (peer->is_block_fetching_deprioritized() || idle_peers.find(peer.get()) == idle_peers.end()))
       {
         // a peer kept despite sending us a block whose body didn't match its header is asked only if no
-        // other peer advertised the block, so its next bad copy doesn't delay the genuine one.  Other peers
-        // ask for it from their own candidates when they can take a request, so here they only count as sources
-        std::vector<block_source_candidate> candidates{{true, true}};
+        // other peer advertised the block, so its next bad copy doesn't delay the genuine one.  A peer with
+        // transactions outstanding would send the block only after their replies, so it is asked only if no
+        // idle peer (idle when the pass began) can be.  Other peers ask for it from their own candidates when
+        // they can take a request: an idle one that has it among them takes it in this pass, the others only
+        // count as sources
+        std::vector<block_source_candidate> candidates{{peer->is_block_fetching_deprioritized(), true, false}};
         for (const peer_connection_ptr& other_peer : _active_connections)
-          if (other_peer != peer && other_peer->block_inventory_peer_advertised_to_us.find(item) != other_peer->block_inventory_peer_advertised_to_us.end())
-            candidates.push_back({other_peer->is_block_fetching_deprioritized(), false});
+          if (other_peer != peer && peer_advertised_item(other_peer.get(), item))
+          {
+            const bool idle_taker = idle_peers.find(other_peer.get()) != idle_peers.end() && other_peer->fetch_candidates.has_block(item);
+            candidates.push_back({other_peer->is_block_fetching_deprioritized(), idle_taker, idle_taker});
+          }
         if (choose_block_source(candidates) != std::optional<size_t>(0))
           return fetch_candidate_verdict::keep; // in case the other sources disconnect without delivering it
       }
@@ -1470,7 +1480,8 @@ namespace graphene { namespace net {
         // Peers with no block or sync request outstanding are asked, each for items from its own fetch
         // candidates: blocks one request at a time, transactions while the peer's window has room, so the
         // next batch may go out before earlier replies have arrived.  They take turns, one item each, so
-        // items several of them advertised are spread evenly among them
+        // items several of them advertised are spread evenly among them, except that a block goes to a
+        // peer with nothing outstanding when one advertised it (see judge_fetch_candidate())
         struct peer_and_items_to_fetch
         {
           peer_connection_ptr peer;
@@ -1483,6 +1494,7 @@ namespace graphene { namespace net {
           std::vector<item_id> item_ids;
         };
         std::vector<peer_and_items_to_fetch> items_by_peer;
+        std::unordered_set<const peer_connection*> idle_peers;
         for (const peer_connection_ptr& peer : _active_connections)
           if (peer->can_take_item_request() && peer->fetch_candidates.size() > 0)
           {
@@ -1494,6 +1506,8 @@ namespace graphene { namespace net {
             if (max_transactions == 0 && !peer->fetch_candidates.has_blocks())
               continue;
             peer->fetch_candidates.begin_pass();
+            if (peer->idle())
+              idle_peers.insert(peer.get());
             items_by_peer.push_back({peer, max_transactions > 0, max_transactions,
                                      peer->received_transaction_size.max_transactions_per_request()});
           }
@@ -1508,7 +1522,7 @@ namespace graphene { namespace net {
             const peer_connection_ptr& peer = peer_and_items.peer;
             const std::optional<item_id> item_id_to_fetch =
               peer->fetch_candidates.take_next(peer_and_items.include_transactions,
-                                               [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate); },
+                                               [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate, idle_peers); },
                                                _statistics.fetch.candidates_examined);
             if (!item_id_to_fetch)
             {
@@ -7702,6 +7716,11 @@ namespace graphene { namespace net {
     _transactions_kept = 0;
   }
 
+  bool fetch_candidate_queue::has_block(const item_id& item) const
+  {
+    return std::any_of(_blocks.begin(), _blocks.end(), [&](const entry& queued) { return queued.item == item; });
+  }
+
   void fetch_candidate_queue::clear()
   {
     _blocks.clear();
@@ -7730,8 +7749,9 @@ namespace graphene { namespace net {
   size_t transaction_size_estimate::transactions_to_request(size_t in_flight) const
   {
     const size_t per_request = max_transactions_per_request();
-    const size_t window = std::min<size_t>(GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER,
-                                           std::max<size_t>(GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER / std::max<size_t>(_mean, 1), 1));
+    const size_t window = std::max(per_request,
+                                   std::min<size_t>(GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER,
+                                                    GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER / std::max<size_t>(_mean, 1)));
     if (in_flight >= window)
       return 0;
     const size_t room = window - in_flight;
@@ -7997,20 +8017,26 @@ namespace graphene { namespace net {
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates)
   {
     std::optional<size_t> first_deprioritized_available;
+    std::optional<size_t> first_preferred_available;
     bool preferred_source_exists = false;
     for (size_t i = 0; i < candidates.size(); ++i)
     {
       if (!candidates[i].deprioritized)
       {
         if (candidates[i].can_take_request)
-          return i;
+        {
+          if (candidates[i].idle)
+            return i;
+          if (!first_preferred_available)
+            first_preferred_available = i;
+        }
         preferred_source_exists = true;
       }
       else if (candidates[i].can_take_request && !first_deprioritized_available)
         first_deprioritized_available = i;
     }
     if (preferred_source_exists)
-      return std::nullopt;
+      return first_preferred_available;
     return first_deprioritized_available;
   }
 

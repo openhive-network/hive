@@ -5,6 +5,7 @@
 
 #include <hive/protocol/config.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <string>
 
@@ -117,7 +118,7 @@ BOOST_AUTO_TEST_CASE( at_least_one_transaction_per_request )
 BOOST_AUTO_TEST_CASE( small_transactions_pipeline_requests_up_to_item_window )
 {
   BOOST_CHECK_EQUAL( max_in_flight, 2 * max_transactions );
-  const transaction_size_estimate estimate = settled_at( 300 );
+  const transaction_size_estimate estimate = settled_at( 150 );
   BOOST_REQUIRE_EQUAL( estimate.max_transactions_per_request(), max_transactions );
   BOOST_CHECK_EQUAL( estimate.transactions_to_request( 0 ), max_in_flight );
   BOOST_CHECK_EQUAL( estimate.transactions_to_request( max_transactions ), max_transactions );
@@ -128,18 +129,21 @@ BOOST_AUTO_TEST_CASE( small_transactions_pipeline_requests_up_to_item_window )
   BOOST_CHECK_LE( fill_window( estimate ) * estimate.mean(), max_bytes_in_flight );
 }
 
-/// With large transactions the byte limit bounds all outstanding requests together, not each one, so the
-/// peer's send queue holds no more of our replies than with one request at a time.
+/// With large transactions the byte limit bounds all outstanding requests together, not each one, though a peer
+/// may always be asked for one full request: its send queue holds no more of our replies than with one request
+/// at a time.
 BOOST_AUTO_TEST_CASE( byte_limit_bounds_all_outstanding_requests )
 {
   BOOST_CHECK_LT( max_bytes_in_flight, size_t( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES ) );
-  const size_t sizes[] = { 1024, 4096, 16384, HIVE_MAX_TRANSACTION_SIZE };
+  const size_t sizes[] = { 300, 1024, 4096, 16384, HIVE_MAX_TRANSACTION_SIZE };
   for( size_t size : sizes )
   {
     const transaction_size_estimate estimate = settled_at( size );
     const size_t window = fill_window( estimate );
-    BOOST_CHECK_GE( window, estimate.max_transactions_per_request() );
-    BOOST_CHECK_LE( window * estimate.mean(), max_bytes_in_flight );
+    const size_t per_request = estimate.max_transactions_per_request();
+    BOOST_CHECK_GE( window, per_request );
+    if( window > per_request )
+      BOOST_CHECK_LE( window * estimate.mean(), max_bytes_in_flight );
     BOOST_CHECK_EQUAL( estimate.transactions_to_request( window ), 0u );
   }
   // 4 KiB transactions: one full request takes the whole byte window
@@ -162,6 +166,31 @@ BOOST_AUTO_TEST_CASE( busy_peer_is_asked_again_only_for_half_a_request )
   const transaction_size_estimate huge = settled_at( 2 * max_bytes );
   BOOST_CHECK_EQUAL( huge.transactions_to_request( 0 ), 1u );
   BOOST_CHECK_EQUAL( huge.transactions_to_request( 1 ), 0u );
+}
+
+/// A peer whose transactions settled at 300 B is asked for a window of them; they turn out to be 1.4 KB each,
+/// which the mean learns only as their replies arrive.  Neither what was asked at once nor what is outstanding
+/// later, while the window refills as replies arrive, would push the peer's send queue over its limit.
+BOOST_AUTO_TEST_CASE( window_stays_within_sender_queue_after_size_jump )
+{
+  const size_t queue_limit = GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES;
+  const size_t new_size = 1400;
+  transaction_size_estimate estimate = settled_at( 300 );
+  size_t in_flight = fill_window( estimate );
+  BOOST_CHECK_GT( in_flight, estimate.max_transactions_per_request() ); // still more than one request per round trip
+  BOOST_CHECK_LT( in_flight * new_size, queue_limit );
+
+  size_t most_in_flight = in_flight;
+  for( int reply = 0; reply < 3000; ++reply )
+  {
+    BOOST_REQUIRE_GT( in_flight, 0u );
+    --in_flight;
+    estimate.record( new_size );
+    in_flight += estimate.transactions_to_request( in_flight );
+    most_in_flight = std::max( most_in_flight, in_flight );
+  }
+  BOOST_CHECK_LT( most_in_flight * new_size, queue_limit );
+  BOOST_CHECK_EQUAL( fill_window( estimate ), estimate.max_transactions_per_request() );
 }
 
 /// Before the peer sent a transaction its window is one request of the largest transactions.

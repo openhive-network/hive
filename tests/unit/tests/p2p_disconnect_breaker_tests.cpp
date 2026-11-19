@@ -111,6 +111,29 @@ BOOST_AUTO_TEST_CASE( block_source_none_available )
   BOOST_CHECK( !choose_block_source( busy ) );
 }
 
+/// Of two peers that advertised a block, one with transactions outstanding and one idle, the idle one is asked
+/// whichever comes first: the other would send the block only after the replies it owes us.
+BOOST_AUTO_TEST_CASE( block_source_prefers_idle_peer_over_one_with_transactions_outstanding )
+{
+  const block_source_candidate with_transactions{ false, true, false };
+  const block_source_candidate idle{ false, true, true };
+  BOOST_CHECK( choose_block_source( { with_transactions, idle } ) == std::optional<size_t>( 1 ) );
+  BOOST_CHECK( choose_block_source( { idle, with_transactions } ) == std::optional<size_t>( 0 ) );
+  BOOST_CHECK( choose_block_source( { with_transactions, with_transactions, idle } ) == std::optional<size_t>( 2 ) );
+}
+
+/// Without an idle advertiser that can take the request, a peer with transactions outstanding is still asked rather
+/// than the block waiting for one to go idle; a deprioritized idle peer doesn't count as one.
+BOOST_AUTO_TEST_CASE( block_source_asks_peer_with_transactions_outstanding_when_no_idle_one_can_be )
+{
+  const block_source_candidate with_transactions{ false, true, false };
+  const block_source_candidate blocked{ false, false, false };
+  const block_source_candidate deprioritized_idle{ true, true, true };
+  BOOST_CHECK( choose_block_source( { with_transactions } ) == std::optional<size_t>( 0 ) );
+  BOOST_CHECK( choose_block_source( { blocked, with_transactions } ) == std::optional<size_t>( 1 ) );
+  BOOST_CHECK( choose_block_source( { deprioritized_idle, with_transactions } ) == std::optional<size_t>( 1 ) );
+}
+
 /// A peer kept despite a body mismatch is deprioritized until it delivers a block we accept.
 BOOST_AUTO_TEST_CASE( deprioritization_ends_when_peer_delivers_good_block )
 {
