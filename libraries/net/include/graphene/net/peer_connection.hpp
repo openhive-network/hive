@@ -119,6 +119,8 @@ namespace graphene { namespace net
     private:
       peer_connection_delegate*      _node;
       fc::optional<fc::ip::endpoint> _remote_endpoint;
+      // cached once the socket is connected, since the socket can't report it after it is closed
+      fc::optional<fc::ip::endpoint> _local_endpoint;
       message_oriented_connection    _message_connection;
 
     public:
@@ -432,7 +434,7 @@ namespace graphene { namespace net
       fc::time_point get_last_message_received_time() const;
 
       fc::optional<fc::ip::endpoint> get_remote_endpoint() const;
-      fc::ip::endpoint get_local_endpoint();
+      fc::optional<fc::ip::endpoint> get_local_endpoint() const;
       void set_remote_endpoint(fc::optional<fc::ip::endpoint> new_remote_endpoint);
 
       bool busy() const;

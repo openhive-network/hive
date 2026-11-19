@@ -1103,8 +1103,11 @@ namespace graphene { namespace net {
       // the local address of a connection in either direction is one of ours: for an inbound one it
       // is exactly the address the peer dialed, and so the one it will advertise for us
       if (_actual_listening_endpoint.port() != 0)
-        remember_own_endpoint(fc::ip::endpoint(peer->get_socket().local_endpoint().get_address(),
-                                               _actual_listening_endpoint.port()));
+      {
+        const fc::optional<fc::ip::endpoint> local_endpoint = peer->get_local_endpoint();
+        if (local_endpoint)
+          remember_own_endpoint(fc::ip::endpoint(local_endpoint->get_address(), _actual_listening_endpoint.port()));
+      }
     }
 
     void node_impl::p2p_network_connect_loop()
@@ -6022,7 +6025,7 @@ namespace graphene { namespace net {
       // if we know that we're behind a NAT that will allow incoming connections because our firewall
       // detection figured it out, send those values instead.
 
-      fc::ip::endpoint local_endpoint(peer->get_socket().local_endpoint());
+      fc::ip::endpoint local_endpoint(*peer->get_local_endpoint());
       uint16_t listening_port = _node_configuration.accept_incoming_connections ? _actual_listening_endpoint.port() : 0;
 
       if (_is_firewalled == firewalled_state::not_firewalled &&
@@ -6191,7 +6194,7 @@ namespace graphene { namespace net {
       else
       {
         // connection was successful and we want to stay connected
-        fc::ip::endpoint local_endpoint = new_peer->get_local_endpoint();
+        fc::ip::endpoint local_endpoint = *new_peer->get_local_endpoint();
         new_peer->inbound_address = local_endpoint.get_address();
         new_peer->inbound_port = _node_configuration.accept_incoming_connections ? _actual_listening_endpoint.port() : 0;
         new_peer->outbound_port = local_endpoint.port();
@@ -6914,7 +6917,8 @@ namespace graphene { namespace net {
           this_peer_status.host = *endpoint;
         fc::mutable_variant_object peer_details;
         peer_details["addr"] = endpoint ? (std::string)*endpoint : std::string();
-        peer_details["addrlocal"] = (std::string)peer->get_local_endpoint();
+        fc::optional<fc::ip::endpoint> local_endpoint = peer->get_local_endpoint();
+        peer_details["addrlocal"] = local_endpoint ? (std::string)*local_endpoint : std::string();
         peer_details["services"] = "00000001";
         peer_details["lastsend"] = peer->get_last_message_sent_time().sec_since_epoch();
         peer_details["lastrecv"] = peer->get_last_message_received_time().sec_since_epoch();

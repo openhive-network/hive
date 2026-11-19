@@ -314,6 +314,7 @@ namespace graphene { namespace net
         // firewall-detecting info is pretty useless for inbound connections, but initialize
         // it the best we can
         fc::ip::endpoint local_endpoint = _message_connection.get_socket().local_endpoint();
+        _local_endpoint = local_endpoint;
         inbound_address = local_endpoint.get_address();
         inbound_port = local_endpoint.port();
         outbound_port = inbound_port;
@@ -360,6 +361,7 @@ namespace graphene { namespace net
         }
         negotiation_status = connection_negotiation_status::connecting;
         _message_connection.connect_to( remote_endpoint );
+        _local_endpoint = _message_connection.get_socket().local_endpoint();
         negotiation_status = connection_negotiation_status::connected;
         their_state = their_connection_state::just_connected;
         our_state = our_connection_state::just_connected;
@@ -717,10 +719,10 @@ namespace graphene { namespace net
       VERIFY_CORRECT_THREAD();
       return _remote_endpoint;
     }
-    fc::ip::endpoint peer_connection::get_local_endpoint()
+    fc::optional<fc::ip::endpoint> peer_connection::get_local_endpoint() const
     {
       VERIFY_CORRECT_THREAD();
-      return _message_connection.get_socket().local_endpoint();
+      return _local_endpoint;
     }
 
     void peer_connection::set_remote_endpoint( fc::optional<fc::ip::endpoint> new_remote_endpoint )
