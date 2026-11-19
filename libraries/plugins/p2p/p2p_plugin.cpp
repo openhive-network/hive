@@ -351,6 +351,8 @@ fc::time_point_sec p2p_plugin_impl::get_block_time( const graphene::net::item_ha
 {
   try
   {
+    if( block_id == graphene::net::item_hash_t() )
+      return HIVE_GENESIS_TIME;
     // also known for recent blocks a fully pruned node no longer has
     const fc::optional<fc::time_point_sec> block_time =
       chain.block_reader().fetch_block_time_by_id(block_id);
