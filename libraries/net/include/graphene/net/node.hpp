@@ -703,13 +703,18 @@ namespace graphene { namespace net {
     size_t transactions() const { return _transactions; }
     size_t blocks() const { return _items.size() - _transactions; }
 
-    /// the peer delivered, or said it doesn't have, a transaction we asked it for
-    void record_transaction_reply(fc::time_point when) { _last_transaction_reply = when; }
+    /// the peer delivered, or said it doesn't have, a transaction we asked it for at @p requested
+    void record_transaction_reply(fc::time_point when, fc::time_point requested)
+    {
+      _last_transaction_reply = when;
+      _last_answered_request = requested;
+    }
     /**
-     * One of the items the peer has kept us waiting for longer than @p timeout at @p now, if any.  A block waits
-     * from when it was requested.  A transaction waits from when it was requested or the peer last answered a
-     * transaction request (record_transaction_reply()), whichever is later, so a peer delivering a large window
-     * at link speed is not taken for one that ignores us; but no longer than
+     * One of the items the peer has kept us waiting for longer than @p timeout at @p now, if any.  A transaction
+     * waits from when it was requested or the peer last answered a transaction request (record_transaction_reply()),
+     * whichever is later, so a peer delivering a large window at link speed is not taken for one that ignores us.
+     * A block waits from when it was requested, or from the last reply if that answered a transaction requested
+     * before the block, which the peer sends ahead of it.  Either waits no longer than
      * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING timeouts from its request.
      */
     std::optional<item_id> timed_out(fc::time_point now, fc::microseconds timeout) const;
@@ -718,6 +723,7 @@ namespace graphene { namespace net {
     map_type _items;
     size_t _transactions = 0;
     fc::time_point _last_transaction_reply;
+    fc::time_point _last_answered_request;
   };
 
   /**
@@ -781,6 +787,9 @@ namespace graphene { namespace net {
     void forget_advertised_to_us(slot_type slot, const item_hash_t& item);
     /// Returns whether we had not advertised @p item_record to the peer in @p slot yet
     bool record_advertised_to_peer(const record& item_record, slot_type slot, fc::time_point_sec now);
+    /// Keeps the record of @p item, if there is one, as if a peer had been recorded in it at @p now: while a peer
+    /// we asked for it may still deliver it, the record must still say who else advertised it
+    void keep(const item_hash_t& item, fc::time_point_sec now);
     /// We received and validated @p item: every peer that advertised it to us counts as having been
     /// advertised it instead, so it no longer counts against the peer's limit of advertisements to us
     /// but we still don't advertise it back
@@ -811,6 +820,7 @@ namespace graphene { namespace net {
 
     void set_bit(const record& item_record, slot_type slot, unsigned kind);
     bool set_bit_and_record_time(const record& item_record, slot_type slot, unsigned kind, fc::time_point_sec now);
+    void record_time(const record& item_record, fc::time_point_sec now);
     void reset_bit(const record& item_record, slot_type slot, unsigned kind);
 
     record_set_type _records;

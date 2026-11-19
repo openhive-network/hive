@@ -1529,7 +1529,11 @@ namespace graphene { namespace net {
               peer_and_items.done = true;
               continue;
             }
-            peer->items_requested_from_peer.insert(*item_id_to_fetch, fc::time_point::now());
+            const fc::time_point now = fc::time_point::now();
+            peer->items_requested_from_peer.insert(*item_id_to_fetch, now);
+            // if the peer is dropped for not delivering it, the item is asked of the others that advertised it
+            if (item_id_to_fetch->item_type == trx_message_type)
+              _transaction_inventory.keep(item_id_to_fetch->item_hash, now);
             peer_and_items.item_ids.push_back(*item_id_to_fetch);
             // the peer's blocks are all taken before its first transaction, so a peer that reaches
             // its transaction limit has nothing more to give in this pass
@@ -3686,9 +3690,10 @@ namespace graphene { namespace net {
       auto regular_item_iter = originating_peer->items_requested_from_peer.find(requested_item);
       if (regular_item_iter != originating_peer->items_requested_from_peer.end())
       {
+        const fc::time_point requested = regular_item_iter->second;
         originating_peer->items_requested_from_peer.erase( regular_item_iter );
         if (requested_item.item_type == trx_message_type)
-          originating_peer->items_requested_from_peer.record_transaction_reply(fc::time_point::now());
+          originating_peer->items_requested_from_peer.record_transaction_reply(fc::time_point::now(), requested);
         forget_item_advertised_to_us(originating_peer, requested_item);
         // before handing the request to another peer, re-check that we still need the item:
         // the chain may have advanced past it while it was in flight.  (Only possible for
@@ -5107,8 +5112,9 @@ namespace graphene { namespace net {
         // busy is asked again once per batch rather than per transaction
         const transaction_size_estimate& window = originating_peer->received_transaction_size;
         const bool window_had_room = window.transactions_to_request(originating_peer->items_requested_from_peer.transactions()) > 0;
+        const fc::time_point requested = iter->second;
         originating_peer->items_requested_from_peer.erase(iter);
-        originating_peer->items_requested_from_peer.record_transaction_reply(message_receive_time);
+        originating_peer->items_requested_from_peer.record_transaction_reply(message_receive_time, requested);
         originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
         if (originating_peer->idle())
           trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
@@ -7849,7 +7855,8 @@ namespace graphene { namespace net {
     const fc::time_point ceiling = now - fc::microseconds(timeout.count() * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING);
     for (const map_type::value_type& item_and_time : _items)
       if (item_and_time.second < threshold &&
-          (item_and_time.first.item_type != trx_message_type || no_recent_transaction_reply || item_and_time.second < ceiling))
+          (no_recent_transaction_reply || item_and_time.second < ceiling ||
+           (item_and_time.first.item_type != trx_message_type && _last_answered_request >= item_and_time.second)))
         return item_and_time.first;
     return std::nullopt;
   }
@@ -7936,6 +7943,12 @@ namespace graphene { namespace net {
     return set_bit_and_record_time(item_record, slot, record::advertised_to_peer_kind, now);
   }
 
+  void transaction_inventory::keep(const item_hash_t& item, fc::time_point_sec now)
+  {
+    if (const record* item_record = find(item))
+      record_time(*item_record, now);
+  }
+
   // like a set entry moved from one kind to the other, the moved bits don't make the record newer
   void transaction_inventory::mark_received(const item_hash_t& item)
   {
@@ -7987,13 +8000,18 @@ namespace graphene { namespace net {
     if (!item_record.set(slot, kind))
       return false;
     ++_slots[slot].counts[kind];
+    record_time(item_record, now);
+    return true;
+  }
+
+  void transaction_inventory::record_time(const record& item_record, fc::time_point_sec now)
+  {
     if (now > item_record.last_recorded)
     {
       item_record.last_recorded = now;
       auto& by_time = _records.get<by_last_recorded>();
       by_time.relocate(by_time.end(), by_time.iterator_to(item_record));
     }
-    return true;
   }
 
   void transaction_inventory::reset_bit(const record& item_record, slot_type slot, unsigned kind)
