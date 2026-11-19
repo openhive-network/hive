@@ -2250,6 +2250,28 @@ namespace graphene { namespace net {
       }
     }
 
+    // the messages a peer may send before we have accepted its hello
+    static bool is_handshake_message(uint32_t message_type)
+    {
+      switch (message_type)
+      {
+      case core_message_type_enum::hello_message_type:
+      case core_message_type_enum::legacy_hello_message_type:
+      case core_message_type_enum::connection_accepted_message_type:
+      case core_message_type_enum::connection_rejected_message_type:
+      case core_message_type_enum::legacy_connection_rejected_message_type:
+      case core_message_type_enum::address_request_message_type:
+      case core_message_type_enum::address_message_type:
+      case core_message_type_enum::legacy_address_message_type:
+      case core_message_type_enum::current_time_request_message_type:
+      case core_message_type_enum::current_time_reply_message_type:
+      case core_message_type_enum::closing_connection_message_type:
+        return true;
+      default:
+        return false;
+      }
+    }
+
     void node_impl::on_message(peer_connection* originating_peer, const message& received_message)
     {
       VERIFY_CORRECT_THREAD();
@@ -2262,6 +2284,17 @@ namespace graphene { namespace net {
            ("type", graphene::net::core_message_type_enum(received_message.msg_type))("hash", message_hash)
            ("size", received_message.size)
            ("endpoint", originating_peer->get_remote_endpoint()));
+      if (originating_peer->their_state != peer_connection::their_connection_state::connection_accepted &&
+          !is_handshake_message(received_message.msg_type))
+      {
+        // a legitimate peer sends its hello first, so this is a peer skipping the hello checks (or one we
+        // rejected that hasn't closed yet); not acting on it keeps it off the active list, and the
+        // handshake inactivity timeout closes a peer that never sends a hello
+        dlog("ignoring ${type} from peer ${endpoint}: we have not accepted its hello",
+             ("type", graphene::net::core_message_type_enum(received_message.msg_type))
+             ("endpoint", originating_peer->get_remote_endpoint()));
+        return;
+      }
       switch (received_message.msg_type)
       {
       // New IPv6-aware message types (5018-5022)
@@ -2923,6 +2956,9 @@ namespace graphene { namespace net {
           disconnect_from_peer(originating_peer, "You rejected my connection request (hello message) so I'm disconnecting");
         else if (originating_peer->their_state == peer_connection::their_connection_state::connection_rejected)
           disconnect_from_peer(originating_peer, "I rejected your connection request (hello message) so I'm disconnecting");
+        else if (originating_peer->their_state != peer_connection::their_connection_state::connection_accepted)
+          dlog("not activating peer ${endpoint}: it sent addresses before a hello we accepted",
+               ("endpoint", originating_peer->get_remote_endpoint()));
         else
         {
           fc::optional<fc::ip::endpoint> endpoint_for_db = originating_peer->get_endpoint_for_db();
@@ -3066,6 +3102,7 @@ namespace graphene { namespace net {
 
       //if we are handshaking with a peer that connected to us
       if (originating_peer->direction == peer_connection_direction::inbound &&
+          originating_peer->their_state == peer_connection::their_connection_state::connection_accepted &&
           _handshaking_connections.find(originating_peer->shared_from_this()) != _handshaking_connections.end())
       {
         // handshaking is done, move the connection to fully active status and start synchronizing
@@ -5482,7 +5519,8 @@ namespace graphene { namespace net {
       peer->number_of_unfetched_item_ids = 0;
       peer->we_need_sync_items_from_peer = true;
       peer->last_block_delegate_has_seen = item_hash_t();
-      peer->last_block_time_delegate_has_seen = fc::time_point_sec::min();
+      // the genesis time, not the epoch: the plausible number of sync blocks is measured from it
+      peer->last_block_time_delegate_has_seen = _delegate->get_block_time(item_hash_t());
       peer->inhibit_fetching_sync_blocks = false;
       fetch_next_batch_of_item_ids_from_peer( peer.get() );
     }
