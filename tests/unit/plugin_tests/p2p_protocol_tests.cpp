@@ -559,37 +559,74 @@ BOOST_AUTO_TEST_CASE( handshake_inactivity_test )
   } );
 }
 
-/// A13: on_message has no handshake state check, so a peer can make requests before it sends a hello.
-/// This documents what the node does with them (see the result of #1093): it answers them as on an accepted
-/// connection, and a fetch_blockchain_item_ids from an inbound peer that is still handshaking even moves it
-/// to the active connections, although it never sent a hello the node could check (signature, chain id,
-/// protocol version, duplicate node id, connection limit).
+/// A13: a peer that skips its hello, here one from another chain (the hello is where the node would learn
+/// that), gets answers only to the requests allowed before a hello: time and addresses. Its requests for
+/// block ids and blocks go unanswered, and neither they nor addresses make it an active connection that the
+/// node syncs with or advertises blocks to. A peer that sends its hello first and its request right after,
+/// without waiting for connection_accepted, is answered.
 BOOST_AUTO_TEST_CASE( messages_before_hello_test )
 {
-  start_node();
+  start_node( "", true );
   run( [&]()
   {
-    auto peer = make_peer( "impatient peer" );
-    peer->hello().count = 0;
-    peer->ignore( hello_message_type );
-    peer->ignore( legacy_hello_message_type );
-    peer->connect( node_endpoint() );
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
 
-    const current_time_reply_message time = request< current_time_reply_message >( *peer, current_time_request_message( fc::time_point::now() ) );
+    auto listening = make_peer( "listening peer" );
+    connect_in_sync( *listening );
+
+    auto skipping = make_peer( "other chain peer skipping its hello" );
+    skipping->hello().chain_id = chain_id_type( fc::sha256::hash( std::string( "another chain" ) ) );
+    skipping->hello().count = 0;
+    skipping->ignore( hello_message_type );
+    skipping->ignore( legacy_hello_message_type );
+    skipping->connect( node_endpoint() );
+
+    const current_time_reply_message time = request< current_time_reply_message >( *skipping, current_time_request_message( fc::time_point::now() ) );
     BOOST_CHECK( time.request_received_time != fc::time_point() );
-    BOOST_CHECK( !node_lists( *peer ) );
-
-    const blockchain_item_ids_inventory_message ids =
-      request< blockchain_item_ids_inventory_message >( *peer, fetch_blockchain_item_ids_message( block_message_type, {} ) );
-    BOOST_CHECK_EQUAL( ids.total_remaining_item_count, 0u );
-    BOOST_CHECK( wait_until( [&]() { return node_lists( *peer ); }, reply_timeout ) );
 
     // the node learns from the hello that a peer understands the IPv6-aware messages, so without one it
     // answers in the legacy form
-    request< legacy_address_message >( *peer, address_request_message() );
-    BOOST_CHECK_EQUAL( peer->count( address_message_type ), 0u );
-    BOOST_CHECK_EQUAL( peer->count( connection_accepted_message_type ), 0u );
-    require_kept( *peer );
+    request< legacy_address_message >( *skipping, address_request_message() );
+    BOOST_CHECK_EQUAL( skipping->count( address_message_type ), 0u );
+
+    skipping->send( fetch_blockchain_item_ids_message( block_message_type, {} ) );
+    skipping->send( fetch_items_message( block_message_type, { block_id( 1 ) } ) );
+    skipping->send( address_message() );
+
+    // a block the node advertises to its active peers while the skipping peer waits
+    const uint32_t next = get_block_num() + 1;
+    wait_for_block_num( next );
+    const block_id_type id = block_id( next );
+    BOOST_REQUIRE( wait_until( [&]()
+    {
+      for( const item_ids_inventory_message& inventory : listening->received_as< item_ids_inventory_message >() )
+        if( std::find( inventory.item_hashes_available.begin(), inventory.item_hashes_available.end(), id ) != inventory.item_hashes_available.end() )
+          return true;
+      return false;
+    }, reply_timeout ) );
+    fc::usleep( quiet_period );
+
+    BOOST_CHECK_EQUAL( skipping->count( blockchain_item_ids_inventory_message_type ), 0u );
+    BOOST_CHECK_EQUAL( skipping->count( block_message_type ), 0u );
+    BOOST_CHECK_EQUAL( skipping->count( compressed_block_message_type ), 0u );
+    BOOST_CHECK_EQUAL( skipping->count( item_not_available_message_type ), 0u );
+    BOOST_CHECK_EQUAL( skipping->count( item_ids_inventory_message_type ), 0u );
+    // the node asks a peer for block ids once it takes it up
+    BOOST_CHECK_EQUAL( skipping->count( fetch_blockchain_item_ids_message_type ), 0u );
+    BOOST_CHECK_EQUAL( skipping->count( connection_accepted_message_type ), 0u );
+    BOOST_CHECK( !node_lists( *skipping ) );
+    BOOST_CHECK( node_lists( *listening ) );
+
+    auto eager = make_peer( "eager legacy peer" );
+    eager->hello().hello_form = hello_options::form::legacy;
+    eager->connect( node_endpoint() );
+    const blockchain_item_ids_inventory_message ids =
+      request< blockchain_item_ids_inventory_message >( *eager, fetch_blockchain_item_ids_message( block_message_type, {} ) );
+    BOOST_CHECK( !ids.item_hashes_available.empty() );
+    BOOST_CHECK( eager->accepted() );
+    BOOST_CHECK( wait_until( [&]() { return node_lists( *eager ); }, reply_timeout ) );
+    require_kept( *eager );
   } );
 }
 
@@ -1302,9 +1339,8 @@ BOOST_AUTO_TEST_CASE( invalid_sync_ids_test )
   } );
 }
 
-/// E6 at genesis: a node without blocks measures the plausible number of sync blocks from the time of the
-/// zero block id, which is the epoch, so it accepts a count that reaches far into the future. Documents
-/// current behaviour (see the result of #1093).
+/// E6 at genesis: a node without blocks measures the plausible number of sync blocks from the genesis time,
+/// so a count reaching far past now ends the connection
 BOOST_AUTO_TEST_CASE( implausible_sync_count_at_genesis_test )
 {
   const std::vector< block_ptr > chain = generate_chain( 2 );
@@ -1315,18 +1351,14 @@ BOOST_AUTO_TEST_CASE( implausible_sync_count_at_genesis_test )
     peer->serve_blocks( chain );
     peer->on( fetch_blockchain_item_ids_message_type, [&]( test_peer& self, const message& m )
     {
-      // only the first request is answered
-      if( self.count( fetch_blockchain_item_ids_message_type ) == 1 )
-        self.send( blockchain_item_ids_inventory_message( 1000000, block_message_type,
-                                                          { chain[ 0 ]->get_block_id(), chain[ 1 ]->get_block_id() } ) );
+      // genesis is 20 minutes ago, so a million more blocks would reach about a month past now
+      self.send( blockchain_item_ids_inventory_message( 1000000, block_message_type,
+                                                        { chain[ 0 ]->get_block_id(), chain[ 1 ]->get_block_id() } ) );
     } );
     peer->connect( node_endpoint() );
-    // the node takes the count as plausible: rather than disconnecting, it asks for more ids (it collects
-    // many before it fetches blocks)
-    BOOST_REQUIRE( peer->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout, 2 ) );
-    fc::usleep( quiet_period );
-    const fc::optional< closing_connection_message > closing = peer->closing_message();
-    BOOST_CHECK( !closing || closing->reason_for_closing.find( "more sync blocks than could possibly exist" ) == std::string::npos );
+    require_closed_with( *peer, "more sync blocks than could possibly exist" );
+    BOOST_CHECK_EQUAL( peer->count( fetch_blockchain_item_ids_message_type ), 1u );
+    BOOST_CHECK_EQUAL( get_block_num(), 0u );
   } );
 }
 
