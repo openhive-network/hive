@@ -69,9 +69,10 @@ Options:
 | `--topology mesh` | every node seeded to the witness |
 | `--topology star` | the witness seeds every colony; the observer seeds the witness |
 | `--topology strict` | star, but each colony and the observer keep only that one link (`p2p-max-connections = 1`) |
-| `--topology chain` | colony0 -> relay1 -> ... -> relayN -> witness -> observer; connection limits leave peer exchange no shortcut |
+| `--topology chain` | every colony -> relay1 -> ... -> relayN -> witness -> observer; connection limits leave peer exchange no shortcut |
+| `--topology diamond` | strict star into the witness, which reaches the observer only through each of `--relays` (at least 2) relays: every block reaches the observer from that many advertisers |
 | `--tpb N` | colony transactions per block, split evenly over the colonies |
-| `--colonies N`, `--relays N` | relays exist only in `chain`, which has one colony |
+| `--colonies N`, `--relays N` | relays exist only in `chain` (between the colonies and the witness) and `diamond` (between the witness and the observer) |
 | `--blocks N` | loaded blocks measured, counted from the colonies' start (default 30); `--colony-start-delay` blocks after the block log's head (default 12) come first: the nodes link up in about 4 of them, the rest are the idle blocks the skew needs |
 | `--fresh-replay` | replay the block log on every node (in parallel) instead of copying replay templates |
 | `--node-hived ROLE=PATH` | a different hived for one node (mixed versions); the others use `--hived` |
@@ -81,6 +82,7 @@ Options:
 | `--sends S` | after 6 loaded blocks, count the witness's send syscalls per thread with bpftrace for S seconds |
 | `--no-p2p-loggers` | leave the p2p_stats and p2p_relay_sample loggers off (see below), e.g. to measure what they cost |
 | `--mix large` | colony replies and articles only, 4000..12000 byte bodies (about 255 transactions fill a 2 MiB block) |
+| `--colony-mix N=MIX`, `--colony-late N=K` | colony N runs MIX instead of `--mix`, and starts K loaded blocks after the others: a size jump on one link in one run when its transactions share a relay with the others (`chain`) |
 | `--remote-host H --remote-roles R,...` | run those nodes on host H, the rest here: see "Two hosts" below |
 
 ### p2p parameters: only what is given, only where the binary has it
@@ -173,6 +175,10 @@ $P run star1 $COMMON --hived $HIVED --topology strict --colonies 1 --tpb 20000
 $P run rtt200 $COMMON --hived $HIVED --topology strict --colonies 1 --tpb 2500 --netem-ms 100
 # 3-hop chain: colony0 -> relay1 -> relay2 -> witness, 1000 tx/block
 $P run chain3 $COMMON --hived $HIVED --topology chain --relays 2 --tpb 1000
+# two advertisers per block: the witness reaches the observer through relay1 and relay2, under a saturated flood
+$P run diamond $COMMON --hived $HIVED --topology diamond --relays 2 --colonies 8 --tpb 20000
+# size jump on one sender: relay1 forwards colony0's default mix, and from loaded block 15 on also colony1's large one
+$P run jump $COMMON --hived $HIVED --topology chain --relays 1 --colonies 2 --tpb 4000 --colony-mix 1=large --colony-late 1=15
 # mixed versions: an older witness among current nodes
 $P run mixed $COMMON --hived $HIVED --node-hived witness=$OLD_HIVED --topology strict --colonies 8 --tpb 20000
 # late joiner: the observer joins 10 loaded blocks late and catches up under load

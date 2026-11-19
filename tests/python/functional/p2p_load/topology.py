@@ -56,18 +56,34 @@ def _strict(w: Wiring, colonies: list[str], relays: list[str]) -> None:
 
 
 def _chain(w: Wiring, colonies: list[str], relays: list[str]) -> None:
-    # colony0 -> relay1 -> ... -> relayN -> witness -> observer; the connection limits leave peer exchange
+    # every colony -> relay1 -> ... -> relayN -> witness -> observer; the connection limits leave peer exchange
     # no room for a shortcut
-    for previous, following in itertools.pairwise([colonies[0], *relays, "witness"]):
+    hops = [*relays, "witness"]
+    w.seed(hops[0], *colonies)
+    for previous, following in itertools.pairwise(hops):
         w.seed(following, previous)
-    w.max_connections[colonies[0]] = 1
-    for role in [*relays, "witness"]:
+    for colony in colonies:
+        w.max_connections[colony] = 1
+    for role in hops:
         w.max_connections[role] = 2
+    w.max_connections[hops[0]] = len(colonies) + 1
     w.seed("observer", "witness")
     w.max_connections["observer"] = 1
 
 
-_TOPOLOGIES = {"mesh": _mesh, "star": _star, "strict": _strict, "chain": _chain}
+def _diamond(w: Wiring, colonies: list[str], relays: list[str]) -> None:
+    # a strict colony star whose witness reaches the observer only through every relay, so each block reaches the
+    # observer from as many advertisers as there are relays; a relay has room for one other relay besides the
+    # witness and the observer, in case peer exchange links two of them before the observer dials in
+    _strict(w, colonies, relays)
+    for relay in relays:
+        w.seed(relay, "witness")
+        w.max_connections[relay] = 3
+    w.seed("observer", *relays)
+    w.max_connections["observer"] = len(relays)
+
+
+_TOPOLOGIES = {"mesh": _mesh, "star": _star, "strict": _strict, "chain": _chain, "diamond": _diamond}
 
 
 def wire(spec: RunSpec) -> Wiring:

@@ -118,8 +118,11 @@ _ENDPOINTS = {"witness": "10.0.0.1:2001", "colony0": "10.0.0.2:2002"}
     ("changes", "error"),
     [
         ({"topology": "ring"}, "topology"),
-        ({"topology": "chain", "colonies": 2}, "one colony"),
+        ({"topology": "diamond", "relays": 1}, "at least two relays"),
         ({"topology": "star", "relays": 1}, "relays"),
+        ({"colony_mixes": {"0": "huge"}}, "mix must be"),
+        ({"colony_mixes": {"1": "large"}}, "colony index"),
+        ({"colony_late_blocks": {"0": 5}}, "late colony"),
         ({"node_hived": {"relay3": "/bin/true"}}, "roles"),
         ({"colony_ports": {"1": 4000}}, "colony index"),
         ({"remote_host": "steem-2"}, "remote roles"),
@@ -329,6 +332,17 @@ def test_report_of_a_finished_run(tmp_path: Path, relay_format: str) -> None:
     assert witness["transaction_requests"]["transactions_per_request"] == pytest.approx(60)
     assert witness["transaction_requests"]["byte_cap_bound_pct"] == pytest.approx(5)
     assert "p2p stats witness" in report.format_summary(summary)
+
+
+def test_a_report_names_the_colonies_with_their_own_mix_or_start(tmp_path: Path) -> None:
+    run_dir = _make_run(tmp_path / "chain-a-1")
+    meta = json.loads((run_dir / "out.json").read_text())
+    meta.update(colonies=2, colony_mixes={"1": "large"}, colony_late_blocks={"1": 15})
+    (run_dir / "out.json").write_text(json.dumps(meta))
+
+    header = report.format_summary(report.summarize(Run.load(run_dir))).splitlines()[0]
+
+    assert header.endswith("mix=default colony1.mix=large colony1.late=15")
 
 
 def test_an_empty_block_stats_line_is_skipped(tmp_path: Path) -> None:
@@ -725,6 +739,42 @@ def test_topologies_wire_every_node_by_role() -> None:
         ("observer", "witness"),
     ]
     assert chain.max_connections == {"colony0": 1, "relay1": 2, "relay2": 2, "witness": 2, "observer": 1}
+
+
+def test_a_chain_takes_every_colony_into_its_first_hop() -> None:
+    relayed = topology.wire(_spec(topology="chain", colonies=2, relays=1))
+    direct = topology.wire(_spec(topology="chain", colonies=3))
+
+    assert relayed.links == [
+        ("relay1", "colony0"),
+        ("relay1", "colony1"),
+        ("witness", "relay1"),
+        ("observer", "witness"),
+    ]
+    assert relayed.max_connections == {"colony0": 1, "colony1": 1, "relay1": 3, "witness": 2, "observer": 1}
+    assert direct.links == [
+        ("witness", "colony0"),
+        ("witness", "colony1"),
+        ("witness", "colony2"),
+        ("observer", "witness"),
+    ]
+    assert direct.max_connections["witness"] == 4
+
+
+def test_a_diamond_reaches_the_observer_through_every_relay() -> None:
+    diamond = topology.wire(_spec(topology="diamond", colonies=2, relays=2))
+
+    assert diamond.links == [
+        ("witness", "colony0"),
+        ("witness", "colony1"),
+        ("observer", "relay1"),
+        ("observer", "relay2"),
+        ("relay1", "witness"),
+        ("relay2", "witness"),
+    ]
+    assert diamond.max_connections == {"observer": 2, "colony0": 1, "colony1": 1, "relay1": 3, "relay2": 3}
+    roles = ["witness", "observer", "colony0", "colony1", "relay1", "relay2"]
+    assert diamond.start_waves(roles) == [["colony0", "colony1"], ["witness"], ["relay1", "relay2"], ["observer"]]
 
 
 @pytest.mark.parametrize(
