@@ -560,7 +560,7 @@ plugin_test_p2p_protocol:
     - if: $DOCS_ONLY == "true"
       when: never
     - if: $CI_COMMIT_BRANCH
-      changes:
+      changes: &p2p_protocol_changes
         paths:
           - libraries/net/**/*
           - libraries/plugins/p2p/**/*
@@ -1839,6 +1839,55 @@ universal_block_log_tests:
   tags:
     - public-runner-docker
 
+# The colony_tests nodes load the builder they run on enough to starve the cases of
+# plugin_test_witness and plugin_test_p2p_protocol that time block production and peer timeouts
+# against the wall clock, so colony_tests wait for this job, which waits for those shards. It runs
+# (when: always) once they end, whatever their result: a job that needs a failed job is skipped,
+# and colony_tests should still run. A plugin_test_p2p_protocol left manual is not waited for: a
+# need on an unplayed manual job counts as skipped at once, which would start this job before
+# plugin_test_witness ends. So the rules follow those of colony_tests, and the ones that add
+# plugin_test_p2p_protocol to the needs follow its automatic rules. rules:needs takes no
+# parallel:matrix, so the shards are named in full; a renamed shard fails pipeline creation.
+colony_tests_after_real_time_unit_tests:
+  stage: test
+  image: alpine:latest
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    - job: "plugin_test_witness: [colony_basic, 720]"
+      artifacts: false
+    - job: "plugin_test_witness: [colony, 300]"
+      artifacts: false
+    - job: "plugin_test_witness: [rest, 300]"
+      artifacts: false
+  rules:
+    - if: $QUICK_TEST == "true"
+      when: never
+    - if: $FORCE_FULL_PIPELINE == "true" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+      needs: &colony_tests_after_witness_and_p2p
+        - job: "plugin_test_witness: [colony_basic, 720]"
+          artifacts: false
+        - job: "plugin_test_witness: [colony, 300]"
+          artifacts: false
+        - job: "plugin_test_witness: [rest, 300]"
+          artifacts: false
+        - job: "plugin_test_p2p_protocol: [1]"
+          artifacts: false
+        - job: "plugin_test_p2p_protocol: [2]"
+          artifacts: false
+      when: always
+    - if: $DOCS_ONLY == "true"
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      changes: *p2p_protocol_changes
+      needs: *colony_tests_after_witness_and_p2p
+      when: always
+    - when: always
+  script:
+    - echo "The plugin_test_witness shards, and plugin_test_p2p_protocol where it runs on its own, have ended"
+  tags:
+    - public-runner-docker
+
 colony_tests:
   stage: test
   extends:
@@ -1848,6 +1897,8 @@ colony_tests:
     - !reference [.test_tools_based, needs]
     - job: build_combined_testing_block_logs_image
       artifacts: true
+    - job: colony_tests_after_real_time_unit_tests
+      artifacts: false
   variables:
     PYTEST_TIMEOUT_MINUTES: 10
     PYTEST_NUMBER_OF_PROCESSES: 1
