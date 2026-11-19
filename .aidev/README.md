@@ -31,7 +31,7 @@ every step still running and the test processes under it.
 | `chain-smoke` | `chain_test --run_test=basic_tests` (includes the state-definition tests) |
 | `chain-tests` | every `chain_test` suite in parallel (`scripts/run_chain_tests_parallel.sh`, CI's `chain_test`) |
 | `plugin-api` | `plugin_test` without `witness_tests` (CI's `plugin_test_api`) |
-| `plugin-tests` | all of `plugin_test` (CI's `plugin_test_api` + `plugin_test_witness`) in parallel: the suites other than `witness_tests` as one process, each `witness_tests` case as its own |
+| `plugin-tests` | all of `plugin_test` (CI's `plugin_test_api` + `plugin_test_witness` + `plugin_test_p2p_protocol`) in parallel: the suites other than `witness_tests` and `p2p_protocol_tests` as one process, each case of those two as its own |
 | `integration` | off unless `HIVE_AIDEV_INTEGRATION=1`; the `tests/integration` scripts the diff selects, each against a hived image built from the checkout (below) |
 | `hived-testnet`, `hived-mainnet` | `hived`, `cli_wallet` and `shared_memory_file_util` with CI's arguments, into `<report dir>/bin` (what `integration` builds an image from) |
 | `wallet-patterns` | the cli_wallet Python pattern tests (CI's `python_pattern_testnet_tests`) against the testnet `hived`, `cli_wallet` and `get_dev_key` it builds as `hived-testnet` does (below) |
@@ -65,8 +65,9 @@ and this figure stays its price.
 
 `plugin_test` suites other than `witness_tests` are not run singly: `snapshots_tests` fails
 when run without the suites before it (it passes in the full `!witness_tests` order, as in CI).
-`witness_tests` cases are: each gets its own data directory (`HIVE_TEMPDIR`) and its p2p
-node listens on no fixed port.
+`witness_tests` and `p2p_protocol_tests` cases are: each gets its own data directory
+(`HIVE_TEMPDIR`) and its p2p node listens on no fixed port. `p2p_protocol_tests` is disabled
+by default, so `!witness_tests` (and `plugin-api`) leaves it out.
 
 ## Wallet pattern tests
 
