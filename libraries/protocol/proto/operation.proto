@@ -36,6 +36,7 @@ import "transfer_to_savings.proto";
 import "transfer_from_savings.proto";
 import "cancel_transfer_from_savings.proto";
 import "decline_voting_rights.proto";
+import "delegate_rc.proto";
 import "claim_reward_balance.proto";
 import "delegate_vesting_shares.proto";
 import "account_create_with_delegation.proto";
@@ -136,6 +137,7 @@ message operation {
         transfer_from_savings transfer_from_savings_operation = 34 [json_name = "transfer_from_savings_operation"];
         cancel_transfer_from_savings cancel_transfer_from_savings_operation = 35 [json_name = "cancel_transfer_from_savings_operation"];
         decline_voting_rights decline_voting_rights_operation = 37 [json_name = "decline_voting_rights_operation"];
+        delegate_rc delegate_rc_operation = 38 [json_name = "delegate_rc_operation"];
         claim_reward_balance claim_reward_balance_operation = 40 [json_name = "claim_reward_balance_operation"];
         delegate_vesting_shares delegate_vesting_shares_operation = 41 [json_name = "delegate_vesting_shares_operation"];
         account_create_with_delegation account_create_with_delegation_operation = 42 [json_name = "account_create_with_delegation_operation"];

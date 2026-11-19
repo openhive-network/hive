@@ -34,4 +34,10 @@
 #define HIVE_HARDFORK_1_29_DOWNVOTE_MANA_OVERFLOW (HIVE_HARDFORK_1_29)
 // daily_pay is bounded so the maintenance payment multiply cannot overflow and halt the chain
 #define HIVE_HARDFORK_1_29_FIX_DHF_DAILY_PAY_OVERFLOW (HIVE_HARDFORK_1_29)
+// delegate_rc_operation can be used as regular operation, not only inside custom_json (issue #866)
+#define HIVE_HARDFORK_1_29_DELEGATE_RC_OPERATION (HIVE_HARDFORK_1_29)
+// minimum RC delegation and pending removal of excess delegations are enforced also in blocks (issue #866)
+#define HIVE_HARDFORK_1_29_STRICT_RC_DELEGATION_RULES (HIVE_HARDFORK_1_29)
+// RC usage collected by failed operations embedded in custom_json is reverted along with their changes in state (issue #866)
+#define HIVE_HARDFORK_1_29_REVERT_RC_USAGE_OF_FAILED_CUSTOM_OPS (HIVE_HARDFORK_1_29)
 #endif

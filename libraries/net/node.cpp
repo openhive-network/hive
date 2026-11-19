@@ -773,6 +773,7 @@ namespace graphene { namespace net {
       fc::variant_object         get_call_statistics() const;
       std::shared_ptr<full_block_type> get_full_block_by_block_id(const block_id_type& block_id) override;
       void on_messages_written(size_t message_count, size_t byte_count) override;
+      std::shared_ptr<full_block_type> get_block_to_send(peer_connection* peer, const item_hash_t& requested_item) override;
 
       fc::variant_object         network_get_info() const;
       fc::variant_object         network_get_usage_stats() const;
@@ -2773,13 +2774,9 @@ namespace graphene { namespace net {
                                                                                       ("code", connection_rejected_message_received.reason_code))),
                                                          rejection_is_failure(connection_rejected_message_received.reason_code));
 
-        // the rejecting peer reports the endpoint it sees us connecting from; outbound connections
-        // are bound to our listening port, so when the port matches that is an address peers know us by
-        const fc::ip::endpoint& endpoint_seen_by_peer = connection_rejected_message_received.remote_endpoint;
-        if (_actual_listening_endpoint.port() != 0 &&
-            endpoint_seen_by_peer.port() == _actual_listening_endpoint.port() &&
-            !is_wildcard_address(endpoint_seen_by_peer.get_address()))
-          remember_own_endpoint(endpoint_seen_by_peer);
+        // the endpoint the rejecting peer reports seeing us at is not taken as one of our own: it is only the
+        // peer's word, and an address we remember as ours is erased from the peer database and never dialed.
+        // An address of ours that peers pass around is learned when dialing it ends in connected_to_self below
 
         if (connection_rejected_message_received.reason_code == rejection_reason_code::connected_to_self)
         {
@@ -3477,6 +3474,55 @@ namespace graphene { namespace net {
       return full_block;
     }
 
+    std::shared_ptr<full_block_type> node_impl::get_block_to_send(peer_connection* peer, const item_hash_t& requested_item)
+    {
+      VERIFY_CORRECT_THREAD();
+      std::shared_ptr<full_block_type> full_block;
+      try
+      {
+        // first, assume item_hash is the hash of a message.  Search our cache for the matching message
+        full_block = _block_message_cache.get_item(requested_item);
+        dlog("returning the block from cache with id ${id} to peer ${endpoint}",
+             ("id", full_block->get_block_id())("endpoint", peer->get_remote_endpoint()));
+      }
+      catch (const fc::key_not_found_exception&)
+      {
+        // it wasn't in our local cache
+      }
+
+      // if we didn't find it, either it has fallen out of our cache, or it wasn't the hash of a message
+      // at all.  If someone was syncing to us, it would be the block_id instead.  We can't tell from
+      // just looking at the hash, so check our cache by block_id, and if that fails, try to get it
+      // from the fork_db/block_log
+      if (!full_block)
+        full_block = get_full_block_by_block_id(requested_item);
+      if (!full_block)
+        return full_block;
+
+      // this block may need to be compressed or decompressed before sending to the peer.  If that's the case,
+      // send it over to a worker thread to get started on it
+      if (peer->supports_compressed_blocks())
+      {
+        if (peer->requires_alternate_compression_for_block(full_block))
+          _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed); // trigger alternate compression
+        else
+          _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed); // trigger default compression
+      }
+      else
+        _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed); // decompress if necessary
+
+      // if we're sending them a block newer than the newest we already knew they had, update our
+      // record of the last block they've seen.  Serving an *older* block (e.g. one they are
+      // backfilling) must not regress the estimate: it feeds synopsis construction and sync
+      // decisions, and regressing it makes us treat an up-to-date peer as far behind
+      if (full_block->get_block_num() > _delegate->get_block_number(peer->last_block_delegate_has_seen))
+      {
+        peer->last_block_delegate_has_seen = full_block->get_block_id();
+        peer->last_block_time_delegate_has_seen = full_block->get_block_header().timestamp;
+      }
+      return full_block;
+    }
+
     void node_impl::on_fetch_items_message(peer_connection* originating_peer, const fetch_items_message& fetch_items_message_received)
     {
       VERIFY_CORRECT_THREAD();
@@ -3485,77 +3531,40 @@ namespace graphene { namespace net {
            ("type", fetch_items_message_received.item_type)
            ("endpoint", originating_peer->get_remote_endpoint()));
 
+      // the send queue closes the connection when it would grow over its limit (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES),
+      // and nothing queued after that is sent
+      const auto connection_is_closing = [originating_peer]() {
+        return originating_peer->negotiation_status == peer_connection::connection_negotiation_status::closing ||
+               originating_peer->negotiation_status == peer_connection::connection_negotiation_status::closed;
+      };
+
       if (fetch_items_message_received.item_type == block_message_type)
       {
-        std::vector<std::shared_ptr<full_block_type>> reply_blocks;
-        reply_blocks.reserve(fetch_items_message_received.items_to_fetch.size());
-        std::shared_ptr<full_block_type> last_full_block_sent;
+        // only the ids are queued: each block is looked up when its turn to be sent is close (get_block_to_send()),
+        // so the blocks held for a peer stay a few however many it asks for, and the queue limit is reached only by
+        // a request for far more blocks than a sync request asks for.  An id asked for more than once in a request
+        // is answered once
+        std::unordered_set<item_hash_t> ids_queued;
         for (const item_hash_t& item_hash : fetch_items_message_received.items_to_fetch)
         {
-          std::shared_ptr<full_block_type> full_block;
-          try
-          {
-            // first, assume item_hash is the hash of a message.  Search our cache for the matching message
-            full_block = _block_message_cache.get_item(item_hash);
-            dlog("received item request from peer ${endpoint}, returning the block from cache with id ${id}",
-                 ("id", full_block->get_block_id())("endpoint", originating_peer->get_remote_endpoint()));
-          }
-          catch (const fc::key_not_found_exception&)
-          {
-            // it wasn't in our local cache
-          }
-
-          // if we didn't find it, either it has fallen out of our cache, or it wasn't the hash of a message
-          // at all.  If someone was syncing to us, it would be the block_id instead.  We can't tell from
-          // just looking at the hash, so check our cache by block_id, and if that fails, try to get it 
-          // from the fork_db/block_log
-          if (!full_block)
-            full_block = get_full_block_by_block_id(item_hash);
-          if (full_block)
-            last_full_block_sent = full_block;
-
-          /// \warning full_block can be null. if so, we can't touch it, but instead (as previously) push it into reply_blocks, to finally produce `item_not_available_message`
-          if (full_block)
-          {
-            // this block may need to be compressed or decompressed before sending to the peer.  If that's the case,
-            // send it over to a worker thread to get started on it
-            if (originating_peer->supports_compressed_blocks())
-            {
-              if (originating_peer->requires_alternate_compression_for_block(full_block))
-                _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_alternate_compressed); // trigger alternate compression
-              else
-                _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_compressed); // trigger default compression
-            }
-            else
-              _thread_pool.enqueue_work(full_block, hive::chain::blockchain_worker_thread_pool::data_source_type::block_log_destined_for_p2p_uncompressed); // decompress if necessary
-          }
-
-          reply_blocks.push_back(std::move(full_block));
-        }
-        assert(reply_blocks.size() == fetch_items_message_received.items_to_fetch.size());
-        for (unsigned i = 0; i < reply_blocks.size(); ++i)
-          if (reply_blocks[i])
-            originating_peer->send_block_message(reply_blocks[i]);
-          else
-            originating_peer->send_message(item_not_available_message(item_id(block_message_type, fetch_items_message_received.items_to_fetch[i])));
-
-        // if we sent them a block newer than the newest we already knew they had, update our
-        // record of the last block they've seen.  Serving an *older* block (e.g. one they are
-        // backfilling) must not regress the estimate: it feeds synopsis construction and sync
-        // decisions, and regressing it makes us treat an up-to-date peer as far behind
-        if (last_full_block_sent &&
-            last_full_block_sent->get_block_num() > _delegate->get_block_number(originating_peer->last_block_delegate_has_seen))
-        {
-          originating_peer->last_block_delegate_has_seen = last_full_block_sent->get_block_id();
-          originating_peer->last_block_time_delegate_has_seen = last_full_block_sent->get_block_header().timestamp;
+          if (connection_is_closing())
+            break;
+          if (ids_queued.insert(item_hash).second)
+            originating_peer->send_block_message(item_hash);
         }
       }
       else if (fetch_items_message_received.item_type == trx_message_type)
       {
+        // an id asked for more than once in a request is answered once: each answer is a full copy of the
+        // transaction in the send queue
+        std::unordered_set<item_hash_t> ids_answered;
+        std::vector<item_hash_t> ids_to_answer;
         std::vector<std::shared_ptr<full_transaction_type>> reply_transactions;
-        reply_transactions.reserve(fetch_items_message_received.items_to_fetch.size());
         for (const item_hash_t& item_hash : fetch_items_message_received.items_to_fetch)
         {
+          if (!ids_answered.insert(item_hash).second)
+            continue;
+          ids_to_answer.push_back(item_hash);
           std::shared_ptr<full_transaction_type> full_transaction;
           try
           {
@@ -3569,12 +3578,12 @@ namespace graphene { namespace net {
           }
           reply_transactions.push_back(std::move(full_transaction));
         }
-        assert(reply_transactions.size() == fetch_items_message_received.items_to_fetch.size());
-        for (unsigned i = 0; i < reply_transactions.size(); ++i)
+        assert(reply_transactions.size() == ids_to_answer.size());
+        for (unsigned i = 0; i < reply_transactions.size() && !connection_is_closing(); ++i)
           if (reply_transactions[i])
             originating_peer->send_transaction_message(reply_transactions[i]);
           else
-            originating_peer->send_message(item_not_available_message(item_id(trx_message_type, fetch_items_message_received.items_to_fetch[i])));
+            originating_peer->send_message(item_not_available_message(item_id(trx_message_type, ids_to_answer[i])));
       }
       else
         FC_THROW("Peer requested an item that wasn't a block or a transaction");
@@ -5052,6 +5061,13 @@ namespace graphene { namespace net {
           // record it so we don't try to fetch this item again
           _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(trx_message_type, message_hash), fc::time_point::now()));
         }
+        catch (...)
+        {
+          // clear the mark however submitting ends, as the block path does: an id left in the set makes us
+          // skip every later advertisement of that transaction until restart
+          _message_ids_currently_being_processed.erase(message_hash);
+          throw;
+        }
       }
     }
 
@@ -5329,7 +5345,7 @@ namespace graphene { namespace net {
         {
           _is_firewalled = firewalled_state::not_firewalled;
           _publicly_visible_listening_endpoint = check_firewall_reply_message_received.endpoint_checked;
-          remember_own_endpoint(*_publicly_visible_listening_endpoint);
+          // not remembered as one of our own addresses (it is the replying peer's word, see on_connection_rejected_message)
         }
         else if (check_firewall_reply_message_received.result == firewall_check_result::unable_to_connect)
         {
@@ -5794,7 +5810,29 @@ namespace graphene { namespace net {
 
     void node_impl::accept_connection_task( const peer_connection_ptr& new_peer )
     {
-      new_peer->accept_connection(); // this blocks until the secure connection is fully negotiated
+      try
+      {
+        new_peer->accept_connection(); // this blocks until the secure connection is fully negotiated
+      }
+      catch (const fc::canceled_exception&)
+      {
+        throw;
+      }
+      catch (...)
+      {
+        // the key exchange failed (accept_connection() has logged why): the remote closed the connection, or we
+        // closed it when the handshake timed out.  The read loop only starts after a successful key exchange, so
+        // on_connection_closed() is never called for this peer; release it here, as connect_to_task() does when
+        // an outbound connection fails
+        _handshaking_connections.erase(new_peer);
+        _terminating_connections.erase(new_peer);
+        assert(_active_connections.find(new_peer) == _active_connections.end());
+        _active_connections.erase(new_peer);
+        assert(_closing_connections.find(new_peer) == _closing_connections.end());
+        _closing_connections.erase(new_peer);
+        schedule_peer_for_deletion(new_peer);
+        return;
+      }
       send_hello_message(new_peer);
     }
 

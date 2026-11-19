@@ -38,8 +38,6 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
 
     // Operations creating accounts that should not collect accounts to be created:
 
-    // Ignore delegate_rc_operation as it is not included into the hive::protocol::operation type
-
     result_type operator()( const hive::protocol::custom_binary_operation& op )const
     {
       for(const auto& acc : op.required_owner_auths)
@@ -101,13 +99,6 @@ namespace hive { namespace converter { namespace plugins { namespace iceberg_gen
       for(const auto& acc : op.new_owner_authority.account_auths)
         accounts_new.insert( acc.first );
       for(const auto& acc : op.recent_owner_authority.account_auths)
-        accounts_new.insert( acc.first );
-    }
-    result_type operator()( const hive::protocol::reset_account_operation& op )const
-    {
-      accounts_new.insert( op.account_to_reset );
-      accounts_new.insert( op.reset_account );
-      for(const auto& acc : op.new_owner_authority.account_auths)
         accounts_new.insert( acc.first );
     }
     result_type operator()( const hive::protocol::set_reset_account_operation& op )const

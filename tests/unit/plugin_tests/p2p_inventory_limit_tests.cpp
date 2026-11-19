@@ -4,6 +4,7 @@
 #include "../db_fixture/witness_fixture.hpp"
 #include "p2p_test_peer.hpp"
 
+#include <hive/chain/full_block.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 
@@ -263,6 +264,116 @@ BOOST_AUTO_TEST_CASE( inventory_limit_deferral_test )
         BOOST_CHECK_EQUAL( reports.back().still_deferred, 0u );
         BOOST_CHECK( !flooding_peer->closed() );
         BOOST_CHECK( !honest_peer.closed() );
+
+        ilog( "'API' thread finished" );
+        test_passed = !theApp.is_interrupt_request();
+      }
+      CATCH( "API" )
+    } );
+
+    _future.wait();
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Peers ask the node for blocks the way a syncing node does. One request names blocks in order with an id
+/// repeated and an id the node doesn't have among them: each block arrives once, in the order asked, and the
+/// unknown id is reported unavailable in its place. A peer that asks for more blocks than its send queue holds
+/// (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES) is disconnected, and the node keeps serving the first peer.
+BOOST_AUTO_TEST_CASE( block_request_test )
+{
+  try
+  {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
+    const std::string p2p_parameters = R"({"listen_endpoint":"127.0.0.1:0","accept_incoming_connections":true})";
+    initialize( 3, {}, { "initminer" }, { config_line_t( { "p2p-parameters", { p2p_parameters } } ) } );
+    bool test_passed = false;
+    fc::logger::get( "user" ).set_log_level( fc::log_level::info ); // suppress fast confirm broadcast messages
+
+    fc::thread api_thread;
+    auto _future = api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ )
+      {
+        this_->theApp.generate_interrupt_request();
+      } BOOST_SCOPE_EXIT_END
+
+      const auto wait_until = [&]( const std::function< bool() >& condition, fc::time_point deadline )
+      {
+        while( !condition() )
+        {
+          if( fc::time_point::now() >= deadline || theApp.is_interrupt_request() )
+            return false;
+          fc::usleep( fc::milliseconds( 100 ) );
+        }
+        return true;
+      };
+
+      try
+      {
+        const uint32_t block_count = 10;
+        BOOST_REQUIRE( wait_until( [&]() { return get_block_num() >= block_count; },
+                                   get_genesis_time() + ( block_count + 5 ) * HIVE_BLOCK_INTERVAL ) );
+        std::vector< block_id_type > block_ids;
+        for( uint32_t block_num = 1; block_num <= block_count; ++block_num )
+          block_ids.push_back( get_block_reader().find_block_id_for_num( block_num ) );
+
+        const fc::ip::endpoint node_endpoint =
+          theApp.get_plugin< hive::plugins::p2p::p2p_plugin >().get_info()[ "listening_on" ].as< fc::ip::endpoint >();
+        fc::thread peer_thread( "test_peers" );
+        test_peer syncing_peer( peer_thread, db->get_chain_id(), "syncing peer" );
+        syncing_peer.connect( node_endpoint );
+        BOOST_REQUIRE( wait_until( [&]() { return syncing_peer.in_sync(); }, fc::time_point::now() + fc::seconds( 10 ) ) );
+
+        const item_hash_t unknown_id = fc::ripemd160::hash( std::string( "no such block" ) );
+        std::vector< item_hash_t > request( block_ids.begin(), block_ids.begin() + 5 );
+        request.push_back( block_ids[ 2 ] );
+        request.push_back( unknown_id );
+        request.insert( request.end(), block_ids.begin() + 5, block_ids.end() );
+        request.push_back( block_ids[ 0 ] );
+        syncing_peer.request_blocks( request );
+
+        BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return syncing_peer.blocks_received().size() >= block_count &&
+                                                          syncing_peer.blocks_not_available().size() >= 1; },
+                                           fc::time_point::now() + fc::seconds( 10 ) ),
+                               "the node did not send the requested blocks" );
+        fc::usleep( fc::seconds( 1 ) ); // anything sent for the repeated ids would have arrived by now
+        BOOST_CHECK( syncing_peer.blocks_received() == block_ids );
+        BOOST_REQUIRE_EQUAL( syncing_peer.blocks_not_available().size(), 1u );
+        BOOST_CHECK( syncing_peer.blocks_not_available().front() == unknown_id );
+
+        // more ids than the send queue of one peer holds: a queued block request takes more than the 35 bytes
+        // GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / greedy_count allows for each, while the request itself
+        // (20 bytes per id) fits in one message and in the greedy peer's own send queue
+        test_peer greedy_peer( peer_thread, db->get_chain_id(), "greedy peer" );
+        greedy_peer.connect( node_endpoint );
+        BOOST_REQUIRE( wait_until( [&]() { return greedy_peer.in_sync(); }, fc::time_point::now() + fc::seconds( 10 ) ) );
+        std::vector< item_hash_t > greedy_request;
+        const size_t greedy_count = 30000;
+        for( size_t i = 0; i < greedy_count; ++i )
+          greedy_request.push_back( fc::ripemd160::hash( "unknown block " + std::to_string( i ) ) );
+        greedy_request.front() = block_ids.front();
+        greedy_peer.request_blocks( greedy_request );
+        BOOST_CHECK_MESSAGE( wait_until( [&]() { return greedy_peer.closed(); }, fc::time_point::now() + fc::seconds( 10 ) ),
+                             "the node kept the connection of a peer that asked for more blocks than its send queue holds" );
+        BOOST_CHECK_LT( greedy_peer.blocks_received().size() + greedy_peer.blocks_not_available().size(), greedy_count );
+
+        syncing_peer.request_blocks( { block_ids.back() } );
+        BOOST_CHECK_MESSAGE( wait_until( [&]() { return syncing_peer.blocks_received().size() == block_count + 1; },
+                                         fc::time_point::now() + fc::seconds( 10 ) ),
+                             "the node stopped serving the syncing peer" );
+        BOOST_CHECK( !syncing_peer.closed() );
 
         ilog( "'API' thread finished" );
         test_passed = !theApp.is_interrupt_request();

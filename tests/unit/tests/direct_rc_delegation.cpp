@@ -28,12 +28,27 @@
 #include <hive/chain/database_exceptions.hpp>
 #include <hive/protocol/hive_operations.hpp>
 #include <hive/protocol/hive_custom_operations.hpp>
+#include <hive/protocol/forward_impacted.hpp>
 
 #include <hive/chain/rc/rc_objects_multiindex.hpp>
+#include <hive/chain/notifications.hpp>
+
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_plugin.hpp>
+#include <hive/plugins/account_history_rocksdb/account_history_rocksdb_objects.hpp>
+
+#include <hive/utilities/signal.hpp>
+#include <hive/utilities/tempdir.hpp>
+
+#include <fc/crypto/hex.hpp>
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
+#include <boost/scope_exit.hpp>
+
+#include <algorithm>
 #include <chrono>
+#include <limits>
+#include <tuple>
 
 using namespace hive::chain;
 using namespace hive::protocol;
@@ -1722,12 +1737,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     custom_op.required_posting_auths.insert( "bob" );
     op.from = "bob";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_post_key ), "!_db.is_in_control() || !_db.rc().has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_post_key ), "!strict_rules || !db.rc().has_expired_delegation( from_account )" );
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "carol" );
     op.from = "carol";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_post_key ), "!_db.is_in_control() || !_db.rc().has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_post_key ), "!strict_rules || !db.rc().has_expired_delegation( from_account )" );
 
     // but we can test that dedelegation while previous one did not end just adds to the object
     // (note that execution of dedelegation will in itself stop at removal limit and only excess
@@ -1747,12 +1762,12 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     custom_op.required_posting_auths.insert( "bob" );
     op.from = "bob";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_post_key ), "!_db.is_in_control() || !_db.rc().has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, bob_post_key ), "!strict_rules || !db.rc().has_expired_delegation( from_account )" );
     custom_op.required_posting_auths.clear();
     custom_op.required_posting_auths.insert( "carol" );
     op.from = "carol";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_post_key ), "!_db.is_in_control() || !_db.rc().has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_post_key ), "!strict_rules || !db.rc().has_expired_delegation( from_account )" );
 
     generate_block();
     BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 5 * removal_limit );
@@ -1770,7 +1785,7 @@ BOOST_AUTO_TEST_CASE( update_outdel_overflow_delegatee_performance )
     custom_op.required_posting_auths.insert( "carol" );
     op.from = "carol";
     custom_op.json = fc::json::to_string( hive::protocol::rc_custom_operation( op ) );
-    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_post_key ), "!_db.is_in_control() || !_db.rc().has_expired_delegation( from_account )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, carol_post_key ), "!strict_rules || !db.rc().has_expired_delegation( from_account )" );
 
     generate_block();
     BOOST_REQUIRE_EQUAL( rc_del_idx.size(), 2 * nr_accounts - 7 * removal_limit + 1 );
@@ -1985,6 +2000,559 @@ BOOST_AUTO_TEST_CASE( delegate_rc_operation_brick_power_down )
     BOOST_REQUIRE_GT( bob_account.get_maximum_rc().value, 0 );
 
     validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_both_forms_serialization )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: delegate_rc_operation as member of both operation and rc_custom_operation" );
+
+    // the same type has independent tag in each static variant it belongs to
+    BOOST_REQUIRE_EQUAL( operation::tag< delegate_rc_operation >::value, 37 );
+    BOOST_REQUIRE_EQUAL( rc_custom_operation::tag< delegate_rc_operation >::value, 0 );
+
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob", "dave" };
+    op.max_rc = 10;
+    BOOST_REQUIRE( !is_virtual_operation( operation( op ) ) );
+
+    // binary forms differ only in tag; the form embedded in custom_json (as well as the custom_json itself) did not change
+    const std::string op_hex = "05616c696365" "0203626f620464617665" "0a00000000000000" "00";
+    BOOST_REQUIRE_EQUAL( fc::to_hex( fc::raw::pack_to_vector( op ) ), op_hex );
+    BOOST_REQUIRE_EQUAL( fc::to_hex( fc::raw::pack_to_vector( rc_custom_operation( op ) ) ), "00" + op_hex );
+    BOOST_REQUIRE_EQUAL( fc::to_hex( fc::raw::pack_to_vector( operation( op ) ) ), "25" + op_hex );
+    {
+      operation unpacked;
+      fc::raw::unpack_from_vector( fc::raw::pack_to_vector( operation( op ) ), unpacked );
+      BOOST_REQUIRE_EQUAL( unpacked.which(), operation::tag< delegate_rc_operation >::value );
+      const auto& unpacked_op = unpacked.get< delegate_rc_operation >();
+      BOOST_REQUIRE( unpacked_op.from == op.from );
+      BOOST_REQUIRE( unpacked_op.delegatees == op.delegatees );
+      BOOST_REQUIRE_EQUAL( unpacked_op.max_rc, op.max_rc );
+    }
+
+    // JSON form used in custom_json did not change; it does not depend on serialization mode, while regular
+    // operation follows the mode just like all other operations
+    const std::string op_json = "{\"from\":\"alice\",\"delegatees\":[\"bob\",\"dave\"],\"max_rc\":10,\"extensions\":[]}";
+    const std::string hf26_json = "{\"type\":\"delegate_rc_operation\",\"value\":" + op_json + "}";
+    {
+      serialization_mode_controller::mode_guard guard( transaction_serialization_type::legacy );
+      const std::string legacy_json = "[\"delegate_rc\"," + op_json + "]";
+      BOOST_REQUIRE_EQUAL( fc::json::to_string( rc_custom_operation( op ) ), hf26_json );
+      BOOST_REQUIRE_EQUAL( fc::json::to_string( operation( op ) ), legacy_json );
+      BOOST_REQUIRE( fc::json::from_string( legacy_json, fc::json::format_validation_mode::full ).as< operation >().get< delegate_rc_operation >().delegatees == op.delegatees );
+    }
+    {
+      serialization_mode_controller::mode_guard guard( transaction_serialization_type::hf26 );
+      BOOST_REQUIRE_EQUAL( fc::json::to_string( rc_custom_operation( op ) ), hf26_json );
+      BOOST_REQUIRE_EQUAL( fc::json::to_string( operation( op ) ), hf26_json );
+      BOOST_REQUIRE( fc::json::from_string( hf26_json, fc::json::format_validation_mode::full ).as< operation >().get< delegate_rc_operation >().delegatees == op.delegatees );
+
+      // conversion of max_rc above int64 is rejected also for operation variant
+      const std::string out_of_range_json = "{\"type\":\"delegate_rc_operation\",\"value\":"
+        "{\"from\":\"alice\",\"delegatees\":[\"bob\"],\"max_rc\":9223372036854775808}}";
+      HIVE_REQUIRE_ASSERT( fc::json::from_string( out_of_range_json, fc::json::format_validation_mode::full ).as< operation >(),
+        "!max_rc.is_uint64() || max_rc.as_uint64() <= max_int64" );
+    }
+
+    // regular operation impacts delegator and all delegatees (custom_json only impacts accounts from its authorities)
+    flat_set< account_name_type > impacted;
+    hive::app::operation_get_impacted_accounts( operation( op ), impacted );
+    BOOST_REQUIRE( impacted == flat_set< account_name_type >( { "alice", "bob", "dave" } ) );
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+    custom_op.json = fc::json::to_string( rc_custom_operation( op ) );
+    impacted.clear();
+    hive::app::operation_get_impacted_accounts( operation( custom_op ), impacted );
+    BOOST_REQUIRE( impacted == flat_set< account_name_type >( { "alice" } ) );
+
+    // both forms require the same authority
+    flat_set< account_name_type > active, owner, posting, witness;
+    std::vector< authority > other;
+    operation_get_required_authorities( operation( op ), active, owner, posting, witness, other );
+    BOOST_REQUIRE( active.empty() && owner.empty() && witness.empty() && other.empty() );
+    BOOST_REQUIRE( posting == flat_set< account_name_type >( { "alice" } ) );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_both_forms_apply )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: delegate_rc_operation used as regular operation and embedded in custom_json" );
+    set_account_creation_fee( HIVE_asset( 3'000 ) ); //mainnet value - makes minimum RC delegation noticeable
+    generate_block();
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob)(carol)(dave) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    generate_block();
+
+    // minimum delegation is expressed in VESTS, so it changes along with VESTS price - below_min() gives amount
+    // that is surely below current minimum, while min_delegation (taken with big margin) stays above it
+    auto get_min_delegation = [&]() -> int64_t
+    {
+      const auto& gpo = db->get_dynamic_global_properties();
+      const auto& wso = db->get_witness_schedule_object();
+      return ( HIVE_asset( wso.median_props.account_creation_fee.amount / 3 ) * gpo.get_vesting_share_price() ).amount.value;
+    };
+    auto below_min = [&]() { return get_min_delegation() / 2; };
+    const int64_t min_delegation = get_min_delegation() * 2;
+    BOOST_REQUIRE_GT( below_min(), 0 );
+    const int64_t alice_vests = get_vesting( "alice" ).amount.value;
+
+    auto to_custom_json = []( const delegate_rc_operation& op )
+    {
+      custom_json_operation custom_op;
+      custom_op.required_posting_auths.insert( op.from );
+      custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+      custom_op.json = fc::json::to_string( rc_custom_operation( op ) );
+      return custom_op;
+    };
+    auto get_delegated = [&]( const account_id_type& to ) -> int64_t
+    {
+      const auto* delegation = db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, to ) );
+      return delegation == nullptr ? -1 : int64_t( delegation->delegated_rc );
+    };
+    auto check_state = [&]( int64_t to_bob, int64_t to_carol )
+    {
+      BOOST_REQUIRE_EQUAL( get_delegated( bob_id ), to_bob );
+      BOOST_REQUIRE_EQUAL( get_delegated( carol_id ), to_carol );
+      BOOST_REQUIRE_EQUAL( db->get_account( "alice" ).get_delegated_rc(), std::max< int64_t >( to_bob, 0 ) + std::max< int64_t >( to_carol, 0 ) );
+      BOOST_REQUIRE_EQUAL( db->get_account( "bob" ).get_received_rc(), std::max< int64_t >( to_bob, 0 ) );
+      BOOST_REQUIRE_EQUAL( db->get_account( "carol" ).get_received_rc(), std::max< int64_t >( to_carol, 0 ) );
+    };
+
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob" };
+
+    BOOST_TEST_MESSAGE( "--- regular operation is subject to the same rules as embedded one" );
+    op.max_rc = alice_vests + 1;
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "from_delegable_rc >= delta_total" );
+    op.max_rc = below_min();
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "op.max_rc >= min_delegation" );
+    op.max_rc = 0;
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "op.max_rc != 0" );
+    op.max_rc = min_delegation;
+    op.delegatees = { "eve" }; // does not exist
+    BOOST_REQUIRE_THROW( push_transaction( op, alice_post_key ), fc::exception );
+    op.delegatees = { "alice" };
+    BOOST_REQUIRE_THROW( push_transaction( op, alice_post_key ), fc::exception ); // validate()
+    op.delegatees = { "bob" };
+    // requires posting authority of delegator, just like the embedded one
+    HIVE_REQUIRE_THROW( push_transaction( op, bob_post_key ), tx_missing_posting_auth );
+    generate_block();
+    check_state( -1, -1 );
+
+    BOOST_TEST_MESSAGE( "--- create delegation with regular operation" );
+    op.max_rc = min_delegation + 1;
+    push_transaction( op, alice_post_key );
+    generate_block();
+    check_state( min_delegation + 1, -1 );
+
+    BOOST_TEST_MESSAGE( "--- decrease it with embedded operation" );
+    op.max_rc = min_delegation;
+    push_transaction( to_custom_json( op ), alice_post_key );
+    generate_block();
+    check_state( min_delegation, -1 );
+
+    BOOST_TEST_MESSAGE( "--- both forms see the same delegation" );
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "delegation->delegated_rc != uint64_t( op.max_rc )" );
+    HIVE_REQUIRE_ASSERT( push_transaction( to_custom_json( op ), alice_post_key ), "delegation->delegated_rc != uint64_t( op.max_rc )" );
+
+    BOOST_TEST_MESSAGE( "--- both forms in the same transaction" );
+    {
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      op.delegatees = { "bob" };
+      op.max_rc = min_delegation + 10; // increase with regular operation
+      tx.operations.push_back( op );
+      op.delegatees = { "carol" };
+      op.max_rc = min_delegation * 2; // create with embedded operation
+      tx.operations.push_back( to_custom_json( op ) );
+      push_transaction( tx, alice_post_key );
+    }
+    generate_block();
+    check_state( min_delegation + 10, min_delegation * 2 );
+
+    BOOST_TEST_MESSAGE( "--- failure of any operation fails whole transaction" );
+    {
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      op.delegatees = { "bob" };
+      op.max_rc = min_delegation + 20;
+      tx.operations.push_back( op );
+      op.delegatees = { "carol" };
+      op.max_rc = below_min();
+      tx.operations.push_back( to_custom_json( op ) );
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_post_key ), "op.max_rc >= min_delegation" );
+      tx.operations.clear();
+      op.delegatees = { "bob" };
+      op.max_rc = min_delegation + 20;
+      tx.operations.push_back( to_custom_json( op ) );
+      op.delegatees = { "carol" };
+      op.max_rc = below_min();
+      tx.operations.push_back( op );
+      HIVE_REQUIRE_ASSERT( push_transaction( tx, alice_post_key ), "op.max_rc >= min_delegation" );
+    }
+    generate_block();
+    check_state( min_delegation + 10, min_delegation * 2 );
+
+    BOOST_TEST_MESSAGE( "--- remove all delegations with regular operation" );
+    op.delegatees = { "bob", "carol" };
+    op.max_rc = 0;
+    push_transaction( op, alice_post_key );
+    generate_block();
+    check_state( -1, -1 );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_both_forms_failure_in_block )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: failed RC delegation in block - regular operation invalidates block, embedded one is ignored" );
+
+    ACTORS( DEFAULT_VESTING, (alice)(bob) );
+    vest( "alice", HIVE_asset( 10'000 ) );
+    generate_block();
+
+    const auto& delegation_idx = db->get_index< rc_direct_delegation_index, by_from_to >();
+    auto find_delegation = [&]() { return delegation_idx.find( boost::make_tuple( alice_id, bob_id ) ); };
+
+    delegate_rc_operation op;
+    op.from = "alice";
+    op.delegatees = { "bob" };
+    op.max_rc = db->get_account( "alice" ).get_maximum_rc().value + 1; // more than alice can delegate
+
+    custom_json_operation custom_op;
+    custom_op.required_posting_auths.insert( "alice" );
+    custom_op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+    custom_op.json = fc::json::to_string( rc_custom_operation( op ) );
+
+    BOOST_TEST_MESSAGE( "--- embedded form" );
+    HIVE_REQUIRE_ASSERT( push_transaction( custom_op, alice_post_key ), "from_delegable_rc >= delta_total" );
+    // work around "is_in_control" by not actually executing transaction
+    db_plugin->debug_push_pending_transaction( build_transaction( custom_op, alice_post_key ) );
+    generate_block_from_pending();
+    // block with such transaction is valid, but delegation is not effective
+    BOOST_REQUIRE_EQUAL( get_block_reader().get_block_by_number( db->head_block_num() )->get_block().transactions.size(), 1u );
+    BOOST_REQUIRE( find_delegation() == delegation_idx.end() );
+
+    BOOST_TEST_MESSAGE( "--- regular form" );
+    const uint32_t head_block_num = db->head_block_num();
+    HIVE_REQUIRE_ASSERT( push_transaction( op, alice_post_key ), "from_delegable_rc >= delta_total" );
+    db_plugin->debug_push_pending_transaction( build_transaction( op, alice_post_key ) );
+    // block with such transaction is invalid
+    HIVE_REQUIRE_ASSERT( generate_block_from_pending(), "from_delegable_rc >= delta_total" );
+    db->clear_pending();
+    BOOST_REQUIRE_EQUAL( db->head_block_num(), head_block_num );
+    BOOST_REQUIRE( find_delegation() == delegation_idx.end() );
+
+    BOOST_TEST_MESSAGE( "--- correct regular operation in block" );
+    op.max_rc = get_vesting( "alice" ).amount.value / 2;
+    db_plugin->debug_push_pending_transaction( build_transaction( op, alice_post_key ) );
+    generate_block_from_pending();
+    BOOST_REQUIRE_EQUAL( db->head_block_num(), head_block_num + 1 );
+    BOOST_REQUIRE( find_delegation() != delegation_idx.end() );
+    BOOST_REQUIRE_EQUAL( find_delegation()->delegated_rc, uint64_t( op.max_rc ) );
+
+    validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+namespace {
+
+using hive::plugins::account_history_rocksdb::rocksdb_operation_object;
+
+operation to_operation( const rocksdb_operation_object& obj )
+{
+  return fc::raw::unpack_from_buffer< operation >( obj.serialized_op );
+}
+
+/// binary form of operation, for comparisons (operator== of operation only compares types)
+template< typename T >
+std::string packed( const T& op )
+{
+  const auto bytes = fc::raw::pack_to_vector( op );
+  return std::string( bytes.begin(), bytes.end() );
+}
+
+std::string packed( const rocksdb_operation_object& obj )
+{
+  return std::string( obj.serialized_op.begin(), obj.serialized_op.end() );
+}
+
+/// Account history entry without its id (only content is compared between live node and replay).
+typedef std::tuple< std::string /*trx_id*/, uint32_t /*block*/, uint32_t /*trx_in_block*/, uint32_t /*op_in_trx*/,
+  bool /*is_virtual*/, fc::time_point_sec /*timestamp*/, std::string /*serialized_op*/ > ah_entry_t;
+
+ah_entry_t to_ah_entry( const rocksdb_operation_object& obj )
+{
+  return ah_entry_t( obj.trx_id.str(), obj.block, obj.trx_in_block, obj.op_in_trx, obj.is_virtual, obj.timestamp, packed( obj ) );
+}
+
+/**
+  * Node with account history and all hardforks active since block 1, so its block log can be replayed with
+  * the same result (unlike clean_database_fixture, that sets hardfork outside of blocks).
+  */
+struct rc_delegation_ah_fixture : public hived_fixture
+{
+  rc_delegation_ah_fixture( const fc::path& data_dir, bool replay )
+    : hived_fixture( !replay /*remove_db_files*/, true /*disable_p2p*/, data_dir )
+  {
+    configuration_data.set_initial_asset_supply( HIVE_INITIAL_TEST_SUPPLY, HBD_INITIAL_TEST_SUPPLY, HP_INITIAL_TEST_SUPPLY );
+    // more witnesses, so blocks don't become irreversible right away
+    std::vector< std::string > init_witnesses;
+    for( int i = HIVE_NUM_INIT_MINERS; i < HIVE_MAX_WITNESSES; ++i )
+      init_witnesses.push_back( HIVE_INIT_MINER_NAME + fc::to_string( i ) );
+    configuration_data.set_init_witnesses( init_witnesses );
+    configuration_data.set_hardfork_schedule( HIVE_GENESIS_TIME, { { HIVE_NUM_HARDFORKS, 1 } } );
+
+    config_arg_override_t config = {
+      config_line_t( { "plugin", { HIVE_ACCOUNT_HISTORY_ROCKSDB_PLUGIN_NAME } } ),
+      config_line_t( { "shared-file-size", { std::to_string( 1024 * 1024 * shared_file_size_big ) } } )
+    };
+    if( replay )
+      config.emplace_back( config_line_t( { "force-replay", { "" } } ) );
+    postponed_init( config, &ah_plugin );
+
+    init_account_pub_key = init_account_priv_key.get_public_key();
+  }
+
+  virtual ~rc_delegation_ah_fixture()
+  {
+    configuration_data.set_init_witnesses( {} );
+    configuration_data.reset_hardfork_schedule();
+  }
+
+  /// entries of account history for given block (in order of their creation), only for given transaction
+  std::vector< rocksdb_operation_object > get_ops_in_trx( uint32_t block_num, uint32_t trx_in_block, bool include_reversible )
+  {
+    std::vector< rocksdb_operation_object > result;
+    ah_plugin->find_operations_by_block( block_num, include_reversible, [&]( const rocksdb_operation_object& obj )
+    {
+      if( obj.trx_in_block == trx_in_block )
+        result.push_back( obj );
+    } );
+    return result;
+  }
+
+  /// delegate_rc_operation entries of account history of given account (in binary form)
+  std::vector< std::string > get_delegations_in_history( const account_name_type& account )
+  {
+    std::vector< std::string > result;
+    ah_plugin->find_account_history_data( account, std::numeric_limits< uint64_t >::max(), 1000, true,
+      [&]( unsigned int, const rocksdb_operation_object& obj )
+    {
+      if( to_operation( obj ).which() == operation::tag< delegate_rc_operation >::value )
+        result.push_back( packed( obj ) );
+      return true;
+    } );
+    std::reverse( result.begin(), result.end() ); // history is processed from the newest entry
+    return result;
+  }
+};
+
+/// binary forms of given delegations as regular operations
+std::vector< std::string > packed_delegations( const std::vector< delegate_rc_operation >& delegations )
+{
+  std::vector< std::string > result;
+  for( const auto& op : delegations )
+    result.push_back( packed( operation( op ) ) );
+  return result;
+}
+
+} // namespace
+
+BOOST_AUTO_TEST_SUITE( direct_rc_delegation_account_history )
+
+BOOST_AUTO_TEST_CASE( delegate_rc_operation_in_account_history )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: effective delegate_rc_operation embedded in custom_json in account history (issue #867)" );
+
+    fc::temp_directory data_dir( hive::utilities::temp_directory_path() );
+    uint32_t block_num = 0;
+    std::vector< ah_entry_t > live_entries;
+    {
+      rc_delegation_ah_fixture fixture( data_dir.path(), false );
+      auto& f = fixture;
+      f.generate_block();
+      f.vest( HIVE_INIT_MINER_NAME, HIVE_asset( 10'000 ) );
+      ACTORS_EXT( f, DEFAULT_VESTING, (alice)(bob)(carol)(dave) );
+      f.vest( "alice", HIVE_asset( 10'000 ) );
+      f.generate_block();
+
+      // way above minimal delegation and way below what alice can delegate
+      const int64_t base = f.get_vesting( "alice" ).amount.value / 10;
+      auto delegation = []( const account_name_type& to, int64_t max_rc )
+      {
+        delegate_rc_operation op;
+        op.from = "alice";
+        op.delegatees = { to };
+        op.max_rc = max_rc;
+        return op;
+      };
+      auto embedded = []( const delegate_rc_operation& first, const delegate_rc_operation& second )
+      {
+        custom_json_operation op;
+        op.required_posting_auths.insert( "alice" );
+        op.id = HIVE_RC_CUSTOM_OPERATION_ID;
+        // list of embedded operations has to be in legacy form
+        op.json = "[[\"delegate_rc\"," + fc::json::to_string( first ) + "],[\"delegate_rc\"," + fc::json::to_string( second ) + "]]";
+        return op;
+      };
+
+      comment_operation A;
+      A.author = "alice";
+      A.permlink = "test";
+      A.parent_permlink = "test";
+      A.title = "test";
+      A.body = "test";
+      const delegate_rc_operation B = delegation( "bob", base + 1 );
+      const delegate_rc_operation C1 = delegation( "bob", base + 2 );
+      const delegate_rc_operation C2 = delegation( "carol", base + 3 );
+      const custom_json_operation C = embedded( C1, C2 );
+      const delegate_rc_operation D = delegation( "dave", base + 4 );
+      const delegate_rc_operation E1 = delegation( "dave", base + 5 ); // correct, but...
+      const delegate_rc_operation E2 = delegation( "bob", base + 2 ); // ...this one fails (the same amount as current)
+      const custom_json_operation E = embedded( E1, E2 );
+      const delegate_rc_operation F = delegation( "carol", 0 );
+      vote_operation G;
+      G.voter = "alice";
+      G.author = "alice";
+      G.permlink = "test";
+      G.weight = HIVE_100_PERCENT;
+
+      signed_transaction tx;
+      tx.set_expiration( f.db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations = { A, B, C, D, E, F, G };
+
+      BOOST_TEST_MESSAGE( "--- new transaction fails as a whole" );
+      HIVE_REQUIRE_ASSERT( f.push_transaction( tx, alice_post_key ), "delegation->delegated_rc != uint64_t( op.max_rc )" );
+
+      BOOST_TEST_MESSAGE( "--- in block only operations embedded in failed custom_json are not effective" );
+      // what non-undoable consumer of operation notifications (f.e. HAF) gets
+      std::vector< std::string > notified_delegations;
+      auto connection = f.db->add_pre_apply_operation_handler( [&]( const operation_notification& note )
+      {
+        if( note.op.which() == operation::tag< delegate_rc_operation >::value )
+          notified_delegations.push_back( packed( note.op ) );
+      }, *f.db_plugin );
+      BOOST_SCOPE_EXIT( &connection ) { hive::utilities::disconnect_signal( connection ); } BOOST_SCOPE_EXIT_END
+      // work around "is_in_control" by not actually executing transaction
+      f.db_plugin->debug_push_pending_transaction( f.build_transaction( tx, std::vector< fc::ecc::private_key >{ alice_post_key } ) );
+      f.generate_block_from_pending();
+      hive::utilities::disconnect_signal( connection );
+      block_num = f.db->head_block_num();
+      const auto block = f.get_block_reader().get_block_by_number( block_num );
+      BOOST_REQUIRE_EQUAL( block->get_full_transactions().size(), 1u );
+      const std::string trx_id = block->get_full_transactions()[0]->get_transaction_id().str();
+      auto get_delegated = [&]( const account_id_type& to ) -> int64_t
+      {
+        const auto* delegation = f.db->find< rc_direct_delegation_object, by_from_to >( boost::make_tuple( alice_id, to ) );
+        return delegation == nullptr ? -1 : int64_t( delegation->delegated_rc );
+      };
+      BOOST_REQUIRE_EQUAL( get_delegated( bob_id ), base + 2 );
+      BOOST_REQUIRE_EQUAL( get_delegated( carol_id ), -1 );
+      BOOST_REQUIRE_EQUAL( get_delegated( dave_id ), base + 4 );
+      // E1 was applied and reverted, but notifications are only sent for effective delegations
+      auto was_notified = [&]( const delegate_rc_operation& op )
+      {
+        return std::find( notified_delegations.begin(), notified_delegations.end(), packed( operation( op ) ) ) != notified_delegations.end();
+      };
+      BOOST_REQUIRE( !was_notified( E1 ) );
+      BOOST_REQUIRE( was_notified( C1 ) );
+      BOOST_REQUIRE( was_notified( C2 ) );
+
+      // non-virtual entries of account history with their op_in_trx; effective embedded delegations follow their
+      // custom_json and share its op_in_trx
+      const std::vector< std::pair< std::string, uint32_t > > expected = {
+        { packed( operation( A ) ), 0 }, { packed( operation( B ) ), 1 }, { packed( operation( C ) ), 2 },
+        { packed( operation( C1 ) ), 2 }, { packed( operation( C2 ) ), 2 }, { packed( operation( D ) ), 3 },
+        { packed( operation( E ) ), 4 }, { packed( operation( F ) ), 5 }, { packed( operation( G ) ), 6 } };
+      auto check_entries = [&]( const std::vector< rocksdb_operation_object >& entries )
+      {
+        std::vector< std::pair< std::string, uint32_t > > actual;
+        std::vector< std::pair< int64_t, uint32_t > > virtual_ops;
+        for( const auto& obj : entries )
+        {
+          BOOST_REQUIRE_EQUAL( obj.trx_id.str(), trx_id );
+          if( obj.is_virtual )
+            virtual_ops.emplace_back( to_operation( obj ).which(), obj.op_in_trx );
+          else
+            actual.emplace_back( packed( obj ), obj.op_in_trx );
+        }
+        BOOST_REQUIRE( actual == expected );
+        // virtual operations still get their own op_in_trx
+        const std::vector< std::pair< int64_t, uint32_t > > expected_virtual_ops = {
+          { operation::tag< effective_comment_vote_operation >::value, 7 } };
+        BOOST_REQUIRE( virtual_ops == expected_virtual_ops );
+
+        // original transaction can be restored from account history by skipping non-virtual entries that repeat
+        // op_in_trx of previous one
+        std::vector< std::string > restored;
+        fc::optional< uint32_t > last_op_in_trx;
+        for( const auto& obj : entries )
+        {
+          if( obj.is_virtual || ( last_op_in_trx.valid() && obj.op_in_trx == *last_op_in_trx ) )
+            continue;
+          restored.push_back( packed( obj ) );
+          last_op_in_trx = obj.op_in_trx;
+        }
+        std::vector< std::string > original;
+        for( const auto& op : tx.operations )
+          original.push_back( packed( op ) );
+        BOOST_REQUIRE( restored == original );
+      };
+
+      BOOST_TEST_MESSAGE( "--- account history of reversible block" );
+      BOOST_REQUIRE_LT( f.db->get_last_irreversible_block_num(), block_num );
+      check_entries( f.get_ops_in_trx( block_num, 0, true ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "bob" ) == packed_delegations( { B, C1 } ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "carol" ) == packed_delegations( { C2, F } ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "dave" ) == packed_delegations( { D } ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "alice" ) == packed_delegations( { B, C1, C2, D, F } ) );
+
+      BOOST_TEST_MESSAGE( "--- account history of irreversible block" );
+      f.generate_until_irreversible_block( block_num );
+      const auto entries = f.get_ops_in_trx( block_num, 0, false );
+      check_entries( entries );
+      for( size_t i = 1; i < entries.size(); ++i )
+        BOOST_REQUIRE_LT( entries[i-1].id, entries[i].id ); // entries sharing op_in_trx still have unique ids
+      for( const auto& obj : entries )
+        live_entries.push_back( to_ah_entry( obj ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "bob" ) == packed_delegations( { B, C1 } ) );
+      BOOST_REQUIRE( f.get_delegations_in_history( "dave" ) == packed_delegations( { D } ) );
+
+      f.validate_database();
+    }
+
+    BOOST_TEST_MESSAGE( "--- account history after replay is the same" );
+    {
+      rc_delegation_ah_fixture fixture( data_dir.path(), true );
+      BOOST_REQUIRE_GE( fixture.db->head_block_num(), block_num );
+      std::vector< ah_entry_t > replayed_entries;
+      for( const auto& obj : fixture.get_ops_in_trx( block_num, 0, false ) )
+        replayed_entries.push_back( to_ah_entry( obj ) );
+      BOOST_REQUIRE( replayed_entries == live_entries );
+      fixture.validate_database();
+    }
   }
   FC_LOG_AND_RETHROW()
 }

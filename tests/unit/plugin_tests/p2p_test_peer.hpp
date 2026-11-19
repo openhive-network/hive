@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/test/unit_test.hpp>
+
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/full_transaction.hpp>
 #include <hive/protocol/types.hpp>
@@ -12,7 +14,10 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstring>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
@@ -22,8 +27,9 @@ namespace p2p_tests {
 /// A p2p peer driven by the test rather than by a node. It completes the handshake as a node that is
 /// in sync with the one under test, advertises the transaction hashes it is told to, delivers the
 /// transactions it was given and either withholds or reports as unavailable anything else it is asked for.
-/// It records the items the node asks it for and the transactions the node advertises to it. Its connection lives on @p thread, like a node's
-/// connections live on the p2p thread.
+/// It records the items the node asks it for and the transactions the node advertises to it. It can also ask
+/// the node for blocks, and records the blocks it receives and the ones reported unavailable. Its connection
+/// lives on @p thread, like a node's connections live on the p2p thread.
 class test_peer final : public graphene::net::peer_connection_delegate
 {
 public:
@@ -84,6 +90,28 @@ public:
           fc::usleep( fc::milliseconds( 1 ) );
       }
     } ).wait();
+  }
+
+  void request_blocks( const std::vector< graphene::net::item_hash_t >& ids )
+  {
+    _thread.async( [&]()
+    {
+      _connection->send_message( graphene::net::fetch_items_message( graphene::net::block_message_type, ids ) );
+    } ).wait();
+  }
+
+  /// ids of the blocks received so far, in the order they arrived
+  std::vector< hive::protocol::block_id_type > blocks_received() const
+  {
+    std::lock_guard< std::mutex > guard( _blocks_mutex );
+    return _blocks_received;
+  }
+
+  /// the requested block ids the node reported as not available, in the order it did
+  std::vector< graphene::net::item_hash_t > blocks_not_available() const
+  {
+    std::lock_guard< std::mutex > guard( _blocks_mutex );
+    return _blocks_not_available;
   }
 
   /// from now on the connection is closed as soon as the transactions requested in one message are sent
@@ -180,6 +208,24 @@ public:
         _advertised_transactions.insert( inventory.item_hashes_available.begin(), inventory.item_hashes_available.end() );
       break;
     }
+    case core_message_type_enum::block_message_type:
+    case core_message_type_enum::compressed_block_message_type:
+    {
+      const hive::protocol::block_id_type id = id_of_received_block( received_message );
+      std::lock_guard< std::mutex > guard( _blocks_mutex );
+      _blocks_received.push_back( id );
+      break;
+    }
+    case core_message_type_enum::item_not_available_message_type:
+    {
+      const item_not_available_message reply = received_message.as< item_not_available_message >();
+      if( reply.requested_item.item_type == block_message_type )
+      {
+        std::lock_guard< std::mutex > guard( _blocks_mutex );
+        _blocks_not_available.push_back( reply.requested_item.item_hash );
+      }
+      break;
+    }
     case core_message_type_enum::connection_rejected_message_type:
     case core_message_type_enum::closing_connection_message_type:
       _closed = true;
@@ -193,8 +239,32 @@ public:
   void on_connection_closed( graphene::net::peer_connection* ) override { _closed = true; }
 
   std::shared_ptr< hive::chain::full_block_type > get_full_block_by_block_id( const hive::protocol::block_id_type& ) override { return {}; }
+  std::shared_ptr< hive::chain::full_block_type > get_block_to_send( graphene::net::peer_connection*, const graphene::net::item_hash_t& ) override { return {}; }
 
 private:
+  /// the id of the block in a block message, in either form the node sends (see core_messages.cpp)
+  static hive::protocol::block_id_type id_of_received_block( const graphene::net::message& received_message )
+  {
+    if( received_message.msg_type == graphene::net::core_message_type_enum::block_message_type )
+    {
+      // the serialized block followed by its id
+      hive::protocol::block_id_type id;
+      BOOST_REQUIRE_GT( received_message.data.size(), sizeof( id ) );
+      memcpy( id.data(), received_message.data.data() + received_message.data.size() - sizeof( id ), sizeof( id ) );
+      return id;
+    }
+    // two bytes of compression flags followed by the compressed block
+    BOOST_REQUIRE_GT( received_message.data.size(), 2u );
+    hive::chain::block_attributes_t attributes;
+    attributes.flags = ( received_message.data[0] & 0x80 ) ? hive::chain::block_flags::zstd : hive::chain::block_flags::uncompressed;
+    if( received_message.data[0] & 0x40 )
+      attributes.dictionary_number = received_message.data[1];
+    const size_t compressed_size = received_message.data.size() - 2;
+    std::unique_ptr< char[] > compressed_bytes( new char[ compressed_size ] );
+    memcpy( compressed_bytes.get(), received_message.data.data() + 2, compressed_size );
+    return hive::chain::full_block_type::create_from_compressed_block_data( std::move( compressed_bytes ), compressed_size, attributes )->get_block_id();
+  }
+
   void send_hello()
   {
     fc::sha256::encoder shared_secret_encoder;
@@ -255,6 +325,9 @@ private:
   bool _disconnect_after_delivery = false;
   std::set< graphene::net::item_hash_t > _advertised_transactions;
   std::set< graphene::net::item_hash_t > _requested;
+  mutable std::mutex _blocks_mutex;
+  std::vector< hive::protocol::block_id_type > _blocks_received;
+  std::vector< graphene::net::item_hash_t > _blocks_not_available;
 };
 
 } // namespace p2p_tests

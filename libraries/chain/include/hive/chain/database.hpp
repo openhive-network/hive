@@ -864,6 +864,11 @@ namespace chain {
       {
         return _current_op_in_trx;
       }
+      /// notification of regular operation that is currently being applied (nullptr outside of such operation)
+      const operation_notification* get_current_applied_operation_info() const
+      {
+        return _current_applied_operation_info;
+      }
 
       int16_t get_remove_threshold() const;
       void set_remove_threshold( int16_t val );

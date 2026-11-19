@@ -222,6 +222,8 @@ class generic_custom_operation_interpreter
       }
 
       plugin_session.squash();
+
+      post_apply_operations( custom_operations );
     }
 
     virtual void apply( const protocol::custom_json_operation& outer_o ) override
@@ -281,6 +283,14 @@ class generic_custom_operation_interpreter
     {
       return custom_id;
     }
+
+  protected:
+    /**
+      * Called once all custom operations were applied successfully and their changes became part of changes
+      * made by outer operation (there are no such calls when any of custom operations fails, since then the
+      * changes are reverted). Does nothing by default.
+      */
+    virtual void post_apply_operations( const vector< CustomOperationType >& custom_operations ) {}
 
   private:
     custom_id_type custom_id;

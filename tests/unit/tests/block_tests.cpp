@@ -85,6 +85,7 @@
 #include <hive/utilities/tempdir.hpp>
 #include <hive/utilities/database_configuration.hpp>
 
+#include <fc/bitutil.hpp>
 #include <fc/crypto/digest.hpp>
 #include <fc/scoped_exit.hpp>
 
@@ -1042,6 +1043,49 @@ BOOST_AUTO_TEST_CASE(switch_forks_using_fast_confirm)
   catch (const fc::exception& e)
   {
     edump((e));
+    throw;
+  }
+}
+
+// A fast-confirm for a block far above the head that this node doesn't hold is refused: stored, it would stand for
+// the witness's vote, and six such approvals would hold the last irreversible block back (16 of 21 votes are needed).
+BOOST_AUTO_TEST_CASE(fast_confirm_of_unknown_block_far_above_head_is_refused)
+{
+  try
+  {
+    SET_UP_CLEAN_DATABASE_FIXTURE_SUFFIX( 1 )
+    fc::ecc::private_key init_account_priv_key = fc::ecc::private_key::regenerate(fc::sha256::hash(string("init_key")));
+    fixture1.generate_blocks(63); // let the real witnesses become active
+    BOOST_REQUIRE_EQUAL(db1.head_block_num(), 65);
+
+    const auto unknown_block_id = [](uint32_t block_num) {
+      block_id_type id = fc::ripemd160::hash(std::string("not a block of this chain"));
+      id._hash[0] = fc::endian_reverse_u32(block_num);
+      return id;
+    };
+    const witness_schedule_object& wso_for_irreversibility = db1.get_witness_schedule_object_for_irreversibility();
+    BOOST_REQUIRE_GE(wso_for_irreversibility.num_scheduled_witnesses, 6);
+    for (int i = 0; i < 6; ++i)
+    {
+      witness_block_approve_operation fast_confirm_op;
+      fast_confirm_op.witness = wso_for_irreversibility.current_shuffled_witnesses[i];
+      fast_confirm_op.block_id = unknown_block_id(0xFFFFFFFFu); // the highest block number
+      BOOST_CHECK_THROW(fixture1.push_transaction(fast_confirm_op, init_account_priv_key), fc::exception);
+    }
+
+    // an approval of a block just above the head is kept (its block may simply not have arrived yet)
+    witness_block_approve_operation near_op;
+    near_op.witness = wso_for_irreversibility.current_shuffled_witnesses[0];
+    near_op.block_id = unknown_block_id(db1.head_block_num() + 1);
+    fixture1.push_transaction(near_op, init_account_priv_key);
+
+    const uint32_t last_irreversible_before = db1.get_last_irreversible_block_num();
+    fixture1.generate_blocks(2 * HIVE_MAX_WITNESSES);
+    BOOST_CHECK_GE(db1.get_last_irreversible_block_num(), last_irreversible_before + HIVE_MAX_WITNESSES);
+  }
+  catch (fc::exception& e)
+  {
+    edump((e.to_detail_string()));
     throw;
   }
 }

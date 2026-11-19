@@ -23,6 +23,7 @@ class account_object;
 class database;
 template< typename CustomOperationType >
 class generic_custom_operation_interpreter;
+class rc_custom_operation_interpreter;
 class remove_guard;
 class witness_schedule_object;
 struct full_transaction_type;
@@ -168,6 +169,7 @@ class resource_credits
     database& db;
     friend class database;
     friend class database_impl;
+    friend class rc_custom_operation_interpreter; //needs to restore tx_info when embedded operations fail
 
     // information collected for current transaction
     rc_transaction_info tx_info;
@@ -184,7 +186,24 @@ class resource_credits
 };
 
   using namespace hive::protocol;
+  /**
+    * delegate_rc_operation is a member of two static variants: rc_custom_operation (embedded in custom_json_operation
+    * with id HIVE_RC_CUSTOM_OPERATION_ID) and operation (regular operation, since HF29). Evaluators of different
+    * variants have unrelated base classes, so each variant has its own evaluator; both share the same core logic.
+    */
+  // evaluator of delegate_rc_operation embedded in custom_json_operation (registered in custom operation interpreter)
   HIVE_DEFINE_PLUGIN_EVALUATOR( void, rc_custom_operation, delegate_rc );
+
+  // evaluator of delegate_rc_operation used as regular operation (registered in main evaluator registry)
+  class delegate_rc_operation_evaluator : public evaluator_impl< delegate_rc_operation_evaluator >
+  {
+    public:
+      typedef delegate_rc_operation operation_type;
+
+      delegate_rc_operation_evaluator( database& db ) : evaluator_impl< delegate_rc_operation_evaluator >( db ) {}
+
+      void do_apply( const delegate_rc_operation& o );
+  };
 
 } } // hive::chain
 

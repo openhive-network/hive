@@ -59,7 +59,7 @@ namespace hive { namespace protocol {
         cancel_transfer_from_savings_operation, // 34
         custom_binary_operation, // 35
         decline_voting_rights_operation, // 36
-        reset_account_operation, // 37
+        delegate_rc_operation, // 37 (slot of never used reset_account_operation placeholder; also part of rc_custom_operation; active since HF29)
         set_reset_account_operation, // 38
         claim_reward_balance_operation, // 39
         delegate_vesting_shares_operation, // 40

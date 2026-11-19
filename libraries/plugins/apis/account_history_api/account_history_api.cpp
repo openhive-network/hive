@@ -93,7 +93,7 @@ struct operation_filtering_visitor
   (change_recovery_account_operation)(escrow_transfer_operation)(escrow_dispute_operation)(escrow_release_operation)
   (pow2_operation)(escrow_approve_operation)(transfer_to_savings_operation)(transfer_from_savings_operation)
   (cancel_transfer_from_savings_operation)(custom_binary_operation)(decline_voting_rights_operation)
-  (reset_account_operation)(set_reset_account_operation)(claim_reward_balance_operation)
+  (delegate_rc_operation)(set_reset_account_operation)(claim_reward_balance_operation)
   (delegate_vesting_shares_operation)(account_create_with_delegation_operation)(witness_set_properties_operation)
   (account_update2_operation)(create_proposal_operation)(update_proposal_votes_operation)(remove_proposal_operation)
   (update_proposal_operation)(collateralized_convert_operation)(recurrent_transfer_operation)
