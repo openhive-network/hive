@@ -7,6 +7,7 @@
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 
 #include <graphene/net/config.hpp>
+#include <graphene/net/node_configuration.hpp>
 
 #include <algorithm>
 #include <deque>
@@ -441,8 +442,8 @@ BOOST_AUTO_TEST_CASE( peer_delivering_steadily_is_kept_past_the_request_timeout 
       trickler.advertise( hashes_of( transactions ) );
 
       // a new peer is asked for several of its transactions at once (GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE),
-      // so the last of them waits several timeouts for its reply
-      const fc::microseconds pace = fc::milliseconds( 400 );
+      // so the last of them waits about two timeouts for its reply, within the ceiling
+      const fc::microseconds pace = fc::milliseconds( 250 );
       const fc::time_point start = fc::time_point::now();
       size_t most_waiting = 0;
       for( size_t delivered = 0; delivered < transactions.size() && !trickler.closed(); )
@@ -482,6 +483,105 @@ BOOST_AUTO_TEST_CASE( peer_delivering_steadily_is_kept_past_the_request_timeout 
       BOOST_CHECK_MESSAGE( wait_until( [&]() { return ignorer.closed(); }, fc::seconds( 5 ) ),
                            "a peer that delivered nothing it was asked for was not dropped" );
     }, p2p_parameters );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// A peer that says it defers its replies, is asked for transactions another peer also advertised and keeps the
+/// connection alive by answering one other request every few seconds is dropped once the ceiling on the wait passes,
+/// and the transactions it held are fetched from the other advertiser while the node still knows it has them.
+BOOST_AUTO_TEST_CASE( transactions_held_by_a_trickling_peer_are_fetched_from_another_advertiser )
+{
+  try
+  {
+    run( {}, [&]( fc::thread& peer_thread, test_peer& sender, test_peer& observer )
+    {
+      const auto transfers = [&]( const std::string& memo, int count )
+      {
+        std::vector< full_transaction_ptr > transactions;
+        for( int i = 0; i < count; ++i )
+          transactions.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                  memo + " " + std::to_string( i ), get_default_expiration() ) );
+        return transactions;
+      };
+      const std::vector< full_transaction_ptr > withheld = transfers( "held", 4 );
+      const std::vector< full_transaction_ptr > decoys = transfers( "trickled", 12 );
+      std::map< graphene::net::item_hash_t, full_transaction_ptr > decoys_by_hash;
+      for( const full_transaction_ptr& transaction : decoys )
+        decoys_by_hash[ transaction->get_legacy_transaction_message_hash() ] = transaction;
+
+      test_peer trickler( peer_thread, db->get_chain_id(), "trickler" );
+      trickler.hello().defers_transaction_replies = true;
+      std::mutex requests_mutex;
+      std::set< graphene::net::item_hash_t > requested;
+      std::deque< graphene::net::item_hash_t > decoys_requested;
+      trickler.on( graphene::net::fetch_items_message_type, [&]( test_peer&, const graphene::net::message& m )
+      {
+        const graphene::net::fetch_items_message request = m.as< graphene::net::fetch_items_message >();
+        std::lock_guard< std::mutex > guard( requests_mutex );
+        for( const graphene::net::item_hash_t& hash : request.items_to_fetch )
+        {
+          requested.insert( hash );
+          if( decoys_by_hash.count( hash ) )
+            decoys_requested.push_back( hash );
+        }
+      } );
+      const auto all_requested_from_trickler = [&]( const std::vector< full_transaction_ptr >& transactions )
+      {
+        std::lock_guard< std::mutex > guard( requests_mutex );
+        return std::all_of( transactions.begin(), transactions.end(), [&]( const full_transaction_ptr& transaction ) {
+          return requested.count( transaction->get_legacy_transaction_message_hash() ) != 0;
+        } );
+      };
+      trickler.connect( node_endpoint() );
+      BOOST_REQUIRE( wait_until( [&]() { return trickler.in_sync(); }, fc::seconds( 10 ) ) );
+
+      trickler.advertise( hashes_of( withheld ) );
+      BOOST_REQUIRE( wait_until( [&]() { return all_requested_from_trickler( withheld ); }, fc::seconds( 10 ) ) );
+      const fc::time_point requested_at = fc::time_point::now();
+      sender.provide( withheld );
+      sender.advertise( hashes_of( withheld ) );
+      trickler.advertise( hashes_of( decoys ) );
+      fc::usleep( fc::milliseconds( 500 ) );
+      BOOST_CHECK_MESSAGE( std::none_of( withheld.begin(), withheld.end(), [&]( const full_transaction_ptr& transaction ) {
+                             return sender.was_requested( transaction->get_legacy_transaction_message_hash() ); } ),
+                           "transactions outstanding with the trickler were requested again" );
+
+      // one reply every half timeout keeps the trickler from timing out for lack of progress
+      const fc::microseconds pace = fc::seconds( 3 );
+      size_t delivered = 0;
+      while( !trickler.closed() && fc::time_point::now() < requested_at + fc::seconds( 45 ) )
+      {
+        fc::usleep( pace );
+        fc::optional< graphene::net::item_hash_t > next;
+        {
+          std::lock_guard< std::mutex > guard( requests_mutex );
+          if( !decoys_requested.empty() )
+          {
+            next = decoys_requested.front();
+            decoys_requested.pop_front();
+          }
+        }
+        if( next && !trickler.closed() )
+        {
+          trickler.send( graphene::net::trx_message( decoys_by_hash.at( *next ) ) );
+          ++delivered;
+        }
+      }
+      BOOST_REQUIRE_MESSAGE( trickler.closed(), "a peer holding transactions while trickling others was not dropped" );
+      const fc::microseconds held_for = trickler.closed_at() - requested_at;
+      BOOST_TEST_MESSAGE( "trickler delivered " << delivered << " and was dropped after " << held_for.count() / 1000 << " ms" );
+      const fc::microseconds timeout = fc::microseconds( graphene::net::node_configuration().active_ignored_request_timeout_microseconds );
+      BOOST_CHECK_GT( held_for.count(), 2 * timeout.count() ); // kept past the timeout by its replies
+      BOOST_CHECK_LT( held_for.count(), ( GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING + 2 ) * timeout.count() );
+
+      BOOST_CHECK_MESSAGE( wait_until( [&]() { return all_advertised( observer, withheld ); }, fc::seconds( 10 ) ),
+                           "transactions held by a dropped trickler were not fetched from the other advertiser" );
+      BOOST_CHECK_LT( ( fc::time_point::now() - requested_at ).count(),
+                      fc::minutes( GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES ).count() );
+      BOOST_CHECK( std::all_of( withheld.begin(), withheld.end(), [&]( const full_transaction_ptr& transaction ) {
+        return sender.was_requested( transaction->get_legacy_transaction_message_hash() ); } ) );
+    } );
   }
   FC_LOG_AND_RETHROW()
 }
