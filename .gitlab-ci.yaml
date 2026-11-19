@@ -1888,7 +1888,7 @@ colony_tests_after_real_time_unit_tests:
   tags:
     - public-runner-docker
 
-colony_tests:
+.colony_tests:
   stage: test
   extends:
     - .test_tools_based
@@ -1911,6 +1911,11 @@ colony_tests:
     - !reference [.fetch_test_block_logs, script]
     - cd $CI_PROJECT_DIR/tests/python/functional/colony
     - !reference [.run-pytest, script]
+  tags:
+    - public-runner-docker
+
+colony_tests:
+  extends: .colony_tests
   parallel:
     matrix:
       - TEST_NAME: test_start_colony_plugin
@@ -1919,10 +1924,71 @@ colony_tests:
       - TEST_NAME: test_colony_on_complex_network
       - TEST_NAME: test_multiple_colony_nodes_communication_with_single_witness_node
       - TEST_NAME: test_colony_with_unknown_colony_signer
-      - TEST_NAME: test_colony_sustained_load_across_inventory_limit
-      - TEST_NAME: test_block_time_offset
+
+# test_colony_sustained_load_across_inventory_limit and test_block_time_offset time their nodes
+# against the wall clock and fail when other colony cases load the same builder, so they run one
+# after the other once the colony_tests matrix ends, each behind a gate. A gate runs (when: always)
+# whatever the result of the jobs it needs, so a failed colony case does not skip the cases after
+# it. Its rules follow those of colony_tests. A renamed matrix case fails pipeline creation here.
+.colony_tests_gate:
+  stage: test
+  image: alpine:latest
+  variables:
+    GIT_STRATEGY: none
+  rules:
+    - if: $QUICK_TEST == "true"
+      when: never
+    - if: $FORCE_FULL_PIPELINE == "true" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_TAG
+      when: always
+    - if: $DOCS_ONLY == "true"
+      when: never
+    - when: always
   tags:
     - public-runner-docker
+
+colony_tests_after_parallel_cases:
+  extends: .colony_tests_gate
+  needs:
+    - job: "colony_tests: [test_start_colony_plugin]"
+      artifacts: false
+    - job: "colony_tests: [test_start_colony_from_block_log]"
+      artifacts: false
+    - job: "colony_tests: [test_colony_on_basic_network_structure]"
+      artifacts: false
+    - job: "colony_tests: [test_colony_on_complex_network]"
+      artifacts: false
+    - job: "colony_tests: [test_multiple_colony_nodes_communication_with_single_witness_node]"
+      artifacts: false
+    - job: "colony_tests: [test_colony_with_unknown_colony_signer]"
+      artifacts: false
+  script:
+    - echo "The colony_tests matrix cases have ended"
+
+colony_tests_sustained_load:
+  extends: .colony_tests
+  needs:
+    - !reference [.colony_tests, needs]
+    - job: colony_tests_after_parallel_cases
+      artifacts: false
+  variables:
+    TEST_NAME: test_colony_sustained_load_across_inventory_limit
+
+colony_tests_after_sustained_load:
+  extends: .colony_tests_gate
+  needs:
+    - job: colony_tests_sustained_load
+      artifacts: false
+  script:
+    - echo "colony_tests_sustained_load has ended"
+
+colony_tests_block_time_offset:
+  extends: .colony_tests
+  needs:
+    - !reference [.colony_tests, needs]
+    - job: colony_tests_after_sustained_load
+      artifacts: false
+  variables:
+    TEST_NAME: test_block_time_offset
 
 # Build and push OpenAPI spec Docker image
 build_openapi_spec_image:
