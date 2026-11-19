@@ -3693,10 +3693,7 @@ namespace graphene { namespace net {
       auto regular_item_iter = originating_peer->items_requested_from_peer.find(requested_item);
       if (regular_item_iter != originating_peer->items_requested_from_peer.end())
       {
-        const fc::time_point requested = regular_item_iter->second;
         originating_peer->items_requested_from_peer.erase( regular_item_iter );
-        if (requested_item.item_type == trx_message_type)
-          originating_peer->items_requested_from_peer.record_transaction_reply(fc::time_point::now(), requested);
         forget_item_advertised_to_us(originating_peer, requested_item);
         // before handing the request to another peer, re-check that we still need the item:
         // the chain may have advanced past it while it was in flight.  (Only possible for
@@ -5115,9 +5112,8 @@ namespace graphene { namespace net {
         // busy is asked again once per batch rather than per transaction
         const transaction_size_estimate& window = originating_peer->received_transaction_size;
         const bool window_had_room = window.transactions_to_request(originating_peer->items_requested_from_peer.transactions()) > 0;
-        const fc::time_point requested = iter->second;
         originating_peer->items_requested_from_peer.erase(iter);
-        originating_peer->items_requested_from_peer.record_transaction_reply(message_receive_time, requested);
+        originating_peer->items_requested_from_peer.record_transaction_delivery(message_receive_time);
         originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
         if (originating_peer->idle())
           trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
@@ -7855,12 +7851,11 @@ namespace graphene { namespace net {
   std::optional<item_id> requested_items::timed_out(fc::time_point now, fc::microseconds timeout) const
   {
     const fc::time_point threshold = now - timeout;
-    const bool no_recent_transaction_reply = _last_transaction_reply < threshold;
+    const bool no_recent_transaction_delivery = _last_transaction_delivery < threshold;
     const fc::time_point ceiling = now - fc::microseconds(timeout.count() * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING);
     for (const map_type::value_type& item_and_time : _items)
       if (item_and_time.second < threshold &&
-          (no_recent_transaction_reply || item_and_time.second < ceiling ||
-           (item_and_time.first.item_type != trx_message_type && _last_answered_request >= item_and_time.second)))
+          (item_and_time.first.item_type != trx_message_type || no_recent_transaction_delivery || item_and_time.second < ceiling))
         return item_and_time.first;
     return std::nullopt;
   }
