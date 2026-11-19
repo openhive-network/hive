@@ -586,6 +586,222 @@ BOOST_AUTO_TEST_CASE( transactions_held_by_a_trickling_peer_are_fetched_from_ano
   FC_LOG_AND_RETHROW()
 }
 
+/// A peer that answers the other transactions it is asked for as not available, steadily, delivers nothing: the one it
+/// holds times out at the request timeout, not at the ceiling a peer delivering others gets.
+BOOST_AUTO_TEST_CASE( not_available_answers_do_not_keep_a_peer_holding_a_transaction )
+{
+  try
+  {
+    run( {}, [&]( fc::thread& peer_thread, test_peer&, test_peer& )
+    {
+      const graphene::net::item_hash_t held = fc::ripemd160::hash( std::string( "held" ) );
+      std::vector< graphene::net::item_hash_t > refused;
+      for( int i = 0; i < 24; ++i )
+        refused.push_back( fc::ripemd160::hash( "refused " + std::to_string( i ) ) );
+
+      test_peer refuser( peer_thread, db->get_chain_id(), "refuser" );
+      refuser.hello().defers_transaction_replies = true;
+      std::mutex requests_mutex;
+      std::deque< graphene::net::item_hash_t > refused_requested;
+      bool held_requested = false;
+      refuser.on( graphene::net::fetch_items_message_type, [&]( test_peer&, const graphene::net::message& m )
+      {
+        const graphene::net::fetch_items_message request = m.as< graphene::net::fetch_items_message >();
+        std::lock_guard< std::mutex > guard( requests_mutex );
+        for( const graphene::net::item_hash_t& hash : request.items_to_fetch )
+          if( hash == held )
+            held_requested = true;
+          else
+            refused_requested.push_back( hash );
+      } );
+      refuser.connect( node_endpoint() );
+      BOOST_REQUIRE( wait_until( [&]() { return refuser.in_sync(); }, fc::seconds( 10 ) ) );
+
+      std::vector< graphene::net::item_hash_t > advertised{ held };
+      advertised.insert( advertised.end(), refused.begin(), refused.end() );
+      refuser.advertise( advertised );
+      BOOST_REQUIRE( wait_until( [&]() { std::lock_guard< std::mutex > guard( requests_mutex ); return held_requested; }, fc::seconds( 10 ) ) );
+      const fc::time_point requested_at = fc::time_point::now();
+
+      // one "not available" every half second would have kept it until the ceiling
+      size_t answered = 0;
+      while( !refuser.closed() && fc::time_point::now() < requested_at + fc::seconds( 30 ) )
+      {
+        fc::usleep( fc::milliseconds( 500 ) );
+        fc::optional< graphene::net::item_hash_t > next;
+        {
+          std::lock_guard< std::mutex > guard( requests_mutex );
+          if( !refused_requested.empty() )
+          {
+            next = refused_requested.front();
+            refused_requested.pop_front();
+          }
+        }
+        if( next && !refuser.closed() )
+        {
+          refuser.send( graphene::net::item_not_available_message( graphene::net::item_id( graphene::net::trx_message_type, *next ) ) );
+          ++answered;
+        }
+      }
+      BOOST_REQUIRE_MESSAGE( refuser.closed(), "a peer holding a transaction and refusing the others was not dropped" );
+      const fc::microseconds held_for = refuser.closed_at() - requested_at;
+      BOOST_TEST_MESSAGE( "refuser answered " << answered << " as not available and was dropped after " << held_for.count() / 1000 << " ms" );
+      const fc::microseconds timeout = fc::microseconds( graphene::net::node_configuration().active_ignored_request_timeout_microseconds );
+      BOOST_CHECK_GE( answered, size_t( timeout.count() / 1000000 ) ); // it was answering steadily until it was dropped
+      BOOST_CHECK_LT( held_for.count(), timeout.count() + fc::seconds( 3 ).count() );
+    } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// Transactions another peer advertised long before a trickling peer is asked for them, which waited in the queue to
+/// fetch meanwhile while both peers were kept busy, are fetched from that other peer once the trickler is dropped:
+/// asking the trickler for them renews the record of who advertised them, which would otherwise expire (the
+/// inventory lifetime after they were advertised) before the trickler's ceiling passes.
+BOOST_AUTO_TEST_CASE( transactions_queued_before_a_trickler_is_asked_are_fetched_from_the_earlier_advertiser )
+{
+  try
+  {
+    run( {}, [&]( fc::thread& peer_thread, test_peer& advertiser, test_peer& observer )
+    {
+      const auto transfers = [&]( const std::string& memo, int count )
+      {
+        std::vector< full_transaction_ptr > transactions;
+        for( int i = 0; i < count; ++i )
+          transactions.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                  memo + " " + std::to_string( i ), get_default_expiration() ) );
+        return transactions;
+      };
+      // each peer is kept busy until about @p batches times @p pace from now by items it advertises first and answers
+      // as not available @p pace after each request: a new peer is asked for a few at a time
+      // (GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE) and nothing it answers that way changes that
+      const auto fillers = []( const std::string& name, int count )
+      {
+        std::set< graphene::net::item_hash_t > hashes;
+        for( int i = 0; i < count; ++i )
+          hashes.insert( fc::ripemd160::hash( name + " filler " + std::to_string( i ) ) );
+        return hashes;
+      };
+      const std::vector< full_transaction_ptr > withheld = transfers( "queued", 4 );
+      const std::vector< full_transaction_ptr > decoys = transfers( "trickled", 12 );
+      std::map< graphene::net::item_hash_t, full_transaction_ptr > decoys_by_hash;
+      for( const full_transaction_ptr& transaction : decoys )
+        decoys_by_hash[ transaction->get_legacy_transaction_message_hash() ] = transaction;
+      const size_t filler_count = 104;
+      const std::set< graphene::net::item_hash_t > advertiser_fillers = fillers( "advertiser", filler_count );
+      const std::set< graphene::net::item_hash_t > trickler_fillers = fillers( "trickler", filler_count );
+      const auto refuse_fillers_after = []( const std::set< graphene::net::item_hash_t >& fillers, fc::microseconds pace )
+      {
+        return [&fillers, pace]( test_peer& self, const graphene::net::fetch_items_message& request )
+        {
+          std::vector< graphene::net::item_hash_t > refused;
+          for( const graphene::net::item_hash_t& hash : request.items_to_fetch )
+            if( fillers.count( hash ) )
+              refused.push_back( hash );
+          if( !refused.empty() )
+            self.later( pace, [&self, refused]()
+            {
+              for( const graphene::net::item_hash_t& hash : refused )
+                self.send( graphene::net::item_not_available_message( graphene::net::item_id( graphene::net::trx_message_type, hash ) ) );
+            } );
+        };
+      };
+      const auto filler_hashes_then = []( const std::set< graphene::net::item_hash_t >& fillers, const std::vector< full_transaction_ptr >& transactions )
+      {
+        std::vector< graphene::net::item_hash_t > hashes( fillers.begin(), fillers.end() );
+        const std::vector< graphene::net::item_hash_t > rest = hashes_of( transactions );
+        hashes.insert( hashes.end(), rest.begin(), rest.end() );
+        return hashes;
+      };
+
+      // the advertiser delivers what it is asked for but its fillers, refused at the slower pace, so the trickler
+      // reaches the withheld transactions first
+      const auto refuse_advertiser_fillers = refuse_fillers_after( advertiser_fillers, fc::seconds( 5 ) );
+      advertiser.on( graphene::net::fetch_items_message_type, [&]( test_peer& self, const graphene::net::message& m )
+      {
+        graphene::net::fetch_items_message request = m.as< graphene::net::fetch_items_message >();
+        refuse_advertiser_fillers( self, request );
+        request.items_to_fetch.erase( std::remove_if( request.items_to_fetch.begin(), request.items_to_fetch.end(),
+                                                      [&]( const graphene::net::item_hash_t& hash ) { return advertiser_fillers.count( hash ) != 0; } ),
+                                      request.items_to_fetch.end() );
+        if( !request.items_to_fetch.empty() )
+          self.answer( graphene::net::message( request ) );
+      } );
+
+      test_peer trickler( peer_thread, db->get_chain_id(), "trickler" );
+      trickler.hello().defers_transaction_replies = true;
+      std::mutex requests_mutex;
+      std::set< graphene::net::item_hash_t > requested;
+      std::deque< graphene::net::item_hash_t > decoys_requested;
+      const auto refuse_trickler_fillers = refuse_fillers_after( trickler_fillers, fc::seconds( 4 ) );
+      trickler.on( graphene::net::fetch_items_message_type, [&]( test_peer& self, const graphene::net::message& m )
+      {
+        const graphene::net::fetch_items_message request = m.as< graphene::net::fetch_items_message >();
+        refuse_trickler_fillers( self, request );
+        std::lock_guard< std::mutex > guard( requests_mutex );
+        for( const graphene::net::item_hash_t& hash : request.items_to_fetch )
+        {
+          requested.insert( hash );
+          if( decoys_by_hash.count( hash ) )
+            decoys_requested.push_back( hash );
+        }
+      } );
+      const auto all_requested_from_trickler = [&]( const std::vector< full_transaction_ptr >& transactions )
+      {
+        std::lock_guard< std::mutex > guard( requests_mutex );
+        return std::all_of( transactions.begin(), transactions.end(), [&]( const full_transaction_ptr& transaction ) {
+          return requested.count( transaction->get_legacy_transaction_message_hash() ) != 0;
+        } );
+      };
+      trickler.connect( node_endpoint() );
+      BOOST_REQUIRE( wait_until( [&]() { return trickler.in_sync(); }, fc::seconds( 10 ) ) );
+
+      const fc::time_point advertised_at = fc::time_point::now();
+      advertiser.provide( withheld );
+      advertiser.advertise( filler_hashes_then( advertiser_fillers, withheld ) );
+      trickler.advertise( filler_hashes_then( trickler_fillers, withheld ) );
+      trickler.advertise( hashes_of( decoys ) );
+
+      BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return all_requested_from_trickler( withheld ); }, fc::seconds( 70 ) ),
+                             "the withheld transactions were not requested from the trickler" );
+      const fc::time_point requested_at = fc::time_point::now();
+      BOOST_TEST_MESSAGE( "the trickler was asked for the withheld transactions " << ( requested_at - advertised_at ).count() / 1000 << " ms after they were advertised" );
+      BOOST_CHECK_MESSAGE( std::none_of( withheld.begin(), withheld.end(), [&]( const full_transaction_ptr& transaction ) {
+                             return advertiser.was_requested( transaction->get_legacy_transaction_message_hash() ); } ),
+                           "the advertiser was asked for the withheld transactions before the trickler" );
+
+      // one reply every half timeout keeps the trickler from timing out for lack of progress
+      const fc::microseconds pace = fc::seconds( 3 );
+      while( !trickler.closed() && fc::time_point::now() < requested_at + fc::seconds( 45 ) )
+      {
+        fc::usleep( pace );
+        fc::optional< graphene::net::item_hash_t > next;
+        {
+          std::lock_guard< std::mutex > guard( requests_mutex );
+          if( !decoys_requested.empty() )
+          {
+            next = decoys_requested.front();
+            decoys_requested.pop_front();
+          }
+        }
+        if( next && !trickler.closed() )
+          trickler.send( graphene::net::trx_message( decoys_by_hash.at( *next ) ) );
+      }
+      BOOST_REQUIRE_MESSAGE( trickler.closed(), "a peer holding transactions while trickling others was not dropped" );
+      const fc::microseconds lifetime = fc::minutes( GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES );
+      BOOST_TEST_MESSAGE( "the trickler was dropped " << ( trickler.closed_at() - advertised_at ).count() / 1000 << " ms after they were advertised" );
+      // the case keep() is for: the records of who advertised them would have expired by then
+      BOOST_REQUIRE_GT( ( trickler.closed_at() - advertised_at ).count(), lifetime.count() + fc::seconds( 2 ).count() );
+
+      BOOST_CHECK_MESSAGE( wait_until( [&]() { return all_advertised( observer, withheld ); }, fc::seconds( 15 ) ),
+                           "transactions held by a dropped trickler were not fetched from the peer that advertised them before it was asked" );
+      BOOST_CHECK( std::all_of( withheld.begin(), withheld.end(), [&]( const full_transaction_ptr& transaction ) {
+        return advertiser.was_requested( transaction->get_legacy_transaction_message_hash() ); } ) );
+    } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 /// A peer asking in one request for more transaction bytes than the node's send queue holds for it stays
 /// connected and gets every one of them, each once, as the queue drains.
 BOOST_AUTO_TEST_CASE( request_larger_than_the_send_queue_is_answered_in_full )

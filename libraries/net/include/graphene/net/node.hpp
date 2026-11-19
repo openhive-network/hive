@@ -684,8 +684,8 @@ namespace graphene { namespace net {
   /**
    * The items requested from one peer during normal operation that it has not sent or refused yet, each with the
    * time it was requested.  Counts the transactions among them, so the fetch loop sees at once how much of the
-   * peer's transaction window is taken and whether a block is outstanding, and keeps when the peer last answered
-   * a transaction request, which is what an outstanding transaction's timeout is measured from (see timed_out()).
+   * peer's transaction window is taken and whether a block is outstanding, and keeps when the peer last delivered
+   * a transaction we asked for, which is what an outstanding transaction's timeout is measured from (see timed_out()).
    */
   class requested_items
   {
@@ -703,27 +703,21 @@ namespace graphene { namespace net {
     size_t transactions() const { return _transactions; }
     size_t blocks() const { return _items.size() - _transactions; }
 
-    /// the peer delivered, or said it doesn't have, a transaction we asked it for at @p requested
-    void record_transaction_reply(fc::time_point when, fc::time_point requested)
-    {
-      _last_transaction_reply = when;
-      _last_answered_request = requested;
-    }
+    /// the peer delivered a transaction we asked it for; saying it doesn't have one is no progress
+    void record_transaction_delivery(fc::time_point when) { _last_transaction_delivery = when; }
     /**
      * One of the items the peer has kept us waiting for longer than @p timeout at @p now, if any.  A transaction
-     * waits from when it was requested or the peer last answered a transaction request (record_transaction_reply()),
-     * whichever is later, so a peer delivering a large window at link speed is not taken for one that ignores us.
-     * A block waits from when it was requested, or from the last reply if that answered a transaction requested
-     * before the block, which the peer sends ahead of it.  Either waits no longer than
-     * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING timeouts from its request.
+     * waits from when it was requested or the peer last delivered one (record_transaction_delivery()), whichever is
+     * later, so a peer delivering a large window at link speed is not taken for one that ignores us, but no longer
+     * than GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING timeouts from its request.  A block waits
+     * from when it was requested, whatever the peer sends meanwhile.
      */
     std::optional<item_id> timed_out(fc::time_point now, fc::microseconds timeout) const;
 
   private:
     map_type _items;
     size_t _transactions = 0;
-    fc::time_point _last_transaction_reply;
-    fc::time_point _last_answered_request;
+    fc::time_point _last_transaction_delivery;
   };
 
   /**
