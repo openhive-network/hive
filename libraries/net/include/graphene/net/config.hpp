@@ -264,14 +264,15 @@
 
 /**
  * A requested transaction times out (and the peer is dropped) once active_ignored_request_timeout_microseconds have
- * passed both since we asked for it and since the peer last answered one we asked for, so a peer answering a large
- * window over a slow link keeps it; so does a block asked for behind such replies.  However steadily the peer delivers
- * others, an item still outstanding this many timeouts after we asked for it times out too.  With the default 6 s
- * timeout that is 18 s, well within GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES, so the peer is dropped while the
- * records of who else advertised what it held are still there to ask them.  18 s receives what a peer may owe us at
- * the estimated transaction size (its queued reply budget and our byte window, 1 MiB) at about 0.5 Mbit/s, and the
- * most it may defer after a jump in size (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER) at about
- * 4 Mbit/s; a slower link is dropped and what it held is fetched from the others.
+ * passed both since we asked for it and since the peer last delivered one we asked for, so a peer delivering a large
+ * window over a slow link keeps it, but one answering that it doesn't have them does not.  A block times out from its
+ * request, whatever the peer delivers meanwhile.  However steadily the peer delivers others, a transaction still
+ * outstanding this many timeouts after we asked for it times out too.  With the default 6 s timeout that is 18 s,
+ * well within GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES, so the peer is dropped while the records of who else
+ * advertised what it held are still there to ask them.  18 s receives what a peer may owe us at the estimated
+ * transaction size (its queued reply budget and our byte window, 1 MiB) at about 0.5 Mbit/s, and the most it may
+ * defer after a jump in size (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER) at about 4 Mbit/s; a
+ * slower link is dropped and what it held is fetched from the others.
  */
 #define GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING 3
 
