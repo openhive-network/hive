@@ -168,29 +168,28 @@ BOOST_AUTO_TEST_CASE( busy_peer_is_asked_again_only_for_half_a_request )
   BOOST_CHECK_EQUAL( huge.transactions_to_request( 1 ), 0u );
 }
 
-/// A peer whose transactions settled at 300 B is asked for a window of them; they turn out to be 1.4 KB each,
-/// which the mean learns only as their replies arrive.  Neither what was asked at once nor what is outstanding
-/// later, while the window refills as replies arrive, would push the peer's send queue over its limit.
-BOOST_AUTO_TEST_CASE( window_stays_within_sender_queue_after_size_jump )
+/// A mix settled at 300 B fills the whole item window: two full requests per round trip.  When the transactions
+/// then turn out to be 8 KB each, the outstanding ones expect several times the peer's send queue limit, which the
+/// peer answers as its queue drains (peer_connection::send_transaction_reply()); the window shrinks to one request
+/// within the byte bound as the replies arrive.
+BOOST_AUTO_TEST_CASE( window_shrinks_to_the_byte_bound_after_size_jump )
 {
-  const size_t queue_limit = GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES;
-  const size_t new_size = 1400;
+  const size_t new_size = 8192;
   transaction_size_estimate estimate = settled_at( 300 );
+  BOOST_CHECK_EQUAL( estimate.max_transactions_per_request(), max_transactions );
   size_t in_flight = fill_window( estimate );
-  BOOST_CHECK_GT( in_flight, estimate.max_transactions_per_request() ); // still more than one request per round trip
-  BOOST_CHECK_LT( in_flight * new_size, queue_limit );
+  BOOST_CHECK_EQUAL( in_flight, max_in_flight );
+  BOOST_CHECK_GT( in_flight * new_size, size_t( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES ) );
 
-  size_t most_in_flight = in_flight;
   for( int reply = 0; reply < 3000; ++reply )
   {
     BOOST_REQUIRE_GT( in_flight, 0u );
     --in_flight;
     estimate.record( new_size );
     in_flight += estimate.transactions_to_request( in_flight );
-    most_in_flight = std::max( most_in_flight, in_flight );
   }
-  BOOST_CHECK_LT( most_in_flight * new_size, queue_limit );
   BOOST_CHECK_EQUAL( fill_window( estimate ), estimate.max_transactions_per_request() );
+  BOOST_CHECK_LE( in_flight * new_size, max_bytes_in_flight );
 }
 
 /// Before the peer sent a transaction its window is one request of the largest transactions.

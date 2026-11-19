@@ -221,6 +221,8 @@ namespace graphene { namespace net
       /// queued messages that must not wait for a batch to grow (blocks, sync and control messages)
       size_t _queued_messages_not_waiting_for_batch = 0;
       bool _send_queue_limit_exceeded = false; // set once the queue would have grown over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES
+      /// requested transactions waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES, oldest first
+      std::deque<std::shared_ptr<full_transaction_type>> _deferred_transaction_replies;
       fc::future<void> _send_queued_messages_done;
       fc::microseconds _send_flush_delay;
       /// set while the send task waits for transaction traffic to accumulate; fulfilled to end the wait early
@@ -390,6 +392,12 @@ namespace graphene { namespace net
       void send_block_message(const item_hash_t& requested_item);
       /// sends a trx_message for the transaction, written from its cached serialization without a per-peer copy
       void send_transaction_message(const std::shared_ptr<full_transaction_type>& full_transaction);
+      /** sends the transaction as the reply to the peer's request for it, after the replies sent before it; it waits
+       * outside the send queue while the queue holds more than GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES with
+       * it, so replies never close the connection by taking the queue over its limit.  Returns false, sending
+       * nothing, when GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER replies are waiting already
+       */
+      bool send_transaction_reply(const std::shared_ptr<full_transaction_type>& full_transaction);
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);
       void send_item(const item_id& item_to_send);
       /// Lets queued transaction traffic wait up to `delay` (measured from the oldest queued message) so
@@ -447,6 +455,8 @@ namespace graphene { namespace net
       bool requires_alternate_compression_for_block(const std::shared_ptr<full_block_type>& full_block) const;
     private:
       void send_queued_messages_task();
+      /// queues the deferred transaction replies the queue has room for, and at least one if it is empty; true if it queued any
+      bool queue_deferred_transaction_replies();
       bool send_flush_wait_is_over() const;
       void wait_for_transaction_batch_to_grow();
       /// appends the message's bytes to messages_to_write and returns true, or logs and returns false if it cannot be built

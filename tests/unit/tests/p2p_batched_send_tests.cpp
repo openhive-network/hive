@@ -571,6 +571,48 @@ BOOST_AUTO_TEST_CASE( repeated_build_failures_do_not_overflow_the_send_queue )
   BOOST_CHECK( !pair.receiver_delegate.closed );
 }
 
+/// Replies to a request for far more transaction bytes than the send queue holds, all queued at once, wait for
+/// the queue to drain instead of closing the connection: every one arrives, in order, and a block queued after
+/// them overtakes the ones still waiting.  Only replies past the number allowed to wait are refused.
+BOOST_AUTO_TEST_CASE( transaction_replies_over_the_queue_limit_wait_for_it_to_drain )
+{
+  connected_pair pair;
+
+  const std::shared_ptr<hive::chain::full_transaction_type> transaction = make_full_transaction( 8000 );
+  const size_t transaction_size = transaction->get_transaction_size();
+  BOOST_REQUIRE_GT( transaction_size, 8000u );
+  // everything is queued before the send task gets to run, as when a node answers one fetch request
+  size_t accepted = 0;
+  while( pair.sender->send_transaction_reply( transaction ) )
+    ++accepted;
+  const size_t queued_at_once = GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES / transaction_size;
+  BOOST_CHECK_EQUAL( accepted, queued_at_once + GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER );
+  BOOST_REQUIRE_GT( accepted * transaction_size, 4u * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES );
+  pair.send_block( make_small_block() );
+
+  pair.wait_for_messages( accepted + 1 );
+
+  BOOST_CHECK( !pair.sender_delegate.closed );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), accepted + 1 );
+  const message expected_reply = message( graphene::net::trx_message( transaction ) );
+  size_t replies = 0;
+  size_t replies_before_block = 0;
+  for( const message& received : pair.receiver_delegate.received )
+  {
+    if( received.msg_type == graphene::net::block_message_type )
+      replies_before_block = replies;
+    else if( same_message( received, expected_reply ) )
+      ++replies;
+  }
+  BOOST_CHECK_EQUAL( replies, accepted );
+  BOOST_CHECK_EQUAL( replies_before_block, queued_at_once );
+
+  // with the replies sent, as many may wait again
+  for( size_t i = 0; i < GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER; ++i )
+    BOOST_REQUIRE( pair.sender->send_transaction_reply( transaction ) );
+}
+
 /// Canceling the send task while it builds a message still ends it; the build failure handling does not swallow the cancel.
 BOOST_AUTO_TEST_CASE( canceling_the_send_task_while_building_ends_it )
 {

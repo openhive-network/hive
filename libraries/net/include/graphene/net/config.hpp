@@ -123,6 +123,20 @@
 
 #define GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES        (1024 * 1024)
 /**
+ * The transactions a peer asks for are queued for it only while its send queue holds at most this many bytes;
+ * the rest of the reply waits outside the queue and is queued, in order, as the queue drains.  However large
+ * the transactions it asked for turn out to be, a reply never takes the queue over
+ * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, and the other half stays free for blocks and other traffic.
+ */
+#define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES  (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2)
+/**
+ * How many requested transactions may wait for room in one peer's send queue
+ * (see GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES); a peer asking for more than that while they wait
+ * is told the rest are not available.  Twice what we ourselves keep outstanding with a peer
+ * (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER), so a peer requesting as we do never gets there.
+ */
+#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER (2 * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER)
+/**
  * A block a peer asks for is queued for sending as its id, and looked up only once it is one of
  * this many messages at the front of the peer's send queue: the lookups (and the compression the
  * worker threads may do for that peer) run ahead of the message being sent, while the blocks held
@@ -220,14 +234,16 @@
 
 /**
  * How many bytes of transactions we expect all the requests outstanding with one peer to bring back, at
- * most, unless one full request (see GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH) expects more.  The peer
- * queues each reply at once, and the expectation is the peer's mean transaction size, which learns of larger
- * transactions only as their replies arrive: the whole window may have been requested before.  A sixth of
- * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES keeps the peer's queue within its limit even if every
- * outstanding transaction turns out to be several times the mean (a mix settled at 300 B turning into 1.4 KB
- * ones queues about 800 KB), while transactions of a few hundred bytes still fill several requests per round trip.
+ * most, unless one full request (see GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH) expects more.  The
+ * expectation is the peer's mean transaction size, which learns of larger transactions only as their replies
+ * arrive, so the peer may owe us several times this after a jump in transaction size.  The peer does not drop
+ * us for it: it queues our replies only up to GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES and the rest
+ * as its queue drains (older peers drop us when their queue passes GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES,
+ * which no window based on the mean can rule out).  So this only bounds what a slow or stalled peer holds back;
+ * it lets a mix of transactions of a few hundred bytes fill the whole item window
+ * (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER), two full requests per round trip.
  */
-#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER  (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 6)
+#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER  (512 * 1024)
 
 /**
  * How many bytes of transactions we expect a single transaction request to bring back, at most.
