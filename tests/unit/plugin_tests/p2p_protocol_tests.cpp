@@ -958,32 +958,16 @@ BOOST_AUTO_TEST_CASE( send_queue_limit_test )
       while( !resume )
         fc::usleep( fc::milliseconds( 20 ) );
     } );
-    // p2p_plugin::get_connected_peers() throws (bad file descriptor) while a connection whose socket the node closed
-    // is still among its active connections, which it is for a moment after the queue overflows; that is no answer
-    bool listing_failed = false;
-    const auto still_listed = [&]()
-    {
-      try
-      {
-        return node_lists( *stalled );
-      }
-      catch( const fc::exception& e )
-      {
-        BOOST_TEST_MESSAGE( "listing the connections failed: " << e.to_string() );
-        listing_failed = true;
-        return true;
-      }
-    };
+    // the node lists the connection for a moment after closing it on the overflow; listing it must not fail meanwhile
     const fetch_blockchain_item_ids_message request( block_message_type, {} );
     bool dropped = false;
     for( int sent = 0; sent < 20000 && !dropped; sent += 500 )
     {
       for( int i = 0; i < 500; ++i )
         stalled->send( request );
-      dropped = wait_until( [&]() { return !still_listed(); }, fc::milliseconds( 200 ) );
+      dropped = wait_until( [&]() { return !node_lists( *stalled ); }, fc::milliseconds( 200 ) );
     }
     BOOST_REQUIRE_MESSAGE( dropped, "the node kept a peer that doesn't read" );
-    BOOST_TEST_MESSAGE( "listing the connections " << ( listing_failed ? "failed" : "never failed" ) << " meanwhile" );
     resume = true;
     BOOST_CHECK( stalled->wait_closed( reply_timeout ) );
     require_kept( *bystander );

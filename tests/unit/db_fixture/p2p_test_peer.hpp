@@ -526,7 +526,7 @@ private:
   {
     {
       std::lock_guard< std::mutex > guard( _mutex );
-      _local_endpoint = _connection->get_local_endpoint();
+      _local_endpoint = *_connection->get_local_endpoint();
       _connected_at = fc::time_point::now();
     }
     _connected = true;
@@ -592,7 +592,7 @@ private:
     if( _hello.defers_transaction_replies )
       user_data[ GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES ] = true;
 
-    const fc::ip::endpoint local_endpoint = _connection->get_local_endpoint();
+    const fc::ip::endpoint local_endpoint = *_connection->get_local_endpoint();
     const uint16_t outbound_port = _hello.outbound_port ? *_hello.outbound_port : local_endpoint.port();
     if( _hello.hello_form != hello_options::form::legacy )
       send_now( hello_message( _hello.user_agent, _hello.core_protocol_version, local_endpoint.get_address(), _hello.inbound_port,
