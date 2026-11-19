@@ -6,6 +6,8 @@
 
 #include <hive/plugins/p2p/p2p_plugin.hpp>
 
+#include <graphene/net/config.hpp>
+
 #include <algorithm>
 #include <functional>
 #include <iterator>
@@ -277,6 +279,66 @@ BOOST_AUTO_TEST_CASE( transactions_are_refetched_from_other_advertisers )
       BOOST_CHECK_MESSAGE( wait_until( [&]() { return newcomer.was_advertised( hash( left_behind ) ); }, fc::seconds( 5 ) ),
                            "a peer that connected after another one left counted as knowing what that one advertised" );
       BOOST_CHECK( !newcomer.closed() );
+    } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// A peer sending small transactions is asked for more of them before it has delivered the earlier ones,
+/// past what one request may ask for. When it leaves with all of them outstanding, every one is fetched
+/// from another peer that advertised it meanwhile.
+BOOST_AUTO_TEST_CASE( pipelined_requests_are_refetched_when_the_peer_leaves )
+{
+  try
+  {
+    run( {}, [&]( fc::thread& peer_thread, test_peer& sender, test_peer& observer )
+    {
+      const auto transfers = [&]( const std::string& memo, int count )
+      {
+        std::vector< full_transaction_ptr > transactions;
+        for( int i = 0; i < count; ++i )
+          transactions.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                  memo + " " + std::to_string( i ), get_default_expiration() ) );
+        return transactions;
+      };
+      const auto all_requested = [&]( const test_peer& peer, const std::vector< full_transaction_ptr >& transactions )
+      {
+        return std::all_of( transactions.begin(), transactions.end(), [&]( const full_transaction_ptr& transaction ) {
+          return peer.was_requested( transaction->get_legacy_transaction_message_hash() );
+        } );
+      };
+      const auto none_requested = [&]( const test_peer& peer, const std::vector< full_transaction_ptr >& transactions )
+      {
+        return std::none_of( transactions.begin(), transactions.end(), [&]( const full_transaction_ptr& transaction ) {
+          return peer.was_requested( transaction->get_legacy_transaction_message_hash() );
+        } );
+      };
+
+      auto staller = std::make_unique< test_peer >( peer_thread, db->get_chain_id(), "staller" );
+      staller->connect( node_endpoint() );
+      BOOST_REQUIRE( wait_until( [&]() { return staller->in_sync(); }, fc::seconds( 10 ) ) );
+
+      // the node learns from these that the staller sends small transactions, so its window grows past one request
+      const std::vector< full_transaction_ptr > warmup = transfers( "warmup", 150 );
+      staller->provide( warmup );
+      staller->advertise( hashes_of( warmup ) );
+      BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return all_advertised( observer, warmup ); }, fc::seconds( 30 ) ),
+                             "the warmup transactions were not accepted and relayed" );
+
+      const std::vector< full_transaction_ptr > withheld = transfers( "withheld", int( GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION + 200 ) );
+      staller->advertise( hashes_of( withheld ) );
+      BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return all_requested( *staller, withheld ); }, fc::seconds( 10 ) ),
+                             "more transactions than one request may ask for were not all requested before any was delivered" );
+
+      sender.provide( withheld );
+      sender.advertise( hashes_of( withheld ) );
+      fc::usleep( fc::milliseconds( 500 ) );
+      BOOST_CHECK_MESSAGE( none_requested( sender, withheld ), "transactions outstanding with the staller were requested again" );
+
+      staller.reset();
+      BOOST_CHECK_MESSAGE( wait_until( [&]() { return all_advertised( observer, withheld ); }, fc::seconds( 30 ) ),
+                           "transactions outstanding with a peer that left were not all fetched from another peer that advertised them" );
+      BOOST_CHECK( all_requested( sender, withheld ) );
     } );
   }
   FC_LOG_AND_RETHROW()

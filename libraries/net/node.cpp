@@ -1439,7 +1439,7 @@ namespace graphene { namespace net {
       {
         // a peer kept despite sending us a block whose body didn't match its header is asked only if no
         // other peer advertised the block, so its next bad copy doesn't delay the genuine one.  Other peers
-        // ask for it from their own candidates when they are idle, so here they only count as sources
+        // ask for it from their own candidates when they can take a request, so here they only count as sources
         std::vector<block_source_candidate> candidates{{true, true}};
         for (const peer_connection_ptr& other_peer : _active_connections)
           if (other_peer != peer && other_peer->block_inventory_peer_advertised_to_us.find(item) != other_peer->block_inventory_peer_advertised_to_us.end())
@@ -1467,13 +1467,16 @@ namespace graphene { namespace net {
 
         // we need to construct a list of items to request from each peer first,
         // then send the messages (in two steps, to avoid yielding while iterating).
-        // Only idle peers are asked, each for items from its own fetch candidates.  They take turns, one
-        // item each, so items several of them advertised are spread evenly among them
+        // Peers with no block or sync request outstanding are asked, each for items from its own fetch
+        // candidates: blocks one request at a time, transactions while the peer's window has room, so the
+        // next batch may go out before earlier replies have arrived.  They take turns, one item each, so
+        // items several of them advertised are spread evenly among them
         struct peer_and_items_to_fetch
         {
           peer_connection_ptr peer;
           bool include_transactions;
           size_t max_transactions;
+          size_t max_transactions_per_request;
           size_t blocks = 0;
           size_t transactions = 0;
           bool done = false;
@@ -1481,13 +1484,17 @@ namespace graphene { namespace net {
         };
         std::vector<peer_and_items_to_fetch> items_by_peer;
         for (const peer_connection_ptr& peer : _active_connections)
-          if (peer->idle() && peer->fetch_candidates.size() > 0)
+          if (peer->can_take_item_request() && peer->fetch_candidates.size() > 0)
           {
             const bool transaction_fetching_inhibited = peer->is_transaction_fetching_inhibited();
             if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions())
               next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
+            const size_t max_transactions = transaction_fetching_inhibited ? 0 :
+              peer->received_transaction_size.transactions_to_request(peer->items_requested_from_peer.transactions());
+            if (max_transactions == 0 && !peer->fetch_candidates.has_blocks())
+              continue;
             peer->fetch_candidates.begin_pass();
-            items_by_peer.push_back({peer, !transaction_fetching_inhibited,
+            items_by_peer.push_back({peer, max_transactions > 0, max_transactions,
                                      peer->received_transaction_size.max_transactions_per_request()});
           }
 
@@ -1508,16 +1515,14 @@ namespace graphene { namespace net {
               peer_and_items.done = true;
               continue;
             }
-            peer->items_requested_from_peer.insert(peer_connection::item_to_time_map_type::value_type(*item_id_to_fetch, fc::time_point::now()));
+            peer->items_requested_from_peer.insert(*item_id_to_fetch, fc::time_point::now());
             peer_and_items.item_ids.push_back(*item_id_to_fetch);
             // the peer's blocks are all taken before its first transaction, so a peer that reaches
             // its transaction limit has nothing more to give in this pass
             if (item_id_to_fetch->item_type == graphene::net::block_message_type)
-              ++peer_and_items.blocks;
+              peer_and_items.done = ++peer_and_items.blocks >= GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION;
             else
-              ++peer_and_items.transactions;
-            peer_and_items.done = peer_and_items.blocks >= GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION ||
-                                  peer_and_items.transactions >= peer_and_items.max_transactions;
+              peer_and_items.done = ++peer_and_items.transactions >= peer_and_items.max_transactions;
             item_taken = true;
           }
         }
@@ -1530,16 +1535,23 @@ namespace graphene { namespace net {
         for (const peer_and_items_to_fetch& peer_and_items : items_by_peer)
         {
           _statistics.fetch.items_requested += peer_and_items.item_ids.size();
-          if (peer_and_items.transactions > 0)
-            _statistics.record_transaction_request(peer_and_items.transactions, peer_and_items.max_transactions);
           // the item lists are heterogenous and
           // the fetch_items_message can only deal with one item type at a time.
-          // Blocks are requested first
-          std::map<uint32_t, std::vector<item_hash_t>, std::greater<uint32_t> > items_to_fetch_by_type;
+          // Blocks come first (they were taken first), then the transactions, in requests of at most
+          // max_transactions_per_request each
+          std::vector<std::pair<uint32_t, std::vector<item_hash_t>>> requests;
           for (const item_id& item : peer_and_items.item_ids)
-            items_to_fetch_by_type[item.item_type].push_back(item.item_hash);
-          for (auto& items_by_type : items_to_fetch_by_type)
           {
+            if (requests.empty() || requests.back().first != item.item_type ||
+                (item.item_type == core_message_type_enum::trx_message_type &&
+                 requests.back().second.size() >= peer_and_items.max_transactions_per_request))
+              requests.emplace_back(item.item_type, std::vector<item_hash_t>());
+            requests.back().second.push_back(item.item_hash);
+          }
+          for (const auto& items_by_type : requests)
+          {
+            if (items_by_type.first == core_message_type_enum::trx_message_type)
+              _statistics.record_transaction_request(items_by_type.second.size(), peer_and_items.max_transactions_per_request);
             dlog("requesting ${count} items of type ${type} from peer ${endpoint}: ${hashes}",
                  ("count", items_by_type.second.size())("type", (uint32_t)items_by_type.first)
                  ("endpoint", peer_and_items.peer->get_remote_endpoint())
@@ -4968,7 +4980,7 @@ namespace graphene { namespace net {
         {
           originating_peer->items_requested_from_peer.erase(item_iter);
           process_block_during_normal_operation(originating_peer, full_block);
-          if (originating_peer->idle())
+          if (originating_peer->can_take_item_request())
             trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
           return;
         }
@@ -5012,10 +5024,17 @@ namespace graphene { namespace net {
       }
       else
       {
+        // wake the fetch loop only when this reply opens the peer's transaction window, so a peer kept
+        // busy is asked again once per batch rather than per transaction
+        const transaction_size_estimate& window = originating_peer->received_transaction_size;
+        const bool window_had_room = window.transactions_to_request(originating_peer->items_requested_from_peer.transactions()) > 0;
         originating_peer->items_requested_from_peer.erase(iter);
         originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
         if (originating_peer->idle())
           trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
+        else if (!window_had_room && originating_peer->can_take_item_request() &&
+                 window.transactions_to_request(originating_peer->items_requested_from_peer.transactions()) > 0)
+          trigger_fetch_items_loop(false);
 
         // Next: have the delegate validate the transaction; apply_transaction_completion() applies the outcome.
         // It counts as being processed while we wait for room to submit it, so no other peer is asked for it meanwhile
@@ -7706,6 +7725,32 @@ namespace graphene { namespace net {
   {
     return std::clamp<size_t>(GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / std::max<size_t>(_mean, 1),
                               1, GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION);
+  }
+
+  size_t transaction_size_estimate::transactions_to_request(size_t in_flight) const
+  {
+    const size_t per_request = max_transactions_per_request();
+    const size_t window = std::min<size_t>(GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER,
+                                           std::max<size_t>(GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER / std::max<size_t>(_mean, 1), 1));
+    if (in_flight >= window)
+      return 0;
+    const size_t room = window - in_flight;
+    if (in_flight > 0 && room < (per_request + 1) / 2)
+      return 0;
+    return room;
+  }
+
+  void requested_items::insert(const item_id& item, fc::time_point requested)
+  {
+    if (_items.emplace(item, requested).second && item.item_type == trx_message_type)
+      ++_transactions;
+  }
+
+  void requested_items::erase(const_iterator iter)
+  {
+    if (iter->first.item_type == trx_message_type)
+      --_transactions;
+    _items.erase(iter);
   }
 
   bool transaction_inventory::record::test(slot_type slot, unsigned kind) const

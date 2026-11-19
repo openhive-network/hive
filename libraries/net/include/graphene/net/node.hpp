@@ -53,6 +53,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -600,6 +601,7 @@ namespace graphene { namespace net {
       return std::nullopt;
     }
 
+    bool has_blocks() const { return !_blocks.empty(); }
     bool has_transactions() const { return !_transactions.empty(); }
     size_t size() const { return _blocks.size() + _transactions.size(); }
     void clear();
@@ -657,9 +659,43 @@ namespace graphene { namespace net {
     size_t mean() const { return _mean; }
     /// at least 1, at most GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION
     size_t max_transactions_per_request() const;
+    /**
+     * How many more transactions the peer may be asked for while @p in_flight are outstanding with it, in requests
+     * of at most max_transactions_per_request() each: as many as keeps the outstanding ones within
+     * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER and their expected bytes within
+     * GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER.  While some are outstanding it is 0 until there is
+     * room for half a request, so a peer kept busy is asked in batches rather than a few transactions at a time.
+     */
+    size_t transactions_to_request(size_t in_flight) const;
 
   private:
     size_t _mean;
+  };
+
+  /**
+   * The items requested from one peer during normal operation that it has not sent or refused yet, each with the
+   * time it was requested.  Counts the transactions among them, so the fetch loop sees at once how much of the
+   * peer's transaction window is taken and whether a block is outstanding.
+   */
+  class requested_items
+  {
+  public:
+    using map_type = std::unordered_map<item_id, fc::time_point>;
+    using const_iterator = map_type::const_iterator;
+
+    void insert(const item_id& item, fc::time_point requested);
+    void erase(const_iterator iter);
+    const_iterator find(const item_id& item) const { return _items.find(item); }
+    const_iterator begin() const { return _items.begin(); }
+    const_iterator end() const { return _items.end(); }
+    bool empty() const { return _items.empty(); }
+    size_t size() const { return _items.size(); }
+    size_t transactions() const { return _transactions; }
+    size_t blocks() const { return _items.size() - _transactions; }
+
+  private:
+    map_type _items;
+    size_t _transactions = 0;
   };
 
   /**
