@@ -35,6 +35,8 @@
 #include <boost/core/demangle.hpp>
 #include <boost/scope_exit.hpp>
 
+#include <algorithm>
+
 #ifdef DEFAULT_LOGGER
 # undef DEFAULT_LOGGER
 #endif
@@ -607,11 +609,24 @@ namespace graphene { namespace net
     bool peer_connection::send_transaction_reply(const std::shared_ptr<full_transaction_type>& full_transaction)
     {
       VERIFY_CORRECT_THREAD();
-      if (_deferred_transaction_replies.size() >= GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER)
+      const size_t transaction_size = full_transaction->get_transaction_size();
+      if (_deferred_transaction_replies.size() >= GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER ||
+          _deferred_transaction_reply_bytes + transaction_size > GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER)
         return false;
+      if (_deferred_transaction_replies.empty())
+        _transaction_replies_deferred_since = fc::time_point::now();
       _deferred_transaction_replies.push_back(full_transaction);
+      _deferred_transaction_reply_bytes += transaction_size;
       queue_deferred_transaction_replies();
       return true;
+    }
+
+    fc::time_point peer_connection::get_transaction_reply_send_progress_time() const
+    {
+      VERIFY_CORRECT_THREAD();
+      if (_deferred_transaction_replies.empty())
+        return fc::time_point::maximum();
+      return std::max(_transaction_replies_deferred_since, get_last_message_sent_time());
     }
 
     bool peer_connection::queue_deferred_transaction_replies()
@@ -626,6 +641,7 @@ namespace graphene { namespace net
       {
         std::shared_ptr<full_transaction_type> reply = std::move(_deferred_transaction_replies.front());
         _deferred_transaction_replies.pop_front();
+        _deferred_transaction_reply_bytes -= reply->get_transaction_size();
         send_transaction_message(reply);
         queued_any = true;
       }
