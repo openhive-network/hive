@@ -695,6 +695,12 @@ namespace graphene { namespace net
       return !busy();
     }
 
+    bool peer_connection::can_take_item_request() const
+    {
+      VERIFY_CORRECT_THREAD();
+      return items_requested_from_peer.blocks() == 0 && sync_items_requested_from_peer.empty() && !item_ids_requested_from_peer;
+    }
+
     bool peer_connection::is_currently_handling_message() const
     {
       VERIFY_CORRECT_THREAD();

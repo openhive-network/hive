@@ -114,7 +114,8 @@ public:
     return _blocks_not_available;
   }
 
-  /// from now on the connection is closed as soon as the transactions requested in one message are sent
+  /// from now on the connection is closed as soon as the transactions requested in one message are sent;
+  /// requests that arrive meanwhile are ignored
   void disconnect_after_delivery()
   {
     _thread.async( [&]() { _disconnect_after_delivery = true; } ).wait();
@@ -281,6 +282,8 @@ private:
 
   void on_fetch_items( const graphene::net::fetch_items_message& request )
   {
+    if( _leaving )
+      return;
     const uint64_t bytes_sent_before = _connection->get_total_bytes_sent();
     uint64_t bytes_delivered = 0;
     for( const graphene::net::item_hash_t& hash : request.items_to_fetch )
@@ -302,6 +305,7 @@ private:
     if( _disconnect_after_delivery && bytes_delivered != 0 )
     {
       // the connection is closed only once the transactions are written, padding aside
+      _leaving = true;
       while( _connection->get_total_bytes_sent() < bytes_sent_before + bytes_delivered && !_closed )
         fc::usleep( fc::milliseconds( 1 ) );
       _connection->close_connection();
@@ -323,6 +327,7 @@ private:
   bool _withholding = true;
   std::vector< graphene::net::item_id > _withheld;
   bool _disconnect_after_delivery = false;
+  bool _leaving = false;
   std::set< graphene::net::item_hash_t > _advertised_transactions;
   std::set< graphene::net::item_hash_t > _requested;
   mutable std::mutex _blocks_mutex;

@@ -200,16 +200,30 @@
 #define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION  100
 
 /**
- * During normal operation, how many transactions will be fetched from each
- * peer at a time.  This will only come into play when the network
+ * During normal operation, how many transactions one request will fetch
+ * from a peer (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER bounds all
+ * those outstanding with it).  This will only come into play when the network
  * is being flooded -- typically transactions will be fetched as soon
  * as we find out about them, so only one item will be requested
- * at a time.  The next request goes out only once the whole reply has
- * arrived, so on a high-latency link this bounds the transactions a
- * single peer carries per round trip.  GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH
- * lowers it for a peer sending large transactions.
+ * at a time.  GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH lowers it for
+ * a peer sending large transactions.
  */
 #define GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION  400
+
+/**
+ * How many transactions may be outstanding with one peer during normal operation, over all the requests
+ * in flight with it.  The next request may go out before earlier replies have fully arrived, so a
+ * high-latency link carries up to this many transactions per round trip rather than one request's worth.
+ * It also bounds what a stalled peer holds back until its requests time out or it disconnects.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER  (2 * GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION)
+
+/**
+ * How many bytes of transactions we expect all the requests outstanding with one peer to bring back, at
+ * most.  The peer queues each reply at once, so this bounds what our replies take of its send queue;
+ * kept at one request's worth, the peer's queue holds no more of our replies than with one request at a time.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER  GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH
 
 /**
  * How many bytes of transactions we expect a single transaction request to bring back, at most.
