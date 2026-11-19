@@ -223,6 +223,9 @@ namespace graphene { namespace net
       bool _send_queue_limit_exceeded = false; // set once the queue would have grown over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES
       /// requested transactions waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES, oldest first
       std::deque<std::shared_ptr<full_transaction_type>> _deferred_transaction_replies;
+      size_t _deferred_transaction_reply_bytes = 0;
+      /// when _deferred_transaction_replies last stopped being empty
+      fc::time_point _transaction_replies_deferred_since;
       fc::future<void> _send_queued_messages_done;
       fc::microseconds _send_flush_delay;
       /// set while the send task waits for transaction traffic to accumulate; fulfilled to end the wait early
@@ -395,9 +398,15 @@ namespace graphene { namespace net
       /** sends the transaction as the reply to the peer's request for it, after the replies sent before it; it waits
        * outside the send queue while the queue holds more than GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES with
        * it, so replies never close the connection by taking the queue over its limit.  Returns false, sending
-       * nothing, when GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER replies are waiting already
+       * nothing, when GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER replies are waiting already, or waiting
+       * with it would take more than GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER
        */
       bool send_transaction_reply(const std::shared_ptr<full_transaction_type>& full_transaction);
+      /// the bytes of the transactions waiting to be queued by send_transaction_reply()
+      size_t get_deferred_transaction_reply_bytes() const { return _deferred_transaction_reply_bytes; }
+      /// while transaction replies wait (see send_transaction_reply()), when they started waiting or the queue was
+      /// last written to the socket, whichever is later; fc::time_point::maximum() while none wait
+      fc::time_point get_transaction_reply_send_progress_time() const;
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);
       void send_item(const item_id& item_to_send);
       /// Lets queued transaction traffic wait up to `delay` (measured from the oldest queued message) so

@@ -9,9 +9,12 @@
 #include <graphene/net/config.hpp>
 
 #include <algorithm>
+#include <deque>
 #include <functional>
 #include <iterator>
+#include <map>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
@@ -74,10 +77,11 @@ struct p2p_transaction_submission_fixture : public witness_fixture
     }, fc::seconds( 10 ) ) );
   }
 
-  /// Starts a node with @p extra_config_args, connects a sending and an observing peer to it and runs @p test
-  /// with them on an API thread.
+  /// Starts a node with @p extra_config_args and @p p2p_parameters, connects a sending and an observing peer to it and
+  /// runs @p test with them on an API thread.
   void run( const config_arg_override_t& extra_config_args,
-            const std::function< void( fc::thread& peer_thread, test_peer& sender, test_peer& observer ) >& test )
+            const std::function< void( fc::thread& peer_thread, test_peer& sender, test_peer& observer ) >& test,
+            const std::string& p2p_parameters = loopback_p2p_parameters )
   {
     BOOST_SCOPE_EXIT( this_ )
     {
@@ -86,7 +90,7 @@ struct p2p_transaction_submission_fixture : public witness_fixture
       this_->theApp.quit( true );
     } BOOST_SCOPE_EXIT_END
 
-    config_arg_override_t config_args = { config_line_t( { "p2p-parameters", { loopback_p2p_parameters } } ) };
+    config_arg_override_t config_args = { config_line_t( { "p2p-parameters", { p2p_parameters } } ) };
     config_args.insert( config_args.end(), extra_config_args.begin(), extra_config_args.end() );
     initialize( 3, {}, { "initminer" }, config_args );
     bool test_passed = false;
@@ -316,6 +320,7 @@ BOOST_AUTO_TEST_CASE( pipelined_requests_are_refetched_when_the_peer_leaves )
       };
 
       auto staller = std::make_unique< test_peer >( peer_thread, db->get_chain_id(), "staller" );
+      staller->hello().defers_transaction_replies = true; // only such a peer is asked for more than one request
       staller->connect( node_endpoint() );
       BOOST_REQUIRE( wait_until( [&]() { return staller->in_sync(); }, fc::seconds( 10 ) ) );
 
@@ -341,6 +346,142 @@ BOOST_AUTO_TEST_CASE( pipelined_requests_are_refetched_when_the_peer_leaves )
                            "transactions outstanding with a peer that left were not all fetched from another peer that advertised them" );
       BOOST_CHECK( all_requested( sender, withheld ) );
     } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// A peer that defers its replies is asked for more than one request's worth before it delivers any; one that doesn't
+/// is asked for one request's worth at most, however small its transactions, as before requests were pipelined.
+BOOST_AUTO_TEST_CASE( only_a_peer_that_defers_replies_is_asked_for_more_than_one_request )
+{
+  try
+  {
+    run( {}, [&]( fc::thread& peer_thread, test_peer&, test_peer& observer )
+    {
+      const auto transfers = [&]( const std::string& memo, int count )
+      {
+        std::vector< full_transaction_ptr > transactions;
+        for( int i = 0; i < count; ++i )
+          transactions.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                  memo + " " + std::to_string( i ), get_default_expiration() ) );
+        return transactions;
+      };
+      const auto requested = [&]( const test_peer& peer, const std::vector< full_transaction_ptr >& transactions )
+      {
+        return size_t( std::count_if( transactions.begin(), transactions.end(), [&]( const full_transaction_ptr& transaction ) {
+          return peer.was_requested( transaction->get_legacy_transaction_message_hash() );
+        } ) );
+      };
+      const size_t one_request = GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION;
+
+      for( const bool defers : { false, true } )
+      {
+        const std::string name = defers ? "deferring" : "old";
+        test_peer peer( peer_thread, db->get_chain_id(), name );
+        peer.hello().defers_transaction_replies = defers;
+        peer.connect( node_endpoint() );
+        BOOST_REQUIRE( wait_until( [&]() { return peer.in_sync(); }, fc::seconds( 10 ) ) );
+
+        // the node learns from these that the peer sends small transactions, so a request may ask for a full one
+        const std::vector< full_transaction_ptr > warmup = transfers( name + " warmup", 150 );
+        peer.provide( warmup );
+        peer.advertise( hashes_of( warmup ) );
+        BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return all_advertised( observer, warmup ); }, fc::seconds( 30 ) ),
+                               "the warmup transactions were not accepted and relayed" );
+
+        const std::vector< full_transaction_ptr > withheld = transfers( name + " withheld", int( one_request + 200 ) );
+        peer.advertise( hashes_of( withheld ) );
+        if( defers )
+          BOOST_CHECK_MESSAGE( wait_until( [&]() { return requested( peer, withheld ) == withheld.size(); }, fc::seconds( 10 ) ),
+                               "only " << requested( peer, withheld ) << " of " << withheld.size() << " transactions were requested from a peer that defers its replies" );
+        else
+        {
+          BOOST_REQUIRE( wait_until( [&]() { return requested( peer, withheld ) > 0; }, fc::seconds( 10 ) ) );
+          fc::usleep( fc::seconds( 1 ) );
+          BOOST_CHECK_EQUAL( requested( peer, withheld ), one_request );
+        }
+        // the withheld transactions time out with this peer, which is dropped, before the next one connects
+        BOOST_CHECK( wait_until( [&]() { return peer.closed(); }, fc::seconds( 15 ) ) );
+      }
+    } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// A peer delivering the transactions it was asked for one at a time, slower than the request timeout per
+/// request, is kept: its requests time out only once it stops delivering.  A peer delivering nothing is dropped
+/// at the timeout.
+BOOST_AUTO_TEST_CASE( peer_delivering_steadily_is_kept_past_the_request_timeout )
+{
+  try
+  {
+    const std::string p2p_parameters =
+      R"({"listen_endpoint":"127.0.0.1:0","accept_incoming_connections":true,"active_ignored_request_timeout_microseconds":1000000})";
+    run( {}, [&]( fc::thread& peer_thread, test_peer&, test_peer& observer )
+    {
+      std::vector< full_transaction_ptr > transactions;
+      for( int i = 0; i < 24; ++i )
+        transactions.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                "trickled " + std::to_string( i ), get_default_expiration() ) );
+      std::map< graphene::net::item_hash_t, full_transaction_ptr > by_hash;
+      for( const full_transaction_ptr& transaction : transactions )
+        by_hash[ transaction->get_legacy_transaction_message_hash() ] = transaction;
+
+      test_peer trickler( peer_thread, db->get_chain_id(), "trickler" );
+      std::mutex requests_mutex;
+      std::deque< graphene::net::item_hash_t > requested;
+      trickler.on( graphene::net::fetch_items_message_type, [&]( test_peer&, const graphene::net::message& m )
+      {
+        const graphene::net::fetch_items_message request = m.as< graphene::net::fetch_items_message >();
+        std::lock_guard< std::mutex > guard( requests_mutex );
+        requested.insert( requested.end(), request.items_to_fetch.begin(), request.items_to_fetch.end() );
+      } );
+      trickler.connect( node_endpoint() );
+      BOOST_REQUIRE( wait_until( [&]() { return trickler.in_sync(); }, fc::seconds( 10 ) ) );
+      trickler.advertise( hashes_of( transactions ) );
+
+      // a new peer is asked for several of its transactions at once (GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE),
+      // so the last of them waits several timeouts for its reply
+      const fc::microseconds pace = fc::milliseconds( 400 );
+      const fc::time_point start = fc::time_point::now();
+      size_t most_waiting = 0;
+      for( size_t delivered = 0; delivered < transactions.size() && !trickler.closed(); )
+      {
+        fc::optional< graphene::net::item_hash_t > next;
+        {
+          std::lock_guard< std::mutex > guard( requests_mutex );
+          most_waiting = std::max( most_waiting, requested.size() );
+          if( !requested.empty() )
+          {
+            next = requested.front();
+            requested.pop_front();
+          }
+        }
+        if( next )
+        {
+          trickler.send( graphene::net::trx_message( by_hash.at( *next ) ) );
+          ++delivered;
+        }
+        fc::usleep( pace );
+      }
+      BOOST_TEST_MESSAGE( "delivered in " << ( fc::time_point::now() - start ).count() / 1000 << " ms, at most " << most_waiting << " waiting" );
+      BOOST_CHECK_GT( most_waiting, 3u ); // the last one waited more than the timeout
+      BOOST_CHECK_MESSAGE( !trickler.closed(), "a peer delivering its replies steadily was dropped" );
+      BOOST_CHECK_MESSAGE( wait_until( [&]() { return all_advertised( observer, transactions ); }, fc::seconds( 10 ) ),
+                           "the trickled transactions were not accepted and relayed" );
+      BOOST_CHECK( !trickler.closed() );
+
+      // a peer that delivers nothing it is asked for is dropped once the timeout passes
+      const full_transaction_ptr ignored = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                           "ignored", get_default_expiration() );
+      test_peer ignorer( peer_thread, db->get_chain_id(), "ignorer" );
+      ignorer.connect( node_endpoint() );
+      BOOST_REQUIRE( wait_until( [&]() { return ignorer.in_sync(); }, fc::seconds( 10 ) ) );
+      ignorer.advertise( { ignored->get_legacy_transaction_message_hash() } );
+      BOOST_REQUIRE( wait_until( [&]() { return ignorer.was_requested( ignored->get_legacy_transaction_message_hash() ); }, fc::seconds( 10 ) ) );
+      BOOST_CHECK_MESSAGE( wait_until( [&]() { return ignorer.closed(); }, fc::seconds( 5 ) ),
+                           "a peer that delivered nothing it was asked for was not dropped" );
+    }, p2p_parameters );
   }
   FC_LOG_AND_RETHROW()
 }

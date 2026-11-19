@@ -1821,6 +1821,7 @@ namespace graphene { namespace net {
         fc::microseconds active_ignored_request_timeout = fc::microseconds( _node_configuration.active_ignored_request_timeout_microseconds );
 
 
+        const fc::time_point now = fc::time_point::now();
         fc::time_point active_disconnect_threshold = fc::time_point::now() - fc::seconds(active_disconnect_timeout);
         fc::time_point active_send_keepalive_threshold = fc::time_point::now() - fc::seconds(active_send_keepalive_timeout);
         fc::time_point active_ignored_request_threshold = fc::time_point::now() - active_ignored_request_timeout;
@@ -1865,18 +1866,27 @@ namespace graphene { namespace net {
                 disconnect_due_to_request_timeout = true;
               }
             if (!disconnect_due_to_request_timeout)
-              for (const peer_connection::item_to_time_map_type::value_type& item_and_time : active_peer->items_requested_from_peer)
-                if (item_and_time.second < active_ignored_request_threshold)
-                {
-                  fc_wlog(fc::logger::get("sync"), "Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
-                        ("peer", active_peer->get_remote_endpoint())("id", item_and_time.first.item_hash));
-                  wlog("Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
-                        ("peer", active_peer->get_remote_endpoint())("id", item_and_time.first.item_hash));
-                  active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for item ${id}", ("id", item_and_time.first.item_hash)));
-                  active_peer->connection_closed_by_failure = true;
-                  disconnect_due_to_request_timeout = true;
-                  break;
-                }
+              if (const std::optional<item_id> ignored_item = active_peer->items_requested_from_peer.timed_out(now, active_ignored_request_timeout))
+              {
+                fc_wlog(fc::logger::get("sync"), "Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
+                      ("peer", active_peer->get_remote_endpoint())("id", ignored_item->item_hash));
+                wlog("Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
+                      ("peer", active_peer->get_remote_endpoint())("id", ignored_item->item_hash));
+                active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for item ${id}", ("id", ignored_item->item_hash)));
+                active_peer->connection_closed_by_failure = true;
+                disconnect_due_to_request_timeout = true;
+              }
+            if (!disconnect_due_to_request_timeout &&
+                active_peer->get_transaction_reply_send_progress_time() < active_disconnect_threshold)
+            {
+              // the peer asked us for transactions and hasn't read what we sent it for so long that we can't send it more
+              wlog("Disconnecting peer ${peer} because it hasn't read the transactions it asked for in ${timeout} seconds",
+                   ("peer", active_peer->get_remote_endpoint())("timeout", active_disconnect_timeout));
+              active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because it hasn't read the transactions it asked for in ${timeout} seconds",
+                                                                                  ("timeout", active_disconnect_timeout)));
+              active_peer->connection_closed_by_failure = true;
+              disconnect_due_to_request_timeout = true;
+            }
             if (disconnect_due_to_request_timeout)
             {
               // we should probably disconnect nicely and give them a reason, but right now the logic
@@ -2485,6 +2495,7 @@ namespace graphene { namespace net {
 
       user_data["chain_id"] = _delegate->get_new_chain_id();
       user_data["last_available_zstd_compression_dictionary_number"] = hive::chain::get_last_available_zstd_compression_dictionary_number();
+      user_data[GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES] = true;
 
       return user_data;
     }
@@ -2514,6 +2525,8 @@ namespace graphene { namespace net {
         originating_peer->last_available_zstd_compression_dictionary_number = user_data["last_available_zstd_compression_dictionary_number"].as<uint8_t>();
       if (user_data.contains("last_known_block_number"))
         originating_peer->last_known_block_number = user_data["last_known_block_number"].as<uint32_t>();
+      originating_peer->received_transaction_size.set_peer_defers_replies(
+        user_data.contains(GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES) && user_data[GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES].as_bool());
     }
 
     void node_impl::on_hello_message( peer_connection* originating_peer, const hello_message& hello_message_received )
@@ -3644,7 +3657,8 @@ namespace graphene { namespace net {
         assert(reply_transactions.size() == ids_to_answer.size());
         // replies that would take the send queue over its reply budget wait for it to drain rather than close the
         // connection (send_transaction_reply()), so the requester gets every transaction we have, however much
-        // larger they are than it expected; only a peer with far more replies waiting than any window is told no
+        // larger they are than it expected; only a peer with far more replies (or bytes of them) waiting than any
+        // window is told no
         size_t refused = 0;
         for (unsigned i = 0; i < reply_transactions.size() && !connection_is_closing(); ++i)
           if (!reply_transactions[i] || !originating_peer->send_transaction_reply(reply_transactions[i]))
@@ -3655,9 +3669,10 @@ namespace graphene { namespace net {
           }
         if (refused > 0)
           wlog("answered ${refused} of ${count} requested transactions as not available to peer ${endpoint}: "
-               "${max} replies are already waiting for its send queue to drain",
+               "${max} replies or ${max_bytes} bytes of them are already waiting for its send queue to drain",
                ("refused", refused)("count", reply_transactions.size())
-               ("max", GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER)("endpoint", originating_peer->get_remote_endpoint()));
+               ("max", GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER)
+               ("max_bytes", GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER)("endpoint", originating_peer->get_remote_endpoint()));
       }
       else
         FC_THROW("Peer requested an item that wasn't a block or a transaction");
@@ -3672,6 +3687,8 @@ namespace graphene { namespace net {
       if (regular_item_iter != originating_peer->items_requested_from_peer.end())
       {
         originating_peer->items_requested_from_peer.erase( regular_item_iter );
+        if (requested_item.item_type == trx_message_type)
+          originating_peer->items_requested_from_peer.record_transaction_reply(fc::time_point::now());
         forget_item_advertised_to_us(originating_peer, requested_item);
         // before handing the request to another peer, re-check that we still need the item:
         // the chain may have advanced past it while it was in flight.  (Only possible for
@@ -5091,6 +5108,7 @@ namespace graphene { namespace net {
         const transaction_size_estimate& window = originating_peer->received_transaction_size;
         const bool window_had_room = window.transactions_to_request(originating_peer->items_requested_from_peer.transactions()) > 0;
         originating_peer->items_requested_from_peer.erase(iter);
+        originating_peer->items_requested_from_peer.record_transaction_reply(message_receive_time);
         originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
         if (originating_peer->idle())
           trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
@@ -7798,7 +7816,9 @@ namespace graphene { namespace net {
   size_t transaction_size_estimate::transactions_to_request(size_t in_flight) const
   {
     const size_t per_request = max_transactions_per_request();
-    const size_t window = std::max(per_request,
+    // a peer that queues each reply at once drops us when they take its queue over its limit: it is asked for no
+    // more than it would have queued for us before requests were pipelined
+    const size_t window = !_peer_defers_replies ? per_request : std::max(per_request,
                                    std::min<size_t>(GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER,
                                                     GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER / std::max<size_t>(_mean, 1)));
     if (in_flight >= window)
@@ -7820,6 +7840,18 @@ namespace graphene { namespace net {
     if (iter->first.item_type == trx_message_type)
       --_transactions;
     _items.erase(iter);
+  }
+
+  std::optional<item_id> requested_items::timed_out(fc::time_point now, fc::microseconds timeout) const
+  {
+    const fc::time_point threshold = now - timeout;
+    const bool no_recent_transaction_reply = _last_transaction_reply < threshold;
+    const fc::time_point ceiling = now - fc::microseconds(timeout.count() * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING);
+    for (const map_type::value_type& item_and_time : _items)
+      if (item_and_time.second < threshold &&
+          (item_and_time.first.item_type != trx_message_type || no_recent_transaction_reply || item_and_time.second < ceiling))
+        return item_and_time.first;
+    return std::nullopt;
   }
 
   bool transaction_inventory::record::test(slot_type slot, unsigned kind) const

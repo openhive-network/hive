@@ -137,6 +137,13 @@
  */
 #define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER (2 * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER)
 /**
+ * How many bytes of requested transactions may wait for room in one peer's send queue, as
+ * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER bounds their count: past it, further transactions the peer
+ * asks for are not available.  Our own full item window after a jump to 8 KB transactions (6.4 MB) still waits in
+ * full, while a peer that stops reading holds this much at most rather than its count of the largest transactions.
+ */
+#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER (8 * 1024 * 1024)
+/**
  * A block a peer asks for is queued for sending as its id, and looked up only once it is one of
  * this many messages at the front of the peer's send queue: the lookups (and the compression the
  * worker threads may do for that peer) run ahead of the message being sent, while the blocks held
@@ -242,8 +249,27 @@
  * which no window based on the mean can rule out).  So this only bounds what a slow or stalled peer holds back;
  * it lets a mix of transactions of a few hundred bytes fill the whole item window
  * (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER), two full requests per round trip.
+ * Applies only to a peer that says in its hello that it defers replies so (GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES):
+ * an older peer keeps no more than one full request outstanding, as before pipelining, so a jump in transaction size
+ * takes its queue over the limit no sooner than it did then.
  */
 #define GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER  (512 * 1024)
+
+/**
+ * The key of the hello's user_data by which a node says it queues the transactions a peer asks for only as its send
+ * queue drains (peer_connection::send_transaction_reply()), so a peer may keep several requests outstanding with it
+ * (GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER).  Older nodes ignore keys they don't know.
+ */
+#define GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES        "defers_transaction_replies"
+
+/**
+ * A requested transaction times out (and the peer is dropped) once active_ignored_request_timeout_microseconds have
+ * passed both since we asked for it and since the peer last answered one we asked for, so a peer answering a large
+ * window over a slow link keeps it.  However steadily the peer delivers others, a transaction still outstanding this many
+ * timeouts after we asked for it times out too; that is enough to receive what a peer may owe us (its send queue and
+ * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER) at about 1.2 Mbit/s with the default 6 s timeout.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING 10
 
 /**
  * How many bytes of transactions we expect a single transaction request to bring back, at most.
