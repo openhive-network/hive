@@ -347,10 +347,10 @@ namespace graphene { namespace net
       uint32_t inventory_advertisements_dropped_since_report = 0;
       fc::time_point last_inventory_limit_report_time;
 
-      item_to_time_map_type items_requested_from_peer;  /// items we've requested from this peer during normal operation.  fetch from another peer if this peer disconnects
-      /// items in the node's list of items to fetch that this peer advertised, to choose from once it is idle
+      requested_items items_requested_from_peer;  /// items we've requested from this peer during normal operation.  fetch from another peer if this peer disconnects
+      /// items in the node's list of items to fetch that this peer advertised, to choose from once it can take a request
       fetch_candidate_queue fetch_candidates;
-      /// sizes the transaction requests we send this peer (see transaction_size_estimate)
+      /// sizes the transaction requests we send this peer and bounds those outstanding (see transaction_size_estimate)
       transaction_size_estimate received_transaction_size;
       uint32_t compressed_blocks_received_from_peer = 0;   // fields to track which peers are sending us compressed vs uncompressed blocks
       uint32_t uncompressed_blocks_received_from_peer = 0;
@@ -420,6 +420,9 @@ namespace graphene { namespace net
 
       bool busy() const;
       bool idle() const;
+      /// Whether the fetch loop may send the peer another request: nothing but transactions is outstanding with it.
+      /// Transactions are then requested only as far as received_transaction_size.transactions_to_request() allows
+      bool can_take_item_request() const;
       bool is_currently_handling_message() const;
 
       bool is_transaction_fetching_inhibited() const;

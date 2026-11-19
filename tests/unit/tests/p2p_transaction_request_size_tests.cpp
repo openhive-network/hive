@@ -6,13 +6,35 @@
 #include <hive/protocol/config.hpp>
 
 #include <cstddef>
+#include <string>
 
+using graphene::net::item_id;
+using graphene::net::requested_items;
 using graphene::net::transaction_size_estimate;
 
 namespace {
 
 const size_t max_transactions = GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION;
 const size_t max_bytes = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH;
+const size_t max_in_flight = GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER;
+const size_t max_bytes_in_flight = GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER;
+
+transaction_size_estimate settled_at( size_t size )
+{
+  transaction_size_estimate estimate;
+  for( int i = 0; i < 1000; ++i )
+    estimate.record( size );
+  return estimate;
+}
+
+/// how many transactions are outstanding once the peer is asked for as many as allowed, again and again, until it may be asked for none
+size_t fill_window( const transaction_size_estimate& estimate )
+{
+  size_t in_flight = 0;
+  for( size_t requested = estimate.transactions_to_request( 0 ); requested > 0; requested = estimate.transactions_to_request( in_flight ) )
+    in_flight += requested;
+  return in_flight;
+}
 
 /// how many requests, each as large as allowed and filled with transactions of @p size, until a request may
 /// ask for @p wanted transactions; 0 if it doesn't get there within 100 requests
@@ -87,6 +109,96 @@ BOOST_AUTO_TEST_CASE( at_least_one_transaction_per_request )
   for( int i = 0; i < 100; ++i )
     estimate.record( 2 * max_bytes );
   BOOST_CHECK_EQUAL( estimate.max_transactions_per_request(), 1u );
+}
+
+/// A peer sending small transactions may have more outstanding than one request asks for: a second full request
+/// while the first is outstanding, up to the in-flight item limit, with the expected bytes of all of them within
+/// the byte limit.
+BOOST_AUTO_TEST_CASE( small_transactions_pipeline_requests_up_to_item_window )
+{
+  BOOST_CHECK_EQUAL( max_in_flight, 2 * max_transactions );
+  const transaction_size_estimate estimate = settled_at( 300 );
+  BOOST_REQUIRE_EQUAL( estimate.max_transactions_per_request(), max_transactions );
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( 0 ), max_in_flight );
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( max_transactions ), max_transactions );
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( max_in_flight - 10 ), 0u ); // less than half a request of room
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( max_in_flight ), 0u );
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( max_in_flight + 1 ), 0u );
+  BOOST_CHECK_EQUAL( fill_window( estimate ), max_in_flight );
+  BOOST_CHECK_LE( fill_window( estimate ) * estimate.mean(), max_bytes_in_flight );
+}
+
+/// With large transactions the byte limit bounds all outstanding requests together, not each one, so the
+/// peer's send queue holds no more of our replies than with one request at a time.
+BOOST_AUTO_TEST_CASE( byte_limit_bounds_all_outstanding_requests )
+{
+  BOOST_CHECK_LT( max_bytes_in_flight, size_t( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES ) );
+  const size_t sizes[] = { 1024, 4096, 16384, HIVE_MAX_TRANSACTION_SIZE };
+  for( size_t size : sizes )
+  {
+    const transaction_size_estimate estimate = settled_at( size );
+    const size_t window = fill_window( estimate );
+    BOOST_CHECK_GE( window, estimate.max_transactions_per_request() );
+    BOOST_CHECK_LE( window * estimate.mean(), max_bytes_in_flight );
+    BOOST_CHECK_EQUAL( estimate.transactions_to_request( window ), 0u );
+  }
+  // 4 KiB transactions: one full request takes the whole byte window
+  const transaction_size_estimate estimate = settled_at( 4096 );
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( estimate.max_transactions_per_request() ), 0u );
+}
+
+/// While some are outstanding, the next request waits for room for half a request; an idle peer is asked at once.
+BOOST_AUTO_TEST_CASE( busy_peer_is_asked_again_only_for_half_a_request )
+{
+  const transaction_size_estimate estimate = settled_at( 4096 );
+  const size_t per_request = estimate.max_transactions_per_request();
+  BOOST_REQUIRE_GT( per_request, 2u );
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( 0 ), per_request );
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( per_request - 1 ), 0u );
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( per_request / 2 + 1 ), 0u );
+  BOOST_CHECK_EQUAL( estimate.transactions_to_request( per_request / 2 ), per_request - per_request / 2 );
+
+  // a peer sending transactions larger than the whole byte limit has one outstanding at most
+  const transaction_size_estimate huge = settled_at( 2 * max_bytes );
+  BOOST_CHECK_EQUAL( huge.transactions_to_request( 0 ), 1u );
+  BOOST_CHECK_EQUAL( huge.transactions_to_request( 1 ), 0u );
+}
+
+/// Before the peer sent a transaction its window is one request of the largest transactions.
+BOOST_AUTO_TEST_CASE( new_peer_window_is_one_request )
+{
+  const transaction_size_estimate estimate;
+  BOOST_CHECK_EQUAL( fill_window( estimate ), estimate.max_transactions_per_request() );
+}
+
+/// The requested items count their transactions, which is what the window is judged on, and the blocks apart.
+BOOST_AUTO_TEST_CASE( requested_items_count_transactions_and_blocks )
+{
+  requested_items requested;
+  const item_id transaction_1( graphene::net::trx_message_type, fc::ripemd160::hash( std::string( "1" ) ) );
+  const item_id transaction_2( graphene::net::trx_message_type, fc::ripemd160::hash( std::string( "2" ) ) );
+  const item_id block( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "1" ) ) );
+  const fc::time_point now = fc::time_point::now();
+
+  requested.insert( transaction_1, now );
+  requested.insert( transaction_2, now );
+  requested.insert( transaction_2, now ); // already outstanding
+  requested.insert( block, now );
+  BOOST_CHECK_EQUAL( requested.size(), 3u );
+  BOOST_CHECK_EQUAL( requested.transactions(), 2u );
+  BOOST_CHECK_EQUAL( requested.blocks(), 1u );
+
+  requested.erase( requested.find( block ) );
+  BOOST_CHECK_EQUAL( requested.transactions(), 2u );
+  BOOST_CHECK_EQUAL( requested.blocks(), 0u );
+  requested.erase( requested.find( transaction_1 ) );
+  BOOST_CHECK_EQUAL( requested.transactions(), 1u );
+  BOOST_CHECK( requested.find( transaction_1 ) == requested.end() );
+  BOOST_CHECK( requested.find( transaction_2 ) != requested.end() );
+  BOOST_CHECK( requested.find( transaction_2 )->second == now );
+  requested.erase( requested.find( transaction_2 ) );
+  BOOST_CHECK( requested.empty() );
+  BOOST_CHECK_EQUAL( requested.transactions(), 0u );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
