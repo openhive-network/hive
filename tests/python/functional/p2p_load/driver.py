@@ -86,10 +86,11 @@ def _create_node(spec: RunSpec, role: str, colony_start_block: int) -> _Node:
     if role.startswith("colony"):
         node.config.plugin.append("colony")
         node.config.colony_sign_with = [_COLONY_KEY]
-        for option, value in _MIXES[spec.mix].items():
+        index = role.removeprefix("colony")
+        for option, value in _MIXES[spec.colony_mixes.get(index, spec.mix)].items():
             setattr(node.config, option, value)
         node.config.colony_transactions_per_block = spec.tpb // spec.colonies
-        node.config.colony_start_at_block = colony_start_block
+        node.config.colony_start_at_block = colony_start_block + spec.colony_late_blocks.get(index, 0)
     return node
 
 

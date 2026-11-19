@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-TOPOLOGIES = ("mesh", "star", "strict", "chain")
+TOPOLOGIES = ("mesh", "star", "strict", "chain", "diamond")
+MIXES = ("default", "large")
 # where a two-host run's nodes run: "local" with the witness and the run's command, "remote" on --remote-host
 PARTS = ("local", "remote")
 
@@ -32,6 +33,9 @@ class RunSpec:
     netem_ms: int = 0
     colony_start_delay: int = 12
     mix: str = "default"
+    # per colony index: another mix than `mix`, and how many blocks after the others' start it starts
+    colony_mixes: dict[str, str] = field(default_factory=dict)
+    colony_late_blocks: dict[str, int] = field(default_factory=dict)
     p2p_loggers: bool = True
     replay_templates: str = ""  # replayed-state template directory; "" replays the block log on every node
     remote_host: str = ""
@@ -58,16 +62,14 @@ class RunSpec:
         """Raise ValueError for a spec the driver cannot build."""
         if self.topology not in TOPOLOGIES:
             raise ValueError(f"topology must be one of {', '.join(TOPOLOGIES)}, not {self.topology!r}")
-        if self.topology == "chain" and self.colonies != 1:
-            raise ValueError("the chain topology has exactly one colony")
-        if self.topology != "chain" and self.relays:
-            raise ValueError("relays exist only in the chain topology")
+        if self.topology not in {"chain", "diamond"} and self.relays:
+            raise ValueError("relays exist only in the chain and diamond topologies")
+        if self.topology == "diamond" and self.relays < 2:
+            raise ValueError("the diamond topology needs at least two relays")
         if self.tpb <= 0 or self.blocks <= 0 or self.colonies <= 0 or self.relays < 0:
             raise ValueError("tx per block, blocks and colonies must be positive, relays not negative")
         if self.late_observer_blocks < 0 or self.netem_ms < 0:
             raise ValueError("late observer blocks and netem delay must not be negative")
-        if self.mix not in {"default", "large"}:
-            raise ValueError(f"mix must be default or large, not {self.mix!r}")
         unknown = set(self.node_hived) - set(self.roles())
         if unknown:
             raise ValueError(f"per-node binaries for roles this run does not have: {sorted(unknown)}")
@@ -75,7 +77,17 @@ class RunSpec:
             raise ValueError("netem colony index beyond the number of colonies")
         if self.late_observer_blocks >= self.blocks:
             raise ValueError("the late observer must join before the last measured block")
+        self._validate_colonies()
         self._validate_placement()
+
+    def _validate_colonies(self) -> None:
+        for mix in [self.mix, *self.colony_mixes.values()]:
+            if mix not in MIXES:
+                raise ValueError(f"mix must be one of {', '.join(MIXES)}, not {mix!r}")
+        if any(int(i) >= self.colonies for i in [*self.colony_mixes, *self.colony_late_blocks]):
+            raise ValueError("per-colony mix or start for a colony index beyond the number of colonies")
+        if any(blocks < 0 or blocks >= self.blocks for blocks in self.colony_late_blocks.values()):
+            raise ValueError("a late colony must start before the last measured block")
 
     def _validate_placement(self) -> None:
         if bool(self.remote_host) != bool(self.remote_roles):

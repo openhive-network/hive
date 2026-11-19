@@ -27,7 +27,7 @@ from python.functional.p2p_load.harness import (
 )
 from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
 from python.functional.p2p_load.remote import HARNESS_PATHS, RemoteHost, RemoteHostError, local_address_towards
-from python.functional.p2p_load.spec import PARTS, TOPOLOGIES, RunSpec
+from python.functional.p2p_load.spec import MIXES, PARTS, TOPOLOGIES, RunSpec
 
 # shorthand flags for the p2p-parameters keys the #877 measurements vary; --p2p-parameter sets any other
 _P2P_FLAGS = {
@@ -42,6 +42,13 @@ def _key_value(text: str) -> tuple[str, str]:
     if not sep or not key or not value:
         raise argparse.ArgumentTypeError(f"expected KEY=VALUE, got {text!r}")
     return key, value
+
+
+def _count(text: str, flag: str) -> int:
+    try:
+        return int(text)
+    except ValueError as error:
+        raise HarnessSetupError(f"{flag}: {text!r} is not a number of blocks") from error
 
 
 def _executable(text: str) -> Path:
@@ -59,7 +66,12 @@ def _add_run_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--tpb", type=int, required=True, help="colony transactions per block, split over colonies")
     parser.add_argument("--blocks", type=int, default=30, help="loaded blocks measured, from the colonies' start")
     parser.add_argument("--colonies", type=int, default=1)
-    parser.add_argument("--relays", type=int, default=0, help="relays between colony0 and the witness (chain)")
+    parser.add_argument(
+        "--relays",
+        type=int,
+        default=0,
+        help="relays between the colonies and the witness (chain), or between the witness and the observer (diamond)",
+    )
     parser.add_argument(
         "--node-hived",
         type=_key_value,
@@ -101,7 +113,23 @@ def _add_run_options(parser: argparse.ArgumentParser) -> None:
         default=12,
         help="blocks after the block log's head before the colonies start (the nodes link up in the first ~4)",
     )
-    parser.add_argument("--mix", choices=("default", "large"), default="default", help="colony transaction mix")
+    parser.add_argument("--mix", choices=MIXES, default="default", help="colony transaction mix")
+    parser.add_argument(
+        "--colony-mix",
+        type=_key_value,
+        action="append",
+        default=[],
+        metavar="N=MIX",
+        help="colony N's transaction mix instead of --mix",
+    )
+    parser.add_argument(
+        "--colony-late",
+        type=_key_value,
+        action="append",
+        default=[],
+        metavar="N=K",
+        help="colony N starts K blocks after the other colonies (a size jump in one run: with --colony-mix)",
+    )
     parser.add_argument(
         "--no-p2p-loggers",
         dest="p2p_loggers",
@@ -186,6 +214,8 @@ def _spec(args: argparse.Namespace, name: str, hived: Path, label: str, placemen
         netem_ms=args.netem_ms,
         colony_start_delay=args.colony_start_delay,
         mix=args.mix,
+        colony_mixes=dict(args.colony_mix),
+        colony_late_blocks={index: _count(blocks, "--colony-late") for index, blocks in args.colony_late},
         p2p_loggers=args.p2p_loggers,
         replay_templates="" if args.fresh_replay else str(TEMPLATE_ROOT),
         remote_host=placement.remote.host if placement else "",
