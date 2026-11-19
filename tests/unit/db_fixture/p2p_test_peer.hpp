@@ -70,6 +70,9 @@ struct hello_options
   fc::optional< uint32_t > last_known_block_number;
   /// user_data.last_available_zstd_compression_dictionary_number; left out when empty
   fc::optional< uint8_t > last_available_zstd_compression_dictionary_number;
+  /// user_data.defers_transaction_replies (GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES); left out when false, as by
+  /// a node that queues each reply at once
+  bool defers_transaction_replies = false;
   /// 0 says the peer doesn't listen; when it listens (test_peer::listen()) its listening port is used instead
   uint16_t inbound_port = 0;
   /// the local port of the connection when empty
@@ -565,6 +568,8 @@ private:
       user_data[ "last_known_block_number" ] = _chain.back()->get_block_num();
     if( _hello.last_available_zstd_compression_dictionary_number )
       user_data[ "last_available_zstd_compression_dictionary_number" ] = *_hello.last_available_zstd_compression_dictionary_number;
+    if( _hello.defers_transaction_replies )
+      user_data[ GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES ] = true;
 
     const fc::ip::endpoint local_endpoint = _connection->get_local_endpoint();
     const uint16_t outbound_port = _hello.outbound_port ? *_hello.outbound_port : local_endpoint.port();

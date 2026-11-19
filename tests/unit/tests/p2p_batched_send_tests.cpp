@@ -6,6 +6,7 @@
 
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/full_transaction.hpp>
+#include <hive/protocol/config.hpp>
 #include <hive/protocol/hive_operations.hpp>
 
 #include <fc/asio.hpp>
@@ -586,7 +587,10 @@ BOOST_AUTO_TEST_CASE( transaction_replies_over_the_queue_limit_wait_for_it_to_dr
   while( pair.sender->send_transaction_reply( transaction ) )
     ++accepted;
   const size_t queued_at_once = GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES / transaction_size;
-  BOOST_CHECK_EQUAL( accepted, queued_at_once + GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER );
+  // whichever bound on the waiting ones is reached first: their bytes, for transactions of this size
+  const size_t may_wait = std::min<size_t>( GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER,
+                                            GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER / transaction_size );
+  BOOST_CHECK_EQUAL( accepted, queued_at_once + may_wait );
   BOOST_REQUIRE_GT( accepted * transaction_size, 4u * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES );
   pair.send_block( make_small_block() );
 
@@ -609,8 +613,47 @@ BOOST_AUTO_TEST_CASE( transaction_replies_over_the_queue_limit_wait_for_it_to_dr
   BOOST_CHECK_EQUAL( replies_before_block, queued_at_once );
 
   // with the replies sent, as many may wait again
-  for( size_t i = 0; i < GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER; ++i )
+  for( size_t i = 0; i < may_wait; ++i )
     BOOST_REQUIRE( pair.sender->send_transaction_reply( transaction ) );
+}
+
+/// Replies wait for the queue in a bounded number of bytes, whatever the size of the transactions: past it, and past
+/// the count bound for small ones, the rest are refused.  While they wait, the connection reports when the queue last
+/// made progress towards the peer, which is what a peer that stops reading is dropped on.
+BOOST_AUTO_TEST_CASE( waiting_transaction_replies_are_bounded_in_bytes )
+{
+  const size_t byte_bound = GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER;
+  for( const size_t json_size : { size_t( 60000 ), size_t( 200 ) } )
+  {
+    connected_pair pair;
+    const std::shared_ptr<hive::chain::full_transaction_type> transaction = make_full_transaction( json_size );
+    const size_t transaction_size = transaction->get_transaction_size();
+    BOOST_REQUIRE_LE( transaction_size, size_t( HIVE_MAX_TRANSACTION_SIZE ) );
+    BOOST_CHECK( pair.sender->get_transaction_reply_send_progress_time() == fc::time_point::maximum() );
+
+    const fc::time_point before = fc::time_point::now();
+    size_t accepted = 0;
+    while( pair.sender->send_transaction_reply( transaction ) )
+    {
+      ++accepted;
+      BOOST_REQUIRE_LE( pair.sender->get_deferred_transaction_reply_bytes(), byte_bound );
+    }
+    const size_t queued_at_once = GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES / transaction_size;
+    const size_t waiting = accepted - queued_at_once;
+    BOOST_CHECK_EQUAL( pair.sender->get_deferred_transaction_reply_bytes(), waiting * transaction_size );
+    if( transaction_size * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER > byte_bound )
+      BOOST_CHECK_EQUAL( waiting, byte_bound / transaction_size );
+    else
+      BOOST_CHECK_EQUAL( waiting, size_t( GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER ) );
+    const fc::time_point progress = pair.sender->get_transaction_reply_send_progress_time();
+    BOOST_CHECK( progress >= before && progress <= fc::time_point::now() );
+
+    pair.wait_for_messages( accepted );
+    BOOST_CHECK( !pair.receiver_delegate.closed );
+    BOOST_CHECK_EQUAL( pair.receiver_delegate.received.size(), accepted );
+    BOOST_CHECK_EQUAL( pair.sender->get_deferred_transaction_reply_bytes(), 0u );
+    BOOST_CHECK( pair.sender->get_transaction_reply_send_progress_time() == fc::time_point::maximum() );
+  }
 }
 
 /// Canceling the send task while it builds a message still ends it; the build failure handling does not swallow the cancel.

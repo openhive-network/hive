@@ -289,6 +289,9 @@ BOOST_AUTO_TEST_CASE( inbound_handshake_test )
     const std::optional< uint8_t > dictionary = hive::chain::get_last_available_zstd_compression_dictionary_number();
     BOOST_REQUIRE( dictionary );
     BOOST_CHECK_EQUAL( hello.user_data[ "last_available_zstd_compression_dictionary_number" ].as< uint32_t >(), *dictionary );
+    // so the peer may keep more than one transaction request outstanding with the node
+    BOOST_CHECK( hello.user_data.contains( GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES ) &&
+                 hello.user_data[ GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES ].as_bool() );
     // the node sends the legacy hello too, for peers that predate the IPv6-aware messages
     BOOST_CHECK_EQUAL( peer->count( legacy_hello_message_type ), 1u );
 

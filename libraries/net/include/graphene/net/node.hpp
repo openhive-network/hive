@@ -659,13 +659,18 @@ namespace graphene { namespace net {
 
     void record(size_t transaction_size);
     size_t mean() const { return _mean; }
+    /// whether the peer queues our replies only as its send queue drains (GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES);
+    /// false until set
+    void set_peer_defers_replies(bool defers) { _peer_defers_replies = defers; }
+    bool peer_defers_replies() const { return _peer_defers_replies; }
     /// at least 1, at most GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION
     size_t max_transactions_per_request() const;
     /**
      * How many more transactions the peer may be asked for while @p in_flight are outstanding with it, in requests
      * of at most max_transactions_per_request() each: as many as keeps the outstanding ones within
      * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER and their expected bytes within
-     * GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER, though always one full request.  While some are
+     * GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER, though always one full request; within one full request
+     * unless the peer defers its replies (see set_peer_defers_replies()).  While some are
      * outstanding it is 0 until there is room for half a request, so a peer kept busy is asked in batches rather
      * than a few transactions at a time.
      */
@@ -673,12 +678,14 @@ namespace graphene { namespace net {
 
   private:
     size_t _mean;
+    bool _peer_defers_replies = false;
   };
 
   /**
    * The items requested from one peer during normal operation that it has not sent or refused yet, each with the
    * time it was requested.  Counts the transactions among them, so the fetch loop sees at once how much of the
-   * peer's transaction window is taken and whether a block is outstanding.
+   * peer's transaction window is taken and whether a block is outstanding, and keeps when the peer last answered
+   * a transaction request, which is what an outstanding transaction's timeout is measured from (see timed_out()).
    */
   class requested_items
   {
@@ -696,9 +703,21 @@ namespace graphene { namespace net {
     size_t transactions() const { return _transactions; }
     size_t blocks() const { return _items.size() - _transactions; }
 
+    /// the peer delivered, or said it doesn't have, a transaction we asked it for
+    void record_transaction_reply(fc::time_point when) { _last_transaction_reply = when; }
+    /**
+     * One of the items the peer has kept us waiting for longer than @p timeout at @p now, if any.  A block waits
+     * from when it was requested.  A transaction waits from when it was requested or the peer last answered a
+     * transaction request (record_transaction_reply()), whichever is later, so a peer delivering a large window
+     * at link speed is not taken for one that ignores us; but no longer than
+     * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING timeouts from its request.
+     */
+    std::optional<item_id> timed_out(fc::time_point now, fc::microseconds timeout) const;
+
   private:
     map_type _items;
     size_t _transactions = 0;
+    fc::time_point _last_transaction_reply;
   };
 
   /**

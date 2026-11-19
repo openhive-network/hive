@@ -20,9 +20,12 @@ const size_t max_bytes = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH;
 const size_t max_in_flight = GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER;
 const size_t max_bytes_in_flight = GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER;
 
-transaction_size_estimate settled_at( size_t size )
+/// the estimate of a peer that defers its replies (only toward one does the window grow past one request) unless
+/// @p peer_defers_replies is false, after many transactions of @p size
+transaction_size_estimate settled_at( size_t size, bool peer_defers_replies = true )
 {
   transaction_size_estimate estimate;
+  estimate.set_peer_defers_replies( peer_defers_replies );
   for( int i = 0; i < 1000; ++i )
     estimate.record( size );
   return estimate;
@@ -197,6 +200,66 @@ BOOST_AUTO_TEST_CASE( new_peer_window_is_one_request )
 {
   const transaction_size_estimate estimate;
   BOOST_CHECK_EQUAL( fill_window( estimate ), estimate.max_transactions_per_request() );
+}
+
+/// Toward a peer that doesn't say it defers its replies, which queues each reply at once, a mix settled at 300 B keeps
+/// one full request outstanding at most, as before requests were pipelined, so its queue overflows on a size jump no
+/// sooner than then; toward one that does, the whole item window.
+BOOST_AUTO_TEST_CASE( window_is_one_request_unless_the_peer_defers_replies )
+{
+  const transaction_size_estimate old_peer = settled_at( 300, false );
+  BOOST_CHECK( !old_peer.peer_defers_replies() );
+  const size_t per_request = old_peer.max_transactions_per_request();
+  BOOST_REQUIRE_EQUAL( per_request, max_transactions );
+  BOOST_CHECK_EQUAL( fill_window( old_peer ), per_request );
+  for( size_t in_flight = 0; in_flight <= per_request + 1; ++in_flight )
+    BOOST_CHECK_LE( in_flight + old_peer.transactions_to_request( in_flight ), std::max( in_flight, per_request ) );
+
+  const transaction_size_estimate deferring_peer = settled_at( 300, true );
+  BOOST_CHECK( deferring_peer.peer_defers_replies() );
+  BOOST_CHECK_EQUAL( fill_window( deferring_peer ), max_in_flight );
+
+  BOOST_CHECK( !transaction_size_estimate().peer_defers_replies() );
+}
+
+/// An outstanding transaction times out only once the peer has answered no transaction request for the timeout,
+/// however long ago it was requested, up to the ceiling; a block times out from its request whatever the peer sends.
+BOOST_AUTO_TEST_CASE( transaction_request_times_out_on_lack_of_progress )
+{
+  const fc::microseconds timeout = fc::seconds( 6 );
+  const fc::time_point start = fc::time_point::now();
+  const auto at = [&]( double seconds ) { return start + fc::microseconds( int64_t( seconds * 1000000 ) ); };
+  const item_id transaction( graphene::net::trx_message_type, fc::ripemd160::hash( std::string( "slow" ) ) );
+  const item_id block( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "slow" ) ) );
+
+  requested_items requested;
+  requested.insert( transaction, start );
+  BOOST_CHECK( !requested.timed_out( at( 5.9 ), timeout ) );
+  BOOST_CHECK( requested.timed_out( at( 6.1 ), timeout ) == transaction ); // nothing delivered: as before
+
+  // replies to other requests, every second, keep it waiting past the timeout
+  for( int second = 1; second < 6 * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING; ++second )
+  {
+    requested.record_transaction_reply( at( second ) );
+    BOOST_CHECK( !requested.timed_out( at( second + 0.5 ), timeout ) );
+  }
+  // until the replies stop for the timeout
+  const double last_reply = 30;
+  requested_items stopped;
+  stopped.insert( transaction, start );
+  stopped.record_transaction_reply( at( last_reply ) );
+  BOOST_CHECK( !stopped.timed_out( at( last_reply + 5.9 ), timeout ) );
+  BOOST_CHECK( stopped.timed_out( at( last_reply + 6.1 ), timeout ) == transaction );
+
+  // or the ceiling passes since it was requested
+  const double ceiling = 6.0 * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING;
+  requested.record_transaction_reply( at( ceiling + 0.05 ) );
+  BOOST_CHECK( requested.timed_out( at( ceiling + 0.1 ), timeout ) == transaction );
+
+  requested_items with_block;
+  with_block.insert( block, start );
+  with_block.record_transaction_reply( at( 6 ) );
+  BOOST_CHECK( with_block.timed_out( at( 6.1 ), timeout ) == block );
 }
 
 /// The requested items count their transactions, which is what the window is judged on, and the blocks apart.
