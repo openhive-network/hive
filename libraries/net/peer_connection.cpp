@@ -397,8 +397,10 @@ namespace graphene { namespace net
         ~counter() { assert(_send_message_queue_tasks_counter == 1); --_send_message_queue_tasks_counter; /* dlog("leaving peer_connection::send_queued_messages_task()"); */ }
       } concurrent_invocation_counter(_send_message_queue_tasks_running);
 #endif
-      while (!_queued_messages.empty())
+      while (!_queued_messages.empty() || queue_deferred_transaction_replies())
       {
+        // the previous batch gave its queue space back, which may make room for replies waiting for it
+        queue_deferred_transaction_replies();
         wait_for_transaction_batch_to_grow();
 
         // start the lookups (and the worker-thread compression) of the next few queued blocks before their turn;
@@ -600,6 +602,34 @@ namespace graphene { namespace net
     {
       VERIFY_CORRECT_THREAD();
       send_queueable_message(std::make_unique<queued_transaction_message>(full_transaction));
+    }
+
+    bool peer_connection::send_transaction_reply(const std::shared_ptr<full_transaction_type>& full_transaction)
+    {
+      VERIFY_CORRECT_THREAD();
+      if (_deferred_transaction_replies.size() >= GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER)
+        return false;
+      _deferred_transaction_replies.push_back(full_transaction);
+      queue_deferred_transaction_replies();
+      return true;
+    }
+
+    bool peer_connection::queue_deferred_transaction_replies()
+    {
+      // a transaction is at most HIVE_MAX_TRANSACTION_SIZE, so one queued alone never reaches the queue's limit;
+      // queueing one into an empty queue keeps the send task running while any wait
+      bool queued_any = false;
+      while (!_deferred_transaction_replies.empty() && !_send_queue_limit_exceeded &&
+             (_queued_messages.empty() ||
+              _total_queued_messages_size + _deferred_transaction_replies.front()->get_transaction_size() <=
+                GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES))
+      {
+        std::shared_ptr<full_transaction_type> reply = std::move(_deferred_transaction_replies.front());
+        _deferred_transaction_replies.pop_front();
+        send_transaction_message(reply);
+        queued_any = true;
+      }
+      return queued_any;
     }
 
     void peer_connection::close_connection()
