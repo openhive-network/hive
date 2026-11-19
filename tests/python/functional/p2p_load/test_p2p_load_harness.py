@@ -17,6 +17,7 @@ import test_tools as tt
 from python.functional.p2p_load import __main__ as cli
 from python.functional.p2p_load import (
     harness,
+    node_logs,
     p2p_loggers,
     p2p_parameters,
     procfs,
@@ -382,6 +383,44 @@ def test_a_run_of_a_build_without_the_p2p_loggers_reports_no_counters(tmp_path: 
     assert summary["p2p_counters"] == {}
     assert summary["relay"]["relay1"]["median_ms"] == pytest.approx(51)
     assert "p2p_stats enabled on no node" in report.format_summary(summary)
+
+
+def test_every_hourly_segment_of_the_p2p_log_is_read_once_in_time_order(tmp_path: Path) -> None:
+    node_dir = tmp_path / "WitnessNode0"
+    p2p_dir = node_dir / "logs" / "p2p"
+    p2p_dir.mkdir(parents=True)
+    (node_dir / "stderr_0.log").write_text("replay\n")
+    first, second = p2p_dir / "p2p.log.20261120T000000", p2p_dir / "p2p.log.20261120T010000"
+    second.write_text(
+        _p2p_statistics(60, 3000, 3000, 12_000)
+        + "".join(_relay_line("sample", "RCV", i, 2_000_000 + i) for i in range(10, 20))
+    )
+    first.write_text(
+        _p2p_statistics(30, 3000, 3000, 12_000)
+        + "".join(_relay_line("sample", "BRD", i, 1_000_000 + i) for i in range(10))
+    )
+    shutil.copyfile(second, p2p_dir / "p2p.log")
+
+    samples = node_logs.relay_samples(node_dir)
+    reports = node_logs.p2p_statistics(node_dir)
+
+    assert node_logs.log_files(node_dir) == [node_dir / "stderr_0.log", first, second]
+    assert samples == {
+        **{f"{i:040x}": {"BRD": 1_000_000 + i} for i in range(10)},
+        **{f"{i:040x}": {"RCV": 2_000_000 + i} for i in range(10, 20)},
+    }
+    assert [r["log_time"] - reports[0]["log_time"] for r in reports] == [0, 30]
+
+
+def test_a_p2p_log_newer_than_its_rotated_segments_is_read_after_them(tmp_path: Path) -> None:
+    p2p_dir = tmp_path / "logs" / "p2p"
+    p2p_dir.mkdir(parents=True)
+    (p2p_dir / "p2p.log.20261120T000000").write_text(_p2p_statistics(30, 3000, 3000, 12_000))
+    (p2p_dir / "p2p.log").write_text(_p2p_statistics(60, 3000, 3000, 12_000))
+
+    reports = node_logs.p2p_statistics(tmp_path)
+
+    assert [r["log_time"] - reports[0]["log_time"] for r in reports] == [0, 30]
 
 
 def test_p2p_loggers_are_enabled_only_where_the_binary_has_them(tmp_path: Path) -> None:

@@ -5,6 +5,7 @@ the periodic p2p statistics.
 
 from __future__ import annotations
 
+import filecmp
 import json
 import re
 from datetime import UTC, datetime
@@ -31,13 +32,28 @@ def log_files(node_dir: Path) -> list[Path]:
     Return the node's log files, each once.
 
     test-tools keeps one stderr_N.log per run of the node and points stderr.log at the latest; reading both would
-    count that run's lines twice, so symlinks are skipped.
+    count that run's lines twice, so symlinks are skipped. An appender's segments come in time order.
     """
     files = sorted(node_dir.glob("stderr_*.log"))
     if not files and (node_dir / "stderr.log").is_file():
         files = [node_dir / "stderr.log"]
-    files += sorted(p for p in (node_dir / "logs").rglob("*.log") if p.is_file() and not p.is_symlink())
+    for current in sorted(p for p in (node_dir / "logs").rglob("*.log") if p.is_file()):
+        files += _appender_segments(current)
     return [f for f in files if not f.is_symlink()]
+
+
+def _appender_segments(current: Path) -> list[Path]:
+    """
+    Return the segments of the appender writing `current`: its rotated `<name>.<stamp>` files in stamp order, then
+    `current`, unless it is a copy of the newest rotated one.
+
+    hived rotates an appender hourly by the node's (faked) clock and points `current` at the newest segment; copying
+    the node's directory back turns that link into a regular file identical to the newest segment.
+    """
+    rotated = sorted(p for p in current.parent.glob(f"{current.name}.*") if p.is_file() and not p.is_symlink())
+    if current.is_symlink() or (rotated and filecmp.cmp(current, rotated[-1], shallow=False)):
+        return rotated
+    return [*rotated, current]
 
 
 def _lines(node_dir: Path) -> Iterator[str]:
