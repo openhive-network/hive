@@ -12,7 +12,10 @@
 #include <graphene/net/config.hpp>
 #include <graphene/net/core_messages.hpp>
 
+#include <fc/bitutil.hpp>
+
 #include <algorithm>
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -29,7 +32,10 @@
  * should have are generated at once with debug_node; blocks it should sync from a test peer are generated
  * by a short-lived source node with the same genesis (generate_chain()). An idle node is not at live sync,
  * so it ignores transaction advertisements: the cases that need it to fetch or relay transactions start a
- * producing node (the witness_fixture default, genesis 3 s ahead and a block every 3 s).
+ * producing node (the witness_fixture default, genesis 3 s ahead and a block every 3 s). Blocks an idle node
+ * should get in live mode come from a peer that delivers them when asked but doesn't offer them for sync
+ * (test_peer::provide_blocks()). A pruned node is an idle node without a block log (block-log-split 0), which
+ * keeps only its last irreversible block.
  *
  * Assertions use what the test peer received (replies, rejection codes, closing reasons) and when its
  * connection closed, then the node's view (connected peers) and its chain, never the logs.
@@ -57,9 +63,10 @@ struct p2p_protocol_fixture : public witness_fixture
 
   /**
    * Generates @p count empty blocks on a separate node with the genesis the next start_node() will use,
-   * so the node under test can sync them from a test peer.
+   * so the node under test can sync them from a test peer. With @p fork_at, the slot before block
+   * fork_at is missed, so that block and every later one differ from those of a chain without the gap.
    */
-  std::vector< block_ptr > generate_chain( uint32_t count )
+  std::vector< block_ptr > generate_chain( uint32_t count, uint32_t fork_at = 0 )
   {
     choose_past_genesis();
     std::vector< block_ptr > blocks;
@@ -68,7 +75,14 @@ struct p2p_protocol_fixture : public witness_fixture
       source.set_data_dir( ( hive::utilities::temp_directory_path() / "p2p-protocol-chain-source" ).string() );
       source.set_genesis_time( get_genesis_time() );
       source.initialize( 0, {}, {} );
-      source.schedule_blocks( count );
+      if( fork_at == 0 )
+        source.schedule_blocks( count );
+      else
+      {
+        source.schedule_blocks( fork_at - 1 );
+        source.db_plugin->debug_generate_blocks( source.init_account_priv_key, 1, source.default_skip, 1, false );
+        source.schedule_blocks( count - fork_at );
+      }
       blocks = source.get_block_reader().fetch_block_range( 1, count );
       const fc::optional< fc::logging_config > logging_config = source.get_logging_config();
       if( logging_config )
@@ -84,10 +98,11 @@ struct p2p_protocol_fixture : public witness_fixture
 
   /**
    * Starts the node under test, listening on loopback. @p extra_p2p_parameters (JSON members, comma
-   * separated) are added to the p2p-parameters. Unless @p produce_blocks, the node has no witness and its
-   * genesis is in the past.
+   * separated) are added to the p2p-parameters, @p extra_config to the other options. Unless
+   * @p produce_blocks, the node has no witness and its genesis is in the past.
    */
-  void start_node( const std::string& extra_p2p_parameters = "", bool produce_blocks = false )
+  void start_node( const std::string& extra_p2p_parameters = "", bool produce_blocks = false,
+                   const config_arg_override_t& extra_config = {} )
   {
     if( _source_logging_config )
       set_logging_config( _source_logging_config );
@@ -95,12 +110,14 @@ struct p2p_protocol_fixture : public witness_fixture
     if( !extra_p2p_parameters.empty() )
       p2p_parameters += "," + extra_p2p_parameters;
     p2p_parameters += "}";
+    config_arg_override_t config = extra_config;
+    config.emplace_back( config_line_t( { "p2p-parameters", { p2p_parameters } } ) );
     if( produce_blocks )
-      initialize( 3, {}, { "initminer" }, { config_line_t( { "p2p-parameters", { p2p_parameters } } ) } );
+      initialize( 3, {}, { "initminer" }, config );
     else
     {
       choose_past_genesis();
-      initialize( 0, {}, {}, { config_line_t( { "p2p-parameters", { p2p_parameters } } ) } );
+      initialize( 0, {}, {}, config );
     }
     fc::logger::get( "user" ).set_log_level( fc::log_level::info );
   }
@@ -175,6 +192,37 @@ struct p2p_protocol_fixture : public witness_fixture
 
   size_t number_of_connections() { return p2p().get_connected_peers().size(); }
 
+  /// Syncs the node under test to block @p count of @p chain from a short-lived source peer
+  void sync_node( const std::vector< block_ptr >& chain, uint32_t count )
+  {
+    auto source = make_peer( "initial source" );
+    source->serve_blocks( std::vector< block_ptr >( chain.begin(), chain.begin() + count ) );
+    source->connect( node_endpoint() );
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return get_block_num() == count; }, fc::seconds( 30 ) ), "head is " << get_block_num() );
+    BOOST_REQUIRE( wait_until( [&]() { return source->in_sync(); }, reply_timeout ) );
+  }
+
+  /// Connects a peer that delivers the blocks of @p chain it is asked for but offers none for sync (see provide_blocks())
+  std::unique_ptr< test_peer > connect_live_peer( const std::string& name, const std::vector< block_ptr >& chain )
+  {
+    auto peer = make_peer( name );
+    peer->provide_blocks( chain );
+    connect_active( *peer );
+    return peer;
+  }
+
+  bool head_reaches( uint32_t num, fc::microseconds timeout = reply_timeout )
+  {
+    return wait_until( [&]() { return get_block_num() >= num; }, timeout );
+  }
+
+  uint32_t last_irreversible_block_num()
+  {
+    uint32_t num = 0;
+    db->with_read_lock( [&]() { num = db->get_last_irreversible_block_num(); } );
+    return num;
+  }
+
   block_id_type head_block_id()
   {
     block_id_type head;
@@ -221,6 +269,38 @@ struct p2p_protocol_fixture : public witness_fixture
     BOOST_REQUIRE_MESSAGE( !peer.closed(), "the node closed the connection" );
   }
 
+  /// How many times the node asked @p peer for the item @p hash so far
+  static size_t times_requested( const test_peer& peer, const item_hash_t& hash )
+  {
+    size_t times = 0;
+    for( const fetch_items_message& request : peer.received_as< fetch_items_message >() )
+      times += std::count( request.items_to_fetch.begin(), request.items_to_fetch.end(), hash );
+    return times;
+  }
+
+  /// When the node first asked @p peer for the item @p hash; requires that it did
+  static fc::time_point first_request_time( const test_peer& peer, const item_hash_t& hash )
+  {
+    for( const received_message& r : peer.received( fetch_items_message_type ) )
+    {
+      const fetch_items_message request = r.msg.as< fetch_items_message >();
+      if( std::find( request.items_to_fetch.begin(), request.items_to_fetch.end(), hash ) != request.items_to_fetch.end() )
+        return r.time;
+    }
+    BOOST_FAIL( "the node did not ask for the item" );
+    return fc::time_point();
+  }
+
+  /// Whether the node advertised to @p peer the block item @p hash (a block id or a legacy block message hash)
+  static bool block_advertised( const test_peer& peer, const item_hash_t& hash )
+  {
+    for( const item_ids_inventory_message& inventory : peer.received_as< item_ids_inventory_message >() )
+      if( inventory.item_type == block_message_type &&
+          std::find( inventory.item_hashes_available.begin(), inventory.item_hashes_available.end(), hash ) != inventory.item_hashes_available.end() )
+        return true;
+    return false;
+  }
+
   fc::thread peer_thread;
 
 private:
@@ -241,6 +321,33 @@ block_ptr with_bad_signature( const block_ptr& block )
   hive::chain::signed_block copy = block->get_block();
   copy.witness_signature = fc::ecc::private_key::generate().sign_compact( fc::sha256::hash( std::string( "not this block" ) ) );
   return hive::chain::full_block_type::create_from_signed_block( copy );
+}
+
+/// A copy of @p block with the same header, and so the same id, whose body doesn't match the header's transaction_merkle_root
+block_ptr with_corrupted_body( const block_ptr& block )
+{
+  hive::chain::signed_block copy = block->get_block();
+  copy.transactions.emplace_back();
+  copy.transactions.back().ref_block_num = 1;
+  const block_ptr corrupted = hive::chain::full_block_type::create_from_signed_block( copy );
+  BOOST_REQUIRE( corrupted->get_block_id() == block->get_block_id() );
+  return corrupted;
+}
+
+/// An id of block number @p num that names no real block (the number is the first 4 bytes of an id)
+block_id_type fake_block_id( uint32_t num, const std::string& salt )
+{
+  block_id_type id = fc::ripemd160::hash( salt );
+  id._hash[ 0 ] = fc::endian_reverse_u32( num );
+  return id;
+}
+
+/// Whether a compressed_block_message names a compression dictionary (see core_messages.cpp)
+bool compressed_with_dictionary( const message& m )
+{
+  BOOST_REQUIRE_EQUAL( m.msg_type, static_cast< uint32_t >( compressed_block_message_type ) );
+  BOOST_REQUIRE_GT( m.data.size(), 2u );
+  return ( m.data[ 0 ] & 0x40 ) != 0;
 }
 
 } // namespace
@@ -450,6 +557,43 @@ BOOST_AUTO_TEST_CASE( already_connected_test )
     require_kept( *first );
     BOOST_CHECK( node_lists( *first ) );
     BOOST_CHECK_EQUAL( number_of_connections(), 1u );
+  } );
+}
+
+/// A9, C1 (pruned): a node that keeps no block log (block-log-split 0) has pruned every block below its last
+/// irreversible block, its tail. A hello from a peer more than GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS below the tail
+/// is rejected ("I can't help you sync"), one within the grace is accepted (#967). An accepted peer that then asks
+/// for block ids after a block that far below the tail, or from the start of the chain, is disconnected for it.
+BOOST_AUTO_TEST_CASE( pruned_node_test )
+{
+  start_node( "", false, { config_line_t( { "block-log-split", { "0" } } ) } );
+  run( [&]()
+  {
+    schedule_blocks( 60 );
+    const uint32_t tail = last_irreversible_block_num();
+    BOOST_REQUIRE_GT( tail, GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS + 1 );
+    const std::string reason = "I can't help you sync";
+
+    auto too_far = make_peer( "peer below the tail" );
+    too_far->hello().last_known_block_number = tail - GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS - 1;
+    too_far->connect( node_endpoint() );
+    require_rejected( *too_far, rejection_reason_code::unspecified );
+    BOOST_CHECK( too_far->rejection()->reason_string.find( reason ) != std::string::npos );
+
+    auto within = make_peer( "peer within the grace" );
+    within->hello().last_known_block_number = tail - GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS;
+    connect_active( *within );
+    // the hello doesn't have to name a block at all
+    auto unknown = make_peer( "peer not saying where it is" );
+    connect_active( *unknown );
+    require_kept( *within );
+    require_kept( *unknown );
+
+    within->send( fetch_blockchain_item_ids_message( block_message_type,
+      { fake_block_id( tail - GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS - 1, "old block" ) } ) );
+    require_closed_with( *within, reason );
+    unknown->send( fetch_blockchain_item_ids_message( block_message_type, {} ) );
+    require_closed_with( *unknown, reason );
   } );
 }
 
@@ -788,6 +932,62 @@ BOOST_AUTO_TEST_CASE( closing_connection_message_test )
   } );
 }
 
+/// B6: a peer that stops reading while the node has replies for it is disconnected once more than
+/// GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES wait to be sent, and other peers are unaffected. The peer stops
+/// reading by not returning from its handler of the first reply, and keeps asking for the ids of all 300 blocks
+/// (6 kB a reply) until the socket buffers between them are full and the node's queue overflows.
+BOOST_AUTO_TEST_CASE( send_queue_limit_test )
+{
+  start_node();
+  run( [&]()
+  {
+    schedule_blocks( 300 );
+    auto bystander = make_peer( "bystander" );
+    connect_active( *bystander );
+    auto stalled = make_peer( "peer that stops reading" );
+    connect_active( *stalled );
+    BOOST_REQUIRE( wait_until( [&]() { return node_lists( *stalled ); }, reply_timeout ) );
+
+    std::atomic< bool > resume = false;
+    BOOST_SCOPE_EXIT( &resume ) { resume = true; } BOOST_SCOPE_EXIT_END
+    stalled->on( blockchain_item_ids_inventory_message_type, [&resume]( test_peer&, const message& )
+    {
+      while( !resume )
+        fc::usleep( fc::milliseconds( 20 ) );
+    } );
+    // p2p_plugin::get_connected_peers() throws (bad file descriptor) while a connection whose socket the node closed
+    // is still among its active connections, which it is for a moment after the queue overflows; that is no answer
+    bool listing_failed = false;
+    const auto still_listed = [&]()
+    {
+      try
+      {
+        return node_lists( *stalled );
+      }
+      catch( const fc::exception& e )
+      {
+        BOOST_TEST_MESSAGE( "listing the connections failed: " << e.to_string() );
+        listing_failed = true;
+        return true;
+      }
+    };
+    const fetch_blockchain_item_ids_message request( block_message_type, {} );
+    bool dropped = false;
+    for( int sent = 0; sent < 20000 && !dropped; sent += 500 )
+    {
+      for( int i = 0; i < 500; ++i )
+        stalled->send( request );
+      dropped = wait_until( [&]() { return !still_listed(); }, fc::milliseconds( 200 ) );
+    }
+    BOOST_REQUIRE_MESSAGE( dropped, "the node kept a peer that doesn't read" );
+    BOOST_TEST_MESSAGE( "listing the connections " << ( listing_failed ? "failed" : "never failed" ) << " meanwhile" );
+    resume = true;
+    BOOST_CHECK( stalled->wait_closed( reply_timeout ) );
+    require_kept( *bystander );
+    BOOST_CHECK( node_lists( *bystander ) );
+  } );
+}
+
 // ---------------------------------------------------------------------------------------------------------
 // C. Node as a server
 // ---------------------------------------------------------------------------------------------------------
@@ -862,6 +1062,60 @@ BOOST_AUTO_TEST_CASE( fetch_blocks_test )
     BOOST_CHECK( not_available.requested_item.item_hash == unknown );
     require_kept( *current );
     require_kept( *old );
+  } );
+}
+
+/// C2, D16, category 2 (protocol versions): each peer gets blocks in its own form. The node advertises a block it
+/// produced by block id to current peers and by legacy block message hash to a protocol 106 peer, and serves the
+/// block by that name: uncompressed to the protocol 106 peer, compressed to the current ones, using a dictionary
+/// only for the peer that reported having one.
+BOOST_AUTO_TEST_CASE( block_forms_by_protocol_test )
+{
+  start_node( "", true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto plain = make_peer( "current peer without dictionaries" );
+    connect_in_sync( *plain );
+    auto with_dictionary = make_peer( "current peer with dictionaries" );
+    const std::optional< uint8_t > dictionary = hive::chain::get_last_available_zstd_compression_dictionary_number();
+    BOOST_REQUIRE( dictionary );
+    with_dictionary->hello().last_available_zstd_compression_dictionary_number = *dictionary;
+    connect_in_sync( *with_dictionary );
+    auto old = make_peer( "protocol 106 peer" );
+    old->hello().core_protocol_version = GRAPHENE_NET_MINIMUM_PROTOCOL_VERSION;
+    connect_in_sync( *old );
+
+    const uint32_t next = get_block_num() + 1;
+    wait_for_block_num( next );
+    const block_ptr produced = get_block_reader().get_block_by_number( next );
+    const block_id_type id = produced->get_block_id();
+    const item_hash_t legacy_hash = produced->get_legacy_block_message_hash();
+    BOOST_REQUIRE( wait_until( [&]()
+    {
+      return block_advertised( *plain, id ) && block_advertised( *with_dictionary, id ) && block_advertised( *old, legacy_hash );
+    }, reply_timeout ) );
+    BOOST_CHECK( !block_advertised( *old, id ) );
+    BOOST_CHECK( !block_advertised( *plain, legacy_hash ) );
+
+    old->request_blocks( { legacy_hash } );
+    BOOST_REQUIRE( old->wait_for( block_message_type, reply_timeout ) );
+    BOOST_CHECK( old->blocks_received() == std::vector< block_id_type >{ id } );
+    BOOST_CHECK_EQUAL( old->count( compressed_block_message_type ), 0u );
+
+    for( test_peer* peer : { plain.get(), with_dictionary.get() } )
+    {
+      peer->request_blocks( { id } );
+      BOOST_REQUIRE( peer->wait_for( compressed_block_message_type, reply_timeout ) );
+      BOOST_CHECK( peer->blocks_received() == std::vector< block_id_type >{ id } );
+      BOOST_CHECK_EQUAL( peer->count( block_message_type ), 0u );
+    }
+    BOOST_CHECK( !compressed_with_dictionary( plain->received( compressed_block_message_type ).front().msg ) );
+    const message with = with_dictionary->received( compressed_block_message_type ).front().msg;
+    BOOST_REQUIRE( compressed_with_dictionary( with ) );
+    BOOST_CHECK_LE( static_cast< uint8_t >( with.data[ 1 ] ), *dictionary );
   } );
 }
 
@@ -1148,6 +1402,231 @@ BOOST_AUTO_TEST_CASE( block_advertisement_test )
   } );
 }
 
+/// D5: requested transactions that the chain rejects - signed with the wrong key, expired, or already in a block -
+/// cost the peer nothing: the connection is kept, none of them is included or relayed, and none is fetched again
+/// when advertised again, as the node remembers recently failed items. A valid transaction delivered with them is
+/// included and relayed.
+BOOST_AUTO_TEST_CASE( invalid_transactions_test )
+{
+  start_node( "", true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    std::mutex included_mutex;
+    std::set< transaction_id_type > included;
+    auto block_conn = db->add_post_apply_block_handler( [&]( const block_notification& note )
+    {
+      std::lock_guard< std::mutex > guard( included_mutex );
+      for( const full_transaction_ptr& transaction : note.full_block->get_full_transactions() )
+        included.insert( transaction->get_transaction_id() );
+    }, get_chain_plugin(), 0 );
+    BOOST_SCOPE_EXIT( &block_conn ) { hive::utilities::disconnect_signal( block_conn ); } BOOST_SCOPE_EXIT_END
+    const auto is_included = [&]( const full_transaction_ptr& transaction )
+    {
+      std::lock_guard< std::mutex > guard( included_mutex );
+      return included.count( transaction->get_transaction_id() ) != 0;
+    };
+    const auto transfer = [&]( const std::string& memo, int64_t expires_in )
+    {
+      signed_transaction transaction;
+      transfer_operation op;
+      op.from = HIVE_INIT_MINER_NAME;
+      op.to = HIVE_NULL_ACCOUNT;
+      op.amount = ASSET( "0.001 TESTS" );
+      op.memo = memo;
+      transaction.operations.emplace_back( op );
+      db->with_read_lock( [&]()
+      {
+        transaction.set_reference_block( db->head_block_id() );
+        transaction.set_expiration( fc::time_point_sec( db->head_block_time().sec_since_epoch() + expires_in ) );
+      } );
+      return transaction;
+    };
+
+    const int64_t valid_for = get_default_expiration();
+    const full_transaction_ptr expired_transaction = build_transaction( transfer( "expired", -HIVE_BLOCK_INTERVAL ) );
+    const full_transaction_ptr wrongly_signed = full_transaction_type::create_from_signed_transaction( transfer( "wrongly signed", valid_for ),
+                                                                                                       serialization_type::hf26, false );
+    wrongly_signed->sign_transaction( { fc::ecc::private_key::generate() }, db->get_chain_id(), serialization_type::hf26 );
+    const full_transaction_ptr duplicate = build_transaction( transfer( "already included", valid_for ) );
+    // pushed to the chain directly, so the node's p2p message cache doesn't know it
+    schedule_transaction( duplicate );
+    BOOST_REQUIRE( wait_until( [&]() { return is_included( duplicate ); }, fc::seconds( 30 ) ) );
+    const full_transaction_ptr valid = build_transaction( transfer( "valid", valid_for ) );
+    const std::vector< full_transaction_ptr > invalid = { wrongly_signed, expired_transaction, duplicate };
+
+    auto observer = make_peer( "observer" );
+    connect_in_sync( *observer );
+    auto peer = make_peer( "delivering peer" );
+    connect_active( *peer );
+    std::vector< item_hash_t > hashes;
+    for( const full_transaction_ptr& transaction : invalid )
+      hashes.push_back( transaction->get_legacy_transaction_message_hash() );
+    hashes.push_back( valid->get_legacy_transaction_message_hash() );
+    peer->provide( invalid );
+    peer->provide( { valid } );
+    peer->advertise( hashes );
+    BOOST_REQUIRE( wait_until( [&]() { return is_included( valid ); }, fc::seconds( 30 ) ) );
+    BOOST_CHECK( wait_until( [&]() { return observer->was_advertised( hashes.back() ); }, reply_timeout ) );
+    // the invalid ones were delivered with the valid one, so the node is done with them too; one more block
+    wait_for_block_num( get_block_num() + 1 );
+
+    hashes.pop_back();
+    peer->advertise( hashes );
+    require_kept( *peer );
+    for( size_t i = 0; i < invalid.size(); ++i )
+      BOOST_TEST_CONTEXT( "transaction " << i )
+      {
+        BOOST_CHECK_EQUAL( times_requested( *peer, hashes[ i ] ), 1u );
+        BOOST_CHECK( !observer->was_advertised( hashes[ i ] ) );
+        if( invalid[ i ] != duplicate )
+          BOOST_CHECK( !is_included( invalid[ i ] ) );
+      }
+  } );
+}
+
+/// D7, D8, D14: block ids a current peer advertises are judged against the chain. A block the node has, a dead fork
+/// (a block at or below its last irreversible block that is not its own) and a block implausibly far past its head
+/// (more than GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS) are not fetched; the next block is, once, though it is
+/// advertised again while its request is outstanding and after it arrived (#1004). A protocol 106 peer advertises
+/// by legacy block message hash, and the block is fetched by that hash.
+BOOST_AUTO_TEST_CASE( block_advertisements_test )
+{
+  // early in the chain a block becomes irreversible HIVE_MAX_WITNESSES blocks after it, so a few more give a dead fork
+  const uint32_t synced = HIVE_MAX_WITNESSES + 3;
+  const std::vector< block_ptr > chain = generate_chain( synced + 3 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, synced );
+    const uint32_t last_irreversible = last_irreversible_block_num();
+    BOOST_REQUIRE_GE( last_irreversible, 1u );
+
+    auto peer = make_peer( "advertising peer" );
+    peer->provide_blocks( chain );
+    peer->answer_after( fetch_items_message_type, fc::milliseconds( 500 ) );
+    connect_active( *peer );
+    const block_id_type known = chain[ last_irreversible ]->get_block_id();
+    const block_id_type dead_fork = fake_block_id( last_irreversible, "dead fork" );
+    const block_id_type far_ahead = fake_block_id( synced + GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS + 1, "far ahead" );
+    const block_id_type next = chain[ synced ]->get_block_id();
+    peer->advertise( block_message_type, { known, dead_fork, far_ahead } );
+    peer->advertise( block_message_type, { next } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *peer, next ) != 0; }, reply_timeout ) );
+    peer->advertise( block_message_type, { next } );
+    BOOST_REQUIRE( head_reaches( synced + 1 ) );
+    peer->advertise( block_message_type, { next } );
+    fc::usleep( quiet_period );
+    BOOST_CHECK_EQUAL( times_requested( *peer, next ), 1u );
+    BOOST_CHECK_EQUAL( times_requested( *peer, known ), 0u );
+    BOOST_CHECK_EQUAL( times_requested( *peer, dead_fork ), 0u );
+    BOOST_CHECK_EQUAL( times_requested( *peer, far_ahead ), 0u );
+
+    auto old = make_peer( "protocol 106 peer" );
+    old->hello().core_protocol_version = GRAPHENE_NET_MINIMUM_PROTOCOL_VERSION;
+    old->provide_blocks( chain );
+    connect_active( *old );
+    const item_hash_t legacy_hash = chain[ synced + 1 ]->get_legacy_block_message_hash();
+    old->advertise( block_message_type, { legacy_hash } );
+    BOOST_REQUIRE( head_reaches( synced + 2 ) );
+    BOOST_CHECK_EQUAL( times_requested( *old, legacy_hash ), 1u );
+    BOOST_CHECK( head_block_id() == chain[ synced + 1 ]->get_block_id() );
+
+    peer->advertise( block_message_type, { chain[ synced + 2 ]->get_block_id() } );
+    BOOST_REQUIRE( head_reaches( synced + 3 ) );
+    require_kept( *peer );
+    require_kept( *old );
+  } );
+}
+
+/// D7 (T): once the node's head has not advanced for GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC (60 s), a block id implausibly
+/// far past it is no longer ignored: the node restarts sync with the peer that advertised it and asks it for block
+/// ids. Before that the same advertisement is ignored. The interval is hard-coded, so the case takes over a minute.
+BOOST_AUTO_TEST_CASE( stalled_head_resync_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 5 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    // the node saw its head advance at the latest now
+    const fc::time_point head_advanced = fc::time_point::now();
+    auto peer = make_peer( "peer far ahead" );
+    connect_active( *peer );
+    const size_t id_requests = peer->count( fetch_blockchain_item_ids_message_type );
+    const block_id_type far_ahead = fake_block_id( 5 + GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS + 1, "far ahead" );
+    const auto resynced = [&]() { return peer->count( fetch_blockchain_item_ids_message_type ) > id_requests; };
+
+    peer->advertise( block_message_type, { far_ahead } );
+    fc::usleep( quiet_period );
+    BOOST_REQUIRE( !resynced() );
+
+    // the advertisement is judged when it arrives, so it is repeated until the node acts on it
+    const fc::time_point deadline = head_advanced + fc::seconds( GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC + 1 + 10 );
+    while( !resynced() && fc::time_point::now() < deadline )
+    {
+      peer->advertise( block_message_type, { far_ahead } );
+      wait_until( resynced, fc::seconds( 1 ) );
+    }
+    BOOST_REQUIRE_MESSAGE( resynced(), "the node did not restart sync" );
+    const fc::time_point asked = peer->received( fetch_blockchain_item_ids_message_type ).back().time;
+    BOOST_CHECK_GE( ( asked - head_advanced ).count(), fc::seconds( GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC - 1 ).count() );
+    require_kept( *peer );
+  } );
+}
+
+/// D13: a requested block that doesn't link to the node's chain (its parent is missing) restarts sync with the
+/// peer that sent it: the node asks it for block ids again and syncs the missing block from it
+BOOST_AUTO_TEST_CASE( unlinkable_block_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 7 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    auto peer = connect_live_peer( "peer ahead", chain );
+    const size_t id_requests = peer->count( fetch_blockchain_item_ids_message_type );
+    // from now on it offers its blocks when asked for ids, so the restarted sync finds the missing one
+    peer->serve_blocks( chain );
+    peer->advertise( block_message_type, { chain[ 6 ]->get_block_id() } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *peer, chain[ 6 ]->get_block_id() ) != 0; }, reply_timeout ) );
+    BOOST_REQUIRE( wait_until( [&]() { return peer->count( fetch_blockchain_item_ids_message_type ) > id_requests; }, reply_timeout ) );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 7 ), "head is " << get_block_num() );
+    BOOST_CHECK( head_block_id() == chain.back()->get_block_id() );
+    require_kept( *peer );
+  } );
+}
+
+/// D15: block advertisements are not throttled by the transaction inventory limit. A peer that advertised more
+/// transactions than the limit (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60)
+/// gets the next block it advertises asked for at once: the inventory keeps room for blocks, and the transactions
+/// beyond the limit are deferred (see inventory_limit_deferral_test) rather than taking that room. The peer
+/// withholds everything it is asked for, so the ignored-request timeout is raised out of the way.
+BOOST_AUTO_TEST_CASE( block_advertisements_not_throttled_test )
+{
+  start_node( R"("active_ignored_request_timeout_microseconds":)" + std::to_string( fc::seconds( 120 ).count() ), true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+    auto flooder = make_peer( "flooding peer" );
+    connect_active( *flooder );
+    const size_t limit = GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60;
+    std::vector< item_hash_t > transactions;
+    for( size_t i = 0; i < limit + 1000; ++i )
+      transactions.push_back( fc::ripemd160::hash( "flooded transaction " + std::to_string( i ) ) );
+    flooder->advertise( transactions );
+    BOOST_REQUIRE( flooder->wait_for( fetch_items_message_type, reply_timeout ) );
+
+    const block_id_type block = fake_block_id( get_block_num() + 1, "advertised block" );
+    flooder->advertise( block_message_type, { block } );
+    BOOST_CHECK( wait_until( [&]() { return times_requested( *flooder, block ) != 0; }, reply_timeout ) );
+    BOOST_CHECK( !flooder->closed() );
+  } );
+}
+
 /// C3 and relay (category 2): a transaction fetched from peer A is advertised to the in-sync peer B and not
 /// back to A; B's fetch is answered from the message cache, an unknown one with item_not_available, and a
 /// hash asked for twice in one request is answered once
@@ -1243,6 +1722,260 @@ BOOST_AUTO_TEST_CASE( connection_limit_test )
     require_rejected( *third, rejection_reason_code::not_accepting_connections );
     require_kept( *first );
     require_kept( *second );
+  } );
+}
+
+/// Category 2 (fallback), D9, D12: a block the node asked one peer for is fetched from another peer that
+/// advertised it too when the first one doesn't deliver it: when it ignores the request (it is disconnected once
+/// active_ignored_request_timeout, 2 s here, passes, and only then is the other peer asked), when it answers
+/// item_not_available (it is kept), and when it sends a copy whose body doesn't match the header (it is
+/// disconnected, #999, and the block is fetched again from the other peer, #1001)
+BOOST_AUTO_TEST_CASE( block_fallback_test )
+{
+  const fc::microseconds timeout = fc::seconds( 2 );
+  const std::vector< block_ptr > chain = generate_chain( 8 );
+  start_node( R"("active_ignored_request_timeout_microseconds":)" + std::to_string( timeout.count() ) );
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    auto backup = connect_live_peer( "backup", chain );
+    const auto id = [&]( uint32_t num ) { return item_hash_t( chain[ num - 1 ]->get_block_id() ); };
+
+    auto silent = make_peer( "silent advertiser" );
+    silent->ignore( fetch_items_message_type );
+    connect_active( *silent );
+    silent->advertise( block_message_type, { id( 6 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *silent, id( 6 ) ) != 0; }, reply_timeout ) );
+    backup->advertise( block_message_type, { id( 6 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 6, timeout + fc::seconds( 1 + 10 ) ), "head is " << get_block_num() );
+    BOOST_CHECK( silent->wait_closed( reply_timeout ) );
+    BOOST_CHECK_EQUAL( times_requested( *backup, id( 6 ) ), 1u );
+    BOOST_CHECK_GE( ( first_request_time( *backup, id( 6 ) ) - first_request_time( *silent, id( 6 ) ) ).count(),
+                    timeout.count() - fc::milliseconds( 100 ).count() );
+
+    auto empty_handed = make_peer( "empty-handed advertiser" );
+    empty_handed->stop_withholding();
+    connect_active( *empty_handed );
+    empty_handed->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *empty_handed, id( 7 ) ) != 0; }, reply_timeout ) );
+    backup->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 7 ), "head is " << get_block_num() );
+    require_kept( *empty_handed );
+
+    auto corrupting = make_peer( "corrupting advertiser" );
+    corrupting->provide_blocks( { with_corrupted_body( chain[ 7 ] ) } );
+    // the backup advertises the block while the corrupted copy is on its way
+    corrupting->answer_after( fetch_items_message_type, fc::milliseconds( 500 ) );
+    connect_active( *corrupting );
+    corrupting->advertise( block_message_type, { id( 8 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *corrupting, id( 8 ) ) != 0; }, reply_timeout ) );
+    backup->advertise( block_message_type, { id( 8 ) } );
+    require_closed_with( *corrupting, "body does not match its header" );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 8 ), "head is " << get_block_num() );
+    BOOST_CHECK( head_block_id() == chain[ 7 ]->get_block_id() );
+    BOOST_CHECK_EQUAL( times_requested( *backup, id( 8 ) ), 1u );
+    require_kept( *backup );
+  } );
+}
+
+/// D11, category 2 (breakers) (T): a requested block that fails validation ends the sender's connection, and so
+/// does one whose body doesn't match its header, until GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT and
+/// GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_COUNT (5 each) such disconnects happened within the breaker
+/// window (60 s): the next sender is kept, as so many bad peers suggest a problem of the node's own. Once the
+/// node's head has not advanced for GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC (60 s), the kept senders are
+/// disconnected after all. The intervals are hard-coded, so the case takes over a minute.
+BOOST_AUTO_TEST_CASE( disconnect_breakers_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 6 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    // the node saw its head advance at the latest now
+    const fc::time_point head_advanced = fc::time_point::now();
+    // returns the sender the tripped breaker keeps
+    const auto trip_breaker = [&]( const block_ptr& bad, const std::string& reason, uint32_t breaker_count )
+    {
+      std::vector< std::unique_ptr< test_peer > > senders;
+      for( uint32_t i = 0; i <= breaker_count; ++i )
+        BOOST_TEST_CONTEXT( reason << ", sender " << i )
+        {
+          senders.push_back( make_peer( "bad block sender" ) );
+          test_peer& peer = *senders.back();
+          // each sender gets its own copy, so a bad signature gives each block another id
+          const block_ptr copy = bad ? bad : with_bad_signature( chain[ 5 ] );
+          peer.provide_blocks( { copy } );
+          connect_active( peer );
+          peer.advertise( block_message_type, { copy->get_block_id() } );
+          // one sender at a time, so the breaker trips at a known one
+          BOOST_REQUIRE( wait_until( [&]() { return times_requested( peer, copy->get_block_id() ) != 0; }, reply_timeout ) );
+          if( i < breaker_count )
+            require_closed_with( peer, reason );
+          else
+            require_kept( peer );
+        }
+      return std::move( senders.back() );
+    };
+    auto kept_invalid = trip_breaker( nullptr, "deemed to be invalid", GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT );
+    auto kept_mismatch = trip_breaker( with_corrupted_body( chain[ 5 ] ), "body does not match its header",
+                                       GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_COUNT );
+    BOOST_CHECK_EQUAL( get_block_num(), 5u );
+
+    const fc::time_point due = head_advanced + fc::seconds( GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC );
+    for( test_peer* kept : { kept_invalid.get(), kept_mismatch.get() } )
+    {
+      // the node checks once a second; the slack is for a loaded host
+      BOOST_REQUIRE( wait_until( [&]() { return bool( kept->closing_message() ); }, due - fc::time_point::now() + fc::seconds( 1 + 10 ) ) );
+      require_closed_with( *kept, "our chain has made no progress since" );
+      BOOST_CHECK_GE( ( kept->received( closing_connection_message_type ).front().time - head_advanced ).count(),
+                      fc::seconds( GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC - 1 ).count() );
+    }
+  } );
+}
+
+/// Category 2 (crossed duplicates): the node dials a peer while the same peer identity (node id) connects to it
+/// from another endpoint; exactly one of the two connections survives (#932). Of the two ends, the one with the
+/// lower id rejects the second hello it gets as already_connected. When that is the peer, the node accepts both
+/// hellos and leaves the choice to it; the two test peers play that part of a real node.
+BOOST_AUTO_TEST_CASE( crossed_duplicate_connections_test )
+{
+  start_node();
+  run( [&]()
+  {
+    node_id_t node_id;
+    {
+      auto probe = make_peer( "probe" );
+      connect_active( *probe );
+      node_id = probe->node_hello()->user_data[ "node_id" ].as< node_id_t >();
+    }
+    BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
+
+    // ids compare bytewise: the next and the previous number order after and before the node's id
+    node_id_t higher = node_id;
+    for( size_t i = sizeof( higher.data ); i-- > 0 && ++reinterpret_cast< unsigned char& >( higher.data[ i ] ) == 0; )
+      ;
+    node_id_t lower = node_id;
+    for( size_t i = sizeof( lower.data ); i-- > 0 && reinterpret_cast< unsigned char& >( lower.data[ i ] )-- == 0; )
+      ;
+    BOOST_REQUIRE( lower < node_id && node_id < higher );
+
+    std::vector< std::unique_ptr< test_peer > > survivors;
+    for( const node_id_t& id : { lower, higher } )
+      BOOST_TEST_CONTEXT( ( id < node_id ? "lower" : "higher" ) << " id than the node's" )
+      {
+        auto dialed = make_peer( "dialed identity" );
+        dialed->hello().node_id = id;
+        auto dialing = make_peer( "dialing identity" );
+        dialing->hello().node_id = id;
+        // both peers live on the peer thread, so the node's hellos reach them one at a time
+        auto hellos_accepted = std::make_shared< int >( 0 );
+        const bool peer_chooses = id < node_id;
+        for( test_peer* peer : { dialed.get(), dialing.get() } )
+          peer->on( hello_message_type, [hellos_accepted, peer_chooses]( test_peer& self, const message& m )
+          {
+            if( peer_chooses && *hellos_accepted != 0 )
+              self.send( connection_rejected_message( "test peer", GRAPHENE_NET_PROTOCOL_VERSION, self.endpoint(),
+                                                      rejection_reason_code::already_connected, "already connected" ) );
+            else
+            {
+              ++*hellos_accepted;
+              self.answer( m );
+            }
+          } );
+        const size_t before = number_of_connections();
+        p2p().add_node( dialed->listen() );
+        dialing->connect( node_endpoint() );
+        BOOST_REQUIRE( wait_until( [&]() { return dialed->connected(); }, fc::seconds( 30 ) ) );
+        BOOST_REQUIRE( wait_until( [&]() { return dialed->closed() || dialing->closed(); }, reply_timeout ) );
+        fc::usleep( quiet_period );
+        BOOST_CHECK_EQUAL( int( dialed->closed() ) + int( dialing->closed() ), 1 );
+        BOOST_CHECK_EQUAL( number_of_connections(), before + 1 );
+        test_peer& survivor = dialed->closed() ? *dialing : *dialed;
+        BOOST_CHECK( survivor.accepted() );
+        survivors.push_back( dialed->closed() ? std::move( dialing ) : std::move( dialed ) );
+      }
+  } );
+}
+
+/// Category 2 (address exchange): endpoints a peer sends in an address message go to the node's peer database,
+/// so the node dials them. Asked for addresses, the node lists the active peers it can name an endpoint for: an
+/// inbound peer that says where it listens, but not one that doesn't (firewalled).
+BOOST_AUTO_TEST_CASE( address_exchange_test )
+{
+  start_node();
+  run( [&]()
+  {
+    auto advertised = make_peer( "advertised peer" );
+    const fc::ip::endpoint advertised_endpoint = advertised->listen();
+
+    // the informant says it listens; nothing has to answer there for the node to list it
+    fc::tcp_server informant_server;
+    informant_server.listen( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), 0 ) );
+    auto informant = make_peer( "informant" );
+    informant->hello().inbound_port = informant_server.get_local_endpoint().port();
+    connect_active( *informant );
+    auto firewalled = make_peer( "firewalled peer" );
+    connect_active( *firewalled );
+
+    address_message addresses;
+    addresses.addresses.emplace_back( advertised_endpoint, fc::time_point_sec( fc::time_point::now() ), fc::microseconds(), advertised->node_id(),
+                                      peer_connection_direction::outbound, firewalled_state::not_firewalled );
+    informant->send( addresses );
+    BOOST_REQUIRE_MESSAGE( advertised->wait_for( fetch_blockchain_item_ids_message_type, fc::seconds( 30 ) ), "the node did not dial the advertised peer" );
+
+    auto asking = make_peer( "asking peer" );
+    connect_active( *asking );
+    const address_message reply = request< address_message >( *asking, address_request_message() );
+    const auto lists = [&]( const node_id_t& id ) -> fc::optional< address_info >
+    {
+      for( const address_info& a : reply.addresses )
+        if( a.node_id == id )
+          return a;
+      return {};
+    };
+    const fc::optional< address_info > informant_address = lists( informant->node_id() );
+    BOOST_REQUIRE( informant_address );
+    BOOST_CHECK( informant_address->remote_endpoint == fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), informant_server.get_local_endpoint().port() ) );
+    BOOST_CHECK_EQUAL( static_cast< int >( informant_address->firewalled.value ), static_cast< int >( firewalled_state::not_firewalled ) );
+    const fc::optional< address_info > advertised_address = lists( advertised->node_id() );
+    BOOST_REQUIRE( advertised_address );
+    BOOST_CHECK( advertised_address->remote_endpoint == advertised_endpoint );
+    BOOST_CHECK( !lists( firewalled->node_id() ) );
+    BOOST_CHECK( !lists( asking->node_id() ) );
+  } );
+}
+
+/// Category 2 (firewall check): a peer that asks the node to check whether it is reachable is answered
+/// unable_to_check while no other peer could do the check; once another peer is connected, the node forwards
+/// the check to it and relays its answer
+BOOST_AUTO_TEST_CASE( firewall_check_forwarding_test )
+{
+  start_node();
+  run( [&]()
+  {
+    auto asking = make_peer( "peer asking to be checked" );
+    connect_active( *asking );
+    check_firewall_reply_message reply = request< check_firewall_reply_message >( *asking, check_firewall_message() );
+    BOOST_CHECK_EQUAL( static_cast< int >( reply.result.value ), static_cast< int >( firewall_check_result::unable_to_check ) );
+
+    auto checker = make_peer( "checking peer" );
+    checker->on( check_firewall_message_type, []( test_peer& self, const message& m )
+    {
+      const check_firewall_message check = m.as< check_firewall_message >();
+      check_firewall_reply_message answer;
+      answer.node_id = check.node_id;
+      answer.endpoint_checked = check.endpoint_to_check;
+      answer.result = firewall_check_result::connection_successful;
+      self.send( answer );
+    } );
+    connect_active( *checker );
+    reply = request< check_firewall_reply_message >( *asking, check_firewall_message() );
+    BOOST_REQUIRE_EQUAL( checker->count( check_firewall_message_type ), 1u );
+    const check_firewall_message forwarded = checker->received_as< check_firewall_message >().front();
+    BOOST_CHECK( forwarded.node_id == asking->node_id() );
+    BOOST_CHECK( forwarded.endpoint_to_check.get_address() == asking->endpoint().get_address() );
+    BOOST_CHECK_EQUAL( static_cast< int >( reply.result.value ), static_cast< int >( firewall_check_result::connection_successful ) );
+    BOOST_CHECK( reply.endpoint_checked == forwarded.endpoint_to_check );
   } );
 }
 
@@ -1518,6 +2251,41 @@ BOOST_AUTO_TEST_CASE( invalid_sync_block_test )
   } );
 }
 
+/// E12: a peer whose chain forked from the node's below the node's last irreversible block shares no block of
+/// the synopsis the node sends (it starts there), so it has nothing for the node: none of its blocks is fetched,
+/// the node keeps its own chain and the connection. Asked by that peer for the blocks after one of its fork, the
+/// node offers none, again without a disconnect. The rest of the catalogue item is not reachable: handle_block()
+/// never reports block_older_than_undo_history (a TODO in p2p_plugin), so fetching from such a peer is never
+/// inhibited, and "you are on a fork I'm unable to switch to" needs the node to take a reference point on the
+/// other fork, which it takes only from blocks it accepted and ids it has.
+BOOST_AUTO_TEST_CASE( fork_below_last_irreversible_test )
+{
+  // early in the chain a block becomes irreversible HIVE_MAX_WITNESSES blocks after it
+  const uint32_t length = HIVE_MAX_WITNESSES + 5;
+  const std::vector< block_ptr > fork = generate_chain( length + 8, 3 );
+  const std::vector< block_ptr > chain = generate_chain( length );
+  BOOST_REQUIRE( fork[ 1 ]->get_block_id() == chain[ 1 ]->get_block_id() );
+  BOOST_REQUIRE( fork[ 2 ]->get_block_id() != chain[ 2 ]->get_block_id() );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, length );
+    BOOST_REQUIRE_GE( last_irreversible_block_num(), 3u );
+
+    auto forked = make_peer( "peer on an old fork" );
+    forked->serve_blocks( fork );
+    forked->connect( node_endpoint() );
+    BOOST_REQUIRE( forked->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ) );
+    BOOST_REQUIRE( wait_until( [&]() { return forked->in_sync(); }, reply_timeout ) );
+    const blockchain_item_ids_inventory_message reply =
+      request< blockchain_item_ids_inventory_message >( *forked, fetch_blockchain_item_ids_message( block_message_type, { fork[ length + 4 ]->get_block_id() } ) );
+    BOOST_CHECK( reply.item_hashes_available.empty() );
+    require_kept( *forked );
+    BOOST_CHECK_EQUAL( forked->count( fetch_items_message_type ), 0u );
+    BOOST_CHECK( head_block_id() == chain.back()->get_block_id() );
+  } );
+}
+
 /// E13: a peer that disconnects in the middle of sync doesn't stall the node: it syncs the rest when a
 /// source comes back
 BOOST_AUTO_TEST_CASE( sync_source_leaves_test )
@@ -1546,6 +2314,84 @@ BOOST_AUTO_TEST_CASE( sync_source_leaves_test )
     returning->serve_blocks( chain );
     returning->connect( node_endpoint() );
     BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return get_block_num() == count; }, fc::seconds( 60 ) ), "head is " << get_block_num() );
+  } );
+}
+
+/// Category 2 (sync from several peers): sync requests are spread over the peers that have the blocks, and when
+/// one of them leaves in the middle of the sync the other completes it. Both deliver each batch 300 ms after the
+/// request, so the second peer joins before the first could deliver everything.
+BOOST_AUTO_TEST_CASE( sync_from_several_peers_test )
+{
+  const uint32_t count = 40;
+  const std::vector< block_ptr > chain = generate_chain( count );
+  start_node( R"("maximum_blocks_per_peer_during_syncing":5)" );
+  run( [&]()
+  {
+    const fc::microseconds delay = fc::milliseconds( 300 );
+    auto leaving = make_peer( "source leaving after two batches" );
+    leaving->serve_blocks( chain );
+    leaving->on( fetch_items_message_type, [delay]( test_peer& self, const message& m )
+    {
+      self.later( delay, [&self, m]()
+      {
+        self.answer( m );
+        if( self.count( fetch_items_message_type ) >= 2 )
+          self.later( fc::milliseconds( 50 ), [&self]() { self.close(); } );
+      } );
+    } );
+    auto staying = make_peer( "staying source" );
+    staying->serve_blocks( chain );
+    staying->answer_after( fetch_items_message_type, delay );
+    leaving->connect( node_endpoint() );
+    staying->connect( node_endpoint() );
+
+    BOOST_REQUIRE_MESSAGE( head_reaches( count, fc::seconds( 60 ) ), "head is " << get_block_num() );
+    BOOST_CHECK( head_block_id() == chain.back()->get_block_id() );
+    BOOST_CHECK( leaving->closed() );
+    BOOST_CHECK_GE( leaving->count( fetch_items_message_type ), 1u );
+    BOOST_CHECK_GE( staying->count( fetch_items_message_type ), 1u );
+    require_kept( *staying );
+  } );
+}
+
+/// Category 2 (stalling peer): a sync source that stops delivering doesn't hold the sync up for longer than
+/// active_ignored_request_timeout (2 s here): it is disconnected and an honest source delivers its blocks. In
+/// live mode, a peer advertising a run of block ids it then withholds doesn't keep the node from fetching the
+/// real next block from an honest peer.
+BOOST_AUTO_TEST_CASE( stalling_peer_test )
+{
+  const fc::microseconds timeout = fc::seconds( 2 );
+  const uint32_t count = 20;
+  const std::vector< block_ptr > chain = generate_chain( count + 1 );
+  const std::vector< block_ptr > sync_part( chain.begin(), chain.begin() + count );
+  start_node( R"("active_ignored_request_timeout_microseconds":)" + std::to_string( timeout.count() ) +
+              R"(,"maximum_blocks_per_peer_during_syncing":5)" );
+  run( [&]()
+  {
+    auto staller = make_peer( "stalling source" );
+    staller->serve_blocks( sync_part );
+    staller->ignore( fetch_items_message_type );
+    staller->connect( node_endpoint() );
+    BOOST_REQUIRE( staller->wait_for( fetch_items_message_type, reply_timeout ) );
+    auto honest = make_peer( "honest source" );
+    honest->serve_blocks( sync_part );
+    honest->connect( node_endpoint() );
+    BOOST_REQUIRE_MESSAGE( head_reaches( count, timeout + fc::seconds( 1 + 10 + 10 ) ), "head is " << get_block_num() );
+    BOOST_CHECK( staller->closed() );
+    BOOST_REQUIRE( wait_until( [&]() { return honest->in_sync(); }, reply_timeout ) );
+
+    honest->provide_blocks( chain );
+    auto flooder = make_peer( "withholding advertiser" );
+    connect_active( *flooder );
+    std::vector< item_hash_t > fakes;
+    for( uint32_t num = count + 1; num <= count + GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS; ++num )
+      fakes.push_back( fake_block_id( num, "withheld block" ) );
+    flooder->advertise( block_message_type, fakes );
+    BOOST_REQUIRE( flooder->wait_for( fetch_items_message_type, reply_timeout ) );
+    honest->advertise( block_message_type, { chain.back()->get_block_id() } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( count + 1 ), "head is " << get_block_num() );
+    BOOST_CHECK( head_block_id() == chain.back()->get_block_id() );
+    BOOST_CHECK( !honest->closed() );
   } );
 }
 
@@ -1602,6 +2448,53 @@ BOOST_AUTO_TEST_CASE( inactivity_test )
     BOOST_CHECK( answering->count( current_time_request_message_type ) >= 1 );
     BOOST_CHECK( !answering->closed() );
     BOOST_CHECK( node_lists( *answering ) );
+  } );
+}
+
+/// F3 (T): an outbound peer that rejected the node, or closed the connection during the handshake, is dialed
+/// again only once the retry delay has passed: peer_connection_retry_timeout (2 s here) times the number of failed
+/// attempts plus one, so 4 s after a rejection (which counts as a failed attempt) and 2 s after the closed
+/// handshake. The connect loop runs at least every GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC (10 s), so the redial
+/// comes by then, plus slack. The second dial is answered by a new peer listening on the same port.
+BOOST_AUTO_TEST_CASE( outbound_retry_delay_test )
+{
+  const uint32_t retry = 2;
+  start_node( R"("peer_connection_retry_timeout":)" + std::to_string( retry ) );
+  run( [&]()
+  {
+    const auto redial_delay = [&]( std::unique_ptr< test_peer > first, const std::function< void( test_peer& ) >& fail )
+    {
+      const fc::ip::endpoint endpoint = first->listen();
+      p2p().add_node( endpoint );
+      BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return first->connected(); }, fc::seconds( 30 ) ), "the node did not dial the peer" );
+      const fc::time_point dialed = first->connected_at();
+      fail( *first );
+      BOOST_REQUIRE( first->wait_closed( reply_timeout ) );
+      first.reset();
+      auto again = make_peer( "peer listening again" );
+      again->listen( endpoint.port() );
+      BOOST_REQUIRE_MESSAGE( again->wait_for( fetch_blockchain_item_ids_message_type, fc::seconds( 2 * retry + GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC + 10 ) ),
+                             "the node did not dial the peer again" );
+      return again->connected_at() - dialed;
+    };
+    // the node records the attempt in whole seconds
+    const fc::microseconds rounding = fc::seconds( 1 );
+
+    auto rejecting = make_peer( "rejecting peer" );
+    rejecting->on( hello_message_type, []( test_peer& self, const message& )
+    {
+      self.send( connection_rejected_message( "test peer", GRAPHENE_NET_PROTOCOL_VERSION, self.endpoint(),
+                                              rejection_reason_code::not_accepting_connections, "rejected by the test" ) );
+    } );
+    const fc::microseconds after_rejection = redial_delay( std::move( rejecting ), []( test_peer& ) {} );
+    BOOST_CHECK_GE( after_rejection.count(), ( fc::seconds( 2 * retry ) - rounding ).count() );
+
+    auto closing = make_peer( "peer closing the handshake" );
+    closing->hello().count = 0;
+    closing->ignore( hello_message_type );
+    closing->ignore( legacy_hello_message_type );
+    const fc::microseconds after_closing = redial_delay( std::move( closing ), []( test_peer& peer ) { peer.close(); } );
+    BOOST_CHECK_GE( after_closing.count(), ( fc::seconds( retry ) - rounding ).count() );
   } );
 }
 

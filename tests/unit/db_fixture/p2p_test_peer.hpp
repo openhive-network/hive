@@ -153,14 +153,17 @@ public:
   /**
    * Listens on a loopback port for one connection from the node (an outbound connection for the node,
    * which the test makes it dial with p2p_plugin::add_node()), and returns that endpoint. Once the node
-   * connects and the key exchange is done, the handshake starts as after connect().
+   * connects and the key exchange is done, the handshake starts as after connect(). @p port 0 picks a
+   * free port; another one is reused, e.g. to stand in for a peer that listened there before (the port
+   * can be listened on again while the previous connection on it is still closing).
    */
-  fc::ip::endpoint listen()
+  fc::ip::endpoint listen( uint16_t port = 0 )
   {
     return _thread.async( [&]()
     {
       _server = std::make_unique< fc::tcp_server >();
-      _server->listen( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), 0 ) );
+      _server->set_reuse_address();
+      _server->listen( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), port ) );
       _listening_endpoint = _server->get_local_endpoint();
       _hello.inbound_port = _listening_endpoint.port();
       _accept_task = fc::async( [this]()
@@ -343,6 +346,24 @@ public:
       _chain_index.clear();
       for( size_t i = 0; i < _chain.size(); ++i )
         _chain_index[ _chain[ i ]->get_block_id() ] = i;
+    } ).wait();
+  }
+
+  /**
+   * From now on the peer delivers @p blocks when asked for them, by block id or by legacy block message
+   * hash, but unlike serve_blocks() it doesn't offer them when the node asks for block ids: they are the
+   * blocks it advertises in live mode. A copy whose id is a genuine block's (a corrupted body) replaces
+   * that block.
+   */
+  void provide_blocks( const std::vector< std::shared_ptr< hive::chain::full_block_type > >& blocks )
+  {
+    _thread.async( [&]()
+    {
+      for( const std::shared_ptr< hive::chain::full_block_type >& block : blocks )
+      {
+        _deliverable_blocks[ block->get_block_id() ] = block;
+        _deliverable_blocks[ block->get_legacy_block_message_hash() ] = block;
+      }
     } ).wait();
   }
 
@@ -633,8 +654,11 @@ private:
       else if( request.item_type == block_message_type )
       {
         auto in_chain = _chain_index.find( hash );
+        auto deliverable = _deliverable_blocks.find( hash );
         if( in_chain != _chain_index.end() )
           delivery = message( block_message( _chain[ in_chain->second ] ) );
+        else if( deliverable != _deliverable_blocks.end() )
+          delivery = message( block_message( deliverable->second ) );
       }
       if( delivery )
       {
@@ -689,6 +713,7 @@ private:
   std::map< graphene::net::item_hash_t, hive::chain::full_transaction_ptr > _deliverable;
   std::vector< std::shared_ptr< hive::chain::full_block_type > > _chain;
   std::map< hive::protocol::block_id_type, size_t > _chain_index;
+  std::map< graphene::net::item_hash_t, std::shared_ptr< hive::chain::full_block_type > > _deliverable_blocks;
   bool _withholding = true;
   std::vector< graphene::net::item_id > _withheld;
   bool _disconnect_after_delivery = false;
