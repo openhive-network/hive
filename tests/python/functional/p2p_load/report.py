@@ -33,7 +33,8 @@ def summarize(
         "setup": {
             key: meta.get(key)
             for key in ("topology", "tpb", "colonies", "relays", "netem_ms", "late_observer_blocks", "mix", "binaries")
-        },
+        }
+        | {"colony_mixes": meta.get("colony_mixes", {}), "colony_late_blocks": meta.get("colony_late_blocks", {})},
         "p2p_parameters": {
             "given": meta["p2p_parameters"]["given"],
             "unsupported": meta["p2p_parameters"]["unsupported"],
@@ -207,6 +208,8 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
             f"== {summary['run']}  label={summary['label'] or '-'} host={summary['host']} "
             f"{setup['topology']} tpb={setup['tpb']} colonies={setup['colonies']} relays={setup['relays']} "
             f"netem={setup['netem_ms']}ms late={setup['late_observer_blocks']} mix={setup['mix']}"
+            + "".join(f" colony{i}.mix={mix}" for i, mix in sorted(setup["colony_mixes"].items()))
+            + "".join(f" colony{i}.late={k}" for i, k in sorted(setup["colony_late_blocks"].items()))
         ),
         f"   p2p parameters given {summary['p2p_parameters']['given'] or '(none: binary defaults)'}"
         + (
