@@ -69,6 +69,11 @@ struct serialization_mode_controller
 
 std::string trim_legacy_typename_namespace( const std::string& name );
 
+/// The part of extended_variant_creator_functor::create() that does not depend on the type, in one function instead of
+/// a copy for every member of a static variant: [name or tag, value] in the legacy mode, {"type": name, "value": value}
+/// otherwise.
+fc::variant create_extended_variant( const char* type_name, fc::variant&& value, const fc::optional< int64_t >& tag );
+
 template<typename T>
 struct serializer_wrapper
 {

@@ -133,19 +133,7 @@ struct extended_variant_creator_functor
   template<typename T>
   fc::variant create( const T& v, const fc::optional<int64_t> tag = fc::optional<int64_t>() ) const
   {
-    if( hive::protocol::serialization_mode_controller::legacy_enabled() )
-    {
-      auto name = hive::protocol::trim_legacy_typename_namespace( fc::get_typename< T >::name() );
-      if (tag)
-        return variants( { variant( *tag ), variant( v ) } );
-      else
-        return variants( { variant( name ), variant( v ) } );
-    }
-    else
-    {
-      auto name = trim_typename_namespace( fc::get_typename< T >::name() );
-      return mutable_variant_object( "type", name )( "value", v );
-    }
+    return hive::protocol::create_extended_variant( fc::get_typename< T >::name(), fc::variant( v ), tag );
   }
 };
 
