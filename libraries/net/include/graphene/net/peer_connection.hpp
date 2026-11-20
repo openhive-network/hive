@@ -134,6 +134,9 @@ namespace graphene { namespace net
         fc::time_point transmission_finish_time;
         /// transaction traffic, which may wait up to the send flush delay to share a socket write
         bool may_wait_for_batch = false;
+        /// a block or a block inventory, queued after the block traffic already queued but ahead of the transaction
+        /// traffic queued behind that, so it does not wait for transactions queued before it
+        bool is_block_traffic = false;
 
         queued_message(fc::time_point enqueue_time = fc::time_point::now()) :
           enqueue_time(enqueue_time)
@@ -210,7 +213,9 @@ namespace graphene { namespace net
 
         virtual_queued_block_message(const item_hash_t& requested_item) :
           requested_item(requested_item)
-        {}
+        {
+          is_block_traffic = true;
+        }
 
         message get_message(peer_connection_delegate* node, peer_connection* peer) override;
         void prepare(peer_connection_delegate* node, peer_connection* peer) override;
@@ -222,6 +227,8 @@ namespace graphene { namespace net
       std::deque<std::unique_ptr<queued_message>> _queued_messages;
       /// queued messages that must not wait for a batch to grow (blocks, sync and control messages)
       size_t _queued_messages_not_waiting_for_batch = 0;
+      /// the number of queued messages up to and including the last queued block traffic, where block traffic is queued next
+      size_t _queued_block_traffic_end = 0;
       bool _send_queue_limit_exceeded = false; // set once the queue would have grown over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES
       /// requested transactions waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES, oldest first
       std::deque<std::shared_ptr<full_transaction_type>> _deferred_transaction_replies;
