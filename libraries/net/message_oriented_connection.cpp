@@ -153,7 +153,8 @@ namespace graphene { namespace net {
       // tasks; so each read takes whatever the kernel holds, up to this much, and every complete message
       // in it is handled before the next read
       const size_t read_buffer_size = 64 * 1024;
-      // and this many messages are handled at most before other tasks get to run, even without a read
+      // and this many messages are handled at most before other tasks get to run: a read whose bytes are already
+      // there may return without letting them run, so the count goes on across reads until the loop yields
       const size_t messages_between_yields = 256;
       static_assert(read_buffer_size % 16 == 0, "reads must be whole AES blocks");
       static_assert(sizeof(message_header) <= 16, "a message header must fit in the first AES block");
@@ -173,7 +174,7 @@ namespace graphene { namespace net {
         std::unique_ptr<char[]> buffer(new char[read_buffer_size]);
         size_t buffer_begin = 0;
         size_t buffer_end = 0;
-        size_t messages_since_last_wait = 0;
+        size_t messages_since_last_yield = 0;
         auto buffer_at_least = [&](size_t byte_count) {
           if (buffer_end - buffer_begin >= byte_count)
             return;
@@ -182,7 +183,6 @@ namespace graphene { namespace net {
           buffer_begin = 0;
           while (buffer_end < byte_count)
             buffer_end += _sock.readsome(buffer.get() + buffer_end, read_buffer_size - buffer_end);
-          messages_since_last_wait = 0;
         };
 
         message m;
@@ -210,7 +210,6 @@ namespace graphene { namespace net {
             buffer_begin = buffer_end = 0;
             fc::time_point read_first_bytes_time = fc::time_point::now();
             _sock.read(&m.data[buffered_bytes - sizeof(message_header)], size_with_padding - buffered_bytes);
-            messages_since_last_wait = 0;
             dlog("read the last ${bytes} bytes of a ${type} message from ${peer} in ${read_duration}us",
                  ("bytes", size_with_padding - buffered_bytes)("type", (core_message_type_enum)m.msg_type)
                  ("peer", remote_endpoint)("read_duration", fc::time_point::now() - read_first_bytes_time));
@@ -239,10 +238,10 @@ namespace graphene { namespace net {
             throw;
           }
 
-          if (!_closed_locally && ++messages_since_last_wait >= messages_between_yields)
+          if (!_closed_locally && ++messages_since_last_yield >= messages_between_yields)
           {
             fc::yield();
-            messages_since_last_wait = 0;
+            messages_since_last_yield = 0;
           }
           // a connection closed by the handler, or by another task while this one yielded, gets no more
           // of its messages; the next read ends the loop

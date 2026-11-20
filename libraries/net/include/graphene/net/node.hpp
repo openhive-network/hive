@@ -111,18 +111,19 @@ namespace graphene { namespace net {
   };
 
   /**
-   * The pending pool size above which the node requests no transactions from any peer: a third of @p max_bytes,
-   * which leaves the rest of the pool for API submissions, fork switches and replies already on their way.
-   * 0 when @p max_bytes is 0: the pool then keeps only what fits in the reapply window, so it needs no gate.
+   * The pending pool size above which the node requests no more than GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS
+   * transactions per pass: a third of @p max_bytes, which leaves the rest of the pool for API submissions, fork
+   * switches and replies already on their way, and at least 1.  0 when @p max_bytes is 0: the pool then keeps only
+   * what fits in the reapply window, so it needs no gate.
    *
    * The pool counts transactions from every source.  API submissions are not limited by max-mempool-size (only
    * the reapply after a block drops what exceeds it), so while API inflow keeps the pool above the threshold
-   * after every block the node fetches, and so relays, no transactions from its peers, for as long as that
-   * inflow lasts.  Blocks are fetched as always, and the node's own transactions are still broadcast.
+   * after every block the node fetches, and so relays, only that minimum of transactions from its peers, for as
+   * long as that inflow lasts.  Blocks are fetched as always, and the node's own transactions are still broadcast.
    */
   uint64_t transaction_fetch_gate_threshold(uint64_t max_bytes);
 
-  /// Whether @p pool holds more than transaction_fetch_gate_threshold(), so that the node stops requesting transactions
+  /// Whether @p pool holds more than transaction_fetch_gate_threshold(), so that the node requests only the minimum of transactions per pass
   bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool);
 
   /**
@@ -135,49 +136,51 @@ namespace graphene { namespace net {
    * chain has processed what it was handed, so without this bound every peer's window would be requested at once
    * whenever the pool fell just below the threshold, and the pool would overshoot it by all of them.  A pass may
    * go past the headroom by at most one transaction.
+   *
+   * Whether closed or out of headroom, the gate lets a pass request @p minimum_transactions in all, so transactions
+   * it can't tell apart before fetching them, such as fast-confirms, keep flowing however full the pool is, and the
+   * bytes estimated to be on their way can't hold an empty pool at no fetching at all.
    */
   class transaction_fetch_gate
   {
   public:
-    transaction_fetch_gate(const pending_transaction_pool_size& pool, uint64_t bytes_on_their_way);
+    transaction_fetch_gate(const pending_transaction_pool_size& pool, uint64_t bytes_on_their_way,
+                           size_t minimum_transactions = GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS);
 
     /**
      * How many transactions to request from a peer whose window has room for @p window: @p window, or none while
-     * the gate is closed or no headroom is left.  The gate holds transactions back only when there was room to
-     * request them and @p has_candidates (called as `bool()`, only then) says the peer has a transaction candidate
-     * that would have been requested.
+     * the gate is closed or no headroom is left and the pass has requested its minimum (until then
+     * may_request_more() bounds what the pass takes).  The gate holds transactions back only when there was room
+     * to request them and @p has_candidates (called as `bool()`, only then) says the peer has a transaction
+     * candidate that would have been requested.
      */
     template<typename HasCandidates>
     size_t transactions_to_request(size_t window, HasCandidates&& has_candidates)
     {
-      if (!_closed && _headroom > 0)
+      if ((!_closed && _headroom > 0) || _requested < _minimum)
         return window;
       if (window > 0 && has_candidates())
-      {
-        if (_closed)
-          _held_back = true;
-        else
-          _bounded = true;
-      }
+        record_withheld();
       return 0;
     }
 
     /**
      * Whether the pass may request another transaction from a peer: false once the requests recorded with
-     * record_request() have used up the headroom.  The headroom withholds a transaction only when
-     * @p has_candidates (called as `bool()`, only then) says the peer has one that would have been requested.
+     * record_request() have used up the headroom, or the gate is closed, and the pass has requested its minimum.
+     * The gate withholds a transaction only when @p has_candidates (called as `bool()`, only then) says the peer
+     * has one that would have been requested.
      */
     template<typename HasCandidates>
     bool may_request_more(HasCandidates&& has_candidates)
     {
-      if (_headroom > 0)
+      if ((!_closed && _headroom > 0) || _requested < _minimum)
         return true;
       if (has_candidates())
-        _bounded = true;
+        record_withheld();
       return false;
     }
 
-    /// Counts a transaction of @p expected_bytes requested in this pass against the headroom
+    /// Counts a transaction of @p expected_bytes requested in this pass against the headroom and the minimum
     void record_request(uint64_t expected_bytes);
 
     bool closed() const { return _closed; }
@@ -187,8 +190,12 @@ namespace graphene { namespace net {
     bool bounded() const { return _bounded; }
 
   private:
+    void record_withheld();
+
     bool _closed;
     uint64_t _headroom; ///< no limit (the maximum) when the gate is disabled
+    size_t _minimum;
+    size_t _requested = 0;
     bool _held_back = false;
     bool _bounded = false;
   };

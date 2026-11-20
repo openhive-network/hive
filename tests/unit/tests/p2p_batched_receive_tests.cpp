@@ -22,6 +22,37 @@ using graphene::net::peer_connection_ptr;
 
 namespace {
 
+/// Reads at most @p chunk bytes at a time: synchronously whatever the socket already holds, so a read whose bytes are
+/// there never lets another task run, as an fc read that finds them there need not; waiting for bytes as fc does.
+class synchronous_reading_hooks : public fc::tcp_socket_io_hooks
+{
+public:
+  explicit synchronous_reading_hooks( size_t chunk ) : _chunk( chunk ) {}
+
+  size_t readsome( boost::asio::ip::tcp::socket& socket, char* buffer, size_t length ) override
+  {
+    const size_t available = socket.available();
+    if( available == 0 )
+      return fc::asio::read_some( socket, buffer, std::min( length, _chunk ) ).wait();
+    return socket.read_some( boost::asio::buffer( buffer, std::min( { length, available, _chunk } ) ) );
+  }
+  size_t readsome( boost::asio::ip::tcp::socket& socket, const std::shared_ptr<char>& buffer, size_t length, size_t offset ) override
+  {
+    return readsome( socket, buffer.get() + offset, length );
+  }
+  size_t writesome( boost::asio::ip::tcp::socket& socket, const char* buffer, size_t length ) override
+  {
+    return fc::asio::write_some( socket, buffer, length ).wait();
+  }
+  size_t writesome( boost::asio::ip::tcp::socket& socket, const std::shared_ptr<const char>& buffer, size_t length, size_t offset ) override
+  {
+    return fc::asio::write_some( socket, buffer, length, offset ).wait();
+  }
+
+private:
+  size_t _chunk;
+};
+
 /// Collects whatever a peer_connection receives.
 class recording_delegate : public graphene::net::peer_connection_delegate
 {
@@ -274,16 +305,9 @@ BOOST_AUTO_TEST_CASE( connection_closed_during_the_yield_hands_out_no_further_me
   pair.wait_until( [&]() { return closer_waiting; }, fc::seconds( 10 ) );
   BOOST_REQUIRE( closer_waiting );
 
-  // the loop yields after 256 messages handled since its last read
-  size_t reads_at_last_message = pair.hooks.completed_reads;
-  size_t messages_since_read = 0;
+  // the loop yields after the first 256 messages it handled, whatever reads they came from
   pair.receiver_delegate.after_message = [&]() {
-    if( pair.hooks.completed_reads != reads_at_last_message )
-    {
-      reads_at_last_message = pair.hooks.completed_reads;
-      messages_since_read = 0;
-    }
-    if( ++messages_since_read == 256 && !yield_reached )
+    if( pair.receiver_delegate.received.size() == 256 )
     {
       yield_reached = true;
       loop_about_to_yield->set_value();
@@ -301,11 +325,70 @@ BOOST_AUTO_TEST_CASE( connection_closed_during_the_yield_hands_out_no_further_me
     loop_about_to_yield->set_value();
   closer.wait();
 
-  BOOST_REQUIRE_MESSAGE( yield_reached, "no run of 256 messages without a read; received " << pair.receiver_delegate.received.size() );
+  BOOST_REQUIRE_MESSAGE( yield_reached, "fewer than 256 messages handled; received " << pair.receiver_delegate.received.size() );
   BOOST_CHECK( pair.receiver_delegate.closed );
   BOOST_CHECK_GE( received_at_close, 256u );
   BOOST_CHECK_LT( received_at_close, 600u );
   BOOST_CHECK_EQUAL( pair.receiver_delegate.received.size(), received_at_close );
+}
+
+/// A peer whose messages are all buffered already can't keep the read loop from letting other tasks run for more
+/// than 256 messages, however many reads they take: the count of messages handled goes on across reads until the loop
+/// yields.
+BOOST_AUTO_TEST_CASE( buffered_messages_over_many_reads_still_yield_every_256 )
+{
+  synchronous_reading_hooks hooks( 64 );
+  raw_sender_pair pair;
+  // a read the loop may be waiting in already takes the first message, the reads after it go through the hooks
+  pair.receiver->get_socket().set_io_hooks( &hooks );
+  std::vector<char> first;
+  append_message( first, make_message( 4999, 0, 'f' ) );
+  pair.write( first.data(), first.size() );
+  pair.wait_until( [&]() { return pair.receiver_delegate.received.size() == 1; } );
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 1u );
+
+  std::vector<char> stream;
+  const size_t count = 2000;
+  for( size_t i = 0; i < count; ++i )
+    append_message( stream, make_message( 5000 + i, i % 9, char( 'a' + i % 26 ) ) );
+  BOOST_REQUIRE_LE( stream.size(), 64u * 1024u );
+
+  // a task that every handled message makes ready, so it runs whenever the loop lets others run, and records how
+  // many messages the loop had handled by then
+  bool stop = false;
+  std::vector<size_t> handled_when_others_ran;
+  fc::promise<void>::ptr wake;
+  bool woken = false;
+  const auto wake_other = [&]() {
+    if( wake && !woken )
+    {
+      woken = true;
+      wake->set_value();
+    }
+  };
+  pair.receiver_delegate.after_message = wake_other;
+  fc::future<void> other = fc::async( [&]() {
+    while( !stop )
+    {
+      handled_when_others_ran.push_back( pair.receiver_delegate.received.size() );
+      woken = false;
+      wake = fc::promise<void>::create( "batched_receive_test wake" );
+      fc::future<void>( wake ).wait();
+    }
+  }, "batched_receive_test other task" );
+
+  pair.write( stream.data(), stream.size() );
+  pair.wait_until( [&]() { return pair.receiver_delegate.received.size() >= count + 1 || pair.receiver_delegate.closed; } );
+  stop = true;
+  wake_other();
+  other.wait();
+
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), count + 1 );
+  size_t longest_run = 0;
+  for( size_t i = 1; i < handled_when_others_ran.size(); ++i )
+    longest_run = std::max( longest_run, handled_when_others_ran[i] - handled_when_others_ran[i - 1] );
+  BOOST_CHECK_LE( longest_run, 256u );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
