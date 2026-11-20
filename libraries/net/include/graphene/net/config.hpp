@@ -278,8 +278,9 @@
 #define GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS  100
 
 /**
- * While the transaction fetch gate is closed, how often (at most) the node warns that items to fetch expired,
- * with their sum since the last warning (graphene::net::fetch_expiry_warning_limiter)
+ * While the transaction fetch gate withholds transactions (closed or bounded by its headroom), how often (at most)
+ * the node warns that items to fetch expired, with their sum since the last warning
+ * (graphene::net::fetch_expiry_warning_limiter)
  */
 #define GRAPHENE_NET_GATED_FETCH_EXPIRY_WARNING_INTERVAL_SEC  30
 
