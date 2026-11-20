@@ -1,6 +1,9 @@
 #include <hive/protocol/misc_utilities.hpp>
 #include <hive/protocol/hive_specialised_exceptions.hpp>
 
+#include <fc/reflect/typename.hpp>
+#include <fc/variant_object.hpp>
+
 namespace hive { namespace protocol {
 
 thread_local transaction_serialization_type serialization_mode_controller::transaction_serialization = serialization_mode_controller::default_transaction_serialization;
@@ -72,6 +75,23 @@ std::string trim_legacy_typename_namespace( const std::string& name )
   }
 
   return name.substr( start, end-start );
+}
+
+fc::variant create_extended_variant( const char* type_name, fc::variant&& value, const fc::optional< int64_t >& tag )
+{
+  if( serialization_mode_controller::legacy_enabled() )
+  {
+    auto name = trim_legacy_typename_namespace( type_name );
+    if (tag)
+      return fc::variants( { fc::variant( *tag ), std::move( value ) } );
+    else
+      return fc::variants( { fc::variant( name ), std::move( value ) } );
+  }
+  else
+  {
+    auto name = fc::trim_typename_namespace( type_name );
+    return fc::mutable_variant_object( "type", name )( "value", std::move( value ) );
+  }
 }
 
 } }
