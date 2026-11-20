@@ -84,6 +84,9 @@
 // sync otherwise only restarts on a new connection, such a node would stay behind until its
 // next new peer.  Instead we restart sync with the advertising peer, at most once per this
 // interval per peer.  Also the minimum spacing between such restarts for one peer.
+// A peer that knows we are behind advertises nothing to us, so the same interval also
+// restarts sync with every active peer that may be ahead of us once our head has not
+// advanced for it and nothing we asked for is outstanding, advertisement or not.
 #define GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC                       60
 
 /**

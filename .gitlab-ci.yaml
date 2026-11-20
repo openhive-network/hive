@@ -571,9 +571,10 @@ plugin_test_p2p_protocol:
       allow_failure: true
   variables:
     # seconds before one case is killed (and reported failed): about 1.8x the longest case
-    # (stalled_head_resync_test, ~65 s on an idle host; it waits for a hard-coded 60 s interval,
-    # as disconnect_breakers_test does)
-    UNIT_TIMEOUT: "120"
+    # (stalled_head_restarts_sync_test, ~130 s on an idle host; it waits for the hard-coded 60 s
+    # stalled-head interval and then for one more interval, as stalled_head_resync_test and
+    # disconnect_breakers_test wait for one)
+    UNIT_TIMEOUT: "240"
   script:
     - curl -fsSL "${CI_SERVER_URL}/${CI_PROJECT_PATH}/-/raw/${CI_COMMIT_SHA}/scripts/run_chain_tests_parallel.sh" -o run_chain_tests_parallel.sh
     - chmod +x run_chain_tests_parallel.sh
