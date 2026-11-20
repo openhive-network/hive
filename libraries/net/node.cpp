@@ -536,6 +536,7 @@ namespace graphene { namespace net {
       /// including those waiting for room under the in-flight limit
       uint64_t _transaction_bytes_being_validated = 0;
       std::set<block_id_type> _block_ids_currently_being_processed;
+      fetch_turn_order _fetch_turn_order;
 
       std::atomic_int        _activeCalls;
       fc::promise<void>::ptr _shutdownNotifier;
@@ -571,8 +572,20 @@ namespace graphene { namespace net {
       /// @p idle_peers: the peers of the fetch pass that had nothing outstanding when it began
       fetch_candidate_verdict judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item,
                                                     const std::unordered_set<const peer_connection*>& idle_peers);
-      /// the expected bytes of the transactions requested from peers and not received yet, and the bytes of those
-      /// received and not validated yet: what is on its way into the pending pool but not in its published size
+      /// whether @p peer would be asked for transaction @p item: the transaction verdict of judge_fetch_candidate(),
+      /// without taking the item
+      bool is_transaction_candidate_wanted(const peer_connection* peer, const item_id& item) const;
+      /// whether @p peer has a transaction candidate not yet looked at in this pass that it would be asked for;
+      /// drops the unwanted ones before it
+      bool has_transaction_to_fetch(const peer_connection_ptr& peer);
+      /**
+       * The expected bytes of the transactions requested from peers and not received yet, and the bytes of those
+       * received and not validated yet: what is on its way into the pending pool.  A transaction leaves the first
+       * part when it is received and the second when its validation result is applied on our thread.  The chain
+       * publishes the pool size including an accepted transaction right after its result is queued for us, so
+       * until we apply that result the transaction counts twice, here and in the published size; that only makes
+       * the headroom smaller.  A result applied before the size is published undercounts by that transaction.
+       */
       uint64_t transaction_bytes_on_their_way() const;
       void add_fetch_candidate(peer_connection* peer, const item_id& item);
       /// Adds @p item to the items to fetch, and to the fetch candidates of every peer that advertised it,
@@ -1498,7 +1511,9 @@ namespace graphene { namespace net {
         // candidates: blocks one request at a time, transactions while the peer's window has room, so the
         // next batch may go out before earlier replies have arrived.  They take turns, one item each, so
         // items several of them advertised are spread evenly among them, except that a block goes to a
-        // peer with nothing outstanding when one advertised it (see judge_fetch_candidate())
+        // peer with nothing outstanding when one advertised it (see judge_fetch_candidate()).  The turns
+        // start after the peer that took the last transaction before (see fetch_turn_order), so a headroom
+        // worth a few transactions per pass is spread over the peers from pass to pass
         struct peer_and_items_to_fetch
         {
           peer_connection_ptr peer;
@@ -1514,6 +1529,7 @@ namespace graphene { namespace net {
         std::unordered_set<const peer_connection*> idle_peers;
         for (const peer_connection_ptr& peer : _active_connections)
         {
+          _fetch_turn_order.visit(peer.get(), items_by_peer.size());
           peer->fetch_candidates.trim(oldest_candidate_to_keep);
           if (peer->can_take_item_request() && peer->fetch_candidates.size() > 0)
           {
@@ -1522,7 +1538,7 @@ namespace graphene { namespace net {
               next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
             const size_t window = transaction_fetching_inhibited ? 0 :
               peer->received_transaction_size.transactions_to_request(peer->items_requested_from_peer.transactions());
-            const size_t max_transactions = gate.transactions_to_request(window, peer->fetch_candidates.has_transactions());
+            const size_t max_transactions = gate.transactions_to_request(window, [&]() { return has_transaction_to_fetch(peer); });
             if (max_transactions == 0 && !peer->fetch_candidates.has_blocks())
               continue;
             peer->fetch_candidates.begin_pass();
@@ -1533,43 +1549,41 @@ namespace graphene { namespace net {
           }
         }
 
-        for (bool item_taken = true; item_taken;)
+        _fetch_turn_order.take_turns(items_by_peer.size(), [&](size_t turn)
         {
-          item_taken = false;
-          for (peer_and_items_to_fetch& peer_and_items : items_by_peer)
+          peer_and_items_to_fetch& peer_and_items = items_by_peer[turn];
+          if (peer_and_items.done)
+            return false;
+          const peer_connection_ptr& peer = peer_and_items.peer;
+          const bool include_transactions = peer_and_items.include_transactions &&
+                                            gate.may_request_more([&]() { return has_transaction_to_fetch(peer); });
+          const std::optional<item_id> item_id_to_fetch =
+            peer->fetch_candidates.take_next(include_transactions,
+                                             [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate, idle_peers); },
+                                             _statistics.fetch.candidates_examined);
+          if (!item_id_to_fetch)
           {
-            if (peer_and_items.done)
-              continue;
-            const peer_connection_ptr& peer = peer_and_items.peer;
-            const bool include_transactions = peer_and_items.include_transactions &&
-                                              gate.may_request_more(peer->fetch_candidates.has_transactions());
-            const std::optional<item_id> item_id_to_fetch =
-              peer->fetch_candidates.take_next(include_transactions,
-                                               [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate, idle_peers); },
-                                               _statistics.fetch.candidates_examined);
-            if (!item_id_to_fetch)
-            {
-              peer_and_items.done = true;
-              continue;
-            }
-            const fc::time_point now = fc::time_point::now();
-            peer->items_requested_from_peer.insert(*item_id_to_fetch, now);
-            // if the peer is dropped for not delivering it, the item is asked of the others that advertised it
-            if (item_id_to_fetch->item_type == trx_message_type)
-            {
-              _transaction_inventory.keep(item_id_to_fetch->item_hash, now);
-              gate.record_request(peer->received_transaction_size.mean());
-            }
-            peer_and_items.item_ids.push_back(*item_id_to_fetch);
-            // the peer's blocks are all taken before its first transaction, so a peer that reaches
-            // its transaction limit has nothing more to give in this pass
-            if (item_id_to_fetch->item_type == graphene::net::block_message_type)
-              peer_and_items.done = ++peer_and_items.blocks >= GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION;
-            else
-              peer_and_items.done = ++peer_and_items.transactions >= peer_and_items.max_transactions;
-            item_taken = true;
+            peer_and_items.done = true;
+            return false;
           }
-        }
+          const fc::time_point now = fc::time_point::now();
+          peer->items_requested_from_peer.insert(*item_id_to_fetch, now);
+          // if the peer is dropped for not delivering it, the item is asked of the others that advertised it
+          if (item_id_to_fetch->item_type == trx_message_type)
+          {
+            _transaction_inventory.keep(item_id_to_fetch->item_hash, now);
+            gate.record_request(peer->received_transaction_size.mean());
+            _fetch_turn_order.record_transaction(peer.get());
+          }
+          peer_and_items.item_ids.push_back(*item_id_to_fetch);
+          // the peer's blocks are all taken before its first transaction, so a peer that reaches
+          // its transaction limit has nothing more to give in this pass
+          if (item_id_to_fetch->item_type == graphene::net::block_message_type)
+            peer_and_items.done = ++peer_and_items.blocks >= GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION;
+          else
+            peer_and_items.done = ++peer_and_items.transactions >= peer_and_items.max_transactions;
+          return true;
+        });
 
         ++_statistics.fetch.wakes;
         if (gate.held_back())
@@ -1630,6 +1644,18 @@ namespace graphene { namespace net {
         _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
                                        next_peer_unblocked_time);
       } // while (!canceled)
+    }
+
+    bool node_impl::is_transaction_candidate_wanted(const peer_connection* peer, const item_id& item) const
+    {
+      const auto& items_by_id = _items_to_fetch.get<item_id_index>();
+      return items_by_id.find(item) != items_by_id.end() && peer_advertised_item(peer, item);
+    }
+
+    bool node_impl::has_transaction_to_fetch(const peer_connection_ptr& peer)
+    {
+      return peer->fetch_candidates.has_transaction_to_take([&](const item_id& candidate) { return is_transaction_candidate_wanted(peer.get(), candidate); },
+                                                           _statistics.fetch.candidates_examined);
     }
 
     uint64_t node_impl::transaction_bytes_on_their_way() const
@@ -8189,29 +8215,6 @@ namespace graphene { namespace net {
       const uint64_t committed = pool.pending_bytes + bytes_on_their_way;
       _headroom = committed < threshold ? threshold - committed : 0;
     }
-  }
-
-  size_t transaction_fetch_gate::transactions_to_request(size_t window, bool has_candidates)
-  {
-    if (!_closed && _headroom > 0)
-      return window;
-    if (window > 0 && has_candidates)
-    {
-      if (_closed)
-        _held_back = true;
-      else
-        _bounded = true;
-    }
-    return 0;
-  }
-
-  bool transaction_fetch_gate::may_request_more(bool has_candidates)
-  {
-    if (_headroom > 0)
-      return true;
-    if (has_candidates)
-      _bounded = true;
-    return false;
   }
 
   void transaction_fetch_gate::record_request(uint64_t expected_bytes)
