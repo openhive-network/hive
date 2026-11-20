@@ -142,17 +142,40 @@ namespace graphene { namespace net {
     transaction_fetch_gate(const pending_transaction_pool_size& pool, uint64_t bytes_on_their_way);
 
     /**
-     * How many transactions to request from a peer whose window has room for @p window and that has live
-     * transaction candidates if @p has_candidates: @p window, or none while the gate is closed or no headroom is
-     * left.  The gate holds transactions back only when there were some to request and room to request them.
+     * How many transactions to request from a peer whose window has room for @p window: @p window, or none while
+     * the gate is closed or no headroom is left.  The gate holds transactions back only when there was room to
+     * request them and @p has_candidates (called as `bool()`, only then) says the peer has a transaction candidate
+     * that would have been requested.
      */
-    size_t transactions_to_request(size_t window, bool has_candidates);
+    template<typename HasCandidates>
+    size_t transactions_to_request(size_t window, HasCandidates&& has_candidates)
+    {
+      if (!_closed && _headroom > 0)
+        return window;
+      if (window > 0 && has_candidates())
+      {
+        if (_closed)
+          _held_back = true;
+        else
+          _bounded = true;
+      }
+      return 0;
+    }
 
     /**
-     * Whether the pass may request another transaction from a peer that still has transaction candidates if
-     * @p has_candidates: false once the requests recorded with record_request() have used up the headroom
+     * Whether the pass may request another transaction from a peer: false once the requests recorded with
+     * record_request() have used up the headroom.  The headroom withholds a transaction only when
+     * @p has_candidates (called as `bool()`, only then) says the peer has one that would have been requested.
      */
-    bool may_request_more(bool has_candidates);
+    template<typename HasCandidates>
+    bool may_request_more(HasCandidates&& has_candidates)
+    {
+      if (_headroom > 0)
+        return true;
+      if (has_candidates())
+        _bounded = true;
+      return false;
+    }
 
     /// Counts a transaction of @p expected_bytes requested in this pass against the headroom
     void record_request(uint64_t expected_bytes);
@@ -694,6 +717,24 @@ namespace graphene { namespace net {
       return std::nullopt;
     }
 
+    /**
+     * Whether a transaction entry not yet looked at in this pass is one @p wanted (called as
+     * `bool(const item_id&)`) says would be taken; the entries before it that are not wanted are dropped, as
+     * take_next() would drop them.  @p examined counts every entry looked at.
+     */
+    template<typename Wanted>
+    bool has_transaction_to_take(Wanted&& wanted, uint64_t& examined)
+    {
+      while (_transactions_kept < _transactions.size())
+      {
+        ++examined;
+        if (wanted(_transactions[_transactions_kept].item))
+          return true;
+        _transactions.erase(_transactions.begin() + _transactions_kept);
+      }
+      return false;
+    }
+
     bool has_blocks() const { return !_blocks.empty(); }
     /// whether block @p item is among the entries; looks through the blocks, which are few
     bool has_block(const item_id& item) const;
@@ -736,6 +777,58 @@ namespace graphene { namespace net {
     std::deque<entry> _transactions;
     size_t _blocks_kept = 0;
     size_t _transactions_kept = 0;
+  };
+
+  /**
+   * The order in which the peers of a fetch pass take their turns, one item each, round after round until none
+   * takes one.  The peers are listed in connection order, which stays the same from pass to pass, and the turns
+   * start with the first listed peer after the one that took the last transaction of an earlier pass, wrapping
+   * round.  So when the headroom (transaction_fetch_gate) is worth only a few transactions per pass it reaches
+   * every peer with candidates over successive passes, instead of always the first ones in connection order.
+   * Peers are identified by address only; a peer that disconnected is never visited, and the turns then start
+   * with the first listed peer.
+   */
+  class fetch_turn_order
+  {
+  public:
+    /// Called for every connected peer in connection order, before it is listed for the pass or not, with how many
+    /// peers were listed before it
+    void visit(const void* peer, size_t listed_before)
+    {
+      // the first listed peer after the taker is the one at the number of peers listed by the time the next peer
+      // is visited (or the listing ends), whether the taker itself was listed or not
+      if (_after_taker)
+        _first_turn = listed_before;
+      _after_taker = peer == _last_transaction_taker;
+    }
+
+    /**
+     * Runs the turns of the @p listed peers: @p take_turn (called as `bool(size_t)` with the index of a listed
+     * peer) lets that peer take one item and returns whether it took one.  Ends the pass's listing.
+     */
+    template<typename TakeTurn>
+    void take_turns(size_t listed, TakeTurn&& take_turn)
+    {
+      if (_after_taker)
+        _first_turn = listed;
+      const size_t first = listed > 0 ? _first_turn % listed : 0;
+      _first_turn = 0;
+      _after_taker = false;
+      for (bool item_taken = true; item_taken;)
+      {
+        item_taken = false;
+        for (size_t turn = 0; turn < listed; ++turn)
+          item_taken |= take_turn((first + turn) % listed);
+      }
+    }
+
+    /// Records that @p peer took a transaction; the last one recorded decides where the next pass starts
+    void record_transaction(const void* peer) { _last_transaction_taker = peer; }
+
+  private:
+    const void* _last_transaction_taker = nullptr;
+    size_t _first_turn = 0;
+    bool _after_taker = false;
   };
 
   /**
