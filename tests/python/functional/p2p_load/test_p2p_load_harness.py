@@ -371,6 +371,67 @@ def test_relay_samples_of_the_p2p_relay_sample_logger_match_across_nodes(tmp_pat
     assert "25 on every one of them" in report.format_summary(summary)
 
 
+def _fast_confirm_line(seconds: float, witness: str, num: int) -> str:
+    prefix = f"{_log_time(seconds, 6)} database.cpp:3083 process_fast_confirm_transaction ] "
+    return f"{prefix}Accepted fast-confirm from witness {witness} for block #{num} ({num:08x}{'0' * 32})\n"
+
+
+def test_fast_confirms_and_irreversibility_lag_per_node(tmp_path: Path) -> None:
+    """
+    The witness accepts its own fast-confirms (two witnesses per block) 100 ms after logging each block; the observer,
+    whose clock is 20 ms ahead, accepts them 30 ms later on the witness's clock, except witness-0's of blocks 130 and
+    131, never, and initminer's of block 130, 1.08 s late. Its irreversible block is one behind each block it applies,
+    four behind at block 125.
+    """
+    run_dir = _make_run(tmp_path / "chain-a-1")
+    generated = run_dir / "generated"
+    blocks = range(100, 141)
+    witness_log = [_fast_confirm_line(3 * (n - 100) + 0.1, w, n) for n in blocks for w in ("initminer", "witness-0")]
+    observer_log = [
+        _fast_confirm_line(3 * (n - 100) + 0.15, w, n)
+        for n in blocks
+        for w in ("initminer", "witness-0")
+        if n != 130 and (n, w) != (131, "witness-0")
+    ]
+    observer_log.append(_fast_confirm_line(3 * 30 + 1.2, "initminer", 130))  # 1.1 s late
+    (generated / "WitnessNode0" / "stderr_2.log").write_text("".join(witness_log))
+    (generated / "ApiNode0" / "stderr_2.log").write_text("".join(observer_log))
+    (generated / "ApiNode1" / "stderr_2.log").write_text("".join(witness_log[:30]))  # blocks 100-114 only
+    observer_stats = generated / "ApiNode0" / "stderr_1.log"
+    lines = []
+    for line in observer_stats.read_text().splitlines(keepends=True):
+        prefix, stats = line.split("Block stats:")
+        report_ = json.loads(stats)
+        report_["lib"] = report_["num"] - (4 if report_["num"] == 125 else 1)
+        lines.append(f"{prefix}Block stats:{json.dumps(report_)}\n")
+    observer_stats.write_text("".join(lines))
+
+    summary = report.summarize(Run.load(run_dir))
+
+    fast_confirms = summary["fast_confirms"]
+    assert fast_confirms["witness"] == {
+        "produced": 58,  # blocks 112-140 of the loaded window
+        "accepted": 58,
+        "accepted_pct": pytest.approx(100),
+        "median_ms": pytest.approx(0),
+        "max_ms": pytest.approx(0),
+    }
+    observer = fast_confirms["observer"]
+    assert observer["accepted"] == 56
+    assert observer["median_ms"] == pytest.approx(30, abs=0.01)
+    assert observer["max_ms"] == pytest.approx(1080, abs=0.01)
+    colony = fast_confirms["colony0"]
+    assert (colony["accepted"], colony["median_ms"]) == (6, None)  # 112-114; no Block stats to correct its skew by
+    assert fast_confirms["relay1"]["accepted_pct"] == 0
+    assert summary["irreversibility_lag"] == {"observer": {"blocks": 29, "median": 1, "max": 4}}
+    text = report.format_summary(summary)
+    assert "fast-confirms observer   56/58 accepted (96.6%)" in text
+    assert "head-LIB observer   median 1 max 4 over 29 blocks" in text
+    comparison = report.format_comparison([summary])
+    assert "fewest fast-confirms accepted %" in comparison
+    assert "largest head-LIB" in comparison
+
+
 def test_a_run_of_a_build_without_the_p2p_loggers_reports_no_counters(tmp_path: Path) -> None:
     run_dir = _make_run(tmp_path / "chain-a-1")
     (run_dir / "generated" / "WitnessNode0" / "logs" / "p2p" / "p2p.log").write_text("")
@@ -423,6 +484,20 @@ def test_a_p2p_log_newer_than_its_rotated_segments_is_read_after_them(tmp_path: 
     assert [r["log_time"] - reports[0]["log_time"] for r in reports] == [0, 30]
 
 
+def test_a_p2p_log_copied_from_a_run_segment_behind_the_replay_segment_is_read_once(tmp_path: Path) -> None:
+    p2p_dir = tmp_path / "logs" / "p2p"
+    p2p_dir.mkdir(parents=True)
+    run, replay = p2p_dir / "p2p.log.20261119T230000", p2p_dir / "p2p.log.20261120T210000"
+    run.write_text(_p2p_statistics(30, 3000, 3000, 12_000) + _p2p_statistics(60, 3000, 3000, 12_000))
+    replay.write_text("replay on the real clock\n")
+    shutil.copyfile(run, p2p_dir / "p2p.log")
+
+    reports = node_logs.p2p_statistics(tmp_path)
+
+    assert node_logs.log_files(tmp_path) == [run, replay]
+    assert [r["log_time"] - reports[0]["log_time"] for r in reports] == [0, 30]
+
+
 def test_p2p_loggers_are_enabled_only_where_the_binary_has_them(tmp_path: Path) -> None:
     current, older = tmp_path / "hived-current", tmp_path / "hived-older"
     current.write_bytes(b"\x7fELF\0p2p\0p2p_stats\0relay sample\0p2p_relay_sample\0sync\0")
@@ -440,6 +515,15 @@ def test_p2p_loggers_are_enabled_only_where_the_binary_has_them(tmp_path: Path) 
         p2p_loggers.verify_config(config, ["p2p_stats", "p2p_relay_sample"])
     config.write_text(f"log-logger = {default}\n")
     p2p_loggers.verify_config(config, [])
+
+
+def test_the_default_logger_goes_to_debug_for_the_fast_confirms() -> None:
+    default = '{"name":"default","level":"info","appender":"stderr"} {"name":"p2p","level":"info","appender":"p2p"}'
+
+    assert p2p_loggers.with_debug_default(default) == (
+        '{"name":"default","level":"debug","appender":"stderr"} {"name":"p2p","level":"info","appender":"p2p"}'
+    )
+    assert p2p_loggers.with_debug_default(None) == '{"name":"default","appender":"stderr","level":"debug"}'
 
 
 def test_comparison_groups_runs_by_label(tmp_path: Path) -> None:

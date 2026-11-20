@@ -441,3 +441,52 @@ def p2p_counters(run: Run) -> dict[str, dict[str, Any] | None]:
         ]
         out[role] = _counter_totals(inside) if inside else None
     return out
+
+
+def fast_confirms(run: Run) -> dict[str, dict[str, Any]]:
+    """
+    Per node, the fast-confirms (witness_block_approve) of loaded-window blocks it accepted, and how late.
+
+    The witness logs each one it produces as it accepts it; a node's delay is from then to its own acceptance, its
+    log time minus its clock skew (see corrected_offsets). `accepted_pct` counts what the node accepted of what the
+    witness produced: a fast-confirm that never arrived, arrived after a newer one of its witness, or was still on its
+    way when the run ended is missing. Delays are None for a node without MIN_IDLE_BLOCKS idle blocks. Empty when the witness logged none (the default
+    logger below debug).
+    """
+    produced = {
+        key: logged for key, logged in node_logs.fast_confirms(run.node_dir("witness")).items() if key[1] in run.window
+    }
+    if not produced:
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    for role in run.roles:
+        skew_s: float | None = 0.0
+        if role != "witness":
+            idle = _idle_skews(run, role)
+            skew_s = statistics.median(idle) / 1e6 if len(idle) >= MIN_IDLE_BLOCKS else None
+        accepted = node_logs.fast_confirms(run.node_dir(role))
+        arrived = [key for key in produced if key in accepted]
+        delays = [] if skew_s is None else [(accepted[key] - skew_s - produced[key]) * 1000 for key in arrived]
+        out[role] = {
+            "produced": len(produced),
+            "accepted": len(arrived),
+            "accepted_pct": len(arrived) * 100 / len(produced),
+            "median_ms": statistics.median(delays) if delays else None,
+            "max_ms": max(delays) if delays else None,
+        }
+    return out
+
+
+def irreversibility_lag(run: Run) -> dict[str, dict[str, Any]]:
+    """
+    Per node, head minus last irreversible block over the loaded window, as its Block stats give them for each block
+    the node applied (the irreversible block before that block's own fast-confirms). Nodes whose Block stats carry no
+    `lib` are left out.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    for role in run.roles:
+        stats = run.stats(role)
+        lags = [stats[num]["num"] - stats[num]["lib"] for num in run.window if "lib" in stats.get(num, {})]
+        if lags:
+            out[role] = {"blocks": len(lags), "median": statistics.median(lags), "max": max(lags)}
+    return out
