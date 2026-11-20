@@ -256,6 +256,14 @@
 #define GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER  (512 * 1024)
 
 /**
+ * While the pending pool holds more than a third of max-mempool-size (graphene::net::is_transaction_fetching_gated())
+ * the node requests no transactions, and checks again this often whether the pool has drained below that while
+ * transactions wait to be fetched.  The pool drains when a block is applied, so a fraction of the block interval
+ * is enough.
+ */
+#define GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS  100
+
+/**
  * The key of the hello's user_data by which a node says it queues the transactions a peer asks for only as its send
  * queue drains (peer_connection::send_transaction_reply()), so a peer may keep several requests outstanding with it
  * (GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER).  Older nodes ignore keys they don't know.

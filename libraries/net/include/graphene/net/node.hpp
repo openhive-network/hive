@@ -103,6 +103,23 @@ namespace graphene { namespace net {
    */
   typedef std::function<void(const fc::exception_ptr& error)> transaction_validated_callback;
 
+  /// The client's pending transaction pool: how many bytes of transactions it holds and the most it may hold
+  struct pending_transaction_pool_size
+  {
+    uint64_t pending_bytes = 0;
+    uint64_t max_bytes = 0;     ///< max-mempool-size
+  };
+
+  /**
+   * The pending pool size above which the node requests no transactions from any peer: a third of @p max_bytes,
+   * which leaves the rest of the pool for API submissions, fork switches and replies already on their way.
+   * 0 when @p max_bytes is 0: the pool then keeps only what fits in the reapply window, so it needs no gate.
+   */
+  uint64_t transaction_fetch_gate_threshold(uint64_t max_bytes);
+
+  /// Whether @p pool holds more than transaction_fetch_gate_threshold(), so that the node stops requesting transactions
+  bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool);
+
    /**
     *  @class node_delegate
     *  @brief used by node reports status to client or fetch data from client
@@ -244,6 +261,10 @@ namespace graphene { namespace net {
           * than catching up with the network. It is evaluated on every call, so unlike the
           * chain's own switch to live mode it becomes false again when we fall behind */
          virtual bool is_at_live_sync() = 0;
+
+         /** returns the size of the pending transaction pool. Called from the p2p thread often, so it must not block:
+          * it returns the size as last published by the client, never a size from the middle of applying a block */
+         virtual pending_transaction_pool_size get_pending_transaction_pool_size() const = 0;
 
          virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const = 0;
 
@@ -836,6 +857,7 @@ namespace graphene { namespace net {
       uint64_t candidates_examined = 0;
       uint64_t items_requested = 0;
       uint64_t items_expired = 0;
+      uint64_t transactions_gated = 0; ///< wakes that requested no transactions because the pending pool was over the gate threshold
       fc::microseconds scheduling_time;
     };
 
@@ -886,9 +908,11 @@ namespace graphene { namespace net {
 
     /**
      * Everything recorded since the last report (or since construction), as of @p now, with @p in_flight
-     * transactions in flight now and @p items_queued items waiting to be fetched; counting starts over.
+     * transactions in flight now, @p items_queued items waiting to be fetched and the pending pool at @p pool;
+     * counting starts over.
      */
-    fc::variant_object take_report(fc::time_point now, uint32_t in_flight, size_t items_queued);
+    fc::variant_object take_report(fc::time_point now, uint32_t in_flight, size_t items_queued,
+                                   const pending_transaction_pool_size& pool);
 
   private:
     fc::time_point _period_start = fc::time_point::now();
