@@ -52,6 +52,17 @@ namespace graphene { namespace net
   {
     namespace
     {
+      /// whether @p m, an item_ids_inventory_message or a fetch_items_message, lists items of @p item_type
+      bool lists_items_of_type(const message& m, uint32_t item_type)
+      {
+        // item_type is the first field of both messages
+        uint32_t listed_item_type = 0;
+        if (m.data.size() < sizeof(listed_item_type))
+          return false;
+        memcpy(&listed_item_type, m.data.data(), sizeof(listed_item_type));
+        return listed_item_type == item_type;
+      }
+
       /// transactions, and the inventories and fetch requests that relay them; everything else (blocks and
       /// their inventories, sync and connection control) is written without waiting for a batch to grow
       bool is_transaction_traffic(const message& m)
@@ -60,12 +71,15 @@ namespace graphene { namespace net
           return true;
         if (m.msg_type != item_ids_inventory_message_type && m.msg_type != fetch_items_message_type)
           return false;
-        // item_type is the first field of both messages
-        uint32_t item_type = 0;
-        if (m.data.size() < sizeof(item_type))
-          return false;
-        memcpy(&item_type, m.data.data(), sizeof(item_type));
-        return item_type == trx_message_type;
+        return lists_items_of_type(m, trx_message_type);
+      }
+
+      /// blocks and their inventories, which are queued ahead of transaction traffic
+      bool is_block_traffic(const message& m)
+      {
+        if (m.msg_type == block_message_type || m.msg_type == compressed_block_message_type)
+          return true;
+        return m.msg_type == item_ids_inventory_message_type && lists_items_of_type(m, block_message_type);
       }
     }
 
@@ -428,6 +442,8 @@ namespace graphene { namespace net
         {
           batch.emplace_back(std::move(_queued_messages.front()));
           _queued_messages.pop_front();
+          if (_queued_block_traffic_end > 0)
+            --_queued_block_traffic_end;
           if (!batch.back()->may_wait_for_batch)
             --_queued_messages_not_waiting_for_batch;
           batch.back()->transmission_start_time = fc::time_point::now();
@@ -560,7 +576,18 @@ namespace graphene { namespace net
       _total_queued_messages_size += message_size;
       if (!message_to_send->may_wait_for_batch)
         ++_queued_messages_not_waiting_for_batch;
-      _queued_messages.emplace_back(std::move(message_to_send));
+      if (message_to_send->is_block_traffic)
+      {
+        // behind the block traffic queued before it, ahead of the first transaction traffic queued after that; the
+        // messages that are neither keep their place, so it passes one of them only where that one waits behind transactions
+        const auto first_transaction_behind_blocks =
+          std::find_if(_queued_messages.begin() + _queued_block_traffic_end, _queued_messages.end(),
+                       [](const std::unique_ptr<queued_message>& queued) { return queued->may_wait_for_batch; });
+        const auto queued_block_traffic = _queued_messages.insert(first_transaction_behind_blocks, std::move(message_to_send));
+        _queued_block_traffic_end = queued_block_traffic - _queued_messages.begin() + 1;
+      }
+      else
+        _queued_messages.emplace_back(std::move(message_to_send));
 
       if( _send_queued_messages_done.valid() && _send_queued_messages_done.canceled() )
         FC_THROW_EXCEPTION(fc::exception, "Attempting to send a message on a connection that is being shut down");
@@ -587,6 +614,7 @@ namespace graphene { namespace net
       //     ("type", message_to_send.msg_type)("endpoint", get_remote_endpoint()));
       std::unique_ptr<queued_message> message_to_enqueue(new real_queued_message(message_to_send, message_send_time_field_offset));
       message_to_enqueue->may_wait_for_batch = is_transaction_traffic(message_to_send);
+      message_to_enqueue->is_block_traffic = is_block_traffic(message_to_send);
       send_queueable_message(std::move(message_to_enqueue));
     }
 
