@@ -194,22 +194,26 @@ namespace graphene { namespace net {
   };
 
   /**
-   * Decides when to warn that items to fetch were removed because they expired.  With the transaction fetch gate
-   * open it warns on every call that removed some; while the gate is closed advertised transactions expire
-   * unfetched on pass after pass, so it warns at most once per @p interval, with the sum since the last warning.
+   * Decides when to warn that items to fetch were removed because they expired.  A node whose transaction fetch
+   * gate withholds no transactions warns on every call that removed some.  While the gate withholds them, closed or
+   * bounded by its headroom (transaction_fetch_gate::closed(), transaction_fetch_gate::bounded()), advertised
+   * transactions expire unfetched on pass after pass, so from a pass that withheld them until @p interval after it
+   * the limiter warns at most once per @p interval, with the sum since the last warning.  Passes that withhold
+   * nothing in between (a pass whose headroom was enough) do not end that.
    */
   class fetch_expiry_warning_limiter
   {
   public:
     explicit fetch_expiry_warning_limiter(fc::microseconds interval);
 
-    /// Records @p expired items removed at @p now with the gate @p gated or not; returns how many to warn about now, if any
-    std::optional<size_t> record(size_t expired, bool gated, fc::time_point now);
+    /// Records @p expired items removed by a pass at @p now that @p withheld transactions or not; returns how many to warn about now, if any
+    std::optional<size_t> record(size_t expired, bool withheld, fc::time_point now);
 
   private:
     fc::microseconds _interval;
     size_t _unreported = 0;
     fc::time_point _last_warning;
+    std::optional<fc::time_point> _last_withheld;
   };
 
    /**

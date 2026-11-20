@@ -389,8 +389,9 @@ BOOST_AUTO_TEST_CASE( only_transactions_still_to_fetch_count_as_bounded )
   BOOST_CHECK_EQUAL( examined, 1u );
 }
 
-/// While the gate is closed the expiry warning comes at most once per interval, with the sum since the last one;
-/// with the gate open every pass that expired something warns, including what was left from the gated period
+/// While the gate withholds transactions the expiry warning comes at most once per interval, with the sum since the
+/// last one; an interval after the last pass that withheld any, every pass that expired something warns, including
+/// what was left from the withholding period
 BOOST_AUTO_TEST_CASE( expiry_warnings_are_rate_limited_only_while_gated )
 {
   const fc::time_point start = fc::time_point::from_iso_string( "2026-11-20T00:00:00" );
@@ -404,12 +405,45 @@ BOOST_AUTO_TEST_CASE( expiry_warnings_are_rate_limited_only_while_gated )
     BOOST_CHECK( limiter.record( 2, true, start + fc::milliseconds( 100 * pass ) ) == std::nullopt );
   BOOST_CHECK( limiter.record( 2, true, start + interval ) == std::optional<size_t>( 300 * 2 ) );
 
-  BOOST_CHECK( limiter.record( 3, true, start + interval + fc::seconds( 1 ) ) == std::nullopt );
-  // the gate opens: what is left is warned about on the next pass even if that pass expired nothing
-  BOOST_CHECK( limiter.record( 0, false, start + interval + fc::seconds( 2 ) ) == std::optional<size_t>( 3 ) );
-  BOOST_CHECK( limiter.record( 0, false, start + interval + fc::seconds( 3 ) ) == std::nullopt );
-  BOOST_CHECK( limiter.record( 1, false, start + interval + fc::seconds( 4 ) ) == std::optional<size_t>( 1 ) );
-  BOOST_CHECK( limiter.record( 1, false, start + interval + fc::seconds( 5 ) ) == std::optional<size_t>( 1 ) );
+  const fc::time_point last_withheld = start + interval + fc::seconds( 1 );
+  BOOST_CHECK( limiter.record( 3, true, last_withheld ) == std::nullopt );
+  // the gate stops withholding: within an interval of the last pass that withheld, the sum still waits for the interval
+  BOOST_CHECK( limiter.record( 1, false, last_withheld + fc::seconds( 1 ) ) == std::nullopt );
+  BOOST_CHECK( limiter.record( 0, false, start + interval + interval ) == std::optional<size_t>( 4 ) );
+  // an interval after the last pass that withheld, every expiry is warned about right away
+  BOOST_CHECK( limiter.record( 0, false, last_withheld + interval ) == std::nullopt );
+  BOOST_CHECK( limiter.record( 1, false, last_withheld + interval + fc::seconds( 1 ) ) == std::optional<size_t>( 1 ) );
+  BOOST_CHECK( limiter.record( 1, false, last_withheld + interval + fc::seconds( 2 ) ) == std::optional<size_t>( 1 ) );
+}
+
+/// Passes that the open gate's headroom bounded (transaction_fetch_gate::bounded()) hold the warning back like gated
+/// ones, also across the passes in between whose headroom was enough, and the warnings add up to every expiry
+BOOST_AUTO_TEST_CASE( expiry_warnings_are_rate_limited_while_the_headroom_bounds_the_fetch )
+{
+  const fc::time_point start = fc::time_point::from_iso_string( "2026-11-20T00:00:00" );
+  const fc::microseconds interval = fc::seconds( 30 );
+  fetch_expiry_warning_limiter limiter( interval );
+  const pending_transaction_pool_size under{ 20000, 90000 }; // threshold 30000
+
+  std::vector<size_t> warnings;
+  // 90 s of passes 100 ms apart, each expiring 3 items; every tenth pass has headroom enough for what it requests
+  for( int pass = 0; pass < 900; ++pass )
+  {
+    const bool enough = pass % 10 == 9;
+    transaction_fetch_gate gate( under, enough ? 0 : 9000 );
+    BOOST_REQUIRE( !gate.closed() );
+    BOOST_REQUIRE_EQUAL( gate.transactions_to_request( 400, candidates ), 400u );
+    for( int request = 0; request < 2 || ( !enough && gate.may_request_more( candidates ) ); ++request )
+      gate.record_request( 300 );
+    BOOST_REQUIRE_EQUAL( gate.bounded(), !enough );
+
+    if( const std::optional<size_t> to_report = limiter.record( 3, gate.closed() || gate.bounded(), start + fc::milliseconds( 100 * pass ) ) )
+      warnings.push_back( *to_report );
+  }
+  // the first expiry right away, then the sum once per interval
+  BOOST_CHECK( warnings == std::vector<size_t>( { 3, 300 * 3, 300 * 3 } ) );
+  // the rest comes an interval after the last warning
+  BOOST_CHECK( limiter.record( 0, false, start + fc::seconds( 90 ) ) == std::optional<size_t>( 299 * 3 ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
