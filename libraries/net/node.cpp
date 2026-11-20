@@ -34,6 +34,7 @@
 #include <forward_list>
 #include <iostream>
 #include <algorithm>
+#include <limits>
 #include <tuple>
 #include <boost/tuple/tuple.hpp>
 #include <boost/circular_buffer.hpp>
@@ -531,6 +532,9 @@ namespace graphene { namespace net {
       /// filled by the delegate's validation callbacks on the chain's writer thread, applied on our thread
       std::shared_ptr<completion_queue<transaction_completion>> _transaction_completions;
       in_flight_limit _transactions_in_flight;
+      /// bytes of the transactions received from peers whose validation results have not been applied yet,
+      /// including those waiting for room under the in-flight limit
+      uint64_t _transaction_bytes_being_validated = 0;
       std::set<block_id_type> _block_ids_currently_being_processed;
 
       std::atomic_int        _activeCalls;
@@ -567,6 +571,9 @@ namespace graphene { namespace net {
       /// @p idle_peers: the peers of the fetch pass that had nothing outstanding when it began
       fetch_candidate_verdict judge_fetch_candidate(const peer_connection_ptr& peer, const item_id& item,
                                                     const std::unordered_set<const peer_connection*>& idle_peers);
+      /// the expected bytes of the transactions requested from peers and not received yet, and the bytes of those
+      /// received and not validated yet: what is on its way into the pending pool but not in its published size
+      uint64_t transaction_bytes_on_their_way() const;
       void add_fetch_candidate(peer_connection* peer, const item_id& item);
       /// Adds @p item to the items to fetch, and to the fetch candidates of every peer that advertised it,
       /// if any did; returns whether one did
@@ -1477,8 +1484,9 @@ namespace graphene { namespace net {
 
         const size_t expired_items = remove_expired_items_to_fetch();
         fc::time_point next_peer_unblocked_time = fc::time_point::maximum();
-        // while the pending pool is over the threshold no peer is asked for transactions, blocks still are
-        transaction_fetch_gate gate(_delegate->get_pending_transaction_pool_size());
+        // while the pending pool is over the threshold no peer is asked for transactions, blocks still are;
+        // below it the pass asks for no more than fits under it with what is already on its way
+        transaction_fetch_gate gate(_delegate->get_pending_transaction_pool_size(), transaction_bytes_on_their_way());
         if (const std::optional<size_t> expired_to_report = _fetch_expiry_warnings.record(expired_items, gate.closed(), iteration_start))
           wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", ("expired_items", *expired_to_report));
         // candidates as old as the expired items are dropped too, so that none the gate holds back outlives them
@@ -1533,8 +1541,10 @@ namespace graphene { namespace net {
             if (peer_and_items.done)
               continue;
             const peer_connection_ptr& peer = peer_and_items.peer;
+            const bool include_transactions = peer_and_items.include_transactions &&
+                                              gate.may_request_more(peer->fetch_candidates.has_transactions());
             const std::optional<item_id> item_id_to_fetch =
-              peer->fetch_candidates.take_next(peer_and_items.include_transactions,
+              peer->fetch_candidates.take_next(include_transactions,
                                                [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate, idle_peers); },
                                                _statistics.fetch.candidates_examined);
             if (!item_id_to_fetch)
@@ -1546,7 +1556,10 @@ namespace graphene { namespace net {
             peer->items_requested_from_peer.insert(*item_id_to_fetch, now);
             // if the peer is dropped for not delivering it, the item is asked of the others that advertised it
             if (item_id_to_fetch->item_type == trx_message_type)
+            {
               _transaction_inventory.keep(item_id_to_fetch->item_hash, now);
+              gate.record_request(peer->received_transaction_size.mean());
+            }
             peer_and_items.item_ids.push_back(*item_id_to_fetch);
             // the peer's blocks are all taken before its first transaction, so a peer that reaches
             // its transaction limit has nothing more to give in this pass
@@ -1561,6 +1574,8 @@ namespace graphene { namespace net {
         ++_statistics.fetch.wakes;
         if (gate.held_back())
           ++_statistics.fetch.transactions_gated;
+        if (gate.bounded())
+          ++_statistics.fetch.transactions_bounded;
         _statistics.fetch.items_expired += expired_items;
         _statistics.fetch.scheduling_time += fc::time_point::now() - iteration_start;
 
@@ -1607,13 +1622,22 @@ namespace graphene { namespace net {
         // Nothing tells the loop when the pending pool drains (by inclusion in blocks, expiry or drops at
         // max-mempool-size), so while live candidates wait for it the gate is checked again at an interval; once
         // they have all expired (trimmed above) the loop waits for a trigger.  API submissions may keep the pool
-        // over the threshold for as long as they last (see transaction_fetch_gate_threshold())
-        if (gate.held_back())
+        // over the threshold for as long as they last (see transaction_fetch_gate_threshold()).  Replies that free
+        // the headroom need not open a peer's window, so they may not wake the loop either
+        if (gate.held_back() || gate.bounded())
           next_peer_unblocked_time = std::min(next_peer_unblocked_time,
                                               fc::time_point::now() + fc::milliseconds(GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS));
         _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
                                        next_peer_unblocked_time);
       } // while (!canceled)
+    }
+
+    uint64_t node_impl::transaction_bytes_on_their_way() const
+    {
+      uint64_t bytes = _transaction_bytes_being_validated;
+      for (const peer_connection_ptr& peer : _active_connections)
+        bytes += uint64_t(peer->items_requested_from_peer.transactions()) * peer->received_transaction_size.mean();
+      return bytes;
     }
 
     void node_impl::add_fetch_candidate(peer_connection* peer, const item_id& item)
@@ -5134,6 +5158,7 @@ namespace graphene { namespace net {
         originating_peer->items_requested_from_peer.erase(iter);
         originating_peer->items_requested_from_peer.record_transaction_delivery(message_receive_time);
         originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
+        _transaction_bytes_being_validated += full_transaction->get_transaction_size();
         if (originating_peer->idle())
           trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
         else if (!window_had_room && originating_peer->can_take_item_request() &&
@@ -5175,11 +5200,13 @@ namespace graphene { namespace net {
         catch (const fc::canceled_exception&)
         {
           _message_ids_currently_being_processed.erase(message_hash);
+          _transaction_bytes_being_validated -= full_transaction->get_transaction_size();
           throw;
         }
         catch (const fc::exception& e)
         {
           _message_ids_currently_being_processed.erase(message_hash);
+          _transaction_bytes_being_validated -= full_transaction->get_transaction_size();
           dlog("client did not accept transaction message sent by peer ${peer} for validation, ${e}", ("peer", originating_peer->get_remote_endpoint())(e));
           // record it so we don't try to fetch this item again
           _recently_failed_items.insert(peer_connection::timestamped_item_id(item_id(trx_message_type, message_hash), fc::time_point::now()));
@@ -5189,6 +5216,7 @@ namespace graphene { namespace net {
           // clear the mark however submitting ends, as the block path does: an id left in the set makes us
           // skip every later advertisement of that transaction until restart
           _message_ids_currently_being_processed.erase(message_hash);
+          _transaction_bytes_being_validated -= full_transaction->get_transaction_size();
           throw;
         }
       }
@@ -5201,6 +5229,7 @@ namespace graphene { namespace net {
       for (const transaction_completion& completion : completions)
       {
         _statistics.record_completion(completion.validated_time - completion.submitted_time);
+        _transaction_bytes_being_validated -= completion.full_transaction->get_transaction_size();
         try
         {
           apply_transaction_completion(completion);
@@ -8110,7 +8139,8 @@ namespace graphene { namespace net {
         ("threshold_bytes", transaction_fetch_gate_threshold(pool.max_bytes))
         ("pending_bytes", pool.pending_bytes)
         ("gated", is_transaction_fetching_gated(pool))
-        ("gated_wakes", fetch.transactions_gated))
+        ("gated_wakes", fetch.transactions_gated)
+        ("bounded_wakes", fetch.transactions_bounded))
       ("handoff", fc::mutable_variant_object()
         ("submissions", _handoff.submissions)
         ("completions", _handoff.completions)
@@ -8148,17 +8178,46 @@ namespace graphene { namespace net {
     return threshold > 0 && pool.pending_bytes > threshold;
   }
 
-  transaction_fetch_gate::transaction_fetch_gate(const pending_transaction_pool_size& pool) :
+  transaction_fetch_gate::transaction_fetch_gate(const pending_transaction_pool_size& pool, uint64_t bytes_on_their_way) :
     _closed(is_transaction_fetching_gated(pool))
-  {}
+  {
+    const uint64_t threshold = transaction_fetch_gate_threshold(pool.max_bytes);
+    if (threshold == 0)
+      _headroom = std::numeric_limits<uint64_t>::max();
+    else
+    {
+      const uint64_t committed = pool.pending_bytes + bytes_on_their_way;
+      _headroom = committed < threshold ? threshold - committed : 0;
+    }
+  }
 
   size_t transaction_fetch_gate::transactions_to_request(size_t window, bool has_candidates)
   {
-    if (!_closed)
+    if (!_closed && _headroom > 0)
       return window;
     if (window > 0 && has_candidates)
-      _held_back = true;
+    {
+      if (_closed)
+        _held_back = true;
+      else
+        _bounded = true;
+    }
     return 0;
+  }
+
+  bool transaction_fetch_gate::may_request_more(bool has_candidates)
+  {
+    if (_headroom > 0)
+      return true;
+    if (has_candidates)
+      _bounded = true;
+    return false;
+  }
+
+  void transaction_fetch_gate::record_request(uint64_t expected_bytes)
+  {
+    if (_headroom != std::numeric_limits<uint64_t>::max())
+      _headroom -= std::min(_headroom, expected_bytes);
   }
 
   fetch_expiry_warning_limiter::fetch_expiry_warning_limiter(fc::microseconds interval) :

@@ -1699,6 +1699,36 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
   } );
 }
 
+/// D17: below the threshold the node asks for no more transactions than fit under it with those already on their
+/// way: a peer that has sent none yet is expected to send ones of HIVE_MAX_TRANSACTION_SIZE, so with a threshold
+/// smaller than that the node asks it for one of the transactions it advertised and waits for that one, though
+/// its window would take them all in one request
+BOOST_AUTO_TEST_CASE( transaction_fetch_headroom_test )
+{
+  const uint64_t max_mempool_size = 6 * 1024;
+  BOOST_REQUIRE_LT( transaction_fetch_gate_threshold( max_mempool_size ), uint64_t( HIVE_MAX_TRANSACTION_SIZE ) );
+  start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto source = make_peer( "transaction source" );
+    connect_active( *source );
+    std::vector< item_hash_t > hashes;
+    for( int i = 0; i < 3; ++i )
+      hashes.push_back( fc::ripemd160::hash( "withheld transaction " + std::to_string( i ) ) );
+    source->advertise( hashes );
+    BOOST_REQUIRE( wait_until( [&]() { return source->count( fetch_items_message_type ) != 0; }, reply_timeout ) );
+    fc::usleep( fc::seconds( 1 ) );
+    BOOST_CHECK_EQUAL( get_chain_plugin().get_published_pending_transactions_size(), 0u );
+    size_t requested = 0;
+    for( const item_hash_t& hash : hashes )
+      requested += times_requested( *source, hash );
+    BOOST_CHECK_EQUAL( requested, 1u );
+  } );
+}
+
 /// Fallback (category 2): a peer that answers item_not_available for an advertised transaction loses
 /// nothing but the request; the node fetches the transaction from the other peer that advertised it
 BOOST_AUTO_TEST_CASE( fallback_after_not_available_test )

@@ -127,27 +127,47 @@ namespace graphene { namespace net {
 
   /**
    * The node-wide transaction fetch gate (is_transaction_fetching_gated()) for one pass of choosing what to
-   * request from peers, and whether it actually kept any peer from being asked for transactions in that pass
+   * request from peers, and whether it actually kept any peer from being asked for transactions in that pass.
+   *
+   * While the gate is open it also bounds what the pass requests by the headroom below the threshold: the
+   * threshold less the pool's published size and the bytes of transactions already on their way into the pool
+   * (requested but not received, or received but not yet validated).  The published size changes only once the
+   * chain has processed what it was handed, so without this bound every peer's window would be requested at once
+   * whenever the pool fell just below the threshold, and the pool would overshoot it by all of them.  A pass may
+   * go past the headroom by at most one transaction.
    */
   class transaction_fetch_gate
   {
   public:
-    explicit transaction_fetch_gate(const pending_transaction_pool_size& pool);
+    transaction_fetch_gate(const pending_transaction_pool_size& pool, uint64_t bytes_on_their_way);
 
     /**
      * How many transactions to request from a peer whose window has room for @p window and that has live
-     * transaction candidates if @p has_candidates: @p window, or none while the gate is closed.  The gate holds
-     * transactions back only when there were some to request and room to request them.
+     * transaction candidates if @p has_candidates: @p window, or none while the gate is closed or no headroom is
+     * left.  The gate holds transactions back only when there were some to request and room to request them.
      */
     size_t transactions_to_request(size_t window, bool has_candidates);
 
+    /**
+     * Whether the pass may request another transaction from a peer that still has transaction candidates if
+     * @p has_candidates: false once the requests recorded with record_request() have used up the headroom
+     */
+    bool may_request_more(bool has_candidates);
+
+    /// Counts a transaction of @p expected_bytes requested in this pass against the headroom
+    void record_request(uint64_t expected_bytes);
+
     bool closed() const { return _closed; }
-    /// whether transactions_to_request() withheld any transactions in this pass
+    /// whether the closed gate withheld any transactions in this pass
     bool held_back() const { return _held_back; }
+    /// whether the open gate withheld any transactions in this pass because the headroom was used up
+    bool bounded() const { return _bounded; }
 
   private:
     bool _closed;
+    uint64_t _headroom; ///< no limit (the maximum) when the gate is disabled
     bool _held_back = false;
+    bool _bounded = false;
   };
 
   /**
@@ -910,6 +930,7 @@ namespace graphene { namespace net {
       uint64_t items_requested = 0;
       uint64_t items_expired = 0;
       uint64_t transactions_gated = 0; ///< wakes in which the gate (transaction_fetch_gate::held_back()) kept transactions from being requested
+      uint64_t transactions_bounded = 0; ///< wakes in which the gate's headroom (transaction_fetch_gate::bounded()) kept transactions from being requested
       fc::microseconds scheduling_time;
     };
 

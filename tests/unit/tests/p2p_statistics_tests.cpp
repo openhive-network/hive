@@ -83,6 +83,7 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   statistics.fetch.candidates_examined = 10;
   statistics.fetch.items_requested = 9;
   statistics.fetch.transactions_gated = 3;
+  statistics.fetch.transactions_bounded = 4;
   statistics.fetch.scheduling_time = fc::microseconds( 70 );
 
   statistics.record_submission( 1 );
@@ -114,6 +115,7 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   BOOST_CHECK_EQUAL( report_uint( report, "transaction_fetch_gate", "pending_bytes" ), 40000u );
   BOOST_CHECK( report["transaction_fetch_gate"].get_object()["gated"].as_bool() );
   BOOST_CHECK_EQUAL( report_uint( report, "transaction_fetch_gate", "gated_wakes" ), 3u );
+  BOOST_CHECK_EQUAL( report_uint( report, "transaction_fetch_gate", "bounded_wakes" ), 4u );
 
   BOOST_CHECK_EQUAL( report_uint( report, "handoff", "submissions" ), 3u );
   BOOST_CHECK_EQUAL( report_uint( report, "handoff", "completions" ), 4u );
@@ -148,6 +150,7 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   for( const char* key : { "submissions", "completions", "max_in_flight", "limit_waits", "limit_wait_us" } )
     BOOST_CHECK_EQUAL( report_uint( next, "handoff", key ), 0u );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_fetch_gate", "gated_wakes" ), 0u );
+  BOOST_CHECK_EQUAL( report_uint( next, "transaction_fetch_gate", "bounded_wakes" ), 0u );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_fetch_gate", "pending_bytes" ), 20000u );
   BOOST_CHECK( !next["transaction_fetch_gate"].get_object()["gated"].as_bool() );
   for( const auto& bucket : next["handoff"].get_object()["completion_latency"].get_object() )
@@ -184,7 +187,7 @@ BOOST_AUTO_TEST_CASE( the_gate_holds_back_only_transactions_that_would_have_been
   const pending_transaction_pool_size over{ 40000, max_mempool_size };
   const pending_transaction_pool_size under{ 20000, max_mempool_size };
 
-  transaction_fetch_gate closed( over );
+  transaction_fetch_gate closed( over, 0 );
   BOOST_CHECK( closed.closed() );
   BOOST_CHECK_EQUAL( closed.transactions_to_request( 0, true ), 0u );    // window full or fetching inhibited
   BOOST_CHECK_EQUAL( closed.transactions_to_request( 400, false ), 0u ); // nothing (live) advertised
@@ -192,11 +195,58 @@ BOOST_AUTO_TEST_CASE( the_gate_holds_back_only_transactions_that_would_have_been
   BOOST_CHECK_EQUAL( closed.transactions_to_request( 400, true ), 0u );
   BOOST_CHECK( closed.held_back() );
 
-  transaction_fetch_gate open( under );
+  BOOST_CHECK( !closed.bounded() );
+
+  transaction_fetch_gate open( under, 0 );
   BOOST_CHECK( !open.closed() );
   BOOST_CHECK_EQUAL( open.transactions_to_request( 400, true ), 400u );
   BOOST_CHECK_EQUAL( open.transactions_to_request( 0, true ), 0u );
   BOOST_CHECK( !open.held_back() );
+  BOOST_CHECK( !open.bounded() );
+}
+
+/// Below the threshold a pass requests no more than fits under it with what is already on its way into the pool,
+/// going past it by at most one transaction; the transactions it then withholds count as bounded, not gated
+BOOST_AUTO_TEST_CASE( a_pass_requests_no_more_than_the_headroom_below_the_threshold )
+{
+  const uint64_t max_mempool_size = 90000; // threshold 30000
+  const pending_transaction_pool_size under{ 20000, max_mempool_size };
+
+  transaction_fetch_gate gate( under, 6000 ); // headroom 4000
+  BOOST_CHECK( !gate.closed() );
+  BOOST_CHECK_EQUAL( gate.transactions_to_request( 400, true ), 400u );
+  size_t requested = 0;
+  while( gate.may_request_more( true ) )
+  {
+    gate.record_request( 300 );
+    ++requested;
+  }
+  BOOST_CHECK_EQUAL( requested, 14u ); // 13 fit, the 14th goes past by 200 bytes
+  BOOST_CHECK( gate.bounded() );
+  BOOST_CHECK( !gate.held_back() );
+  BOOST_CHECK_EQUAL( gate.transactions_to_request( 400, true ), 0u );
+
+  // a peer with nothing more to give doesn't count as held back
+  transaction_fetch_gate drained( under, 0 );
+  drained.record_request( 20000 );
+  BOOST_CHECK( !drained.may_request_more( false ) );
+  BOOST_CHECK( !drained.bounded() );
+
+  // what is on its way may use up the headroom before the pass begins
+  transaction_fetch_gate taken( under, 10000 );
+  BOOST_CHECK( !taken.closed() );
+  BOOST_CHECK_EQUAL( taken.transactions_to_request( 0, true ), 0u );
+  BOOST_CHECK( !taken.bounded() );
+  BOOST_CHECK_EQUAL( taken.transactions_to_request( 400, true ), 0u );
+  BOOST_CHECK( taken.bounded() );
+  BOOST_CHECK( !taken.held_back() );
+
+  // with max-mempool-size 0 there is no gate and no bound
+  transaction_fetch_gate disabled( pending_transaction_pool_size{ 1024 * 1024, 0 }, 1024 * 1024 );
+  BOOST_CHECK_EQUAL( disabled.transactions_to_request( 400, true ), 400u );
+  disabled.record_request( 1024 * 1024 );
+  BOOST_CHECK( disabled.may_request_more( true ) );
+  BOOST_CHECK( !disabled.bounded() );
 }
 
 /// While the gate is closed the expiry warning comes at most once per interval, with the sum since the last one;
