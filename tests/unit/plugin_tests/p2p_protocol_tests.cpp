@@ -1829,6 +1829,24 @@ BOOST_AUTO_TEST_CASE( connection_limit_test )
   } );
 }
 
+/// The per-host connection limit leaves loopback alone, where local test networks run all their nodes: with a limit
+/// of 1, three peers from 127.0.0.1 are all accepted
+BOOST_AUTO_TEST_CASE( loopback_not_limited_per_host_test )
+{
+  start_node( R"("maximum_connections_per_host":1)" );
+  run( [&]()
+  {
+    auto first = make_peer( "first" );
+    connect_active( *first );
+    auto second = make_peer( "second" );
+    connect_active( *second );
+    auto third = make_peer( "third" );
+    connect_active( *third );
+    require_kept( *first );
+    require_kept( *second );
+  } );
+}
+
 /// Category 2 (fallback), D9, D12: a block the node asked one peer for is fetched from another peer that
 /// advertised it too when the first one doesn't deliver it: when it ignores the request (it is disconnected once
 /// active_ignored_request_timeout, 2 s here, passes, and only then is the other peer asked), when it answers

@@ -27,6 +27,10 @@ struct node_configuration
    uint32_t desired_number_of_connections = GRAPHENE_NET_DEFAULT_DESIRED_CONNECTIONS;
    /** if we have _maximum_number_of_connections or more, we will refuse any inbound connections */
    uint32_t maximum_number_of_connections = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS;
+   /** connections held to one host (an IPv4 address or an IPv6 /64) at most, counting active and accepted handshaking ones; 0 = no limit */
+   uint32_t maximum_connections_per_host = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST;
+   /** percent of `desired_number_of_connections` the connect loop keeps for each address family that has candidates (at most 50) */
+   uint32_t reserved_address_family_percent = GRAPHENE_NET_DEFAULT_RESERVED_ADDRESS_FAMILY_PERCENT;
    /** retry connections to peers that have failed or rejected us this often, in seconds */
    uint32_t peer_connection_retry_timeout = GRAPHENE_NET_DEFAULT_PEER_CONNECTION_RETRY_TIME;
    /** how many seconds of inactivity are permitted before disconnecting a peer */
@@ -55,6 +59,8 @@ FC_REFLECT(graphene::net::node_configuration,
    (private_key)
    (desired_number_of_connections)
    (maximum_number_of_connections)
+   (maximum_connections_per_host)
+   (reserved_address_family_percent)
    (peer_connection_retry_timeout)
    (peer_inactivity_timeout)
    (peer_advertising_disabled)

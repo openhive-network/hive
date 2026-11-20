@@ -120,6 +120,17 @@
 #define GRAPHENE_NET_DEFAULT_P2P_PORT                        1776
 #define GRAPHENE_NET_DEFAULT_DESIRED_CONNECTIONS             20
 #define GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS                 200
+/**
+ * How many connections, at most, are held to one host: an IPv4 address or an IPv6 /64.  Several nodes run on one
+ * machine have node ids of their own, so without it a host offering many ports can take most of the connection
+ * slots.  0 for no limit.  Loopback addresses are never limited, and neither are seed and add-node targets.
+ */
+#define GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST        2
+/**
+ * The share, in percent of the desired connections, that the connect loop reserves for each address family while
+ * that family has candidates to dial; the rest go IPv6 first.  At most 50.
+ */
+#define GRAPHENE_NET_DEFAULT_RESERVED_ADDRESS_FAMILY_PERCENT 25
 
 #define GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES        (1024 * 1024)
 /**

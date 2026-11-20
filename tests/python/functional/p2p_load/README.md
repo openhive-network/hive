@@ -112,6 +112,9 @@ witness) on the host the command runs on, so the p2p traffic between the two gro
 instead of loopback. Every other option works as on one host, except `--netem-ms` (it delays loopback links) and a
 late observer on the remote host.
 
+All the nodes of a host share its address, so a two-host run gives every node `maximum_connections_per_host` 0 (no
+per-host connection limit) unless `--p2p-parameter` sets it; a binary that predates the limit gets no key for it.
+
 ```
 # colonies on steem-2, witness and observer here (steem-4)
 $P run star8-split $COMMON --hived $HIVED --label split --topology strict --colonies 8 --tpb 20000 \

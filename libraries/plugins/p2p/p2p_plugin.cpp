@@ -18,6 +18,7 @@
 #include <boost/range/algorithm/reverse.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/preprocessor/stringize.hpp>
 
 #include <boost/any.hpp>
 
@@ -129,6 +130,7 @@ public:
   fc::optional<uint32_t> transaction_flush_delay_us;
   fc::optional<uint32_t> fetch_items_minimum_interval_us;
   fc::optional<uint32_t> max_transactions_in_flight;
+  fc::optional<uint32_t> max_connections_per_host;
   bool force_validate = false;
   bool block_producer = false;
 
@@ -518,6 +520,10 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-max-transactions-in-flight", bpo::value<uint32_t>(), "Maximum number of transactions received from peers that may wait for validation at once. "
      "At the limit, the next transaction a peer sends waits until one is validated, and so does reading anything further from that peer. "
      "Default 10000; 0 for no limit. Overrides maximum_transactions_in_flight in p2p-parameters.")
+    ("p2p-max-connections-per-host", bpo::value<uint32_t>(), "Maximum number of connections held to one host, an IPv4 address or an IPv6 /64, inbound and outbound together. "
+     "A hello beyond it is rejected as already connected, which the peer does not count as a failed attempt. Loopback addresses are not limited, "
+     "and neither are the seed nodes and add_node targets this node dials (they still count against their host's limit). "
+     "Default " BOOST_PP_STRINGIZE(GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST) "; 0 for no limit. Overrides maximum_connections_per_host in p2p-parameters.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
@@ -545,6 +551,9 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count( "p2p-max-transactions-in-flight" ) )
     my->max_transactions_in_flight = options.at( "p2p-max-transactions-in-flight" ).as< uint32_t >();
+
+  if( options.count( "p2p-max-connections-per-host" ) )
+    my->max_connections_per_host = options.at( "p2p-max-connections-per-host" ).as< uint32_t >();
 
   if (options.count("p2p-seed-node"))
   {
@@ -667,6 +676,14 @@ void p2p_plugin::plugin_finalize_startup()
         ilog( "Overriding advanded_node_parameters[ \"maximum_transactions_in_flight\" ] with ${count}", ("count", *my->max_transactions_in_flight) );
 
       my->config.set( "maximum_transactions_in_flight", fc::variant( *my->max_transactions_in_flight ) );
+    }
+
+    if( my->max_connections_per_host )
+    {
+      if( my->config.find( "maximum_connections_per_host" ) != my->config.end() )
+        ilog( "Overriding advanded_node_parameters[ \"maximum_connections_per_host\" ] with ${count}", ("count", *my->max_connections_per_host) );
+
+      my->config.set( "maximum_connections_per_host", fc::variant( *my->max_connections_per_host ) );
     }
 
     ilog("Setting parameters");

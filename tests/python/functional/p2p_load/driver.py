@@ -187,19 +187,30 @@ def _wait_for_seed_links(
         time.sleep(_SEED_LINK_POLL_S)
 
 
+def _given_p2p_parameters(spec: RunSpec) -> dict[str, Any]:
+    """
+    The run's p2p parameters: a two-host run puts every node of a host on one address, so its hosts' connection limit
+    is lifted unless the spec sets one (loopback, which single-host runs use, is never limited).
+    """
+    if not spec.remote_host:
+        return spec.p2p_parameters
+    return {"maximum_connections_per_host": 0, **spec.p2p_parameters}
+
+
 def _apply_p2p_parameters(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, Any]:
     defaults = {path: p2p_parameters.binary_defaults(Path(path)) for path in {spec.binary(r) for r in nodes}}
+    given = _given_p2p_parameters(spec)
     applied: dict[str, dict[str, Any]] = {}
     unsupported: dict[str, list[str]] = {}
     for role, node in nodes.items():
-        selection = p2p_parameters.select(spec.p2p_parameters, defaults[spec.binary(role)])
+        selection = p2p_parameters.select(given, defaults[spec.binary(role)])
         applied[role] = selection.applied
         if selection.unsupported:
             unsupported[role] = selection.unsupported
             tt.logger.warning(f"{role}: {spec.binary(role)} has no p2p parameter {selection.unsupported}; left out")
         if selection.applied:
             node.config.p2p_parameters = json.dumps(selection.applied)
-    return {"given": spec.p2p_parameters, "applied": applied, "unsupported": unsupported, "binary_defaults": defaults}
+    return {"given": given, "applied": applied, "unsupported": unsupported, "binary_defaults": defaults}
 
 
 def _enable_p2p_loggers(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, list[str]]:
