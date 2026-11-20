@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <graphene/net/config.hpp>
+#include <graphene/net/core_messages.hpp>
 #include <graphene/net/node.hpp>
 
 #include <fc/crypto/ripemd160.hpp>
@@ -9,16 +10,23 @@
 #include <cstdint>
 #include <cstdlib>
 #include <optional>
+#include <set>
 #include <string>
+#include <vector>
 
+using graphene::net::fetch_candidate_queue;
+using graphene::net::fetch_candidate_verdict;
 using graphene::net::fetch_expiry_warning_limiter;
+using graphene::net::fetch_turn_order;
 using graphene::net::is_relay_sample;
 using graphene::net::is_transaction_fetching_gated;
+using graphene::net::item_id;
 using graphene::net::message_hash_type;
 using graphene::net::p2p_statistics;
 using graphene::net::pending_transaction_pool_size;
 using graphene::net::transaction_fetch_gate;
 using graphene::net::transaction_fetch_gate_threshold;
+using graphene::net::trx_message_type;
 
 namespace {
 
@@ -35,6 +43,60 @@ uint64_t report_uint( const fc::variant_object& report, const char* group, const
 double report_double( const fc::variant_object& report, const char* group, const char* key )
 {
   return report[group].get_object()[key].as_double();
+}
+
+bool candidates() { return true; }
+bool no_candidates() { return false; }
+
+item_id transaction( uint32_t i ) { return item_id( trx_message_type, hash_of( i ) ); }
+
+const fc::time_point queued_at = fc::time_point::from_iso_string( "2026-11-20T00:00:00" );
+
+struct fetching_peer
+{
+  fetch_candidate_queue candidates;
+  size_t requested = 0;
+};
+
+/// One pass of choosing transactions to request from @p peers (in connection order) as the node's fetch loop
+/// runs it, each request expected to bring @p transaction_bytes; @p wanted holds the transactions still to fetch,
+/// and a transaction requested from one peer leaves it, so the others drop it
+void fetch_pass( std::vector<fetching_peer>& peers, fetch_turn_order& order, transaction_fetch_gate& gate,
+                 std::set<message_hash_type>& wanted, uint64_t transaction_bytes )
+{
+  uint64_t examined = 0;
+  const auto is_wanted = [&]( const item_id& candidate ) { return wanted.count( candidate.item_hash ) != 0; };
+  std::vector<fetching_peer*> listed;
+  for( fetching_peer& peer : peers )
+  {
+    order.visit( &peer, listed.size() );
+    if( peer.candidates.size() > 0 &&
+        gate.transactions_to_request( 400, [&]() { return peer.candidates.has_transaction_to_take( is_wanted, examined ); } ) > 0 )
+    {
+      peer.candidates.begin_pass();
+      listed.push_back( &peer );
+    }
+  }
+  std::vector<bool> done( listed.size(), false );
+  order.take_turns( listed.size(), [&]( size_t turn )
+  {
+    if( done[ turn ] )
+      return false;
+    fetching_peer& peer = *listed[ turn ];
+    const bool include_transactions =
+      gate.may_request_more( [&]() { return peer.candidates.has_transaction_to_take( is_wanted, examined ); } );
+    const std::optional<item_id> item = peer.candidates.take_next( include_transactions, [&]( const item_id& candidate )
+      { return wanted.erase( candidate.item_hash ) != 0 ? fetch_candidate_verdict::take : fetch_candidate_verdict::drop; }, examined );
+    if( !item )
+    {
+      done[ turn ] = true;
+      return false;
+    }
+    gate.record_request( transaction_bytes );
+    order.record_transaction( &peer );
+    ++peer.requested;
+    return true;
+  } );
 }
 
 } // namespace
@@ -189,18 +251,18 @@ BOOST_AUTO_TEST_CASE( the_gate_holds_back_only_transactions_that_would_have_been
 
   transaction_fetch_gate closed( over, 0 );
   BOOST_CHECK( closed.closed() );
-  BOOST_CHECK_EQUAL( closed.transactions_to_request( 0, true ), 0u );    // window full or fetching inhibited
-  BOOST_CHECK_EQUAL( closed.transactions_to_request( 400, false ), 0u ); // nothing (live) advertised
+  BOOST_CHECK_EQUAL( closed.transactions_to_request( 0, candidates ), 0u );    // window full or fetching inhibited
+  BOOST_CHECK_EQUAL( closed.transactions_to_request( 400, no_candidates ), 0u ); // nothing (live) advertised
   BOOST_CHECK( !closed.held_back() );
-  BOOST_CHECK_EQUAL( closed.transactions_to_request( 400, true ), 0u );
+  BOOST_CHECK_EQUAL( closed.transactions_to_request( 400, candidates ), 0u );
   BOOST_CHECK( closed.held_back() );
 
   BOOST_CHECK( !closed.bounded() );
 
   transaction_fetch_gate open( under, 0 );
   BOOST_CHECK( !open.closed() );
-  BOOST_CHECK_EQUAL( open.transactions_to_request( 400, true ), 400u );
-  BOOST_CHECK_EQUAL( open.transactions_to_request( 0, true ), 0u );
+  BOOST_CHECK_EQUAL( open.transactions_to_request( 400, candidates ), 400u );
+  BOOST_CHECK_EQUAL( open.transactions_to_request( 0, candidates ), 0u );
   BOOST_CHECK( !open.held_back() );
   BOOST_CHECK( !open.bounded() );
 }
@@ -214,9 +276,9 @@ BOOST_AUTO_TEST_CASE( a_pass_requests_no_more_than_the_headroom_below_the_thresh
 
   transaction_fetch_gate gate( under, 6000 ); // headroom 4000
   BOOST_CHECK( !gate.closed() );
-  BOOST_CHECK_EQUAL( gate.transactions_to_request( 400, true ), 400u );
+  BOOST_CHECK_EQUAL( gate.transactions_to_request( 400, candidates ), 400u );
   size_t requested = 0;
-  while( gate.may_request_more( true ) )
+  while( gate.may_request_more( candidates ) )
   {
     gate.record_request( 300 );
     ++requested;
@@ -224,29 +286,107 @@ BOOST_AUTO_TEST_CASE( a_pass_requests_no_more_than_the_headroom_below_the_thresh
   BOOST_CHECK_EQUAL( requested, 14u ); // 13 fit, the 14th goes past by 200 bytes
   BOOST_CHECK( gate.bounded() );
   BOOST_CHECK( !gate.held_back() );
-  BOOST_CHECK_EQUAL( gate.transactions_to_request( 400, true ), 0u );
+  BOOST_CHECK_EQUAL( gate.transactions_to_request( 400, candidates ), 0u );
 
   // a peer with nothing more to give doesn't count as held back
   transaction_fetch_gate drained( under, 0 );
   drained.record_request( 20000 );
-  BOOST_CHECK( !drained.may_request_more( false ) );
+  BOOST_CHECK( !drained.may_request_more( no_candidates ) );
   BOOST_CHECK( !drained.bounded() );
 
   // what is on its way may use up the headroom before the pass begins
   transaction_fetch_gate taken( under, 10000 );
   BOOST_CHECK( !taken.closed() );
-  BOOST_CHECK_EQUAL( taken.transactions_to_request( 0, true ), 0u );
+  BOOST_CHECK_EQUAL( taken.transactions_to_request( 0, candidates ), 0u );
   BOOST_CHECK( !taken.bounded() );
-  BOOST_CHECK_EQUAL( taken.transactions_to_request( 400, true ), 0u );
+  BOOST_CHECK_EQUAL( taken.transactions_to_request( 400, candidates ), 0u );
   BOOST_CHECK( taken.bounded() );
   BOOST_CHECK( !taken.held_back() );
 
   // with max-mempool-size 0 there is no gate and no bound
   transaction_fetch_gate disabled( pending_transaction_pool_size{ 1024 * 1024, 0 }, 1024 * 1024 );
-  BOOST_CHECK_EQUAL( disabled.transactions_to_request( 400, true ), 400u );
+  BOOST_CHECK_EQUAL( disabled.transactions_to_request( 400, candidates ), 400u );
   disabled.record_request( 1024 * 1024 );
-  BOOST_CHECK( disabled.may_request_more( true ) );
+  BOOST_CHECK( disabled.may_request_more( candidates ) );
   BOOST_CHECK( !disabled.bounded() );
+}
+
+/// A headroom worth one transaction per pass goes to the peer after the one that took the last transaction, so
+/// over successive passes every peer with candidates is asked in turn rather than always the first one in
+/// connection order; a peer without candidates is passed over
+BOOST_AUTO_TEST_CASE( a_tight_headroom_rotates_over_the_peers_from_pass_to_pass )
+{
+  const pending_transaction_pool_size under{ 20000, 90000 }; // threshold 30000
+  std::vector<fetching_peer> peers( 5 );
+  std::set<message_hash_type> wanted;
+  uint32_t next_transaction = 0;
+  for( size_t i = 0; i < peers.size(); ++i )
+  {
+    const size_t advertised = i == 2 ? 0 : i == 1 ? 1 : 3; // peer 2 has none, peer 1 only one
+    for( size_t j = 0; j < advertised; ++j )
+    {
+      const item_id item = transaction( next_transaction++ );
+      peers[ i ].candidates.push( item, queued_at, fc::time_point() );
+      wanted.insert( item.item_hash );
+    }
+  }
+
+  fetch_turn_order order;
+  std::vector<std::vector<size_t>> requested_after_pass;
+  for( int pass = 0; pass < 5; ++pass )
+  {
+    transaction_fetch_gate gate( under, 9500 ); // headroom 500: one 1000-byte transaction goes past it
+    fetch_pass( peers, order, gate, wanted, 1000 );
+    BOOST_CHECK( gate.bounded() );
+    std::vector<size_t> requested;
+    for( const fetching_peer& peer : peers )
+      requested.push_back( peer.requested );
+    requested_after_pass.push_back( requested );
+  }
+  // peer 0, peer 1 (its only one), then after peer 1 (no longer listed) peer 3, peer 4, and round to peer 0
+  const std::vector<std::vector<size_t>> expected{ { 1, 0, 0, 0, 0 }, { 1, 1, 0, 0, 0 }, { 1, 1, 0, 1, 0 },
+                                                   { 1, 1, 0, 1, 1 }, { 2, 1, 0, 1, 1 } };
+  BOOST_CHECK( requested_after_pass == expected );
+}
+
+/// Once the headroom is used up, a peer whose remaining candidates were all requested from another peer withholds
+/// nothing, so the pass is not counted as bounded; one with a candidate still to fetch is
+BOOST_AUTO_TEST_CASE( only_transactions_still_to_fetch_count_as_bounded )
+{
+  const pending_transaction_pool_size under{ 20000, 90000 }; // threshold 30000
+  const item_id shared = transaction( 1 );
+  const item_id own = transaction( 2 );
+
+  std::vector<fetching_peer> peers( 2 );
+  std::set<message_hash_type> wanted{ shared.item_hash };
+  for( fetching_peer& peer : peers )
+    peer.candidates.push( shared, queued_at, fc::time_point() );
+  fetch_turn_order order;
+  transaction_fetch_gate gate( under, 9500 ); // headroom 500
+  fetch_pass( peers, order, gate, wanted, 1000 );
+  BOOST_CHECK_EQUAL( peers[ 0 ].requested + peers[ 1 ].requested, 1u );
+  BOOST_CHECK( !gate.bounded() );
+  BOOST_CHECK_EQUAL( peers[ 0 ].candidates.size() + peers[ 1 ].candidates.size(), 0u );
+
+  peers[ 1 ].candidates.push( shared, queued_at, fc::time_point() );
+  peers[ 1 ].candidates.push( own, queued_at, fc::time_point() );
+  wanted = { shared.item_hash, own.item_hash };
+  peers[ 0 ].candidates.push( shared, queued_at, fc::time_point() );
+  transaction_fetch_gate bounded( under, 9500 );
+  fetch_pass( peers, order, bounded, wanted, 1000 );
+  BOOST_CHECK( bounded.bounded() );
+  BOOST_CHECK( wanted == std::set<message_hash_type>{ own.item_hash } );
+
+  // with no headroom left before the pass, a peer whose candidates were all taken isn't counted either
+  transaction_fetch_gate taken( under, 10000 );
+  uint64_t examined = 0;
+  fetch_candidate_queue stale;
+  stale.push( shared, queued_at, fc::time_point() );
+  BOOST_CHECK_EQUAL( taken.transactions_to_request( 400, [&]()
+    { return stale.has_transaction_to_take( [&]( const item_id& candidate ) { return wanted.count( candidate.item_hash ) != 0; }, examined ); } ), 0u );
+  BOOST_CHECK( !taken.bounded() );
+  BOOST_CHECK_EQUAL( stale.size(), 0u );
+  BOOST_CHECK_EQUAL( examined, 1u );
 }
 
 /// While the gate is closed the expiry warning comes at most once per interval, with the sum since the last one;
