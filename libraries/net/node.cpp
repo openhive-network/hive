@@ -1500,8 +1500,6 @@ namespace graphene { namespace net {
         // while the pending pool is over the threshold no peer is asked for transactions, blocks still are;
         // below it the pass asks for no more than fits under it with what is already on its way
         transaction_fetch_gate gate(_delegate->get_pending_transaction_pool_size(), transaction_bytes_on_their_way());
-        if (const std::optional<size_t> expired_to_report = _fetch_expiry_warnings.record(expired_items, gate.closed(), iteration_start))
-          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", ("expired_items", *expired_to_report));
         // candidates as old as the expired items are dropped too, so that none the gate holds back outlives them
         const fc::time_point oldest_candidate_to_keep = oldest_item_timestamp_to_fetch();
 
@@ -1591,6 +1589,9 @@ namespace graphene { namespace net {
         if (gate.bounded())
           ++_statistics.fetch.transactions_bounded;
         _statistics.fetch.items_expired += expired_items;
+        // only now is it known whether the headroom withheld transactions in this pass
+        if (const std::optional<size_t> expired_to_report = _fetch_expiry_warnings.record(expired_items, gate.closed() || gate.bounded(), iteration_start))
+          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", ("expired_items", *expired_to_report));
         _statistics.fetch.scheduling_time += fc::time_point::now() - iteration_start;
 
         // we've figured out which peer will be providing each item, now send the messages.
@@ -8227,10 +8228,13 @@ namespace graphene { namespace net {
     _interval(interval)
   {}
 
-  std::optional<size_t> fetch_expiry_warning_limiter::record(size_t expired, bool gated, fc::time_point now)
+  std::optional<size_t> fetch_expiry_warning_limiter::record(size_t expired, bool withheld, fc::time_point now)
   {
     _unreported += expired;
-    if (_unreported == 0 || (gated && now < _last_warning + _interval))
+    if (withheld)
+      _last_withheld = now;
+    const bool limited = _last_withheld && now < *_last_withheld + _interval;
+    if (_unreported == 0 || (limited && now < _last_warning + _interval))
       return std::nullopt;
     _last_warning = now;
     return std::exchange(_unreported, 0);
