@@ -147,6 +147,26 @@ BOOST_AUTO_TEST_CASE( entries_older_than_the_window_are_trimmed )
   BOOST_CHECK( take_all( queue, true, take_any, examined ) == remaining );
 }
 
+/// Trimming without adding discards the stale entries too, so a peer whose transactions all expired while none could
+/// be requested has no transactions waiting.
+BOOST_AUTO_TEST_CASE( trim_discards_stale_entries_without_adding_one )
+{
+  fetch_candidate_queue queue;
+  queue.push( transaction( 1 ), start, keep_all );
+  queue.push( block( 2 ), start + fc::seconds( 30 ), keep_all );
+  queue.push( transaction( 3 ), start + fc::seconds( 30 ), keep_all );
+
+  queue.trim( start + fc::seconds( 1 ) );
+  BOOST_CHECK_EQUAL( queue.size(), 2u );
+  BOOST_CHECK( queue.has_transactions() );
+  BOOST_CHECK( queue.has_blocks() );
+
+  queue.trim( start + fc::seconds( 31 ) );
+  BOOST_CHECK_EQUAL( queue.size(), 0u );
+  BOOST_CHECK( !queue.has_transactions() );
+  BOOST_CHECK( !queue.has_blocks() );
+}
+
 /// A disconnected peer's queue is discarded.
 BOOST_AUTO_TEST_CASE( clear_discards_every_entry )
 {

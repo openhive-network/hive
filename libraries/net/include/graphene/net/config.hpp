@@ -264,6 +264,12 @@
 #define GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS  100
 
 /**
+ * While the transaction fetch gate is closed, how often (at most) the node warns that items to fetch expired,
+ * with their sum since the last warning (graphene::net::fetch_expiry_warning_limiter)
+ */
+#define GRAPHENE_NET_GATED_FETCH_EXPIRY_WARNING_INTERVAL_SEC  30
+
+/**
  * The key of the hello's user_data by which a node says it queues the transactions a peer asks for only as its send
  * queue drains (peer_connection::send_transaction_reply()), so a peer may keep several requests outstanding with it
  * (GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER).  Older nodes ignore keys they don't know.
