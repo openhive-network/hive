@@ -714,6 +714,8 @@ namespace graphene { namespace net {
       };
       block_id_classification classify_advertised_block_id(const item_hash_t& block_id_hash);
       bool stalled_head_resync_due(peer_connection* peer);
+      uint32_t highest_block_number_known_for_peer(const peer_connection& peer);
+      void restart_sync_if_head_stalled();
       bool invalid_block_disconnect_breaker_tripped();
       bool block_body_mismatch_disconnect_breaker_tripped();
       void refetch_block_from_other_peers(peer_connection* peer_that_sent_bad_copy, const item_id& block_item_id);
@@ -2087,6 +2089,8 @@ namespace graphene { namespace net {
         peer->send_message(current_time_request_message(),
                            offsetof(current_time_request_message, request_sent_time));
       peers_to_send_keep_alive.clear();
+
+      restart_sync_if_head_stalled();
 
       if (!node_is_shutting_down() && !_terminate_inactive_connections_loop_done.canceled())
          _terminate_inactive_connections_loop_done = schedule_task( [this](){ terminate_inactive_connections_loop(); },
@@ -4364,6 +4368,66 @@ namespace graphene { namespace net {
       return true;
     }
 
+    // The highest block number we know the peer has: the head it reported in its hello, the last block of
+    // ours it told us it has, or the last id it offered us for sync.  0 when it told us nothing
+    uint32_t node_impl::highest_block_number_known_for_peer(const peer_connection& peer)
+    {
+      uint32_t highest = peer.last_known_block_number ? *peer.last_known_block_number : 0;
+      if (peer.last_block_delegate_has_seen != item_hash_t())
+        highest = std::max(highest, get_block_number(peer.last_block_delegate_has_seen));
+      if (!peer.ids_of_items_to_get.empty())
+        highest = std::max(highest, peer.first_id_block_number + (uint32_t)peer.ids_of_items_to_get.size() - 1 +
+                                    peer.number_of_unfetched_item_ids);
+      return highest;
+    }
+
+    // stalled_head_resync_due() restarts sync only on a far-future advertisement, but a peer that has
+    // seen our synopsis and knows we are behind advertises nothing to us: it waits for our requests.
+    // If sync with such peers stopped (e.g. it was set up while the chain was stalled and could not
+    // accept blocks), nothing else asks them again.  So once our head has not advanced for
+    // GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC and nothing we asked for is outstanding, restart sync with
+    // every active peer that may be ahead of us, at most once per that interval per peer.  A peer
+    // whose head we know to be at or below ours is left alone, so an in-sync node on a quiet chain
+    // doesn't restart sync over and over
+    void node_impl::restart_sync_if_head_stalled()
+    {
+      VERIFY_CORRECT_THREAD();
+      if (_active_connections.empty())
+        return;
+      refresh_cached_chain_state();
+      if (_cached_head_block_num == 0 || _last_head_advance_time == fc::time_point())
+        return; // no head observed yet; startup sync handles that
+      const fc::time_point now = fc::time_point::now();
+      if (now - _last_head_advance_time < fc::seconds(GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC))
+        return;
+      // blocks still being handed to the chain mean it is busy (or stalled itself): asking peers for
+      // more can't help until it takes them
+      if (get_number_of_handle_message_calls_in_progress() != 0)
+        return;
+      std::vector<peer_connection_ptr> peers_to_resync;
+      for (const peer_connection_ptr& peer : _active_connections)
+      {
+        if (peer->item_ids_requested_from_peer || !peer->sync_items_requested_from_peer.empty())
+          return; // a sync request is outstanding: it either completes or times out the peer
+        const uint32_t peer_head = highest_block_number_known_for_peer(*peer);
+        if ((peer_head == 0 || peer_head > _cached_head_block_num) &&
+            now - peer->last_stalled_head_resync_time >= fc::seconds(GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC))
+          peers_to_resync.push_back(peer);
+      }
+      if (peers_to_resync.empty())
+        return;
+      wlog("restarting sync: head stalled for ${seconds}s with ${count} peers",
+           ("seconds", (now - _last_head_advance_time).to_seconds())("count", peers_to_resync.size()));
+      for (const peer_connection_ptr& peer : peers_to_resync)
+      {
+        peer->last_stalled_head_resync_time = now;
+        start_synchronizing_with_peer(peer);
+      }
+      // sync blocks already received are pushed from the backlog, which otherwise runs only when a
+      // block arrives or the chain finishes one; the restarted sync won't fetch them again
+      trigger_process_backlog_of_sync_blocks();
+    }
+
     // Returns true when we have already disconnected so many peers over "invalid" blocks in
     // the recent window that our own judgment is suspect (see the config constants).  When it
     // returns false, the caller's impending disconnect is recorded against the window.
@@ -4829,7 +4893,16 @@ namespace graphene { namespace net {
                     dlog("Removed item from ${endpoint}'s list of items being processed, still processing ${len} blocks",
                          ("endpoint", peer->get_remote_endpoint())("len", peer->ids_of_items_being_processed.size()));
                   }
+                  // as when the chain accepts the last block we know the peer has: ask again whether it has more
+                  if (peer->we_need_sync_items_from_peer && peer->idle() && peer->ids_of_items_to_get.empty() &&
+                      peer->ids_of_items_being_processed.empty() && peer->number_of_unfetched_item_ids == 0)
+                    peers_to_fetch_ids_from.insert(peer);
                 }
+                // the front of the peers' lists moved on, so look at it again.  Stopping here would leave the
+                // next block unpushed: when every block that follows has already been received (e.g. refetched
+                // by peers that connected while the chain was stalled applying the copies of a peer that left
+                // since), no delivery and no completed block is left to run this function again
+                block_processed_this_iteration = true;
               }
               break; //restart checking front of peers' item lists because we've popped the first item from some of them
             } //if we have a backlog block to push
