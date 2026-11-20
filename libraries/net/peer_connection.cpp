@@ -74,6 +74,11 @@ namespace graphene { namespace net
         return lists_items_of_type(m, trx_message_type);
       }
 
+      bool is_transaction_inventory(const message& m)
+      {
+        return m.msg_type == item_ids_inventory_message_type && lists_items_of_type(m, trx_message_type);
+      }
+
       /// blocks and their inventories, which are queued ahead of transaction traffic
       bool is_block_traffic(const message& m)
       {
@@ -558,6 +563,14 @@ namespace graphene { namespace net
       if (_send_queue_limit_exceeded)
         return;
       const size_t message_size = message_to_send->get_size_in_queue();
+      // an inventory only tells the peer what it may ask for, so a burst of them toward a peer reading slower than
+      // they come is thinned out rather than closing the connection; anything else over the limit still closes it
+      if (message_to_send->is_transaction_inventory &&
+          _total_queued_messages_size + message_size > GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES)
+      {
+        drop_transaction_inventory(message_size);
+        return;
+      }
       if (_total_queued_messages_size + message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
       {
         _send_queue_limit_exceeded = true;
@@ -615,6 +628,7 @@ namespace graphene { namespace net
       std::unique_ptr<queued_message> message_to_enqueue(new real_queued_message(message_to_send, message_send_time_field_offset));
       message_to_enqueue->may_wait_for_batch = is_transaction_traffic(message_to_send);
       message_to_enqueue->is_block_traffic = is_block_traffic(message_to_send);
+      message_to_enqueue->is_transaction_inventory = is_transaction_inventory(message_to_send);
       send_queueable_message(std::move(message_to_enqueue));
     }
 
@@ -676,6 +690,23 @@ namespace graphene { namespace net
         queued_any = true;
       }
       return queued_any;
+    }
+
+    void peer_connection::drop_transaction_inventory(size_t message_size)
+    {
+      ++_transaction_inventories_dropped_since_report;
+      _transaction_inventory_bytes_dropped_since_report += message_size;
+      const fc::time_point now = fc::time_point::now();
+      if (now - _last_dropped_transaction_inventory_report_time < fc::seconds(GRAPHENE_NET_DROPPED_TRANSACTION_INVENTORY_REPORT_INTERVAL_SEC))
+        return;
+      wlog("dropped ${count} transaction inventory message(s) of ${bytes} bytes to peer ${peer} since the last report: "
+           "its send queue holds ${queued} bytes, over the ${budget} bytes transaction inventory may take",
+           ("count", _transaction_inventories_dropped_since_report)("bytes", _transaction_inventory_bytes_dropped_since_report)
+           ("peer", get_remote_endpoint())("queued", _total_queued_messages_size)
+           ("budget", GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES));
+      _transaction_inventories_dropped_since_report = 0;
+      _transaction_inventory_bytes_dropped_since_report = 0;
+      _last_dropped_transaction_inventory_report_time = now;
     }
 
     void peer_connection::close_connection()
