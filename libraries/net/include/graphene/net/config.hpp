@@ -130,6 +130,20 @@
  */
 #define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES  (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2)
 /**
+ * A transaction inventory we advertise to a peer is queued only if the peer's send queue holds at most this many
+ * bytes with it; otherwise it is dropped, and the peer learns of those transactions from another peer or from a
+ * block.  Inventories are queued for every peer as fast as transactions arrive, whatever the peer reads, so a burst
+ * of new transactions toward a slow reader would otherwise take its queue over
+ * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES and close the connection.  The budget is the one replies get, so
+ * inventory and replies together leave the other half of the queue to blocks and other traffic.
+ */
+#define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES
+/**
+ * How often (at most) we log, per peer, the transaction inventories dropped because its send queue was over
+ * GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES
+ */
+#define GRAPHENE_NET_DROPPED_TRANSACTION_INVENTORY_REPORT_INTERVAL_SEC 10
+/**
  * How many requested transactions may wait for room in one peer's send queue
  * (see GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES); a peer asking for more than that while they wait
  * is told the rest are not available.  Twice what we ourselves keep outstanding with a peer

@@ -137,6 +137,8 @@ namespace graphene { namespace net
         /// a block or a block inventory, queued after the block traffic already queued but ahead of the transaction
         /// traffic queued behind that, so it does not wait for transactions queued before it
         bool is_block_traffic = false;
+        /// an inventory of transactions, dropped rather than queued over GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES
+        bool is_transaction_inventory = false;
 
         queued_message(fc::time_point enqueue_time = fc::time_point::now()) :
           enqueue_time(enqueue_time)
@@ -230,6 +232,10 @@ namespace graphene { namespace net
       /// the number of queued messages up to and including the last queued block traffic, where block traffic is queued next
       size_t _queued_block_traffic_end = 0;
       bool _send_queue_limit_exceeded = false; // set once the queue would have grown over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES
+      /// transaction inventories dropped over GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES since they were last logged
+      size_t _transaction_inventories_dropped_since_report = 0;
+      size_t _transaction_inventory_bytes_dropped_since_report = 0;
+      fc::time_point _last_dropped_transaction_inventory_report_time;
       /// requested transactions waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES, oldest first
       std::deque<std::shared_ptr<full_transaction_type>> _deferred_transaction_replies;
       size_t _deferred_transaction_reply_bytes = 0;
@@ -475,6 +481,8 @@ namespace graphene { namespace net
       void send_queued_messages_task();
       /// queues the deferred transaction replies the queue has room for, and at least one if it is empty; true if it queued any
       bool queue_deferred_transaction_replies();
+      /// counts a transaction inventory of @p message_size bytes that is not queued, and logs the count now and then
+      void drop_transaction_inventory(size_t message_size);
       bool send_flush_wait_is_over() const;
       void wait_for_transaction_batch_to_grow();
       /// appends the message's bytes to messages_to_write and returns true, or logs and returns false if it cannot be built

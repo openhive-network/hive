@@ -721,6 +721,63 @@ BOOST_AUTO_TEST_CASE( waiting_transaction_replies_are_bounded_in_bytes )
   }
 }
 
+/// Transaction inventories queued faster than the peer reads them, far over the send queue limit, are dropped past
+/// their budget instead of closing the connection: the ones that fit arrive in order, a block inventory queued after
+/// them still goes out, and inventories are queued again once the queue drains.  A message that is not transaction
+/// inventory still closes the connection when it would take the queue over its limit.
+BOOST_AUTO_TEST_CASE( transaction_inventory_over_its_budget_is_dropped_without_closing )
+{
+  connected_pair pair;
+
+  const auto transaction_inventory = []( size_t index ) {
+    std::vector<graphene::net::item_hash_t> ids;
+    for( size_t i = 0; i < 1000; ++i )
+      ids.push_back( fc::ripemd160::hash( std::to_string( index ) + "/" + std::to_string( i ) ) );
+    return message( graphene::net::item_ids_inventory_message( graphene::net::trx_message_type, ids ) );
+  };
+  const size_t inventory_size = transaction_inventory( 0 ).data.size();
+  const size_t queued_count = 4 * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / inventory_size;
+  const size_t fitting_count = GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / inventory_size;
+  BOOST_REQUIRE_GT( fitting_count, 0u );
+  BOOST_REQUIRE_LT( fitting_count, queued_count );
+
+  // everything is queued before the send task gets to run, as when a node advertises a burst of new transactions
+  std::vector<message> queued;
+  for( size_t i = 0; i < queued_count; ++i )
+  {
+    queued.push_back( transaction_inventory( i ) );
+    pair.sender->send_message( queued.back() );
+  }
+  const message block_inventory( graphene::net::item_ids_inventory_message( graphene::net::block_message_type,
+                                                                            { fc::ripemd160::hash( std::string( "block" ) ) } ) );
+  pair.sender->send_message( block_inventory );
+
+  pair.wait_for_messages( fitting_count + 1 );
+  fc::usleep( fc::milliseconds( 100 ) );
+
+  BOOST_CHECK( !pair.sender_delegate.closed );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), fitting_count + 1 );
+  BOOST_CHECK( same_message( pair.receiver_delegate.received.front(), block_inventory ) );
+  for( size_t i = 0; i < fitting_count; ++i )
+    BOOST_CHECK_MESSAGE( same_message( pair.receiver_delegate.received[i + 1], queued[i] ), "inventory " << i << " differs" );
+
+  // with the queue drained, the next inventory is queued
+  const message next_inventory = transaction_inventory( queued_count );
+  pair.sender->send_message( next_inventory );
+  pair.wait_for_messages( fitting_count + 2 );
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), fitting_count + 2 );
+  BOOST_CHECK( same_message( pair.receiver_delegate.received.back(), next_inventory ) );
+
+  // anything else that does not fit closes the connection, as before
+  pair.sender->send_message( make_message( 5000, 16, 'x' ) );
+  pair.sender->send_queueable_message( std::make_unique<queue_limit_sized_message>( make_message( 5001, 16, 'y' ) ) );
+  const fc::time_point deadline = fc::time_point::now() + fc::seconds( 30 );
+  while( !pair.receiver_delegate.closed && fc::time_point::now() < deadline )
+    fc::usleep( fc::milliseconds( 1 ) );
+  BOOST_CHECK( pair.receiver_delegate.closed );
+}
+
 /// Canceling the send task while it builds a message still ends it; the build failure handling does not swallow the cancel.
 BOOST_AUTO_TEST_CASE( canceling_the_send_task_while_building_ends_it )
 {
