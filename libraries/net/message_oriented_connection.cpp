@@ -34,6 +34,8 @@
 #include <graphene/net/core_messages.hpp>
 
 #include <atomic>
+#include <cstring>
+#include <memory>
 
 #ifdef DEFAULT_LOGGER
 # undef DEFAULT_LOGGER
@@ -147,9 +149,14 @@ namespace graphene { namespace net {
     void message_oriented_connection_impl::read_loop()
     {
       VERIFY_CORRECT_THREAD();
-      const int BUFFER_SIZE = 16;
-      const int LEFTOVER = BUFFER_SIZE - sizeof(message_header);
-      static_assert(BUFFER_SIZE >= sizeof(message_header), "insufficient buffer");
+      // every async read reschedules this task, which on a busy p2p thread waits behind every other peer's
+      // tasks; so each read takes whatever the kernel holds, up to this much, and every complete message
+      // in it is handled before the next read
+      const size_t read_buffer_size = 64 * 1024;
+      // and this many messages are handled at most before other tasks get to run, even without a read
+      const size_t messages_between_yields = 256;
+      static_assert(read_buffer_size % 16 == 0, "reads must be whole AES blocks");
+      static_assert(sizeof(message_header) <= 16, "a message header must fit in the first AES block");
 
       _connected_time = fc::time_point::now();
       // a message handler may close the socket, after which asking it for the endpoint fails
@@ -161,33 +168,57 @@ namespace graphene { namespace net {
       try
       {
         remote_endpoint = get_socket().remote_endpoint();
+        // decrypted bytes not yet handed out are [buffer_begin, buffer_end); every message takes a whole
+        // number of AES blocks, so both stay multiples of 16
+        std::unique_ptr<char[]> buffer(new char[read_buffer_size]);
+        size_t buffer_begin = 0;
+        size_t buffer_end = 0;
+        size_t messages_since_last_wait = 0;
+        auto buffer_at_least = [&](size_t byte_count) {
+          if (buffer_end - buffer_begin >= byte_count)
+            return;
+          memmove(buffer.get(), buffer.get() + buffer_begin, buffer_end - buffer_begin);
+          buffer_end -= buffer_begin;
+          buffer_begin = 0;
+          while (buffer_end < byte_count)
+            buffer_end += _sock.readsome(buffer.get() + buffer_end, read_buffer_size - buffer_end);
+          messages_since_last_wait = 0;
+        };
+
         message m;
         while( true )
         {
-          char buffer[BUFFER_SIZE];
-          _sock.read(buffer, BUFFER_SIZE);
-          _bytes_received += BUFFER_SIZE;
-          memcpy((char*)&m, buffer, sizeof(message_header));
-
+          buffer_at_least(16);
+          memcpy((char*)&m, buffer.get() + buffer_begin, sizeof(message_header));
 
           FC_ASSERT( m.size <= MAX_MESSAGE_SIZE, "", ("m.size",m.size)("MAX_MESSAGE_SIZE",MAX_MESSAGE_SIZE) );
 
-          size_t remaining_bytes_with_padding = 16 * ((m.size - LEFTOVER + 15) / 16);
-          fc::time_point read_first_bytes_time = fc::time_point::now();
-          dlog("begun reading message of type ${type} from ${peer}, with ${remaining_bytes_with_padding} bytes left to read", 
-               ("type", (core_message_type_enum)m.msg_type)("peer", remote_endpoint)(remaining_bytes_with_padding));
-          m.data.resize(LEFTOVER + remaining_bytes_with_padding); //give extra 16 bytes to allow for padding added in send call
-          std::copy(buffer + sizeof(message_header), buffer + sizeof(buffer), m.data.begin());
-          if (remaining_bytes_with_padding)
+          const size_t size_with_padding = 16 * ((sizeof(message_header) + m.size + 15) / 16);
+          if (size_with_padding <= read_buffer_size)
           {
-            _sock.read(&m.data[LEFTOVER], remaining_bytes_with_padding);
-            _bytes_received += remaining_bytes_with_padding;
+            buffer_at_least(size_with_padding);
+            const char* payload = buffer.get() + buffer_begin + sizeof(message_header);
+            m.data.assign(payload, payload + m.size);
+            buffer_begin += size_with_padding;
           }
-          fc::time_point read_last_bytes_time = fc::time_point::now();
-          fc::microseconds read_duration = read_last_bytes_time - read_first_bytes_time;
-          dlog("read complete ${type} message from ${peer} in ${read_duration}us, decoding and passing to node", 
-               ("type", (core_message_type_enum)m.msg_type)(read_duration)("peer", remote_endpoint));
-          m.data.resize(m.size); // truncate off the padding bytes
+          else
+          {
+            // too big for the buffer: take what it holds, then read the rest straight into the message
+            const size_t buffered_bytes = buffer_end - buffer_begin;
+            m.data.resize(size_with_padding - sizeof(message_header));
+            std::copy(buffer.get() + buffer_begin + sizeof(message_header), buffer.get() + buffer_end, m.data.begin());
+            buffer_begin = buffer_end = 0;
+            fc::time_point read_first_bytes_time = fc::time_point::now();
+            _sock.read(&m.data[buffered_bytes - sizeof(message_header)], size_with_padding - buffered_bytes);
+            messages_since_last_wait = 0;
+            dlog("read the last ${bytes} bytes of a ${type} message from ${peer} in ${read_duration}us",
+                 ("bytes", size_with_padding - buffered_bytes)("type", (core_message_type_enum)m.msg_type)
+                 ("peer", remote_endpoint)("read_duration", fc::time_point::now() - read_first_bytes_time));
+            m.data.resize(m.size); // truncate off the padding bytes
+          }
+          _bytes_received += size_with_padding;
+          dlog("read complete ${type} message from ${peer}, decoding and passing to node",
+               ("type", (core_message_type_enum)m.msg_type)("peer", remote_endpoint));
 
           _last_message_received_time = fc::time_point::now();
 
@@ -206,6 +237,15 @@ namespace graphene { namespace net {
             if (!_closed_locally)
               wlog( "message transmission failed ${er}", ("er", e.to_detail_string() ) );
             throw;
+          }
+
+          // a handler that closed the connection gets no more of its messages; the next read ends the loop
+          if (_closed_locally)
+            buffer_begin = buffer_end;
+          else if (++messages_since_last_wait >= messages_between_yields)
+          {
+            fc::yield();
+            messages_since_last_wait = 0;
           }
         }
       }
