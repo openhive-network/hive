@@ -1613,7 +1613,10 @@ namespace graphene { namespace net {
           for (const auto& items_by_type : requests)
           {
             if (items_by_type.first == core_message_type_enum::trx_message_type)
+            {
               _statistics.record_transaction_request(items_by_type.second.size(), peer_and_items.max_transactions_per_request);
+              peer_and_items.peer->transactions_requested_since_report += items_by_type.second.size();
+            }
             dlog("requesting ${count} items of type ${type} from peer ${endpoint}: ${hashes}",
                  ("count", items_by_type.second.size())("type", (uint32_t)items_by_type.first)
                  ("endpoint", peer_and_items.peer->get_remote_endpoint())
@@ -2167,8 +2170,13 @@ namespace graphene { namespace net {
 
     void node_impl::statistics_report_loop()
     {
+      std::vector<uint64_t> transactions_requested_per_peer;
+      transactions_requested_per_peer.reserve(_active_connections.size());
+      for (const peer_connection_ptr& peer : _active_connections)
+        transactions_requested_per_peer.push_back(std::exchange(peer->transactions_requested_since_report, 0));
       const fc::variant_object report = _statistics.take_report(fc::time_point::now(), _transactions_in_flight.in_flight(),
-                                                                _items_to_fetch.size(), _delegate->get_pending_transaction_pool_size());
+                                                                _items_to_fetch.size(), _delegate->get_pending_transaction_pool_size(),
+                                                                std::move(transactions_requested_per_peer));
       fc_ilog(fc::logger::get(GRAPHENE_NET_STATISTICS_LOGGER), "p2p statistics: ${report}", (report));
       if (!node_is_shutting_down() && !_statistics_report_loop_done.canceled())
         _statistics_report_loop_done = schedule_task([this](){ statistics_report_loop(); },
@@ -8142,9 +8150,22 @@ namespace graphene { namespace net {
   }
 
   fc::variant_object p2p_statistics::take_report(fc::time_point now, uint32_t in_flight, size_t items_queued,
-                                                 const pending_transaction_pool_size& pool)
+                                                 const pending_transaction_pool_size& pool,
+                                                 std::vector<uint64_t> transactions_requested_per_peer)
   {
     const auto mean = [](uint64_t total, uint64_t count) { return count ? double(total) / double(count) : 0.0; };
+
+    // with an even number of peers the median is the upper of the two middle counts
+    std::vector<uint64_t>& per_peer = transactions_requested_per_peer;
+    const auto middle = per_peer.begin() + per_peer.size() / 2;
+    if (!per_peer.empty())
+      std::nth_element(per_peer.begin(), middle, per_peer.end());
+    fc::mutable_variant_object spread;
+    spread("peers", per_peer.size())
+          ("requested_peers", std::count_if(per_peer.begin(), per_peer.end(), [](uint64_t count) { return count > 0; }))
+          ("min", per_peer.empty() ? 0 : *std::min_element(per_peer.begin(), per_peer.end()))
+          ("median", per_peer.empty() ? 0 : *middle)
+          ("max", per_peer.empty() ? 0 : *std::max_element(per_peer.begin(), per_peer.end()));
 
     fc::mutable_variant_object latency;
     for (size_t i = 0; i < _handoff.completion_latency.size(); ++i)
@@ -8183,7 +8204,8 @@ namespace graphene { namespace net {
       ("transaction_requests", fc::mutable_variant_object()
         ("requests", _requests.transaction_requests)
         ("transactions_per_request", mean(_requests.transactions_requested, _requests.transaction_requests))
-        ("byte_cap_bound", _requests.byte_cap_bound));
+        ("byte_cap_bound", _requests.byte_cap_bound)
+        ("per_peer", std::move(spread)));
 
     fetch = fetch_scheduling();
     _handoff = transaction_handoff();
