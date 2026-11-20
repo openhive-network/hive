@@ -28,8 +28,14 @@ class recording_delegate : public graphene::net::peer_connection_delegate
 public:
   std::vector<message> received;
   bool closed = false;
+  std::function<void()> after_message;
 
-  void on_message( peer_connection*, const message& received_message ) override { received.push_back( received_message ); }
+  void on_message( peer_connection*, const message& received_message ) override
+  {
+    received.push_back( received_message );
+    if( after_message )
+      after_message();
+  }
   void on_connection_closed( peer_connection* ) override { closed = true; }
   std::shared_ptr<hive::chain::full_block_type> get_full_block_by_block_id( const hive::protocol::block_id_type& ) override { return {}; }
   std::shared_ptr<hive::chain::full_block_type> get_block_to_send( peer_connection*, const graphene::net::item_hash_t& ) override { return {}; }
@@ -245,6 +251,61 @@ BOOST_AUTO_TEST_CASE( oversize_message_is_refused_from_its_header )
   BOOST_CHECK( pair.receiver_delegate.closed );
   BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 1u );
   BOOST_CHECK( same_message( pair.receiver_delegate.received[0], before ) );
+}
+
+/// A connection closed locally by another task while the read loop yields to it, after a run of messages
+/// handled without a read, gets none of its still buffered messages handed to the node.
+BOOST_AUTO_TEST_CASE( connection_closed_during_the_yield_hands_out_no_further_message )
+{
+  raw_sender_pair pair;
+
+  // the closer waits until the loop is about to yield, then runs ahead of the rescheduled loop, as a task
+  // terminating an inactive peer or disconnecting from it would
+  fc::promise<void>::ptr loop_about_to_yield = fc::promise<void>::create( "batched_receive_test yield" );
+  bool closer_waiting = false;
+  bool yield_reached = false;
+  size_t received_at_close = 0;
+  fc::future<void> closer = fc::async( [&]() {
+    closer_waiting = true;
+    fc::future<void>( loop_about_to_yield ).wait();
+    received_at_close = pair.receiver_delegate.received.size();
+    pair.receiver->close_connection();
+  }, "batched_receive_test closer" );
+  pair.wait_until( [&]() { return closer_waiting; }, fc::seconds( 10 ) );
+  BOOST_REQUIRE( closer_waiting );
+
+  // the loop yields after 256 messages handled since its last read
+  size_t reads_at_last_message = pair.hooks.completed_reads;
+  size_t messages_since_read = 0;
+  pair.receiver_delegate.after_message = [&]() {
+    if( pair.hooks.completed_reads != reads_at_last_message )
+    {
+      reads_at_last_message = pair.hooks.completed_reads;
+      messages_since_read = 0;
+    }
+    if( ++messages_since_read == 256 && !yield_reached )
+    {
+      yield_reached = true;
+      loop_about_to_yield->set_value();
+    }
+  };
+
+  std::vector<char> stream;
+  for( size_t i = 0; i < 600; ++i )
+    append_message( stream, make_message( 5000 + i, i % 9, char( 'a' + i % 26 ) ) );
+  BOOST_REQUIRE_LE( stream.size(), 64u * 1024u );
+
+  pair.write( stream.data(), stream.size() );
+  pair.wait_until( [&]() { return pair.receiver_delegate.closed; } );
+  if( !yield_reached )
+    loop_about_to_yield->set_value();
+  closer.wait();
+
+  BOOST_REQUIRE_MESSAGE( yield_reached, "no run of 256 messages without a read; received " << pair.receiver_delegate.received.size() );
+  BOOST_CHECK( pair.receiver_delegate.closed );
+  BOOST_CHECK_GE( received_at_close, 256u );
+  BOOST_CHECK_LT( received_at_close, 600u );
+  BOOST_CHECK_EQUAL( pair.receiver_delegate.received.size(), received_at_close );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
