@@ -34,14 +34,8 @@ version::version( uint8_t m, uint8_t h, uint16_t r )
 
 version::operator fc::string()const
 {
-  std::stringstream s;
-  s << ( ( v_num >> 24 ) & 0x000000FF )
-    << '.'
-    << ( ( v_num >> 16 ) & 0x000000FF )
-    << '.'
-    << ( ( v_num & 0x0000FFFF ) );
-
-  return s.str();
+  return std::to_string( ( v_num >> 24 ) & 0x000000FF ) + '.' + std::to_string( ( v_num >> 16 ) & 0x000000FF ) + '.' +
+    std::to_string( v_num & 0x0000FFFF );
 }
 
 } } // hive::protocol
