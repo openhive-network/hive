@@ -1079,10 +1079,12 @@ namespace graphene { namespace net {
     /**
      * Everything recorded since the last report (or since construction), as of @p now, with @p in_flight
      * transactions in flight now, @p items_queued items waiting to be fetched and the pending pool at @p pool;
-     * counting starts over.
+     * counting starts over.  @p transactions_requested_per_peer holds, for each active peer, the transactions
+     * requested from it in the period (the caller resets those counts); the report gives their spread.
      */
     fc::variant_object take_report(fc::time_point now, uint32_t in_flight, size_t items_queued,
-                                   const pending_transaction_pool_size& pool);
+                                   const pending_transaction_pool_size& pool,
+                                   std::vector<uint64_t> transactions_requested_per_peer);
 
   private:
     fc::time_point _period_start = fc::time_point::now();
