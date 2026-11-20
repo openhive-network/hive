@@ -1650,6 +1650,55 @@ BOOST_AUTO_TEST_CASE( transaction_relay_test )
   } );
 }
 
+/// D17: while the pending pool holds more than a third of max-mempool-size the node asks no peer for transactions,
+/// but still for blocks; once the next block takes the pool below that, it asks for the transaction it held back
+BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
+{
+  const uint64_t max_mempool_size = 6 * 1024;
+  const uint64_t threshold = transaction_fetch_gate_threshold( max_mempool_size );
+  start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto source = make_peer( "transaction source" );
+    connect_active( *source );
+    auto block_source = make_peer( "block source" );
+    connect_active( *block_source );
+
+    // right after a block, so that the next one comes well after the checks below, API transactions take
+    // the pool over the threshold; that next block includes them all
+    const uint32_t filled_at = wait_for_block_num( get_block_num() + 1 );
+    uint64_t filled = 0;
+    for( int i = 0; filled <= threshold; ++i )
+    {
+      const full_transaction_ptr filler = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                          "filler " + std::to_string( i ), get_default_expiration() );
+      schedule_transaction( filler );
+      filled += filler->get_transaction_size();
+    }
+    BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), threshold );
+
+    const full_transaction_ptr held_back = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ), "held back",
+                                                           get_default_expiration() );
+    const item_hash_t hash = held_back->get_legacy_transaction_message_hash();
+    source->provide( { held_back } );
+    source->advertise( { hash } );
+    const block_id_type next_block = fake_block_id( filled_at + 1, "advertised while gated" );
+    block_source->advertise( block_message_type, { next_block } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *block_source, next_block ) != 0; }, reply_timeout ) );
+    fc::usleep( fc::seconds( 1 ) );
+    BOOST_CHECK( !source->was_requested( hash ) );
+    BOOST_REQUIRE_MESSAGE( get_block_num() == filled_at, "a block came before the checks of the gated pool ended" );
+
+    wait_for_block_num( filled_at + 1 );
+    BOOST_REQUIRE( wait_until( [&]() { return source->was_requested( hash ); }, reply_timeout ) );
+    BOOST_CHECK_LE( get_chain_plugin().get_published_pending_transactions_size(), threshold );
+    require_kept( *source );
+  } );
+}
+
 /// Fallback (category 2): a peer that answers item_not_available for an advertised transaction loses
 /// nothing but the request; the node fetches the transaction from the other peer that advertised it
 BOOST_AUTO_TEST_CASE( fallback_after_not_available_test )

@@ -297,6 +297,7 @@ namespace graphene { namespace net {
       uint32_t get_last_irreversible_block_num() const override;
       uint32_t get_tail_block_num() const override;
       bool is_at_live_sync() override;
+      pending_transaction_pool_size get_pending_transaction_pool_size() const override;
       uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const override;
       void error_encountered(const std::string& message, const fc::oexception& error) override;
       std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -1477,6 +1478,9 @@ namespace graphene { namespace net {
         if (expired_items > 0)
           wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
         fc::time_point next_peer_unblocked_time = fc::time_point::maximum();
+        // while the pending pool is over the threshold no peer is asked for transactions, blocks still are
+        const bool transactions_gated = is_transaction_fetching_gated(_delegate->get_pending_transaction_pool_size());
+        bool transactions_held_back = false;
 
         // we need to construct a list of items to request from each peer first,
         // then send the messages (in two steps, to avoid yielding while iterating).
@@ -1504,7 +1508,9 @@ namespace graphene { namespace net {
             const bool transaction_fetching_inhibited = peer->is_transaction_fetching_inhibited();
             if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions())
               next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
-            const size_t max_transactions = transaction_fetching_inhibited ? 0 :
+            if (transactions_gated && peer->fetch_candidates.has_transactions())
+              transactions_held_back = true;
+            const size_t max_transactions = transaction_fetching_inhibited || transactions_gated ? 0 :
               peer->received_transaction_size.transactions_to_request(peer->items_requested_from_peer.transactions());
             if (max_transactions == 0 && !peer->fetch_candidates.has_blocks())
               continue;
@@ -1549,6 +1555,8 @@ namespace graphene { namespace net {
         }
 
         ++_statistics.fetch.wakes;
+        if (transactions_gated)
+          ++_statistics.fetch.transactions_gated;
         _statistics.fetch.items_expired += expired_items;
         _statistics.fetch.scheduling_time += fc::time_point::now() - iteration_start;
 
@@ -1591,7 +1599,12 @@ namespace graphene { namespace net {
         }
         items_by_peer.clear();
 
-        // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited
+        // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited.
+        // Nothing tells the loop when the pending pool drains (by inclusion in blocks, expiry or drops at
+        // max-mempool-size), so while transactions wait for it the gate is checked again at an interval
+        if (transactions_held_back)
+          next_peer_unblocked_time = std::min(next_peer_unblocked_time,
+                                              fc::time_point::now() + fc::milliseconds(GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS));
         _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
                                        next_peer_unblocked_time);
       } // while (!canceled)
@@ -2099,7 +2112,7 @@ namespace graphene { namespace net {
     void node_impl::statistics_report_loop()
     {
       const fc::variant_object report = _statistics.take_report(fc::time_point::now(), _transactions_in_flight.in_flight(),
-                                                                _items_to_fetch.size());
+                                                                _items_to_fetch.size(), _delegate->get_pending_transaction_pool_size());
       fc_ilog(fc::logger::get(GRAPHENE_NET_STATISTICS_LOGGER), "p2p statistics: ${report}", (report));
       if (!node_is_shutting_down() && !_statistics_report_loop_done.canceled())
         _statistics_report_loop_done = schedule_task([this](){ statistics_report_loop(); },
@@ -7639,6 +7652,13 @@ namespace graphene { namespace net {
       INVOKE_AND_COLLECT_STATISTICS(is_at_live_sync);
     }
 
+    pending_transaction_pool_size statistics_gathering_node_delegate_wrapper::get_pending_transaction_pool_size() const
+    {
+      // this function doesn't need to block,
+      ASSERT_TASK_NOT_PREEMPTED();
+      return _node_delegate->get_pending_transaction_pool_size();
+    }
+
     uint32_t statistics_gathering_node_delegate_wrapper::estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const
     {
       INVOKE_AND_COLLECT_STATISTICS(estimate_last_known_fork_from_git_revision_timestamp, unix_timestamp);
@@ -8055,7 +8075,8 @@ namespace graphene { namespace net {
       ++_requests.byte_cap_bound;
   }
 
-  fc::variant_object p2p_statistics::take_report(fc::time_point now, uint32_t in_flight, size_t items_queued)
+  fc::variant_object p2p_statistics::take_report(fc::time_point now, uint32_t in_flight, size_t items_queued,
+                                                 const pending_transaction_pool_size& pool)
   {
     const auto mean = [](uint64_t total, uint64_t count) { return count ? double(total) / double(count) : 0.0; };
 
@@ -8074,6 +8095,11 @@ namespace graphene { namespace net {
         ("items_expired", fetch.items_expired)
         ("items_queued", items_queued)
         ("scheduling_us", fetch.scheduling_time.count()))
+      ("transaction_fetch_gate", fc::mutable_variant_object()
+        ("threshold_bytes", transaction_fetch_gate_threshold(pool.max_bytes))
+        ("pending_bytes", pool.pending_bytes)
+        ("gated", is_transaction_fetching_gated(pool))
+        ("gated_wakes", fetch.transactions_gated))
       ("handoff", fc::mutable_variant_object()
         ("submissions", _handoff.submissions)
         ("completions", _handoff.completions)
@@ -8098,6 +8124,17 @@ namespace graphene { namespace net {
     _requests = request_sizing();
     _period_start = now;
     return report;
+  }
+
+  uint64_t transaction_fetch_gate_threshold(uint64_t max_bytes)
+  {
+    return max_bytes / 3;
+  }
+
+  bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool)
+  {
+    const uint64_t threshold = transaction_fetch_gate_threshold(pool.max_bytes);
+    return threshold > 0 && pool.pending_bytes > threshold;
   }
 
   bool is_relay_sample(const message_hash_type& message_hash, uint32_t one_in)

@@ -11,8 +11,11 @@
 #include <string>
 
 using graphene::net::is_relay_sample;
+using graphene::net::is_transaction_fetching_gated;
 using graphene::net::message_hash_type;
 using graphene::net::p2p_statistics;
+using graphene::net::pending_transaction_pool_size;
+using graphene::net::transaction_fetch_gate_threshold;
 
 namespace {
 
@@ -76,6 +79,7 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   statistics.fetch.wakes = 4;
   statistics.fetch.candidates_examined = 10;
   statistics.fetch.items_requested = 9;
+  statistics.fetch.transactions_gated = 3;
   statistics.fetch.scheduling_time = fc::microseconds( 70 );
 
   statistics.record_submission( 1 );
@@ -95,13 +99,18 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   statistics.record_transaction_request( 4, 10 );        // fewer were advertised than the byte cap allows
   statistics.record_transaction_request( limit, limit ); // the per-peer limit bound it, not the byte cap
 
-  const fc::variant_object report = statistics.take_report( start + fc::seconds( 30 ), 5, 7 );
+  const fc::variant_object report = statistics.take_report( start + fc::seconds( 30 ), 5, 7, { 40000, 90000 } );
 
   BOOST_CHECK_EQUAL( report_uint( report, "fetch", "wakes" ), 4u );
   BOOST_CHECK_EQUAL( report_uint( report, "fetch", "candidates_examined" ), 10u );
   BOOST_CHECK_EQUAL( report_uint( report, "fetch", "items_requested" ), 9u );
   BOOST_CHECK_EQUAL( report_uint( report, "fetch", "items_queued" ), 7u );
   BOOST_CHECK_EQUAL( report_uint( report, "fetch", "scheduling_us" ), 70u );
+
+  BOOST_CHECK_EQUAL( report_uint( report, "transaction_fetch_gate", "threshold_bytes" ), 30000u );
+  BOOST_CHECK_EQUAL( report_uint( report, "transaction_fetch_gate", "pending_bytes" ), 40000u );
+  BOOST_CHECK( report["transaction_fetch_gate"].get_object()["gated"].as_bool() );
+  BOOST_CHECK_EQUAL( report_uint( report, "transaction_fetch_gate", "gated_wakes" ), 3u );
 
   BOOST_CHECK_EQUAL( report_uint( report, "handoff", "submissions" ), 3u );
   BOOST_CHECK_EQUAL( report_uint( report, "handoff", "completions" ), 4u );
@@ -129,12 +138,15 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   BOOST_CHECK_EQUAL( report_uint( report, "transaction_requests", "byte_cap_bound" ), 1u );
 
   // the next period starts empty, from the time of the last report
-  const fc::variant_object next = statistics.take_report( start + fc::seconds( 60 ), 0, 0 );
+  const fc::variant_object next = statistics.take_report( start + fc::seconds( 60 ), 0, 0, { 20000, 90000 } );
   BOOST_CHECK_EQUAL( next["seconds"].as_int64(), 30 );
   for( const char* key : { "wakes", "candidates_examined", "items_requested", "scheduling_us" } )
     BOOST_CHECK_EQUAL( report_uint( next, "fetch", key ), 0u );
   for( const char* key : { "submissions", "completions", "max_in_flight", "limit_waits", "limit_wait_us" } )
     BOOST_CHECK_EQUAL( report_uint( next, "handoff", key ), 0u );
+  BOOST_CHECK_EQUAL( report_uint( next, "transaction_fetch_gate", "gated_wakes" ), 0u );
+  BOOST_CHECK_EQUAL( report_uint( next, "transaction_fetch_gate", "pending_bytes" ), 20000u );
+  BOOST_CHECK( !next["transaction_fetch_gate"].get_object()["gated"].as_bool() );
   for( const auto& bucket : next["handoff"].get_object()["completion_latency"].get_object() )
     BOOST_CHECK_EQUAL( bucket.value().as_uint64(), 0u );
   BOOST_CHECK_EQUAL( report_double( next, "handoff", "mean_in_flight" ), 0.0 );
@@ -142,6 +154,23 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   BOOST_CHECK_EQUAL( report_double( next, "send", "messages_per_write" ), 0.0 );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_requests", "requests" ), 0u );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_requests", "byte_cap_bound" ), 0u );
+}
+
+/// The node stops requesting transactions once its pending pool holds more than a third of max-mempool-size,
+/// and never with max-mempool-size 0
+BOOST_AUTO_TEST_CASE( transaction_fetching_is_gated_above_a_third_of_the_mempool_limit )
+{
+  const uint64_t max_mempool_size = 100 * 1024 * 1024;
+  const uint64_t threshold = transaction_fetch_gate_threshold( max_mempool_size );
+  BOOST_CHECK_EQUAL( threshold, max_mempool_size / 3 );
+
+  BOOST_CHECK( !is_transaction_fetching_gated( pending_transaction_pool_size{ 0, max_mempool_size } ) );
+  BOOST_CHECK( !is_transaction_fetching_gated( pending_transaction_pool_size{ threshold, max_mempool_size } ) );
+  BOOST_CHECK( is_transaction_fetching_gated( pending_transaction_pool_size{ threshold + 1, max_mempool_size } ) );
+  BOOST_CHECK( is_transaction_fetching_gated( pending_transaction_pool_size{ max_mempool_size, max_mempool_size } ) );
+
+  BOOST_CHECK_EQUAL( transaction_fetch_gate_threshold( 0 ), 0u );
+  BOOST_CHECK( !is_transaction_fetching_gated( pending_transaction_pool_size{ 1024 * 1024, 0 } ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

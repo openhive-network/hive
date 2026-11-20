@@ -207,6 +207,9 @@ class chain_plugin_impl
     bool                             last_pushed_block_was_before_checkpoint = false;
     bool                             stop_at_block_interrupt_request = false;
     uint64_t                         max_mempool_size = 0;
+    // db._pending_tx_size as of the end of the last write queue item, for readers that hold no lock; it is not
+    // updated in the middle of an item, so the pool emptied while a block is applied is never seen
+    std::atomic<uint64_t>            published_pending_tx_size{0};
 
     enum class comment_archive_type
     {
@@ -659,6 +662,7 @@ void chain_plugin_impl::start_write_processing()
           {
             req_visitor.cxt = cxt;
             last_block_number = cxt->req_ptr.visit( req_visitor );
+            published_pending_tx_size.store( db._pending_tx_size, std::memory_order_relaxed );
 
             ++write_queue_items_processed;
 
@@ -2541,6 +2545,16 @@ void chain_plugin::finish_request()
 bool chain_plugin::is_finished_write_processing() const
 {
   return my->finish.status.load();
+}
+
+uint64_t chain_plugin::get_published_pending_transactions_size() const
+{
+  return my->published_pending_tx_size.load( std::memory_order_relaxed );
+}
+
+uint64_t chain_plugin::get_max_mempool_size() const
+{
+  return my->max_mempool_size;
 }
 
 } } } // namespace hive::plugins::chain

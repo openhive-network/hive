@@ -109,6 +109,7 @@ public:
   virtual uint32_t get_last_irreversible_block_num() const override;
   virtual uint32_t get_tail_block_num() const override;
   virtual bool is_at_live_sync() override;
+  virtual graphene::net::pending_transaction_pool_size get_pending_transaction_pool_size() const override;
   virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp( uint32_t ) const override;
   virtual void error_encountered( const std::string& message, const fc::oexception& error ) override;
   virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -383,6 +384,11 @@ bool p2p_plugin_impl::is_at_live_sync()
   fc::time_point_sec head_block_time = head_block ? head_block->get_block_header().timestamp : fc::time_point_sec::min();
   return chain.get_time_gap_to_live_sync( head_block_time ).count() < 0;
 } FC_CAPTURE_AND_RETHROW() }
+
+graphene::net::pending_transaction_pool_size p2p_plugin_impl::get_pending_transaction_pool_size() const
+{
+  return { chain.get_published_pending_transactions_size(), chain.get_max_mempool_size() };
+}
 
 // Runs on the p2p thread as a long-lived task while any seed string from the configuration is
 // still unresolved.  Every HIVE_P2P_SEED_RESOLVE_RETRY_SECONDS it retries them; each one that
