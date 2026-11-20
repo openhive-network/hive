@@ -27,7 +27,7 @@ namespace hive { namespace protocol {
       {
         validate_is_utf8(json, "JSON not formatted in UTF8");
         HIVE_PROTOCOL_STRING_ASSERT(
-          fc::json::is_valid(json, fc::json::format_validation_mode::relaxed /* json_validation_mode */),
+          fc::json::is_valid<fc::json::legacy_parser>(json, fc::json::format_validation_mode::relaxed /* json_validation_mode */),
           "JSON is not valid JSON",
           ("subject", json)
         );
