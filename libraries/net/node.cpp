@@ -490,6 +490,7 @@ namespace graphene { namespace net {
 
       p2p_statistics _statistics;
       fc::future<void> _statistics_report_loop_done;
+      fetch_expiry_warning_limiter _fetch_expiry_warnings{fc::seconds(GRAPHENE_NET_GATED_FETCH_EXPIRY_WARNING_INTERVAL_SEC)};
 
       /* We have two alternate paths through the schedule_peer_for_deletion code -- one that
        * uses a mutex to prevent one fiber from adding items to the queue while another is deleting
@@ -1475,12 +1476,13 @@ namespace graphene { namespace net {
              ("count", _items_to_fetch.size()));
 
         const size_t expired_items = remove_expired_items_to_fetch();
-        if (expired_items > 0)
-          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
         fc::time_point next_peer_unblocked_time = fc::time_point::maximum();
         // while the pending pool is over the threshold no peer is asked for transactions, blocks still are
-        const bool transactions_gated = is_transaction_fetching_gated(_delegate->get_pending_transaction_pool_size());
-        bool transactions_held_back = false;
+        transaction_fetch_gate gate(_delegate->get_pending_transaction_pool_size());
+        if (const std::optional<size_t> expired_to_report = _fetch_expiry_warnings.record(expired_items, gate.closed(), iteration_start))
+          wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", ("expired_items", *expired_to_report));
+        // candidates as old as the expired items are dropped too, so that none the gate holds back outlives them
+        const fc::time_point oldest_candidate_to_keep = oldest_item_timestamp_to_fetch();
 
         // we need to construct a list of items to request from each peer first,
         // then send the messages (in two steps, to avoid yielding while iterating).
@@ -1503,15 +1505,16 @@ namespace graphene { namespace net {
         std::vector<peer_and_items_to_fetch> items_by_peer;
         std::unordered_set<const peer_connection*> idle_peers;
         for (const peer_connection_ptr& peer : _active_connections)
+        {
+          peer->fetch_candidates.trim(oldest_candidate_to_keep);
           if (peer->can_take_item_request() && peer->fetch_candidates.size() > 0)
           {
             const bool transaction_fetching_inhibited = peer->is_transaction_fetching_inhibited();
             if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions())
               next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
-            if (transactions_gated && peer->fetch_candidates.has_transactions())
-              transactions_held_back = true;
-            const size_t max_transactions = transaction_fetching_inhibited || transactions_gated ? 0 :
+            const size_t window = transaction_fetching_inhibited ? 0 :
               peer->received_transaction_size.transactions_to_request(peer->items_requested_from_peer.transactions());
+            const size_t max_transactions = gate.transactions_to_request(window, peer->fetch_candidates.has_transactions());
             if (max_transactions == 0 && !peer->fetch_candidates.has_blocks())
               continue;
             peer->fetch_candidates.begin_pass();
@@ -1520,6 +1523,7 @@ namespace graphene { namespace net {
             items_by_peer.push_back({peer, max_transactions > 0, max_transactions,
                                      peer->received_transaction_size.max_transactions_per_request()});
           }
+        }
 
         for (bool item_taken = true; item_taken;)
         {
@@ -1555,7 +1559,7 @@ namespace graphene { namespace net {
         }
 
         ++_statistics.fetch.wakes;
-        if (transactions_gated)
+        if (gate.held_back())
           ++_statistics.fetch.transactions_gated;
         _statistics.fetch.items_expired += expired_items;
         _statistics.fetch.scheduling_time += fc::time_point::now() - iteration_start;
@@ -1601,8 +1605,10 @@ namespace graphene { namespace net {
 
         // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited.
         // Nothing tells the loop when the pending pool drains (by inclusion in blocks, expiry or drops at
-        // max-mempool-size), so while transactions wait for it the gate is checked again at an interval
-        if (transactions_held_back)
+        // max-mempool-size), so while live candidates wait for it the gate is checked again at an interval; once
+        // they have all expired (trimmed above) the loop waits for a trigger.  API submissions may keep the pool
+        // over the threshold for as long as they last (see transaction_fetch_gate_threshold())
+        if (gate.held_back())
           next_peer_unblocked_time = std::min(next_peer_unblocked_time,
                                               fc::time_point::now() + fc::milliseconds(GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS));
         _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
@@ -7792,6 +7798,12 @@ namespace graphene { namespace net {
 
   void fetch_candidate_queue::push(const item_id& item, fc::time_point now, fc::time_point oldest_to_keep)
   {
+    trim(oldest_to_keep);
+    (item.item_type == block_message_type ? _blocks : _transactions).push_back(entry{item, now});
+  }
+
+  void fetch_candidate_queue::trim(fc::time_point oldest_to_keep)
+  {
     // both lanes are in the order entries were queued, so the stale ones are at their front
     for (auto [lane, kept] : { std::make_pair(&_blocks, &_blocks_kept), std::make_pair(&_transactions, &_transactions_kept) })
       while (!lane->empty() && lane->front().queued < oldest_to_keep)
@@ -7800,7 +7812,6 @@ namespace graphene { namespace net {
         if (*kept > 0)
           --*kept;
       }
-    (item.item_type == block_message_type ? _blocks : _transactions).push_back(entry{item, now});
   }
 
   void fetch_candidate_queue::begin_pass()
@@ -8135,6 +8146,32 @@ namespace graphene { namespace net {
   {
     const uint64_t threshold = transaction_fetch_gate_threshold(pool.max_bytes);
     return threshold > 0 && pool.pending_bytes > threshold;
+  }
+
+  transaction_fetch_gate::transaction_fetch_gate(const pending_transaction_pool_size& pool) :
+    _closed(is_transaction_fetching_gated(pool))
+  {}
+
+  size_t transaction_fetch_gate::transactions_to_request(size_t window, bool has_candidates)
+  {
+    if (!_closed)
+      return window;
+    if (window > 0 && has_candidates)
+      _held_back = true;
+    return 0;
+  }
+
+  fetch_expiry_warning_limiter::fetch_expiry_warning_limiter(fc::microseconds interval) :
+    _interval(interval)
+  {}
+
+  std::optional<size_t> fetch_expiry_warning_limiter::record(size_t expired, bool gated, fc::time_point now)
+  {
+    _unreported += expired;
+    if (_unreported == 0 || (gated && now < _last_warning + _interval))
+      return std::nullopt;
+    _last_warning = now;
+    return std::exchange(_unreported, 0);
   }
 
   bool is_relay_sample(const message_hash_type& message_hash, uint32_t one_in)

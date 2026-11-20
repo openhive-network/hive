@@ -114,11 +114,60 @@ namespace graphene { namespace net {
    * The pending pool size above which the node requests no transactions from any peer: a third of @p max_bytes,
    * which leaves the rest of the pool for API submissions, fork switches and replies already on their way.
    * 0 when @p max_bytes is 0: the pool then keeps only what fits in the reapply window, so it needs no gate.
+   *
+   * The pool counts transactions from every source.  API submissions are not limited by max-mempool-size (only
+   * the reapply after a block drops what exceeds it), so while API inflow keeps the pool above the threshold
+   * after every block the node fetches, and so relays, no transactions from its peers, for as long as that
+   * inflow lasts.  Blocks are fetched as always, and the node's own transactions are still broadcast.
    */
   uint64_t transaction_fetch_gate_threshold(uint64_t max_bytes);
 
   /// Whether @p pool holds more than transaction_fetch_gate_threshold(), so that the node stops requesting transactions
   bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool);
+
+  /**
+   * The node-wide transaction fetch gate (is_transaction_fetching_gated()) for one pass of choosing what to
+   * request from peers, and whether it actually kept any peer from being asked for transactions in that pass
+   */
+  class transaction_fetch_gate
+  {
+  public:
+    explicit transaction_fetch_gate(const pending_transaction_pool_size& pool);
+
+    /**
+     * How many transactions to request from a peer whose window has room for @p window and that has live
+     * transaction candidates if @p has_candidates: @p window, or none while the gate is closed.  The gate holds
+     * transactions back only when there were some to request and room to request them.
+     */
+    size_t transactions_to_request(size_t window, bool has_candidates);
+
+    bool closed() const { return _closed; }
+    /// whether transactions_to_request() withheld any transactions in this pass
+    bool held_back() const { return _held_back; }
+
+  private:
+    bool _closed;
+    bool _held_back = false;
+  };
+
+  /**
+   * Decides when to warn that items to fetch were removed because they expired.  With the transaction fetch gate
+   * open it warns on every call that removed some; while the gate is closed advertised transactions expire
+   * unfetched on pass after pass, so it warns at most once per @p interval, with the sum since the last warning.
+   */
+  class fetch_expiry_warning_limiter
+  {
+  public:
+    explicit fetch_expiry_warning_limiter(fc::microseconds interval);
+
+    /// Records @p expired items removed at @p now with the gate @p gated or not; returns how many to warn about now, if any
+    std::optional<size_t> record(size_t expired, bool gated, fc::time_point now);
+
+  private:
+    fc::microseconds _interval;
+    size_t _unreported = 0;
+    fc::time_point _last_warning;
+  };
 
    /**
     *  @class node_delegate
@@ -595,13 +644,16 @@ namespace graphene { namespace net {
    * looks at nothing else.  Blocks come before transactions, each lane in the order the items were added.
    * Entries are judged only when reached, so an entry for an item that is no longer wanted costs one look;
    * entries older than the fetch window are trimmed whenever one is added, which bounds the queue by what the
-   * peer advertised within the window.
+   * peer advertised within the window, and when trim() is called.
    */
   class fetch_candidate_queue
   {
   public:
     /// Adds @p item, queued (again) at @p now; entries queued before @p oldest_to_keep are discarded
     void push(const item_id& item, fc::time_point now, fc::time_point oldest_to_keep);
+
+    /// Discards the entries queued before @p oldest_to_keep
+    void trim(fc::time_point oldest_to_keep);
 
     /// Starts a pass: entries kept in the previous one are looked at again
     void begin_pass();
@@ -857,7 +909,7 @@ namespace graphene { namespace net {
       uint64_t candidates_examined = 0;
       uint64_t items_requested = 0;
       uint64_t items_expired = 0;
-      uint64_t transactions_gated = 0; ///< wakes that requested no transactions because the pending pool was over the gate threshold
+      uint64_t transactions_gated = 0; ///< wakes in which the gate (transaction_fetch_gate::held_back()) kept transactions from being requested
       fc::microseconds scheduling_time;
     };
 

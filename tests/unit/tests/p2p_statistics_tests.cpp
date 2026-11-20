@@ -8,13 +8,16 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
+#include <optional>
 #include <string>
 
+using graphene::net::fetch_expiry_warning_limiter;
 using graphene::net::is_relay_sample;
 using graphene::net::is_transaction_fetching_gated;
 using graphene::net::message_hash_type;
 using graphene::net::p2p_statistics;
 using graphene::net::pending_transaction_pool_size;
+using graphene::net::transaction_fetch_gate;
 using graphene::net::transaction_fetch_gate_threshold;
 
 namespace {
@@ -171,6 +174,52 @@ BOOST_AUTO_TEST_CASE( transaction_fetching_is_gated_above_a_third_of_the_mempool
 
   BOOST_CHECK_EQUAL( transaction_fetch_gate_threshold( 0 ), 0u );
   BOOST_CHECK( !is_transaction_fetching_gated( pending_transaction_pool_size{ 1024 * 1024, 0 } ) );
+}
+
+/// The closed gate requests no transactions from anyone, but counts as holding them back only for a peer that had
+/// transactions to give and room to request them; the open gate passes every window through and holds nothing back
+BOOST_AUTO_TEST_CASE( the_gate_holds_back_only_transactions_that_would_have_been_requested )
+{
+  const uint64_t max_mempool_size = 90000;
+  const pending_transaction_pool_size over{ 40000, max_mempool_size };
+  const pending_transaction_pool_size under{ 20000, max_mempool_size };
+
+  transaction_fetch_gate closed( over );
+  BOOST_CHECK( closed.closed() );
+  BOOST_CHECK_EQUAL( closed.transactions_to_request( 0, true ), 0u );    // window full or fetching inhibited
+  BOOST_CHECK_EQUAL( closed.transactions_to_request( 400, false ), 0u ); // nothing (live) advertised
+  BOOST_CHECK( !closed.held_back() );
+  BOOST_CHECK_EQUAL( closed.transactions_to_request( 400, true ), 0u );
+  BOOST_CHECK( closed.held_back() );
+
+  transaction_fetch_gate open( under );
+  BOOST_CHECK( !open.closed() );
+  BOOST_CHECK_EQUAL( open.transactions_to_request( 400, true ), 400u );
+  BOOST_CHECK_EQUAL( open.transactions_to_request( 0, true ), 0u );
+  BOOST_CHECK( !open.held_back() );
+}
+
+/// While the gate is closed the expiry warning comes at most once per interval, with the sum since the last one;
+/// with the gate open every pass that expired something warns, including what was left from the gated period
+BOOST_AUTO_TEST_CASE( expiry_warnings_are_rate_limited_only_while_gated )
+{
+  const fc::time_point start = fc::time_point::from_iso_string( "2026-11-20T00:00:00" );
+  const fc::microseconds interval = fc::seconds( 30 );
+  fetch_expiry_warning_limiter limiter( interval );
+
+  BOOST_CHECK( limiter.record( 0, true, start ) == std::nullopt );
+  BOOST_CHECK( limiter.record( 5, true, start ) == std::optional<size_t>( 5 ) );
+  // passes 100 ms apart, each expiring some, for just under an interval: no warning
+  for( int pass = 1; pass < 300; ++pass )
+    BOOST_CHECK( limiter.record( 2, true, start + fc::milliseconds( 100 * pass ) ) == std::nullopt );
+  BOOST_CHECK( limiter.record( 2, true, start + interval ) == std::optional<size_t>( 300 * 2 ) );
+
+  BOOST_CHECK( limiter.record( 3, true, start + interval + fc::seconds( 1 ) ) == std::nullopt );
+  // the gate opens: what is left is warned about on the next pass even if that pass expired nothing
+  BOOST_CHECK( limiter.record( 0, false, start + interval + fc::seconds( 2 ) ) == std::optional<size_t>( 3 ) );
+  BOOST_CHECK( limiter.record( 0, false, start + interval + fc::seconds( 3 ) ) == std::nullopt );
+  BOOST_CHECK( limiter.record( 1, false, start + interval + fc::seconds( 4 ) ) == std::optional<size_t>( 1 ) );
+  BOOST_CHECK( limiter.record( 1, false, start + interval + fc::seconds( 5 ) ) == std::optional<size_t>( 1 ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
