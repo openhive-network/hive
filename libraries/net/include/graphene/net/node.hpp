@@ -1182,6 +1182,61 @@ namespace graphene { namespace net {
    */
   bool is_local_endpoint_in_use_error(const fc::exception& connect_error);
 
+  /**
+   * The host a connection to @p address counts against for the per-host connection limit: an IPv4
+   * address (an IPv4-mapped IPv6 address counts as the IPv4 address it maps), or the /64 prefix of
+   * an IPv6 address, the block one machine is normally given.  ::1 stays ::1.
+   */
+  fc::ip::address connection_host_of(const fc::ip::address& address);
+
+  /**
+   * Whether one more connection to @p address would exceed @p maximum_connections_per_host, given the
+   * remote addresses of the connections already held (@p held_addresses, not including the new one).
+   * Loopback addresses are never limited, as local test networks run many nodes on one, and nothing
+   * is when @p maximum_connections_per_host is 0.
+   */
+  bool exceeds_connections_per_host(const fc::ip::address& address, const std::vector<fc::ip::address>& held_addresses,
+                                    uint32_t maximum_connections_per_host);
+
+  /// A peer the connect loop could dial now: routable, due for an attempt and not connected
+  struct connection_candidate
+  {
+    fc::ip::endpoint endpoint;
+    bool exempt_from_host_limit = false; ///< a seed or add-node target: dialed whatever its host holds already
+  };
+
+  struct connection_selection_limits
+  {
+    uint32_t free_slots = 0;                      ///< how many connections to start at most
+    uint32_t desired_connections = 0;             ///< the reserved family share is a percentage of these
+    uint32_t maximum_connections_per_host = 0;    ///< 0 for no limit
+    uint32_t reserved_address_family_percent = 0; ///< capped at 50
+  };
+
+  /**
+   * Which of @p candidates (in peer database order) to dial, in dialing order.  @p held_addresses are the
+   * remote addresses of the connections held already, active and handshaking.
+   *
+   * No candidate is picked whose host would then exceed the per-host limit (exceeds_connections_per_host),
+   * unless it is exempt; an exempt connection still counts against its host's limit for the others.  Each
+   * family is first given candidates until it holds its reserved share of the desired connections, or runs
+   * out of candidates; the remaining slots go to IPv6 candidates first, then IPv4 ones.  So with candidates of
+   * both families, neither is shut out by the other filling the slots first.
+   */
+  std::vector<fc::ip::endpoint> select_connection_candidates(const std::vector<connection_candidate>& candidates,
+                                                             const std::vector<fc::ip::address>& held_addresses,
+                                                             const connection_selection_limits& limits);
+
+  /// How a set of connections spreads over hosts (connection_host_of) and address families
+  struct connection_spread
+  {
+    uint32_t hosts = 0;
+    uint32_t ipv4 = 0;
+    uint32_t ipv6 = 0;
+  };
+
+  connection_spread get_connection_spread(const std::vector<fc::ip::address>& addresses);
+
 } } // graphene::net
 
 FC_REFLECT(graphene::net::message_propagation_data, (received_time)(validated_time)(originating_peer));
