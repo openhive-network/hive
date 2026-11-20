@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   statistics.record_transaction_request( 4, 10 );        // fewer were advertised than the byte cap allows
   statistics.record_transaction_request( limit, limit ); // the per-peer limit bound it, not the byte cap
 
-  const fc::variant_object report = statistics.take_report( start + fc::seconds( 30 ), 5, 7, { 40000, 90000 } );
+  const fc::variant_object report = statistics.take_report( start + fc::seconds( 30 ), 5, 7, { 40000, 90000 }, {} );
 
   BOOST_CHECK_EQUAL( report_uint( report, "fetch", "wakes" ), 4u );
   BOOST_CHECK_EQUAL( report_uint( report, "fetch", "candidates_examined" ), 10u );
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   BOOST_CHECK_EQUAL( report_uint( report, "transaction_requests", "byte_cap_bound" ), 1u );
 
   // the next period starts empty, from the time of the last report
-  const fc::variant_object next = statistics.take_report( start + fc::seconds( 60 ), 0, 0, { 20000, 90000 } );
+  const fc::variant_object next = statistics.take_report( start + fc::seconds( 60 ), 0, 0, { 20000, 90000 }, {} );
   BOOST_CHECK_EQUAL( next["seconds"].as_int64(), 30 );
   for( const char* key : { "wakes", "candidates_examined", "items_requested", "scheduling_us" } )
     BOOST_CHECK_EQUAL( report_uint( next, "fetch", key ), 0u );
@@ -222,6 +222,35 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   BOOST_CHECK_EQUAL( report_double( next, "send", "messages_per_write" ), 0.0 );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_requests", "requests" ), 0u );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_requests", "byte_cap_bound" ), 0u );
+}
+
+/// The report gives how the period's transaction requests were spread over the active peers, counting those
+/// that got none; without peers every figure is 0
+BOOST_AUTO_TEST_CASE( report_gives_the_spread_of_transaction_requests_over_peers )
+{
+  p2p_statistics statistics;
+  const fc::time_point start = fc::time_point::now();
+  const pending_transaction_pool_size pool{ 0, 90000 };
+
+  const fc::variant_object odd = statistics.take_report( start + fc::seconds( 30 ), 0, 0, pool, { 40, 0, 7, 300, 12 } );
+  const fc::variant_object& spread = odd["transaction_requests"].get_object()["per_peer"].get_object();
+  BOOST_CHECK_EQUAL( spread["peers"].as_uint64(), 5u );
+  BOOST_CHECK_EQUAL( spread["requested_peers"].as_uint64(), 4u );
+  BOOST_CHECK_EQUAL( spread["min"].as_uint64(), 0u );
+  BOOST_CHECK_EQUAL( spread["median"].as_uint64(), 12u );
+  BOOST_CHECK_EQUAL( spread["max"].as_uint64(), 300u );
+
+  // the upper of the two middle counts
+  const fc::variant_object even = statistics.take_report( start + fc::seconds( 60 ), 0, 0, pool, { 9, 3, 5, 1 } );
+  const fc::variant_object& even_spread = even["transaction_requests"].get_object()["per_peer"].get_object();
+  BOOST_CHECK_EQUAL( even_spread["requested_peers"].as_uint64(), 4u );
+  BOOST_CHECK_EQUAL( even_spread["min"].as_uint64(), 1u );
+  BOOST_CHECK_EQUAL( even_spread["median"].as_uint64(), 5u );
+  BOOST_CHECK_EQUAL( even_spread["max"].as_uint64(), 9u );
+
+  const fc::variant_object none = statistics.take_report( start + fc::seconds( 90 ), 0, 0, pool, {} );
+  for( const char* key : { "peers", "requested_peers", "min", "median", "max" } )
+    BOOST_CHECK_EQUAL( none["transaction_requests"].get_object()["per_peer"].get_object()[key].as_uint64(), 0u );
 }
 
 /// The node stops requesting transactions once its pending pool holds more than a third of max-mempool-size,

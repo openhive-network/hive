@@ -366,6 +366,8 @@ namespace graphene { namespace net
       uint32_t inventory_advertisements_deferred_since_report = 0;
       uint32_t inventory_advertisements_dropped_since_report = 0;
       fc::time_point last_inventory_limit_report_time;
+      // transactions requested from this peer since the last p2p statistics report
+      uint64_t transactions_requested_since_report = 0;
 
       requested_items items_requested_from_peer;  /// items we've requested from this peer during normal operation.  fetch from another peer if this peer disconnects
       /// items in the node's list of items to fetch that this peer advertised, to choose from once it can take a request
