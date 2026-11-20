@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <condition_variable>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -341,6 +342,52 @@ block_id_type fake_block_id( uint32_t num, const std::string& salt )
   id._hash[ 0 ] = fc::endian_reverse_u32( num );
   return id;
 }
+
+/**
+ * Holds the chain's write thread inside the application of block @p block_num until open() (or destruction), as a
+ * plugin applying backpressure (HAF's block buffer) does: the p2p thread keeps running, but nothing the node hands
+ * the chain completes. While it holds, nothing may wait for the chain's read lock.
+ */
+class chain_stall
+{
+public:
+  chain_stall( hive::chain::database& db, hive::plugins::chain::chain_plugin& chain, uint32_t block_num )
+  {
+    _connection = db.add_pre_apply_block_handler( [this, block_num]( const hive::chain::block_notification& note )
+    {
+      if( note.block_num != block_num )
+        return;
+      std::unique_lock< std::mutex > lock( _mutex );
+      _holding = true;
+      _released.wait( lock, [this]() { return _open; } );
+      _holding = false;
+    }, chain, 0 );
+  }
+  ~chain_stall()
+  {
+    open();
+    hive::utilities::disconnect_signal( _connection );
+  }
+
+  /// whether the write thread is held now
+  bool holding() const { std::lock_guard< std::mutex > guard( _mutex ); return _holding; }
+
+  void open()
+  {
+    {
+      std::lock_guard< std::mutex > guard( _mutex );
+      _open = true;
+    }
+    _released.notify_all();
+  }
+
+private:
+  mutable std::mutex _mutex;
+  std::condition_variable _released;
+  bool _holding = false;
+  bool _open = false;
+  hive::chain::database::signal_connection_ptr _connection;
+};
 
 /// Whether a compressed_block_message names a compression dictionary (see core_messages.cpp)
 bool compressed_with_dictionary( const message& m )
@@ -1541,6 +1588,8 @@ BOOST_AUTO_TEST_CASE( stalled_head_resync_test )
     // the node saw its head advance at the latest now
     const fc::time_point head_advanced = fc::time_point::now();
     auto peer = make_peer( "peer far ahead" );
+    // a head no higher than the node's keeps the restart without any advertisement (stalled_head_restarts_sync_test) out of the way
+    peer->hello().last_known_block_number = 5;
     connect_active( *peer );
     const size_t id_requests = peer->count( fetch_blockchain_item_ids_message_type );
     const block_id_type far_ahead = fake_block_id( 5 + GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS + 1, "far ahead" );
@@ -1561,6 +1610,88 @@ BOOST_AUTO_TEST_CASE( stalled_head_resync_test )
     const fc::time_point asked = peer->received( fetch_blockchain_item_ids_message_type ).back().time;
     BOOST_CHECK_GE( ( asked - head_advanced ).count(), fc::seconds( GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC - 1 ).count() );
     require_kept( *peer );
+  } );
+}
+
+/// D7b: every connection the node has was made while its chain was stalled: the write thread is held inside the
+/// application of a sync block, with more blocks of the peer that delivered them handed to the chain than it takes at
+/// once (maximum_number_of_blocks_to_handle_at_one_time, 4 here), and that peer left. The new peers are asked for
+/// blocks the chain then applies from the copies of the peer that left. Once the chain resumes, the node goes on
+/// syncing from them at once, although none of them advertises anything.
+BOOST_AUTO_TEST_CASE( stall_with_new_connections_test )
+{
+  const uint32_t count = 30;
+  const uint32_t stall_at = 11;
+  const std::vector< block_ptr > chain = generate_chain( count );
+  start_node( R"("maximum_blocks_per_peer_during_syncing":5,"maximum_number_of_blocks_to_handle_at_one_time":4)" );
+  run( [&]()
+  {
+    sync_node( chain, stall_at - 1 );
+    BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
+    chain_stall stall( *db, get_chain_plugin(), stall_at );
+
+    auto before = make_peer( "source before the stall" );
+    before->serve_blocks( chain );
+    connect_active( *before );
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return stall.holding(); }, reply_timeout ), "the chain did not stall" );
+    // it delivers the rest of the chain, which waits for the chain to take more
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *before, chain.back()->get_block_id() ) != 0; }, reply_timeout ) );
+    fc::usleep( fc::seconds( 1 ) );
+    before->close();
+    BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
+
+    std::vector< std::unique_ptr< test_peer > > during;
+    for( const char* name : { "source connected during the stall", "second source connected during the stall" } )
+    {
+      during.push_back( make_peer( name ) );
+      during.back()->serve_blocks( chain );
+      connect_active( *during.back() );
+    }
+    BOOST_REQUIRE( wait_until( [&]() { return during.front()->count( fetch_items_message_type ) != 0; }, reply_timeout ) );
+    fc::usleep( quiet_period );
+    BOOST_REQUIRE( stall.holding() );
+    stall.open();
+
+    BOOST_REQUIRE_MESSAGE( head_reaches( count ), "head is " << get_block_num() );
+    BOOST_CHECK( head_block_id() == chain.back()->get_block_id() );
+    for( const auto& peer : during )
+      BOOST_CHECK( !peer->closed() );
+  } );
+}
+
+/// D7c (T): a peer that is ahead of the node but advertises nothing (it answered the node's request for block ids
+/// before it had the blocks, and it doesn't advertise to a node it knows to be behind) is asked for block ids again
+/// once the node's head has not advanced for GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC (60 s), and the node syncs from
+/// it. Once the node caught up, a quiet chain doesn't make it ask again. The interval is hard-coded, so the case
+/// takes over two minutes.
+BOOST_AUTO_TEST_CASE( stalled_head_restarts_sync_test )
+{
+  const uint32_t count = 20;
+  const uint32_t synced = 10;
+  const std::vector< block_ptr > chain = generate_chain( count );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, synced );
+    // the node saw its head advance at the latest now
+    const fc::time_point head_advanced = fc::time_point::now();
+    auto ahead = make_peer( "silent peer ahead" );
+    ahead->hello().last_known_block_number = count;
+    connect_active( *ahead );
+    BOOST_REQUIRE( wait_until( [&]() { return ahead->in_sync(); }, reply_timeout ) );
+    ahead->serve_blocks( chain );
+    const size_t id_requests = ahead->count( fetch_blockchain_item_ids_message_type );
+
+    BOOST_REQUIRE_MESSAGE( head_reaches( count, fc::seconds( GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC + 1 + 10 ) ), "head is " << get_block_num() );
+    BOOST_CHECK( head_block_id() == chain.back()->get_block_id() );
+    const fc::time_point asked = ahead->received( fetch_blockchain_item_ids_message_type )[ id_requests ].time;
+    BOOST_CHECK_GE( ( asked - head_advanced ).count(), fc::seconds( GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC - 1 ).count() );
+
+    fc::usleep( quiet_period );
+    const size_t id_requests_in_sync = ahead->count( fetch_blockchain_item_ids_message_type );
+    fc::usleep( fc::seconds( GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC + 5 ) );
+    BOOST_CHECK_EQUAL( ahead->count( fetch_blockchain_item_ids_message_type ), id_requests_in_sync );
+    require_kept( *ahead );
   } );
 }
 
