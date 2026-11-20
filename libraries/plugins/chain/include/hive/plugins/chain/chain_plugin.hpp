@@ -158,6 +158,11 @@ public:
   void finish_request();
   bool is_finished_write_processing() const;
 
+  /// The bytes of transactions pending as of the end of the last write queue item; safe to call without a lock from any thread
+  uint64_t get_published_pending_transactions_size() const;
+  /// max-mempool-size in bytes
+  uint64_t get_max_mempool_size() const;
+
 private:
   std::unique_ptr< detail::chain_plugin_impl, detail::chain_plugin_impl_deleter > my;
 };
