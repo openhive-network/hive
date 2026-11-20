@@ -438,7 +438,7 @@ BOOST_AUTO_TEST_CASE( transaction_traffic_waits_for_the_flush_delay )
   BOOST_CHECK_EQUAL( pair.hooks.writes, 1u );
 }
 
-/// A block already queued behind transactions means the send task does not wait at all.
+/// A block queued after transactions goes out ahead of them, and the send task does not wait at all.
 BOOST_AUTO_TEST_CASE( queued_block_is_sent_without_the_flush_delay )
 {
   connected_pair pair;
@@ -452,8 +452,67 @@ BOOST_AUTO_TEST_CASE( queued_block_is_sent_without_the_flush_delay )
   pair.wait_for_messages( 3 );
 
   BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 3u );
-  BOOST_CHECK_EQUAL( pair.receiver_delegate.received.back().msg_type, uint32_t( graphene::net::block_message_type ) );
+  BOOST_CHECK_EQUAL( pair.receiver_delegate.received.front().msg_type, uint32_t( graphene::net::block_message_type ) );
   BOOST_CHECK_LT( ( pair.receiver_delegate.received_at.back() - queued_at ).count(), long_flush_delay.count() / 2 );
+}
+
+/// Blocks and block inventories go out ahead of the transaction traffic queued before them, in the order they were
+/// queued; transaction traffic keeps its order, and so does everything else, which a block passes only where it
+/// waits behind transactions.
+BOOST_AUTO_TEST_CASE( block_traffic_is_written_ahead_of_queued_transaction_traffic )
+{
+  for( fc::microseconds flush_delay : { fc::microseconds( 0 ), long_flush_delay } )
+  {
+    BOOST_TEST_CONTEXT( "flush delay " << flush_delay.count() )
+    {
+      connected_pair pair;
+      pair.sender->set_send_flush_delay( flush_delay );
+
+      const auto hash = []( const char* seed ) { return fc::ripemd160::hash( std::string( seed ) ); };
+      const auto block_inventory = [&]( const char* seed ) {
+        return message( graphene::net::item_ids_inventory_message( graphene::net::block_message_type, { hash( seed ) } ) );
+      };
+      const auto not_available = [&]( const char* seed ) {
+        return message( graphene::net::item_not_available_message( graphene::net::item_id( graphene::net::trx_message_type, hash( seed ) ) ) );
+      };
+      const message sync_request( graphene::net::fetch_blockchain_item_ids_message( graphene::net::block_message_type, {} ) );
+      const message transaction_a = make_transaction_message( 'a' );
+      const message transaction_inventory_b( graphene::net::item_ids_inventory_message( graphene::net::trx_message_type, { hash( "b" ) } ) );
+      const message transaction_c = make_transaction_message( 'c' );
+      const message transaction_request_d( graphene::net::fetch_items_message( graphene::net::trx_message_type, { hash( "d" ) } ) );
+      const std::shared_ptr<hive::chain::full_block_type> block = make_small_block();
+      const message block_reply = message( graphene::net::block_message( block ) );
+
+      // everything is queued before the send task gets to run, as while a node handles one incoming message
+      pair.sender->send_message( sync_request );
+      pair.sender->send_message( transaction_a );
+      pair.sender->send_message( not_available( "1" ) );
+      pair.sender->send_message( transaction_inventory_b );
+      pair.sender->send_message( block_inventory( "first" ) );
+      pair.sender->send_message( not_available( "2" ) );
+      pair.sender->send_message( transaction_c );
+      pair.send_block( block );
+      pair.sender->send_message( transaction_request_d );
+      pair.sender->send_message( block_inventory( "second" ) );
+
+      const std::vector<message> expected = {
+        sync_request, block_inventory( "first" ), block_reply, block_inventory( "second" ),
+        transaction_a, not_available( "1" ), transaction_inventory_b, not_available( "2" ), transaction_c, transaction_request_d };
+      pair.wait_for_messages( expected.size() );
+
+      BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), expected.size() );
+      for( size_t i = 0; i < expected.size(); ++i )
+        BOOST_CHECK_MESSAGE( same_message( pair.receiver_delegate.received[i], expected[i] ), "message " << i << " differs" );
+
+      // with the queue drained, block traffic queued after transactions is written ahead of them again
+      pair.sender->send_message( transaction_a );
+      pair.sender->send_message( block_inventory( "third" ) );
+      pair.wait_for_messages( expected.size() + 2 );
+      BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), expected.size() + 2 );
+      BOOST_CHECK( same_message( pair.receiver_delegate.received[expected.size()], block_inventory( "third" ) ) );
+      BOOST_CHECK( same_message( pair.receiver_delegate.received[expected.size() + 1], transaction_a ) );
+    }
+  }
 }
 
 /// A block, or any other message that is not transaction traffic, queued while the send task waits ends the wait.
@@ -478,7 +537,9 @@ BOOST_AUTO_TEST_CASE( message_arriving_during_the_wait_ends_it )
       pair.wait_for_messages( 2 );
 
       BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 2u );
-      BOOST_CHECK_EQUAL( pair.receiver_delegate.received.front().msg_type, uint32_t( graphene::net::trx_message_type ) );
+      // a block goes ahead of the waiting transaction, a sync request behind it
+      BOOST_CHECK_EQUAL( pair.receiver_delegate.received.back().msg_type,
+                         uint32_t( send_block ? graphene::net::trx_message_type : graphene::net::fetch_blockchain_item_ids_message_type ) );
       BOOST_CHECK_LT( ( pair.receiver_delegate.received_at.back() - queued_at ).count(), long_flush_delay.count() / 2 );
       BOOST_CHECK_EQUAL( pair.hooks.writes, 1u );
     }
@@ -613,7 +674,8 @@ BOOST_AUTO_TEST_CASE( transaction_replies_over_the_queue_limit_wait_for_it_to_dr
       ++replies;
   }
   BOOST_CHECK_EQUAL( replies, accepted );
-  BOOST_CHECK_EQUAL( replies_before_block, queued_at_once );
+  // the block goes ahead of the queued replies, and the waiting ones are queued behind it
+  BOOST_CHECK_EQUAL( replies_before_block, 0u );
 
   // with the replies sent, as many may wait again
   for( size_t i = 0; i < may_wait; ++i )
