@@ -158,10 +158,13 @@ struct connected_pair
     sender->send_block_message( block->get_block_id() );
   }
 
+  /// waits until the receiver has @p count messages and the sender has accounted for the writes that carried them:
+  /// the receiver can handle a message before the sender's write of it returns
   void wait_for_messages( size_t count, fc::microseconds timeout = fc::seconds( 30 ) )
   {
     const fc::time_point deadline = fc::time_point::now() + timeout;
-    while( receiver_delegate.received.size() < count && !receiver_delegate.closed && fc::time_point::now() < deadline )
+    while( ( receiver_delegate.received.size() < count || sender_delegate.messages_written < receiver_delegate.received.size() ) &&
+           !receiver_delegate.closed && fc::time_point::now() < deadline )
       fc::usleep( fc::milliseconds( 1 ) );
   }
 };
