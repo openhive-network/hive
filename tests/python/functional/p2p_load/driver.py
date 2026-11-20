@@ -203,11 +203,15 @@ def _apply_p2p_parameters(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, A
 
 
 def _enable_p2p_loggers(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, list[str]]:
-    """Enable the opt-in p2p loggers (unless the spec turns them off) on every node whose binary has them."""
+    """
+    Enable the opt-in p2p loggers (unless the spec turns them off) on every node whose binary has them, and the default
+    logger at debug on every node.
+    """
     binaries = {spec.binary(r) for r in nodes}
     available = {path: p2p_loggers.binary_loggers(Path(path)) if spec.p2p_loggers else [] for path in binaries}
     enabled: dict[str, list[str]] = {}
     for role, node in nodes.items():
+        node.config.log_logger = p2p_loggers.with_debug_default(node.config.log_logger)
         enabled[role] = available[spec.binary(role)]
         if enabled[role]:
             node.config.log_logger = p2p_loggers.with_loggers(node.config.log_logger, enabled[role])

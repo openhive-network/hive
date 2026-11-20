@@ -1,4 +1,7 @@
-"""Which opt-in p2p loggers a node gets: the p2p statistics and relay sample loggers, only where its hived has them."""
+"""
+Which opt-in p2p loggers a node gets: the p2p statistics and relay sample loggers, only where its hived has them; and
+the default logger at debug, for the fast-confirms a node accepts.
+"""
 
 from __future__ import annotations
 
@@ -39,6 +42,23 @@ def with_loggers(log_logger: str | None, loggers: list[str]) -> str:
         json.dumps({"name": name, "level": _LEVEL, "appender": _APPENDER}, separators=(",", ":")) for name in loggers
     ]
     return " ".join([*([log_logger] if log_logger else []), *entries])
+
+
+def with_debug_default(log_logger: str | None) -> str:
+    """
+    Return the `log-logger` value with the default logger at debug, writing to stderr unless it already names an
+    appender.
+
+    hived logs each fast-confirm (witness_block_approve) it accepts only at debug, on the default logger; the other
+    debug lines of that logger come at most once per block or on rare errors.
+    """
+    entries = [json.loads(entry) for entry in _LOGGER_ENTRY.findall(log_logger or "")]
+    default = next((entry for entry in entries if entry.get("name") == "default"), None)
+    if default is None:
+        entries.insert(0, {"name": "default", "appender": "stderr"})
+        default = entries[0]
+    default["level"] = "debug"
+    return " ".join(json.dumps(entry, separators=(",", ":")) for entry in entries)
 
 
 def _enabled_in_config(config_text: str) -> set[str]:

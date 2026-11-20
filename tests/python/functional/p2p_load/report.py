@@ -53,6 +53,8 @@ def summarize(
         "relay_coverage": analysis.relay_coverage(run),
         "p2p_loggers": meta.get("p2p_loggers", {}),
         "p2p_counters": analysis.p2p_counters(run),
+        "fast_confirms": analysis.fast_confirms(run),
+        "irreversibility_lag": analysis.irreversibility_lag(run),
         "late_observer": meta.get("late_observer"),
         "timings": meta.get("timings"),
         "replay": meta.get("replay"),
@@ -118,6 +120,21 @@ def _format_all_counters(summary: dict[str, Any]) -> list[str]:
             else "   p2p stats: none (p2p_stats enabled on no node: off, or no binary has it)"
         ]
     return [line for role, counters in summary["p2p_counters"].items() for line in _format_counters(role, counters)]
+
+
+def _format_fast_confirms(summary: dict[str, Any]) -> list[str]:
+    lines = [
+        (
+            f"   fast-confirms {role:10} {fc['accepted']}/{fc['produced']} accepted ({fc['accepted_pct']:.1f}%), "
+            f"ms after the witness: median {_fmt(fc['median_ms'], 1)} max {_fmt(fc['max_ms'], 1)}"
+        )
+        for role, fc in summary["fast_confirms"].items()
+    ] or ["   fast-confirms: none logged by the witness (default logger below debug)"]
+    lines.extend(
+        f"   head-LIB {role:10} median {lag['median']:g} max {lag['max']} over {lag['blocks']} blocks"
+        for role, lag in summary["irreversibility_lag"].items()
+    )
+    return lines
 
 
 def _format_host_load(load: dict[str, Any] | None, host: str = "host") -> list[str]:
@@ -269,6 +286,7 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
     else:
         lines.append("   relay: no sampled transaction timestamps in the logs")
     lines.extend(_format_all_counters(summary))
+    lines.extend(_format_fast_confirms(summary))
     if summary["late_observer"]:
         lines.append(f"   late observer: {summary['late_observer']}")
     lines.extend(_format_timings(summary))
@@ -324,6 +342,13 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
             f"{role} tx/request": counter_of(role, "transaction_requests", "transactions_per_request"),
             f"{role} byte cap hit %": counter_of(role, "transaction_requests", "byte_cap_bound_pct"),
         })
+    rows["fewest fast-confirms accepted %"] = lambda s: min(
+        (fc["accepted_pct"] for fc in s["fast_confirms"].values()), default=None
+    )
+    rows["slowest fast-confirm median ms"] = lambda s: max(
+        (fc["median_ms"] for fc in s["fast_confirms"].values() if fc["median_ms"] is not None), default=None
+    )
+    rows["largest head-LIB"] = lambda s: max((lag["max"] for lag in s["irreversibility_lag"].values()), default=None)
     rows["driver wall s"] = lambda s: (s["timings"] or {}).get("total_s")
     return rows
 

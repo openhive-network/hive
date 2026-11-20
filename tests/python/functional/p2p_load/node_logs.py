@@ -1,6 +1,6 @@
 """
-The lines the harness reads from a node's logs: Block stats, p2p block arrival offsets, sampled relay timestamps and
-the periodic p2p statistics.
+The lines the harness reads from a node's logs: Block stats, p2p block arrival offsets, sampled relay timestamps, the
+periodic p2p statistics and the fast-confirms the node accepted.
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ _RELAY = re.compile(r"RLY (RCV|BRD) id=(\w+) t=(\d+)")
 _RELAY_SAMPLE = re.compile(r"relay sample (received|broadcast) (\w+) \w+ at (\d+)")
 _RELAY_SAMPLE_KINDS = {"received": "RCV", "broadcast": "BRD"}
 _P2P_STATISTICS = re.compile(r"p2p statistics: (\{.*\})\s*$")
+_FAST_CONFIRM = re.compile(r"Accepted fast-confirm from witness (\S+) for block #(\d+) ")
 # what every appender line starts with (after a console color code, if any): the node's (faked) clock, in ms or us
 _LOG_TIME = re.compile(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d+))?")
 
@@ -45,13 +46,14 @@ def log_files(node_dir: Path) -> list[Path]:
 def _appender_segments(current: Path) -> list[Path]:
     """
     Return the segments of the appender writing `current`: its rotated `<name>.<stamp>` files in stamp order, then
-    `current`, unless it is a copy of the newest rotated one.
+    `current`, unless it is a copy of one of them.
 
-    hived rotates an appender hourly by the node's (faked) clock and points `current` at the newest segment; copying
-    the node's directory back turns that link into a regular file identical to the newest segment.
+    hived rotates an appender hourly by the node's clock and points `current` at the segment it writes; copying the
+    node's directory back turns that link into a regular file identical to that segment. It need not be the newest by
+    stamp: the replay runs on the real clock and the run on the faked one, which can be behind it.
     """
     rotated = sorted(p for p in current.parent.glob(f"{current.name}.*") if p.is_file() and not p.is_symlink())
-    if current.is_symlink() or (rotated and filecmp.cmp(current, rotated[-1], shallow=False)):
+    if current.is_symlink() or any(filecmp.cmp(current, segment, shallow=False) for segment in rotated):
         return rotated
     return [*rotated, current]
 
@@ -135,3 +137,19 @@ def p2p_statistics(node_dir: Path) -> list[dict[str, Any]]:
         report["log_time"] = _log_time(line)
         reports.append(report)
     return reports
+
+
+def fast_confirms(node_dir: Path) -> dict[tuple[str, int], float]:
+    """
+    Return {(witness, approved block number): the time it was logged} of every fast-confirm the node accepted.
+
+    hived logs an accepted fast-confirm only with the default logger at debug; the producing node logs its own too.
+    """
+    accepted: dict[tuple[str, int], float] = {}
+    for line in _lines(node_dir):
+        match = _FAST_CONFIRM.search(line)
+        if match is not None:
+            logged = _log_time(line)
+            if logged is not None:
+                accepted.setdefault((match.group(1), int(match.group(2))), logged)
+    return accepted
