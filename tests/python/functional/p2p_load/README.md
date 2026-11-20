@@ -102,6 +102,9 @@ unless configured. The driver adds `log-logger` entries for them at `info`, into
 binary carries the logger's name, and checks each `config.ini` for them after the replay. An older binary gets no
 entry and runs as before. `out.json` records the loggers each node got.
 
+Every node also runs its `default` logger at `debug`: hived logs each fast-confirm (`witness_block_approve`) it accepts
+only there. The logger's other debug lines come at most once per block or on rare errors.
+
 ## Two hosts
 
 `--remote-host HOST --remote-roles colony0,colony1,...` runs the named nodes on HOST and the others (always the
@@ -250,6 +253,12 @@ work on any finished run directory and need no node and no test-tools.
   completion latency buckets and in-flight limit waits; socket writes per second with messages and bytes per write;
   transaction requests per second, transactions per request and how many hit the byte cap. `compare` shows them for
   the witness and the relays, and the witness's p2p CPU per received transaction.
+- **fast-confirms**: per node, how many of the fast-confirms the witness produced for loaded-window blocks it accepted,
+  and the delay from the witness's own acceptance to the node's, skew-corrected like the block offsets (a node
+  without enough idle blocks shows no delay). One still on its way when the run ended counts as missing, so compare
+  late blocks' shares with care. `compare` gives the fewest accepted share and the slowest median over the nodes.
+- **head-LIB**: per node, the block number minus the last irreversible block in each loaded-window block's Block stats
+  (the irreversible block before that block's own fast-confirms), as median and maximum; `compare` gives the largest.
 
 ## Harness rules
 

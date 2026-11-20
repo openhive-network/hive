@@ -1,6 +1,6 @@
 """
-The lines the harness reads from a node's logs: Block stats, p2p block arrival offsets, sampled relay timestamps and
-the periodic p2p statistics.
+The lines the harness reads from a node's logs: Block stats, p2p block arrival offsets, sampled relay timestamps, the
+periodic p2p statistics and the fast-confirms the node accepted.
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ _RELAY = re.compile(r"RLY (RCV|BRD) id=(\w+) t=(\d+)")
 _RELAY_SAMPLE = re.compile(r"relay sample (received|broadcast) (\w+) \w+ at (\d+)")
 _RELAY_SAMPLE_KINDS = {"received": "RCV", "broadcast": "BRD"}
 _P2P_STATISTICS = re.compile(r"p2p statistics: (\{.*\})\s*$")
+_FAST_CONFIRM = re.compile(r"Accepted fast-confirm from witness (\S+) for block #(\d+) ")
 # what every appender line starts with (after a console color code, if any): the node's (faked) clock, in ms or us
 _LOG_TIME = re.compile(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d+))?")
 
@@ -135,3 +136,19 @@ def p2p_statistics(node_dir: Path) -> list[dict[str, Any]]:
         report["log_time"] = _log_time(line)
         reports.append(report)
     return reports
+
+
+def fast_confirms(node_dir: Path) -> dict[tuple[str, int], float]:
+    """
+    Return {(witness, approved block number): the time it was logged} of every fast-confirm the node accepted.
+
+    hived logs an accepted fast-confirm only with the default logger at debug; the producing node logs its own too.
+    """
+    accepted: dict[tuple[str, int], float] = {}
+    for line in _lines(node_dir):
+        match = _FAST_CONFIRM.search(line)
+        if match is not None:
+            logged = _log_time(line)
+            if logged is not None:
+                accepted.setdefault((match.group(1), int(match.group(2))), logged)
+    return accepted
