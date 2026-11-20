@@ -239,14 +239,15 @@ namespace graphene { namespace net {
             throw;
           }
 
-          // a handler that closed the connection gets no more of its messages; the next read ends the loop
-          if (_closed_locally)
-            buffer_begin = buffer_end;
-          else if (++messages_since_last_wait >= messages_between_yields)
+          if (!_closed_locally && ++messages_since_last_wait >= messages_between_yields)
           {
             fc::yield();
             messages_since_last_wait = 0;
           }
+          // a connection closed by the handler, or by another task while this one yielded, gets no more
+          // of its messages; the next read ends the loop
+          if (_closed_locally)
+            buffer_begin = buffer_end;
         }
       }
       catch ( const fc::canceled_exception& e )
