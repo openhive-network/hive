@@ -44,6 +44,9 @@ struct node_configuration
    int64_t fetch_items_minimum_interval_microseconds = 5000;
    /** how many transactions received from peers may wait for validation at once; at the limit, a peer's next one waits. 0 = no limit */
    uint32_t maximum_transactions_in_flight = 10000;
+   /** while the client's pending transaction pool holds more than this many blocks of the current maximum block size,
+       the node requests no transactions from its peers (blocks still); 0 = no limit */
+   double transaction_fetch_pool_limit_blocks = 2;
 };
 
 } }
@@ -65,4 +68,5 @@ FC_REFLECT(graphene::net::node_configuration,
    (transaction_flush_delay_microseconds)
    (fetch_items_minimum_interval_microseconds)
    (maximum_transactions_in_flight)
+   (transaction_fetch_pool_limit_blocks)
 )

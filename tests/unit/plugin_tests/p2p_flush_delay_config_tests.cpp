@@ -135,6 +135,39 @@ BOOST_AUTO_TEST_CASE( maximum_transactions_in_flight_option_overrides_p2p_parame
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( transaction_fetch_pool_limit_defaults_to_2_blocks )
+{
+  try
+  {
+    BOOST_CHECK_EQUAL( configured_parameters( {} ).transaction_fetch_pool_limit_blocks, 2.0 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+static const std::string p2p_parameters_with_5_block_transaction_fetch_pool_limit =
+  R"({"listen_endpoint":"0.0.0.0:0","accept_incoming_connections":false,"transaction_fetch_pool_limit_blocks":5})";
+
+BOOST_AUTO_TEST_CASE( transaction_fetch_pool_limit_p2p_parameter_is_applied )
+{
+  try
+  {
+    BOOST_CHECK_EQUAL( configured_parameters(
+      { config_line_t( { "p2p-parameters", { p2p_parameters_with_5_block_transaction_fetch_pool_limit } } ) } ).transaction_fetch_pool_limit_blocks, 5.0 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( transaction_fetch_pool_limit_option_overrides_p2p_parameters )
+{
+  try
+  {
+    BOOST_CHECK_EQUAL( configured_parameters(
+      { config_line_t( { "p2p-parameters", { p2p_parameters_with_5_block_transaction_fetch_pool_limit } } ),
+        config_line_t( { "p2p-transaction-fetch-pool-limit", { "0.5" } } ) } ).transaction_fetch_pool_limit_blocks, 0.5 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

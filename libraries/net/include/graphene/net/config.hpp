@@ -199,6 +199,13 @@
 #define GRAPHENE_NET_INVENTORY_LIMIT_REPORT_INTERVAL_SEC     10
 
 /**
+ * While the client's pending transaction pool is over the node's limit (node_configuration::
+ * transaction_fetch_pool_limit_blocks), the fetch items loop looks again this often whether the pool
+ * has drained, so transaction fetching resumes within this long after it has
+ */
+#define GRAPHENE_NET_PENDING_POOL_RECHECK_INTERVAL_MS        50
+
+/**
  * How often the node writes its p2p statistics (fetch scheduling, transaction handoff, send batching,
  * request sizing) to the GRAPHENE_NET_STATISTICS_LOGGER logger, when that logger is enabled for info
  */

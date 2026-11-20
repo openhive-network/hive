@@ -103,6 +103,13 @@ namespace graphene { namespace net {
    */
   typedef std::function<void(const fc::exception_ptr& error)> transaction_validated_callback;
 
+   /// The client's pool of pending transactions, as the client last published it
+   struct pending_transaction_pool_status
+   {
+      uint64_t size = 0;               ///< bytes of the transactions in the pool
+      uint32_t maximum_block_size = 0; ///< the current maximum block size in bytes
+   };
+
    /**
     *  @class node_delegate
     *  @brief used by node reports status to client or fetch data from client
@@ -250,6 +257,10 @@ namespace graphene { namespace net {
          virtual void error_encountered(const std::string& message, const fc::oexception& error) = 0;
 
          virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) = 0;
+
+         /** returns the pending transaction pool as of a point where it is complete: never while a block is being
+          * applied, when the pool is cleared and refilled. Called on every pass of the fetch loop, so it must be cheap */
+         virtual pending_transaction_pool_status get_pending_transaction_pool() const = 0;
    };
 
    /**
@@ -870,6 +881,16 @@ namespace graphene { namespace net {
       uint64_t byte_cap_bound = 0; ///< requests cut short by GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH
     };
 
+    /// the client's pending transaction pool as each fetch pass saw it, against the limit over which no transactions are requested
+    struct pending_pool_gate
+    {
+      uint64_t limit = 0;          ///< bytes; 0 = no limit
+      uint64_t size = 0;           ///< bytes, at the latest pass
+      uint64_t max_size = 0;       ///< bytes, the most any pass saw
+      uint64_t passes = 0;
+      uint64_t inhibited_passes = 0; ///< passes that requested no transactions because the pool was over the limit
+    };
+
     fetch_scheduling fetch;
 
     /// @p in_flight counts the submitted transaction
@@ -879,10 +900,13 @@ namespace graphene { namespace net {
     void record_write(size_t messages, size_t bytes);
     /// @p max_transactions is the most the request could ask for: the per-peer limit, or less when the byte cap is lower
     void record_transaction_request(size_t transactions, size_t max_transactions);
+    /// A fetch pass saw a pool of @p size bytes against @p limit (0 = none), and requested no transactions if @p inhibited
+    void record_pending_pool(uint64_t size, uint64_t limit, bool inhibited);
 
     const transaction_handoff& handoff() const { return _handoff; }
     const send_batching& sending() const { return _sending; }
     const request_sizing& requests() const { return _requests; }
+    const pending_pool_gate& pending_pool() const { return _pending_pool; }
 
     /**
      * Everything recorded since the last report (or since construction), as of @p now, with @p in_flight
@@ -895,7 +919,14 @@ namespace graphene { namespace net {
     transaction_handoff _handoff;
     send_batching _sending;
     request_sizing _requests;
+    pending_pool_gate _pending_pool;
   };
+
+  /**
+   * The size in bytes of the pending transaction pool over which the node requests no transactions:
+   * @p limit_in_blocks blocks of @p maximum_block_size bytes, but at least one byte; 0 (no limit) when @p limit_in_blocks is not positive
+   */
+  uint64_t pending_pool_fetch_limit(double limit_in_blocks, uint32_t maximum_block_size);
 
   /// Whether the transaction with @p message_hash is a relay sample: one in @p one_in, the same ones on every node
   bool is_relay_sample(const message_hash_type& message_hash, uint32_t one_in = GRAPHENE_NET_RELAY_SAMPLE_ONE_IN);

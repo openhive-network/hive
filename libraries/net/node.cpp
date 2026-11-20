@@ -34,6 +34,7 @@
 #include <forward_list>
 #include <iostream>
 #include <algorithm>
+#include <limits>
 #include <tuple>
 #include <boost/tuple/tuple.hpp>
 #include <boost/circular_buffer.hpp>
@@ -300,6 +301,7 @@ namespace graphene { namespace net {
       uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const override;
       void error_encountered(const std::string& message, const fc::oexception& error) override;
       std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
+      pending_transaction_pool_status get_pending_transaction_pool() const override;
     };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1478,6 +1480,19 @@ namespace graphene { namespace net {
           wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", (expired_items));
         fc::time_point next_peer_unblocked_time = fc::time_point::maximum();
 
+        // while the client's pool already holds more transactions than the next blocks can take, fetching more
+        // would only have them validated, forwarded to every peer and dropped at max-mempool-size, while the
+        // peers' send queues hold up the blocks behind them.  The pool drains as blocks include its
+        // transactions and as they expire, fail or are dropped when blocks are applied; blocks and sync items
+        // are never held back
+        const pending_transaction_pool_status pending_pool = _delegate->get_pending_transaction_pool();
+        const uint64_t pending_pool_limit = pending_pool_fetch_limit(_node_configuration.transaction_fetch_pool_limit_blocks,
+                                                                     pending_pool.maximum_block_size);
+        const bool pending_pool_full = pending_pool_limit != 0 && pending_pool.size > pending_pool_limit;
+        _statistics.record_pending_pool(pending_pool.size, pending_pool_limit, pending_pool_full);
+        const fc::time_point pending_pool_recheck_time =
+          iteration_start + fc::milliseconds(GRAPHENE_NET_PENDING_POOL_RECHECK_INTERVAL_MS);
+
         // we need to construct a list of items to request from each peer first,
         // then send the messages (in two steps, to avoid yielding while iterating).
         // Peers with no block or sync request outstanding are asked, each for items from its own fetch
@@ -1502,9 +1517,14 @@ namespace graphene { namespace net {
           if (peer->can_take_item_request() && peer->fetch_candidates.size() > 0)
           {
             const bool transaction_fetching_inhibited = peer->is_transaction_fetching_inhibited();
-            if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions())
-              next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
-            const size_t max_transactions = transaction_fetching_inhibited ? 0 :
+            if (peer->fetch_candidates.has_transactions())
+            {
+              if (transaction_fetching_inhibited)
+                next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
+              else if (pending_pool_full)
+                next_peer_unblocked_time = std::min(pending_pool_recheck_time, next_peer_unblocked_time);
+            }
+            const size_t max_transactions = transaction_fetching_inhibited || pending_pool_full ? 0 :
               peer->received_transaction_size.transactions_to_request(peer->items_requested_from_peer.transactions());
             if (max_transactions == 0 && !peer->fetch_candidates.has_blocks())
               continue;
@@ -1591,7 +1611,8 @@ namespace graphene { namespace net {
         }
         items_by_peer.clear();
 
-        // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited
+        // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited,
+        // or to look again whether the pending pool has drained
         _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
                                        next_peer_unblocked_time);
       } // while (!canceled)
@@ -7654,6 +7675,11 @@ namespace graphene { namespace net {
       INVOKE_AND_COLLECT_STATISTICS(find_first_item_not_in_blockchain, item_hashes_received);
     }
 
+    pending_transaction_pool_status statistics_gathering_node_delegate_wrapper::get_pending_transaction_pool() const
+    {
+      INVOKE_AND_COLLECT_STATISTICS(get_pending_transaction_pool);
+    }
+
 #undef INVOKE_AND_COLLECT_STATISTICS
 
   } // end namespace detail
@@ -8055,6 +8081,16 @@ namespace graphene { namespace net {
       ++_requests.byte_cap_bound;
   }
 
+  void p2p_statistics::record_pending_pool(uint64_t size, uint64_t limit, bool inhibited)
+  {
+    _pending_pool.limit = limit;
+    _pending_pool.size = size;
+    _pending_pool.max_size = std::max(_pending_pool.max_size, size);
+    ++_pending_pool.passes;
+    if (inhibited)
+      ++_pending_pool.inhibited_passes;
+  }
+
   fc::variant_object p2p_statistics::take_report(fc::time_point now, uint32_t in_flight, size_t items_queued)
   {
     const auto mean = [](uint64_t total, uint64_t count) { return count ? double(total) / double(count) : 0.0; };
@@ -8090,14 +8126,36 @@ namespace graphene { namespace net {
       ("transaction_requests", fc::mutable_variant_object()
         ("requests", _requests.transaction_requests)
         ("transactions_per_request", mean(_requests.transactions_requested, _requests.transaction_requests))
-        ("byte_cap_bound", _requests.byte_cap_bound));
+        ("byte_cap_bound", _requests.byte_cap_bound))
+      ("pending_pool", fc::mutable_variant_object()
+        ("limit_bytes", _pending_pool.limit)
+        ("size_bytes", _pending_pool.size)
+        ("max_size_bytes", _pending_pool.max_size)
+        ("passes", _pending_pool.passes)
+        ("inhibited_passes", _pending_pool.inhibited_passes));
 
     fetch = fetch_scheduling();
     _handoff = transaction_handoff();
     _sending = send_batching();
     _requests = request_sizing();
+    // the limit and the size are the state as of the latest pass, which a quiet period may not change
+    pending_pool_gate pending_pool;
+    pending_pool.limit = _pending_pool.limit;
+    pending_pool.size = _pending_pool.size;
+    pending_pool.max_size = _pending_pool.size;
+    _pending_pool = pending_pool;
     _period_start = now;
     return report;
+  }
+
+  uint64_t pending_pool_fetch_limit(double limit_in_blocks, uint32_t maximum_block_size)
+  {
+    if (!(limit_in_blocks > 0))
+      return 0;
+    const double limit = limit_in_blocks * maximum_block_size;
+    if (limit >= double(std::numeric_limits<uint64_t>::max()))
+      return std::numeric_limits<uint64_t>::max();
+    return std::max<uint64_t>(1, uint64_t(limit));
   }
 
   bool is_relay_sample(const message_hash_type& message_hash, uint32_t one_in)

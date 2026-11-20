@@ -112,6 +112,7 @@ public:
   virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp( uint32_t ) const override;
   virtual void error_encountered( const std::string& message, const fc::oexception& error ) override;
   virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
+  virtual graphene::net::pending_transaction_pool_status get_pending_transaction_pool() const override;
 
   void request_precomputing_transaction_signatures_if_useful();
 
@@ -128,6 +129,7 @@ public:
   fc::optional<uint32_t> transaction_flush_delay_us;
   fc::optional<uint32_t> fetch_items_minimum_interval_us;
   fc::optional<uint32_t> max_transactions_in_flight;
+  fc::optional<double> transaction_fetch_pool_limit_blocks;
   bool force_validate = false;
   bool block_producer = false;
 
@@ -450,6 +452,11 @@ std::deque<block_id_type>::const_iterator p2p_plugin_impl::find_first_item_not_i
   return chain.block_reader().find_first_item_not_in_blockchain(item_hashes_received);
 }
 
+graphene::net::pending_transaction_pool_status p2p_plugin_impl::get_pending_transaction_pool() const
+{
+  return { chain.pending_transaction_pool_size(), chain.maximum_block_size() };
+}
+
 void p2p_plugin_impl::request_precomputing_transaction_signatures_if_useful()
 {
   if (force_validate)
@@ -512,6 +519,9 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-max-transactions-in-flight", bpo::value<uint32_t>(), "Maximum number of transactions received from peers that may wait for validation at once. "
      "At the limit, the next transaction a peer sends waits until one is validated, and so does reading anything further from that peer. "
      "Default 10000; 0 for no limit. Overrides maximum_transactions_in_flight in p2p-parameters.")
+    ("p2p-transaction-fetch-pool-limit", bpo::value<double>(), "While the pool of pending transactions holds more than this many blocks of the current maximum block size, "
+     "no transactions are requested from peers; blocks still are. Requests resume once the pool drains as blocks include, expire or drop its transactions. "
+     "Default 2; 0 for no limit; may be a fraction (p2p-parameters takes whole numbers only). Overrides transaction_fetch_pool_limit_blocks in p2p-parameters.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
@@ -539,6 +549,12 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count( "p2p-max-transactions-in-flight" ) )
     my->max_transactions_in_flight = options.at( "p2p-max-transactions-in-flight" ).as< uint32_t >();
+
+  if( options.count( "p2p-transaction-fetch-pool-limit" ) )
+  {
+    my->transaction_fetch_pool_limit_blocks = options.at( "p2p-transaction-fetch-pool-limit" ).as< double >();
+    FC_ASSERT( *my->transaction_fetch_pool_limit_blocks >= 0, "p2p-transaction-fetch-pool-limit must not be negative" );
+  }
 
   if (options.count("p2p-seed-node"))
   {
@@ -661,6 +677,14 @@ void p2p_plugin::plugin_finalize_startup()
         ilog( "Overriding advanded_node_parameters[ \"maximum_transactions_in_flight\" ] with ${count}", ("count", *my->max_transactions_in_flight) );
 
       my->config.set( "maximum_transactions_in_flight", fc::variant( *my->max_transactions_in_flight ) );
+    }
+
+    if( my->transaction_fetch_pool_limit_blocks )
+    {
+      if( my->config.find( "transaction_fetch_pool_limit_blocks" ) != my->config.end() )
+        ilog( "Overriding advanded_node_parameters[ \"transaction_fetch_pool_limit_blocks\" ] with ${blocks}", ("blocks", *my->transaction_fetch_pool_limit_blocks) );
+
+      my->config.set( "transaction_fetch_pool_limit_blocks", fc::variant( *my->transaction_fetch_pool_limit_blocks ) );
     }
 
     ilog("Setting parameters");

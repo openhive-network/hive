@@ -158,6 +158,11 @@ public:
   void finish_request();
   bool is_finished_write_processing() const;
 
+  /// Bytes of the pending transactions and the current maximum block size, as of the end of the last write queue
+  /// item processed: never the pool of a block being applied, which is cleared and refilled.  Need no database lock
+  uint64_t pending_transaction_pool_size() const;
+  uint32_t maximum_block_size() const;
+
 private:
   std::unique_ptr< detail::chain_plugin_impl, detail::chain_plugin_impl_deleter > my;
 };

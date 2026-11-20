@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <string>
 
 using graphene::net::is_relay_sample;
@@ -142,6 +143,45 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   BOOST_CHECK_EQUAL( report_double( next, "send", "messages_per_write" ), 0.0 );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_requests", "requests" ), 0u );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_requests", "byte_cap_bound" ), 0u );
+}
+
+/// The pending pool gate reports its limit, the pool as the passes saw it and how many passes it held back.
+/// The limit and the latest size are state, so they carry over into a period without passes; the counts start over
+BOOST_AUTO_TEST_CASE( report_shows_the_pending_pool_gate )
+{
+  p2p_statistics statistics;
+  const fc::time_point start = fc::time_point::now();
+
+  statistics.record_pending_pool( 1000, 4000, false );
+  statistics.record_pending_pool( 5000, 4000, true );
+  statistics.record_pending_pool( 4500, 4000, true );
+
+  const fc::variant_object report = statistics.take_report( start + fc::seconds( 30 ), 0, 0 );
+  BOOST_CHECK_EQUAL( report_uint( report, "pending_pool", "limit_bytes" ), 4000u );
+  BOOST_CHECK_EQUAL( report_uint( report, "pending_pool", "size_bytes" ), 4500u );
+  BOOST_CHECK_EQUAL( report_uint( report, "pending_pool", "max_size_bytes" ), 5000u );
+  BOOST_CHECK_EQUAL( report_uint( report, "pending_pool", "passes" ), 3u );
+  BOOST_CHECK_EQUAL( report_uint( report, "pending_pool", "inhibited_passes" ), 2u );
+
+  const fc::variant_object quiet = statistics.take_report( start + fc::seconds( 60 ), 0, 0 );
+  BOOST_CHECK_EQUAL( report_uint( quiet, "pending_pool", "limit_bytes" ), 4000u );
+  BOOST_CHECK_EQUAL( report_uint( quiet, "pending_pool", "size_bytes" ), 4500u );
+  BOOST_CHECK_EQUAL( report_uint( quiet, "pending_pool", "max_size_bytes" ), 4500u );
+  BOOST_CHECK_EQUAL( report_uint( quiet, "pending_pool", "passes" ), 0u );
+  BOOST_CHECK_EQUAL( report_uint( quiet, "pending_pool", "inhibited_passes" ), 0u );
+}
+
+/// The limit is the given number of blocks of the current maximum block size; a fraction of a block is at least
+/// one byte, and no positive number of blocks means no limit
+BOOST_AUTO_TEST_CASE( pending_pool_fetch_limit_is_counted_in_blocks )
+{
+  using graphene::net::pending_pool_fetch_limit;
+  BOOST_CHECK_EQUAL( pending_pool_fetch_limit( 2, 2 * 1024 * 1024 ), 4u * 1024 * 1024 );
+  BOOST_CHECK_EQUAL( pending_pool_fetch_limit( 0.5, 65536 ), 32768u );
+  BOOST_CHECK_EQUAL( pending_pool_fetch_limit( 1e-9, 65536 ), 1u );
+  BOOST_CHECK_EQUAL( pending_pool_fetch_limit( 1e30, 65536 ), std::numeric_limits< uint64_t >::max() );
+  BOOST_CHECK_EQUAL( pending_pool_fetch_limit( 0, 65536 ), 0u );
+  BOOST_CHECK_EQUAL( pending_pool_fetch_limit( -1, 65536 ), 0u );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <atomic>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -299,6 +300,57 @@ struct p2p_protocol_fixture : public witness_fixture
           std::find( inventory.item_hashes_available.begin(), inventory.item_hashes_available.end(), hash ) != inventory.item_hashes_available.end() )
         return true;
     return false;
+  }
+
+  /// When a producing node asked for a transaction a peer advertised while its pending pool held another one,
+  /// pushed to the chain right after a block, and when the next block, which included the pushed one, was applied
+  struct pool_gate_timing
+  {
+    fc::time_point requested;
+    fc::time_point pool_included;
+  };
+
+  pool_gate_timing fetch_while_pool_holds_a_transaction()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    std::mutex included_mutex;
+    std::map< transaction_id_type, fc::time_point > included;
+    auto block_conn = db->add_post_apply_block_handler( [&]( const block_notification& note )
+    {
+      std::lock_guard< std::mutex > guard( included_mutex );
+      for( const full_transaction_ptr& transaction : note.full_block->get_full_transactions() )
+        included.emplace( transaction->get_transaction_id(), fc::time_point::now() );
+    }, get_chain_plugin(), 0 );
+    BOOST_SCOPE_EXIT( &block_conn ) { hive::utilities::disconnect_signal( block_conn ); } BOOST_SCOPE_EXIT_END
+    const auto inclusion_time = [&]( const full_transaction_ptr& transaction ) -> fc::optional< fc::time_point >
+    {
+      std::lock_guard< std::mutex > guard( included_mutex );
+      const auto found = included.find( transaction->get_transaction_id() );
+      return found == included.end() ? fc::optional< fc::time_point >() : fc::optional< fc::time_point >( found->second );
+    };
+
+    auto peer = make_peer( "delivering peer" );
+    connect_active( *peer );
+    const full_transaction_ptr pooled = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ), "pooled",
+                                                        get_default_expiration() );
+    const full_transaction_ptr advertised = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ), "advertised",
+                                                            get_default_expiration() );
+    const item_hash_t hash = advertised->get_legacy_transaction_message_hash();
+    peer->provide( { advertised } );
+
+    // a whole block interval before the pushed transaction is included
+    wait_for_block_num( get_block_num() + 1 );
+    schedule_transaction( pooled );
+    BOOST_REQUIRE( wait_until( [&]() { return get_chain_plugin().pending_transaction_pool_size() > 0; }, reply_timeout ) );
+    peer->advertise( { hash } );
+
+    BOOST_REQUIRE( wait_until( [&]() { return peer->was_requested( hash ); }, fc::seconds( 30 ) ) );
+    BOOST_REQUIRE( wait_until( [&]() { return inclusion_time( advertised ).valid(); }, fc::seconds( 30 ) ) );
+    const fc::optional< fc::time_point > pool_included = inclusion_time( pooled );
+    BOOST_REQUIRE( pool_included );
+    return { first_request_time( *peer, hash ), *pool_included };
   }
 
   fc::thread peer_thread;
@@ -1362,6 +1414,32 @@ BOOST_AUTO_TEST_CASE( ignored_transaction_request_test )
     BOOST_REQUIRE( slow->wait_for( fetch_items_message_type, reply_timeout ) );
     fc::usleep( timeout + fc::seconds( 2 ) );
     BOOST_CHECK( !slow->closed() );
+  } );
+}
+
+/// Pending pool gate (#1144): a producing node whose pending pool is under transaction_fetch_pool_limit_blocks
+/// (the default, 2 blocks) asks for an advertised transaction at once, while its pool still waits for the next block
+BOOST_AUTO_TEST_CASE( fetch_under_pending_pool_limit_test )
+{
+  start_node( "", true );
+  run( [&]()
+  {
+    const pool_gate_timing timing = fetch_while_pool_holds_a_transaction();
+    BOOST_CHECK_LT( timing.requested.time_since_epoch().count(), timing.pool_included.time_since_epoch().count() );
+  } );
+}
+
+/// Pending pool gate (#1144): while the producing node's pending pool is over transaction_fetch_pool_limit_blocks
+/// (here a tiny fraction of a block, so one transaction is over it), it asks for no transaction; once the next
+/// block has included the pool's transaction it asks for the advertised one, and includes that too
+BOOST_AUTO_TEST_CASE( fetch_over_pending_pool_limit_test )
+{
+  start_node( "", true, { config_line_t( { "p2p-transaction-fetch-pool-limit", { "0.000000001" } } ) } );
+  run( [&]()
+  {
+    const pool_gate_timing timing = fetch_while_pool_holds_a_transaction();
+    BOOST_CHECK_GT( timing.requested.time_since_epoch().count(), timing.pool_included.time_since_epoch().count() );
+    BOOST_CHECK_LT( ( timing.requested - timing.pool_included ).count(), reply_timeout.count() );
   } );
 }
 

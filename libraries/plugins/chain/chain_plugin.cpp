@@ -265,6 +265,19 @@ class chain_plugin_impl
 
     bool                             running = true;
 
+    // The pending transaction pool as of the end of the last write queue item, for readers that don't take
+    // the database lock (the p2p node gates its transaction fetching on it).  Inside an item the pool may be
+    // cleared and refilled (a block is applied, then the pending transactions are reapplied), so only the
+    // state between items is published
+    std::atomic<uint64_t>            published_pending_tx_size{0};
+    std::atomic<uint32_t>            published_maximum_block_size{HIVE_MAX_BLOCK_SIZE};
+
+    void publish_pending_pool()
+    {
+      published_pending_tx_size.store( db._pending_tx_size, std::memory_order_relaxed );
+      published_maximum_block_size.store( db.get_dynamic_global_properties().get_maximum_block_size(), std::memory_order_relaxed );
+    }
+
     int16_t                          write_lock_hold_time = HIVE_BLOCK_INTERVAL * 1000 / 6; // 1/6 of block time (millseconds)
 
     vector< string >                 loaded_plugins;
@@ -659,6 +672,7 @@ void chain_plugin_impl::start_write_processing()
           {
             req_visitor.cxt = cxt;
             last_block_number = cxt->req_ptr.visit( req_visitor );
+            publish_pending_pool();
 
             ++write_queue_items_processed;
 
@@ -2541,6 +2555,16 @@ void chain_plugin::finish_request()
 bool chain_plugin::is_finished_write_processing() const
 {
   return my->finish.status.load();
+}
+
+uint64_t chain_plugin::pending_transaction_pool_size() const
+{
+  return my->published_pending_tx_size.load( std::memory_order_relaxed );
+}
+
+uint32_t chain_plugin::maximum_block_size() const
+{
+  return my->published_maximum_block_size.load( std::memory_order_relaxed );
 }
 
 } } } // namespace hive::plugins::chain
