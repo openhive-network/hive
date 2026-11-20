@@ -131,16 +131,28 @@
 #define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES  (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2)
 /**
  * A transaction inventory we advertise to a peer is queued only if the peer's send queue holds at most this many
- * bytes with it; otherwise it is dropped, and the peer learns of those transactions from another peer or from a
- * block.  Inventories are queued for every peer as fast as transactions arrive, whatever the peer reads, so a burst
- * of new transactions toward a slow reader would otherwise take its queue over
- * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES and close the connection.  The budget is the one replies get, so
- * inventory and replies together leave the other half of the queue to blocks and other traffic.
+ * bytes with it; otherwise its ids wait outside the queue and are queued, in order, as the queue drains (see
+ * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER).  Inventories are queued for every peer as fast as
+ * transactions arrive, whatever the peer reads, so a burst of new transactions toward a slow reader would otherwise
+ * take its queue over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES and close the connection.  The budget is the one
+ * replies get, so inventory and replies together leave the other half of the queue to blocks and other traffic.
  */
 #define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES
 /**
- * How often (at most) we log, per peer, the transaction inventories dropped because its send queue was over
- * GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES
+ * The most transaction ids one inventory message we advertise carries: a quarter of
+ * GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES, so a queue holding other traffic still has room for one
+ * and the next can be queued before the previous one has been written out
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 4 / 20)
+/**
+ * How many transaction ids to advertise may wait, per peer, for its send queue to drain below
+ * GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES: as many as that budget holds.  Past it the oldest are
+ * dropped, and the peer learns of those transactions from another peer or from a block.
+ */
+#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 20)
+/**
+ * How often (at most) we log, per peer, the transaction ids to advertise that were dropped because too many waited
+ * for its send queue (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER)
  */
 #define GRAPHENE_NET_DROPPED_TRANSACTION_INVENTORY_REPORT_INTERVAL_SEC 10
 /**
@@ -276,6 +288,16 @@
  * is enough.
  */
 #define GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS  100
+
+/**
+ * However many transactions the transaction fetch gate withholds in a pass (closed, or bounded by its headroom;
+ * graphene::net::transaction_fetch_gate), the pass still requests this many in all, from the peers in turn
+ * (graphene::net::fetch_turn_order), so relay never stops: small and privileged transactions such as fast-confirms
+ * (witness_block_approve) can't be told from the rest before they are fetched.  One per pass bounds a gated node's
+ * intake by its pass rate, at most 200 transactions a second at the default p2p-fetch-items-minimum-interval-us of
+ * 5 ms, rather than by its peers' windows.
+ */
+#define GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS  1
 
 /**
  * While the transaction fetch gate withholds transactions (closed or bounded by its headroom), how often (at most)

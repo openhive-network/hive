@@ -1497,8 +1497,8 @@ namespace graphene { namespace net {
 
         const size_t expired_items = remove_expired_items_to_fetch();
         fc::time_point next_peer_unblocked_time = fc::time_point::maximum();
-        // while the pending pool is over the threshold no peer is asked for transactions, blocks still are;
-        // below it the pass asks for no more than fits under it with what is already on its way
+        // while the pending pool is over the threshold the pass asks for no more than the gate's minimum of
+        // transactions, blocks as always; below it for no more than fits under it with what is already on its way
         transaction_fetch_gate gate(_delegate->get_pending_transaction_pool_size(), transaction_bytes_on_their_way());
         // candidates as old as the expired items are dropped too, so that none the gate holds back outlives them
         const fc::time_point oldest_candidate_to_keep = oldest_item_timestamp_to_fetch();
@@ -1511,7 +1511,7 @@ namespace graphene { namespace net {
         // items several of them advertised are spread evenly among them, except that a block goes to a
         // peer with nothing outstanding when one advertised it (see judge_fetch_candidate()).  The turns
         // start after the peer that took the last transaction before (see fetch_turn_order), so a headroom
-        // worth a few transactions per pass is spread over the peers from pass to pass
+        // worth a few transactions per pass, or the gate's minimum, is spread over the peers from pass to pass
         struct peer_and_items_to_fetch
         {
           peer_connection_ptr peer;
@@ -1800,8 +1800,13 @@ namespace graphene { namespace net {
           process_deferred_transaction_advertisements(peer.get());
         }
 
+        // a transaction the peer's send queue has no room to advertise yet stays marked as advertised to it: its id
+        // waits for the queue to drain (peer_connection::send_transaction_inventory())
         for (auto iter = inventory_messages_to_send.begin(); iter != inventory_messages_to_send.end(); ++iter)
-          iter->first->send_message(iter->second);
+          if (iter->second.item_type == graphene::net::trx_message_type)
+            iter->first->send_transaction_inventory(iter->second.item_hashes_available);
+          else
+            iter->first->send_message(iter->second);
         inventory_messages_to_send.clear();
 
         if (_new_block_inventory.empty() && _new_transaction_inventory.empty())
@@ -8218,7 +8223,8 @@ namespace graphene { namespace net {
 
   uint64_t transaction_fetch_gate_threshold(uint64_t max_bytes)
   {
-    return max_bytes / 3;
+    // a max-mempool-size of 1 or 2 bytes still gates
+    return max_bytes == 0 ? 0 : std::max<uint64_t>(max_bytes / 3, 1);
   }
 
   bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool)
@@ -8227,8 +8233,10 @@ namespace graphene { namespace net {
     return threshold > 0 && pool.pending_bytes > threshold;
   }
 
-  transaction_fetch_gate::transaction_fetch_gate(const pending_transaction_pool_size& pool, uint64_t bytes_on_their_way) :
-    _closed(is_transaction_fetching_gated(pool))
+  transaction_fetch_gate::transaction_fetch_gate(const pending_transaction_pool_size& pool, uint64_t bytes_on_their_way,
+                                                 size_t minimum_transactions) :
+    _closed(is_transaction_fetching_gated(pool)),
+    _minimum(minimum_transactions)
   {
     const uint64_t threshold = transaction_fetch_gate_threshold(pool.max_bytes);
     if (threshold == 0)
@@ -8242,8 +8250,17 @@ namespace graphene { namespace net {
 
   void transaction_fetch_gate::record_request(uint64_t expected_bytes)
   {
+    ++_requested;
     if (_headroom != std::numeric_limits<uint64_t>::max())
       _headroom -= std::min(_headroom, expected_bytes);
+  }
+
+  void transaction_fetch_gate::record_withheld()
+  {
+    if (_closed)
+      _held_back = true;
+    else
+      _bounded = true;
   }
 
   fetch_expiry_warning_limiter::fetch_expiry_warning_limiter(fc::microseconds interval) :

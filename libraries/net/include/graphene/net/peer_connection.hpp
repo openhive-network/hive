@@ -137,8 +137,6 @@ namespace graphene { namespace net
         /// a block or a block inventory, queued after the block traffic already queued but ahead of the transaction
         /// traffic queued behind that, so it does not wait for transactions queued before it
         bool is_block_traffic = false;
-        /// an inventory of transactions, dropped rather than queued over GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES
-        bool is_transaction_inventory = false;
 
         queued_message(fc::time_point enqueue_time = fc::time_point::now()) :
           enqueue_time(enqueue_time)
@@ -232,9 +230,10 @@ namespace graphene { namespace net
       /// the number of queued messages up to and including the last queued block traffic, where block traffic is queued next
       size_t _queued_block_traffic_end = 0;
       bool _send_queue_limit_exceeded = false; // set once the queue would have grown over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES
-      /// transaction inventories dropped over GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES since they were last logged
-      size_t _transaction_inventories_dropped_since_report = 0;
-      size_t _transaction_inventory_bytes_dropped_since_report = 0;
+      /// transaction ids to advertise waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES, oldest first
+      std::deque<item_hash_t> _deferred_transaction_inventory;
+      /// waiting transaction ids dropped past GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER since they were last logged
+      size_t _transaction_inventory_ids_dropped_since_report = 0;
       fc::time_point _last_dropped_transaction_inventory_report_time;
       /// requested transactions waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES, oldest first
       std::deque<std::shared_ptr<full_transaction_type>> _deferred_transaction_replies;
@@ -424,7 +423,15 @@ namespace graphene { namespace net
       /// while transaction replies wait (see send_transaction_reply()), when they started waiting or the queue was
       /// last written to the socket, whichever is later; fc::time_point::maximum() while none wait
       fc::time_point get_transaction_reply_send_progress_time() const;
+      /// queues the message; a transaction inventory is sent as send_transaction_inventory() sends its ids
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);
+      /** advertises the transactions @p ids to the peer, after the ones advertised before, in inventory messages of
+       * at most GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE ids each.  The ids wait outside the send queue
+       * while it holds more than GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES with their message, so
+       * inventory never closes the connection; when more than GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER
+       * wait, the oldest are dropped
+       */
+      void send_transaction_inventory(const std::vector<item_hash_t>& ids);
       void send_item(const item_id& item_to_send);
       /// Lets queued transaction traffic wait up to `delay` (measured from the oldest queued message) so
       /// more of it goes out in one socket write; any other queued message, or a full batch, ends the
@@ -483,8 +490,10 @@ namespace graphene { namespace net
       void send_queued_messages_task();
       /// queues the deferred transaction replies the queue has room for, and at least one if it is empty; true if it queued any
       bool queue_deferred_transaction_replies();
-      /// counts a transaction inventory of @p message_size bytes that is not queued, and logs the count now and then
-      void drop_transaction_inventory(size_t message_size);
+      /// queues inventories of the waiting transaction ids while the queue has room for them; true if it queued any
+      bool queue_deferred_transaction_inventory();
+      /// logs, at most once per GRAPHENE_NET_DROPPED_TRANSACTION_INVENTORY_REPORT_INTERVAL_SEC, the waiting transaction ids dropped since the last time
+      void report_dropped_transaction_inventory();
       bool send_flush_wait_is_over() const;
       void wait_for_transaction_batch_to_grow();
       /// appends the message's bytes to messages_to_write and returns true, or logs and returns false if it cannot be built
