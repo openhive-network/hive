@@ -11,7 +11,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from pathlib import Path
 
-_HELP_DEFAULT = re.compile(r"--p2p-parameters arg\s+P2P network parameters\. \(Default: (\{.*?\}) \)", re.DOTALL)
+# anchored on the option, not its description, whose sentences change between builds
+_HELP_DEFAULT = re.compile(r"--p2p-parameters arg\s.*?\(Default:\s+(\{.*?\})\s+\)", re.DOTALL)
 _CONFIG_LINE = re.compile(r"^\s*p2p-parameters\s*=\s*(.*?)\s*$", re.MULTILINE)
 
 
