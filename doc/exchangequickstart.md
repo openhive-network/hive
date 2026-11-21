@@ -1,7 +1,7 @@
 Exchange Quickstart
 -------------------
 
-System Requirements: A dedicated server or virtual machine with a minimum of 16GB of RAM, and at least 1TB of fast **local** storage (such as SSD or NVMe). Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
+System Requirements: A dedicated server or virtual machine with a minimum of 16GB of RAM, and fast **local** storage (such as SSD or NVMe): at least 1TB for a node that keeps the block log, a few tens of GB for one started from the snapshot alone. Hive is one of the most active blockchains in the world and handles an incredibly large amount of transactions per second, as such, it requires fast storage to run efficiently.
 
 With the right equipment and technical configuration a replay should take **well under a day**.  If recommendations are not followed precisely, the replay can drag on for days or even weeks with significant slowdowns towards the end.
 
@@ -9,18 +9,17 @@ Physically attached NVMe will ensure an optimal replay time. NVMe over a NAS or 
 
 ### Recommended: Docker Compose
 
-The [docker/exchange](/docker/exchange) directory contains a Docker Compose deployment of an exchange node: `hived` with account history for your own accounts, and an optional `cli_wallet` daemon. Everything is declared in `compose.yml`, `.env` and `config.ini`; no scripts run on the host.
+The [docker/exchange](/docker/exchange) directory contains a Docker Compose deployment of an exchange node: `hived` with account history for your own accounts, and an optional `cli_wallet` daemon. Everything is declared in `compose.yml`, `.env` and `config.ini`; no scripts run on the host. Before the first start, check that your account is on the list of tracked accounts in `config.ini` (see below).
 
 ```
-git clone --depth=1 https://gitlab.syncad.com/hive/hive.git
+git clone -b 1.28.9 --depth=1 https://gitlab.syncad.com/hive/hive.git
 cd hive/docker/exchange
-cp .env.example .env            # set HIVED_VERSION
-$EDITOR config.ini              # set your account name(s)
+cp .env.example .env
 docker compose up -d
-docker compose logs -f hived
+docker compose logs -f hived-bootstrap hived
 ```
 
-On the first start the node downloads the published exchange state snapshot (~6GB), loads it, and syncs the rest from the P2P network, reaching the head in well under an hour; set `BLOCK_LOG_URL` in `.env` instead to download and replay the full block log (~550GB) for a node that keeps every block. Its health check reports `healthy` once it has caught up. Data placement, the wallet, upgrades and troubleshooting are covered in [docker/exchange/README.md](/docker/exchange/README.md).
+On the first start the node downloads the published exchange state snapshot (~6GB), loads it, and syncs the rest from the P2P network, reaching the head in well under an hour; set `BLOCK_LOG_URL` in `.env` instead to download and replay the full block log (~600GB) for a node that keeps every block. `docker compose up -d` returns once that bootstrap is done; the last command follows it from another terminal. The health check reports `healthy` once it has caught up. Data placement, the wallet, upgrades and troubleshooting are covered in [docker/exchange/README.md](/docker/exchange/README.md).
 
 Pre-built images are published on Docker Hub as `hiveio/hive:<version>`. Always pin a version tag; `latest` is deliberately not published because a new release may require a replay.
 
@@ -41,7 +40,7 @@ docker rm hived-extract
 
 ### Hived configuration file (config.ini)
 
-[docker/exchange/config.ini](/docker/exchange/config.ini) is the configuration used by the compose deployment and a good starting point for any exchange node. Set the account name of your wallet account that you would like to track the account history for; it is defined as `account-history-rocksdb-track-account-range = ["accountname","accountname"]`, one line per account. Without any such line hived keeps the history of every account on the chain, which needs far more disk and time.
+[docker/exchange/config.ini](/docker/exchange/config.ini) is the configuration used by the compose deployment and a good starting point for any exchange node. It tracks the accounts the published exchange snapshot carries history for, as `account-history-rocksdb-track-account-range = ["accountname","accountname"]` lines, one per account. If your account is on the list, keep the list as it is. If it is not, the snapshot cannot provide its history: add your account before the first start and bootstrap from the block log instead (in `.env`, clear `SNAPSHOT_URL` and set `BLOCK_LOG_URL`). Without any such line hived keeps the history of every account on the chain, which needs far more disk and time.
 
 ### Upgrading
 

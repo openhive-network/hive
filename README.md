@@ -1,8 +1,8 @@
 # Hive - Decentralizing the exchange of ideas and information
 
-[![GitLab](https://img.shields.io/badge/Development%20on-Community%20GitLab-orange)](https://gitlab.syncad.com/hive/hive)
+[![GitLab](https://img.shields.io/badge/Development%20on-Community%20GitLab-orange)](https://gitlab.syncad.com/hive/hive) [![GitHub](https://img.shields.io/badge/Mirror%20on-GitHub-black)](https://github.com/openhive-network/hive)
 
-This project is primarily developed on a community-hosted GitLab instance. Please visit the [community GitLab repository](https://gitlab.syncad.com/hive/hive) for the latest updates, issues, and contributions.
+Hive is developed on the [community-hosted GitLab](https://gitlab.syncad.com/hive/hive): issues, merge requests and CI are there. The same code is on GitHub at [openhive-network/hive](https://github.com/openhive-network/hive), the Hive community's GitHub organization, kept up to date as a push mirror of GitLab.
 
 ![Hive](https://files.peakd.com/file/peakd-hive/netuoso/jMHldwMV-horizontal.png)
 
@@ -44,7 +44,7 @@ The technical development of the Hive blockchain is carried out by a founding de
 
 # Installation
 
-Getting started with Hive is fairly simple. You can either choose to use pre-built Docker images, build with Docker manually, or build from source directly. All steps have been documented and while many different OSes are supported, the easiest one is Ubuntu 24.04 LTS.
+Getting started with Hive is fairly simple. You can either choose to use pre-built Docker images, build with Docker manually, or build from source directly. All steps have been documented; Linux is the supported platform, and the easiest one is Ubuntu 24.04 LTS.
 
 ## Quickstart
 
@@ -52,18 +52,18 @@ Want to get up and running quickly? We offer pre-built Docker images for your co
 
 ## Building
 
-We **strongly** recommend using one of the pre-built Docker images or building Hive using Docker. Both processes are described in the [Quickstart Guide](doc/exchangequickstart.md).
+We **strongly** recommend using one of the pre-built Docker images or building Hive using Docker. Using the images is described in the [Quickstart Guide](doc/exchangequickstart.md).
 
 However, if you prefer to build from source, we also provide [build instructions](doc/building.md) for Linux (Ubuntu LTS).
 
 ## Dockerized deployment
 
-Building a `hived` docker image is described in detail here: [Building under Docker](doc/building.md#building-under-docker).
+Building a `hived` docker image is described in detail here: [Building hived as a docker image](doc/building.md#building-hived-as-a-docker-image).
 
-If you'd like to use our pre-built official binary images, download them from the Docker Hub registry with the specific version tag. For example, to use version 1.28.0, run:
+If you'd like to use our pre-built official binary images, download them from the Docker Hub registry with the specific version tag. For example, to use version 1.28.9, run:
 
 ```
-docker pull hiveio/hive:1.28.0
+docker pull hiveio/hive:1.28.9
 ```
 
 Please note that the `latest` tag is not supported; you must explicitly specify the version tag to avoid issues with new versions that require replay.
@@ -78,6 +78,7 @@ Environment variables understood by the image's entrypoint:
 - `SNAPSHOT_URL`: URL of a `.tgz` state snapshot (as produced by `--dump-snapshot`) to download and load on the first start instead of replaying from genesis. Without a block log it implies `block-log-split=0` (no block log is kept); with `BLOCK_LOG_URL` the block log is kept and replayed forward from the snapshot. hived writes its RocksDB files (snapshots, comment archive, account history) with RocksDB table format_version 7, which a hived built with RocksDB older than 10.11 (hive's RocksDB 9.10 builds) cannot read, so a snapshot dumped by a current build does not load in such an older build; older snapshots and databases (format_version 6) still load in a current one.
 - `HIVED_AUTO_REPLAY`: set to `1` to have the entrypoint add `--replay-blockchain` whenever a block log is present and no replay mode was requested, so a downloaded or copied-in block log is replayed without further action. Off by default, so a mismatch between the state and the block log stops hived with an error instead of starting a replay. The exchange compose deployment turns it on.
 - `HIVED_UID`: run hived as this UID (non-zero, numeric), for bind-mounted directories owned by a user other than 1000, typically `-e HIVED_UID=$(id -u)`; see [run_hived_img.md](doc/run_hived_img.md) for details.
+- `HIVED_BOOTSTRAP_ONLY`, `HIVED_SKIP_BOOTSTRAP`: set one of them to `1` to run the bootstrap (downloads, snapshot load, replay) and the node in separate containers, as the exchange compose deployment does with its `hived-bootstrap` and `hived` services.
 - `P2P_ENDPOINT`, `WS_ENDPOINT`, `HTTP_ENDPOINT`: listening endpoints inside the container.
 
 `/home/hived/scripts/hived_healthcheck.sh` is a health check for the container: it exits 0 once hived answers JSON-RPC and its head block is at most `HIVED_HEALTHCHECK_MAX_BLOCK_AGE` seconds old (default 120).
@@ -102,25 +103,10 @@ Keys and password are stored in the wallet.json file.
 See [doc/devs/testing.md](doc/devs/testing.md) for testing build targets and info
 on how to use lcov to check code coverage of tests.
 
-## Changes spanning hive, wax and hive-local-tools
+## Contributing
 
-The Python tests of hive use `tests/python/hive-local-tools`, which pins packages released by other repositories:
-`hiveio-wax` and `hiveio-test-tools` (built by [wax](https://gitlab.syncad.com/hive/wax) from its `hive` submodule)
-and `hiveio-beekeepy` ([beekeeper](https://gitlab.syncad.com/hive/beekeeper)). A change crossing these repositories
-goes through separate merge requests, each merged before the next one uses it, so that `develop` never pins
-development builds (`<version>.dev<timestamp>`) of another repository:
-
-1. **hive** - the changes wax needs (skipped when wax only updates its `hive` submodule). After the merge the `develop`
-   pipeline publishes the release of `hiveio-api` (`<version>.post<timestamp>`).
-2. **wax** - points the `hive` submodule and the ref of the hive CI include at that `develop` commit and pins the
-   releases of `hiveio-api` and `hiveio-beekeepy`. After the merge the `develop` pipeline of wax publishes the releases
-   of `hiveio-wax` and `hiveio-test-tools`.
-3. **hive** again - bumps `hive-local-tools` to the `develop` releases of wax and test-tools (and of beekeepy if it
-   changed).
-
-The merge request of step 1 is tested with the pins of `develop`, i.e. with the current releases of wax and test-tools:
-it must not break them, and tests needing the new wax come with step 3. Development builds may be pinned on a branch to
-try the whole chain out, but such a pin is never merged.
+See [CONTRIBUTING.md](CONTRIBUTING.md), including the order of merge requests for changes that span hive,
+wax and hive-local-tools.
 
 # Configuration
 
@@ -133,14 +119,15 @@ Run `hived --dump-config` to create a data directory (`~/.hived` unless `--data-
 A list of some seed nodes to get you started can be found in
 [doc/seednodes.txt](doc/seednodes.txt).
 
-This same file is baked into the binary and can be overridden by `--p2p-seed-node`
+The same list is built into the binary and can be overridden by `--p2p-seed-node`
 command option set to a whitespace-delimited list of seed nodes (with port).
 
 ## System Requirements
 
 Running a Hive consensus node requires the following hardware resources:
-- data directory to hold a blockchain file(s) (~600GB of disk storage is required)
-- storage to hold a shared memory file (~12GB of memory is required at the moment to store state data)
+- data directory to hold a blockchain file(s) (~600GB of disk storage is required for a node that keeps all blocks)
+- storage to hold a shared memory file (~8GB of memory is required at the moment to store state data, together with
+  the comments database kept next to it)
 
 # No Support & No Warranty
 

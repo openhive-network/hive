@@ -21,7 +21,7 @@ procedure, and a fresh volume bootstraps itself.
   few tens of GB: the state file ~5 GB in use (sparse, 8 GB nominal), the
   unpacked snapshot ~7 GB until deleted, and account history that depends on how
   many accounts you track. A node with a block log needs about 1 TB, since the
-  block log is ~550 GB and growing. Network-attached storage (for example AWS
+  block log is ~600 GB and growing. Network-attached storage (for example AWS
   EBS) is too slow for a replay; use an instance with physically attached NVMe.
 - Outbound internet access for the P2P network and the block log download.
   Accepting inbound connections on TCP 2001 helps the network but is optional.
@@ -78,7 +78,7 @@ starts leave the data alone, so the command never changes:
   `snapshot_load_pending.json` next to its state file; the file disappears
   once the node has caught up with its block log.
 - **Block log.** With `BLOCK_LOG_URL` set instead, the container downloads the
-  block log (~550 GB, resumable, safe to interrupt) into its data volume and
+  block log (~600 GB, resumable, safe to interrupt) into its data volume and
   replays it. A replay finishes in well under a day on fast NVMe and ends with
   `Done reindexing`; after that hived fetches the remaining blocks from the P2P
   network. The node then holds every block, has history for your accounts from
