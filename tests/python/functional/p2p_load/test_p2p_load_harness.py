@@ -43,6 +43,17 @@ _HELP_WITHOUT_DELAYS = """  --p2p-parameters arg
           endpoint_is_busy":true,"peer_inactivity_timeout":5} )
 """
 
+_HELP_WITH_IDLE_PEER_SENTENCE = """  --p2p-parameters arg
+          P2P network parameters. idle_peer_disconnect_timeout is the seconds
+          an active peer may deliver no block while this node is behind and
+          another peer delivers blocks, before it is replaced and kept out for
+          as long; 0 disables replacing idle peers, the default (180 enables
+          it). (Default: {"listen_endpoint":"0.0.0.0:0","accept_incoming_connec
+          tions":true,"wait_if_endpoint_is_busy":true,"peer_inactivity_timeout"
+          :5} )
+  --pacemaker-source arg
+"""
+
 
 def test_only_given_parameters_known_to_the_binary_are_applied() -> None:
     new_build = p2p_parameters.defaults_from_help(_HELP_WITH_DELAYS)
@@ -59,6 +70,19 @@ def test_only_given_parameters_known_to_the_binary_are_applied() -> None:
     assert on_old.applied == {}
     assert on_old.unsupported == ["transaction_flush_delay_microseconds"]
     assert unset.applied == {}
+
+
+def test_the_default_is_read_whatever_sentences_precede_it() -> None:
+    before_idle_peer_sentence = p2p_parameters.defaults_from_help(_HELP_WITHOUT_DELAYS)
+    with_idle_peer_sentence = p2p_parameters.defaults_from_help(_HELP_WITH_IDLE_PEER_SENTENCE)
+
+    assert with_idle_peer_sentence == before_idle_peer_sentence
+    assert with_idle_peer_sentence == {
+        "listen_endpoint": "0.0.0.0:0",
+        "accept_incoming_connections": True,
+        "wait_if_endpoint_is_busy": True,
+        "peer_inactivity_timeout": 5,
+    }
 
 
 def test_help_without_p2p_parameters_is_refused() -> None:
