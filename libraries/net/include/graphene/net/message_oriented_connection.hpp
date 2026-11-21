@@ -65,11 +65,17 @@ namespace graphene { namespace net {
        void send_messages(const std::vector<message_to_write>& messages_to_send);
        void close_connection();
        void destroy_connection(const char* caller);
+       /** lifts the limit on the size of received messages from GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE to
+        *  MAX_MESSAGE_SIZE, and grows the buffers from GRAPHENE_NET_HANDSHAKE_BUFFER_SIZE to
+        *  GRAPHENE_NET_CONNECTION_BUFFER_SIZE; called once the peer's hello is accepted */
+       void allow_full_size_messages();
 
        uint64_t       get_total_bytes_sent() const;
        uint64_t       get_total_bytes_received() const;
        fc::time_point get_last_message_sent_time() const;
        fc::time_point get_last_message_received_time() const;
+       /// when a write last put bytes into the socket, which a write of many bytes does several times before it completes
+       fc::time_point get_last_write_progress_time() const;
        fc::time_point get_connection_time() const;
        fc::sha512     get_shared_secret() const;
      private:

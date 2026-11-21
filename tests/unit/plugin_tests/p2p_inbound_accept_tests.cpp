@@ -175,8 +175,9 @@ BOOST_AUTO_TEST_CASE( failed_inbound_accept_frees_its_slot_at_once )
   FC_LOG_AND_RETHROW()
 }
 
-/// A connection that stays open but sends nothing during the key exchange holds its slot: a peer's hello is
-/// rejected meanwhile. The node drops it after peer_inactivity_timeout, not before, and then accepts a new peer.
+/// A connection that stays open but sends nothing during the key exchange holds no connection slot, as no inbound
+/// connection does before its hello is accepted: a peer's hello is accepted meanwhile, though the node has room for
+/// one connection. The node drops the silent connection after peer_inactivity_timeout, not before.
 BOOST_AUTO_TEST_CASE( silent_inbound_handshake_is_dropped_after_inactivity_timeout )
 {
   try
@@ -189,19 +190,15 @@ BOOST_AUTO_TEST_CASE( silent_inbound_handshake_is_dropped_after_inactivity_timeo
       const fc::time_point silent_opened = fc::time_point::now();
       silent_connection silent( peer_thread, node_endpoint() );
 
-      {
-        test_peer rejected_peer( peer_thread, db->get_chain_id(), "peer during silent handshake" );
-        BOOST_REQUIRE( !connect_and_get_answer( rejected_peer ) );
-      }
+      test_peer peer( peer_thread, db->get_chain_id(), "peer during silent handshake" );
+      BOOST_REQUIRE( connect_and_get_answer( peer ) );
 
       BOOST_REQUIRE( wait_until( [&]() { return silent.ended(); }, fc::seconds( inactivity_timeout + 10 ) ) );
       const fc::time_point silent_dropped = silent.ended_at();
       BOOST_REQUIRE( silent_dropped != fc::time_point() );
       ilog( "silent handshake dropped ${ms} ms after it opened", ( "ms", ( silent_dropped - silent_opened ).count() / 1000 ) );
       BOOST_CHECK_GE( ( silent_dropped - silent_opened ).count(), fc::seconds( inactivity_timeout ).count() );
-
-      test_peer peer( peer_thread, db->get_chain_id(), "peer after silent handshake" );
-      BOOST_REQUIRE( connect_and_get_answer( peer ) );
+      BOOST_CHECK( !peer.closed() );
     } );
   }
   FC_LOG_AND_RETHROW()

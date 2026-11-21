@@ -339,6 +339,9 @@ namespace graphene { namespace net {
       /// parsed from _node_configuration.host_limit_exempt_subnets: not limited by maximum_connections_per_host at all
       std::vector<address_subnet> _host_limit_exempt_subnets;
       fc::time_point _last_shared_inbound_host_warning_time;
+      /// inbound connections closed at accept (get_inbound_connection_refusal()) since the last warning about them
+      uint32_t _refused_inbound_connections_since_warning = 0;
+      fc::time_point _last_refused_inbound_connection_warning_time;
       /// maximum_connections_per_host came with the advanced node parameters (p2p-max-connections-per-host or
       /// p2p-parameters), not from its default or a saved node_config.json: a hard limit.  Otherwise
       /// is_host_limit_relaxed() lets connections past it while no others fill the desired number
@@ -628,9 +631,13 @@ namespace graphene { namespace net {
       void dump_node_status_task();
       void statistics_report_loop();
 
-      bool is_accepting_new_connections();
+      bool is_accepting_new_connections(const peer_connection* peer);
       bool is_wanting_new_connections();
       uint32_t get_number_of_connections();
+      bool holds_connection_slot(const peer_connection& peer) const;
+      uint32_t get_number_of_connections_holding_slots() const;
+      const char* get_inbound_connection_refusal(const fc::ip::address& address);
+      void warn_of_refused_inbound_connections();
       peer_connection_ptr get_peer_by_node_id(const node_id_t& id);
 
       bool is_already_connected_to_id(const node_id_t& node_id);
@@ -1224,7 +1231,7 @@ namespace graphene { namespace net {
             const std::vector<connection_candidate> candidates = get_connection_candidates(unroutable_ipv4_candidates, unroutable_ipv6_candidates);
             const std::vector<fc::ip::address> held_addresses = get_connection_addresses(false);
             const std::vector<fc::ip::endpoint> selected = select_connection_candidates(
-              candidates, held_addresses, get_connection_selection_limits(_node_configuration.desired_number_of_connections - get_number_of_connections()));
+              candidates, held_addresses, get_connection_selection_limits(_node_configuration.desired_number_of_connections - get_number_of_connections_holding_slots()));
             if (is_host_limit_relaxed())
             {
               // a candidate that is not exempt and on a host at the limit was picked past it
@@ -1349,7 +1356,7 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       if (node_is_shutting_down() || !is_host_limit_relaxed() ||
           _active_connections.size() < _node_configuration.desired_number_of_connections ||
-          get_number_of_connections() >= _node_configuration.maximum_number_of_connections ||
+          get_number_of_connections_holding_slots() >= _node_configuration.maximum_number_of_connections ||
           std::any_of(_handshaking_connections.begin(), _handshaking_connections.end(), [](const peer_connection_ptr& peer) {
             // a connection we dial is outbound once its task starts, an accepted one inbound
             return peer->direction != peer_connection_direction::inbound;
@@ -1999,10 +2006,25 @@ namespace graphene { namespace net {
 
         uint32_t handshaking_timeout = _node_configuration.peer_inactivity_timeout;
         fc::time_point handshaking_disconnect_threshold = fc::time_point::now() - fc::seconds(handshaking_timeout);
+        const fc::time_point handshake_deadline_threshold = fc::time_point::now() - fc::seconds(GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC);
         for (const peer_connection_ptr& handshaking_peer : _handshaking_connections)
-          if (handshaking_peer->connection_initiation_time < handshaking_disconnect_threshold &&
-              handshaking_peer->get_last_message_received_time() < handshaking_disconnect_threshold &&
-              handshaking_peer->get_last_message_sent_time() < handshaking_disconnect_threshold)
+          if (handshaking_peer->connection_initiation_time < handshake_deadline_threshold)
+          {
+            wlog("Forcibly disconnecting from peer ${peer}, still handshaking ${deadline} seconds after the connection started. "
+                 "Negotiating status: ${status}, bytes sent: ${sent}, bytes received: ${received}",
+                 ("peer", handshaking_peer->get_remote_endpoint())("deadline", GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC)
+                 ("status", handshaking_peer->negotiation_status)
+                 ("sent", handshaking_peer->get_total_bytes_sent())
+                 ("received", handshaking_peer->get_total_bytes_received()));
+            handshaking_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Terminating connection still handshaking ${deadline} seconds after it started.  Negotiating status: ${status}",
+                                                                                     ("deadline", GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC)
+                                                                                     ("status", handshaking_peer->negotiation_status)));
+            handshaking_peer->connection_closed_by_failure = true;
+            peers_to_disconnect_forcibly.push_back(handshaking_peer);
+          }
+          else if (handshaking_peer->connection_initiation_time < handshaking_disconnect_threshold &&
+                   handshaking_peer->get_last_message_received_time() < handshaking_disconnect_threshold &&
+                   handshaking_peer->get_last_message_sent_time() < handshaking_disconnect_threshold)
           {
             wlog("Forcibly disconnecting from handshaking peer ${peer} due to inactivity of at least ${handshaking_timeout} seconds",
                  ("peer", handshaking_peer->get_remote_endpoint())(handshaking_timeout));
@@ -2087,6 +2109,18 @@ namespace graphene { namespace net {
                 active_peer->connection_closed_by_failure = true;
                 disconnect_due_to_request_timeout = true;
               }
+            if (!disconnect_due_to_request_timeout &&
+                active_peer->get_send_progress_time() < now - fc::seconds(GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC))
+            {
+              // inventory waiting for its queue to drain neither closes the connection nor makes it look idle, so a
+              // peer that sends us messages and reads nothing would otherwise keep its slot and what we queued for it
+              wlog("Disconnecting peer ${peer} because nothing we had for it has been written to its socket in ${timeout} seconds",
+                   ("peer", active_peer->get_remote_endpoint())("timeout", GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC));
+              active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because nothing we had for it has been written to its socket in ${timeout} seconds",
+                                                                                  ("timeout", GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC)));
+              active_peer->connection_closed_by_failure = true;
+              disconnect_due_to_request_timeout = true;
+            }
             if (!disconnect_due_to_request_timeout &&
                 active_peer->get_transaction_reply_send_progress_time() < active_disconnect_threshold)
             {
@@ -2383,24 +2417,81 @@ namespace graphene { namespace net {
 #endif
     }
 
-    bool node_impl::is_accepting_new_connections()
+    // whether the hello of @p peer can be accepted, which makes its connection hold a slot if it doesn't already
+    bool node_impl::is_accepting_new_connections(const peer_connection* peer)
     {
       VERIFY_CORRECT_THREAD();
       return !node_is_shutting_down() && (!_p2p_network_connect_loop_done.valid() || !_p2p_network_connect_loop_done.canceled()) &&
-         get_number_of_connections() <= _node_configuration.maximum_number_of_connections;
+         get_number_of_connections_holding_slots() + (holds_connection_slot(*peer) ? 0 : 1) <= _node_configuration.maximum_number_of_connections;
     }
 
     bool node_impl::is_wanting_new_connections()
     {
       VERIFY_CORRECT_THREAD();
       return !node_is_shutting_down() && !_p2p_network_connect_loop_done.canceled() &&
-         get_number_of_connections() < _node_configuration.desired_number_of_connections;
+         get_number_of_connections_holding_slots() < _node_configuration.desired_number_of_connections;
     }
 
     uint32_t node_impl::get_number_of_connections()
     {
       VERIFY_CORRECT_THREAD();
       return (uint32_t)(_handshaking_connections.size() + _active_connections.size());
+    }
+
+    // An inbound connection holds no slot until we accept its hello, so connections that never send one can't keep
+    // us from dialing or from accepting hellos; GRAPHENE_NET_MAXIMUM_HANDSHAKING_INBOUND_CONNECTIONS bounds them instead
+    bool node_impl::holds_connection_slot(const peer_connection& peer) const
+    {
+      return peer.direction != peer_connection_direction::inbound ||
+             peer.their_state == peer_connection::their_connection_state::connection_accepted;
+    }
+
+    uint32_t node_impl::get_number_of_connections_holding_slots() const
+    {
+      VERIFY_CORRECT_THREAD();
+      return (uint32_t)(_active_connections.size() +
+                        std::count_if(_handshaking_connections.begin(), _handshaking_connections.end(),
+                                      [this](const peer_connection_ptr& peer) { return holds_connection_slot(*peer); }));
+    }
+
+    // Why an inbound connection from @p address is closed as soon as it is accepted, or null when it is taken on:
+    // the handshaking connections that hold no slot are bounded node-wide and per host, so one host can't hold
+    // them all (nor the memory they take) without making handshake progress
+    const char* node_impl::get_inbound_connection_refusal(const fc::ip::address& address)
+    {
+      VERIFY_CORRECT_THREAD();
+      std::vector<fc::ip::address> handshaking_addresses;
+      for (const peer_connection_ptr& peer : _handshaking_connections)
+        if (!holds_connection_slot(*peer) && peer->get_remote_endpoint())
+          handshaking_addresses.push_back(peer->get_remote_endpoint()->get_address());
+      if (handshaking_addresses.size() >= GRAPHENE_NET_MAXIMUM_HANDSHAKING_INBOUND_CONNECTIONS)
+        return "too many inbound connections are handshaking";
+      if (_node_configuration.maximum_connections_per_host == 0 || is_in_any_subnet(address, _host_limit_exempt_subnets))
+        return nullptr;
+      // a host at a hard per-host limit gets one at a time, which hears the limit in the rejection of its hello
+      const bool host_at_hard_limit = !is_host_limit_relaxed() &&
+        exceeds_connections_per_host(address, get_connection_addresses(true), _node_configuration.maximum_connections_per_host);
+      if (exceeds_connections_per_host(address, handshaking_addresses,
+                                       host_at_hard_limit ? 1 : GRAPHENE_NET_MAXIMUM_HANDSHAKING_CONNECTIONS_PER_HOST))
+        return host_at_hard_limit ? "its host is at the per-host limit and has a connection handshaking"
+                                  : "too many connections from its host are handshaking";
+      return nullptr;
+    }
+
+    void node_impl::warn_of_refused_inbound_connections()
+    {
+      VERIFY_CORRECT_THREAD();
+      ++_refused_inbound_connections_since_warning;
+      const fc::time_point now = fc::time_point::now();
+      if (_last_refused_inbound_connection_warning_time != fc::time_point() &&
+          now - _last_refused_inbound_connection_warning_time < fc::seconds(GRAPHENE_NET_REFUSED_HANDSHAKE_WARNING_INTERVAL_SEC))
+        return;
+      wlog("closed ${count} inbound connection(s) at accept since the last warning: at most ${limit} inbound connections, "
+           "${per_host} from one host, may be handshaking at once (see the debug log for each)",
+           ("count", _refused_inbound_connections_since_warning)("limit", GRAPHENE_NET_MAXIMUM_HANDSHAKING_INBOUND_CONNECTIONS)
+           ("per_host", GRAPHENE_NET_MAXIMUM_HANDSHAKING_CONNECTIONS_PER_HOST));
+      _refused_inbound_connections_since_warning = 0;
+      _last_refused_inbound_connection_warning_time = now;
     }
 
     peer_connection_ptr node_impl::get_peer_by_node_id(const node_id_t& node_id)
@@ -2661,23 +2752,23 @@ namespace graphene { namespace net {
 
       activity_tracer aTracer(__FUNCTION__, *this);
 
+      if (originating_peer->their_state != peer_connection::their_connection_state::connection_accepted &&
+          !is_handshake_message(received_message.msg_type))
+      {
+        // a legitimate peer sends its hello first, so this is a peer skipping the hello checks (or one we
+        // rejected that hasn't closed yet); not acting on it (nor hashing it) keeps it off the active list,
+        // and the handshake deadline closes a peer that never sends a hello
+        dlog("ignoring ${type} from peer ${endpoint}: we have not accepted its hello",
+             ("type", graphene::net::core_message_type_enum(received_message.msg_type))
+             ("endpoint", originating_peer->get_remote_endpoint()));
+        return;
+      }
       message_hash_type message_hash = received_message.id();
       send_message_timing_to_statsd( originating_peer, received_message, message_hash );
       dlog("handling message ${type} ${hash} size ${size} from peer ${endpoint}",
            ("type", graphene::net::core_message_type_enum(received_message.msg_type))("hash", message_hash)
            ("size", received_message.size)
            ("endpoint", originating_peer->get_remote_endpoint()));
-      if (originating_peer->their_state != peer_connection::their_connection_state::connection_accepted &&
-          !is_handshake_message(received_message.msg_type))
-      {
-        // a legitimate peer sends its hello first, so this is a peer skipping the hello checks (or one we
-        // rejected that hasn't closed yet); not acting on it keeps it off the active list, and the
-        // handshake inactivity timeout closes a peer that never sends a hello
-        dlog("ignoring ${type} from peer ${endpoint}: we have not accepted its hello",
-             ("type", graphene::net::core_message_type_enum(received_message.msg_type))
-             ("endpoint", originating_peer->get_remote_endpoint()));
-        return;
-      }
       switch (received_message.msg_type)
       {
       // New IPv6-aware message types (5018-5022)
@@ -3179,7 +3270,7 @@ namespace graphene { namespace net {
                  ("peer_block", *originating_peer->last_known_block_number)
                  ("tail", our_tail_block_num));
           }
-          else if (!is_accepting_new_connections())
+          else if (!is_accepting_new_connections(originating_peer))
           {
             originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
             send_connection_rejected_message(originating_peer,
@@ -3192,6 +3283,7 @@ namespace graphene { namespace net {
           else
           {
             originating_peer->their_state = peer_connection::their_connection_state::connection_accepted;
+            originating_peer->allow_full_size_messages();
             originating_peer->send_message(message(connection_accepted_message()));
             dlog("Received a hello_message from peer ${peer}, sending reply to accept connection",
                  ("peer", originating_peer->get_remote_endpoint()));
@@ -6651,25 +6743,38 @@ namespace graphene { namespace net {
         try
         {
           _tcp_server.accept( new_peer->get_socket() );
-          new_peer->get_socket().set_receive_buffer_size(MAX_MESSAGE_SIZE);
-          new_peer->get_socket().set_send_buffer_size(MAX_MESSAGE_SIZE);
-          idump((new_peer->get_socket().get_no_delay()));
-          new_peer->get_socket().set_no_delay(true);
-          idump((new_peer->get_socket().get_no_delay()));
-          ilog( "accepted inbound connection from ${remote_endpoint}", ("remote_endpoint", new_peer->get_socket().remote_endpoint() ) );
           if (node_is_shutting_down())
             return;
-          new_peer->connection_initiation_time = fc::time_point::now();
-          _handshaking_connections.insert( new_peer );
-          _rate_limiter.add_tcp_socket( &new_peer->get_socket() );
-          std::weak_ptr<peer_connection> new_weak_peer(new_peer);
-          new_peer->accept_or_connect_task_done = async_task( [this, new_weak_peer]() {
-            peer_connection_ptr new_peer(new_weak_peer.lock());
-            assert(new_peer);
-            if (!new_peer)
-              return;
-            accept_connection_task(new_peer);
-          }, "accept_connection_task" );
+          const fc::ip::endpoint remote_endpoint = new_peer->get_socket().remote_endpoint();
+          if (const char* refusal = get_inbound_connection_refusal(remote_endpoint.get_address()))
+          {
+            dlog("closing inbound connection from ${remote_endpoint} at accept: ${refusal}", (remote_endpoint)(refusal));
+            warn_of_refused_inbound_connections();
+            new_peer->get_socket().close();
+          }
+          else
+          {
+            new_peer->get_socket().set_receive_buffer_size(MAX_MESSAGE_SIZE);
+            new_peer->get_socket().set_send_buffer_size(MAX_MESSAGE_SIZE);
+            idump((new_peer->get_socket().get_no_delay()));
+            new_peer->get_socket().set_no_delay(true);
+            idump((new_peer->get_socket().get_no_delay()));
+            ilog( "accepted inbound connection from ${remote_endpoint}", (remote_endpoint) );
+            // known from now on, so the connection counts against its host's limits during the key exchange too
+            new_peer->direction = peer_connection_direction::inbound;
+            new_peer->set_remote_endpoint(remote_endpoint);
+            new_peer->connection_initiation_time = fc::time_point::now();
+            _handshaking_connections.insert( new_peer );
+            _rate_limiter.add_tcp_socket( &new_peer->get_socket() );
+            std::weak_ptr<peer_connection> new_weak_peer(new_peer);
+            new_peer->accept_or_connect_task_done = async_task( [this, new_weak_peer]() {
+              peer_connection_ptr new_peer(new_weak_peer.lock());
+              assert(new_peer);
+              if (!new_peer)
+                return;
+              accept_connection_task(new_peer);
+            }, "accept_connection_task" );
+          }
 
           // limit the rate at which we accept connections to mitigate DOS attacks
           fc::usleep( fc::milliseconds(10) );
