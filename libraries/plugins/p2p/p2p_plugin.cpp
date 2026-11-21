@@ -131,6 +131,7 @@ public:
   fc::optional<uint32_t> fetch_items_minimum_interval_us;
   fc::optional<uint32_t> max_transactions_in_flight;
   fc::optional<uint32_t> max_connections_per_host;
+  vector<string> host_limit_exempt;
   bool force_validate = false;
   bool block_producer = false;
 
@@ -521,9 +522,14 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
      "At the limit, the next transaction a peer sends waits until one is validated, and so does reading anything further from that peer. "
      "Default 10000; 0 for no limit. Overrides maximum_transactions_in_flight in p2p-parameters.")
     ("p2p-max-connections-per-host", bpo::value<uint32_t>(), "Maximum number of connections held to one host, an IPv4 address or an IPv6 /64, inbound and outbound together. "
-     "A hello beyond it is rejected as already connected, which the peer does not count as a failed attempt. Loopback addresses are not limited, "
-     "and neither are the seed nodes and add_node targets this node dials (they still count against their host's limit). "
+     "A hello beyond it is rejected, and the peer counts that as a failed attempt and backs off. Loopback addresses and p2p-host-limit-exempt "
+     "ones are not limited, and neither are the seed nodes and add_node targets this node dials (they still count against their host's limit). "
+     "Behind a proxy that rewrites the source address of inbound peers (docker-proxy, rootless Docker) every inbound peer is on the proxy's "
+     "host: exempt the proxy's address or set 0. "
      "Default " BOOST_PP_STRINGIZE(GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST) "; 0 for no limit. Overrides maximum_connections_per_host in p2p-parameters.")
+    ("p2p-host-limit-exempt", bpo::value<vector<string>>()->composing(), "An address or subnet (e.g. 172.17.0.1, 10.0.0.0/8, 2001:db8::/32) whose "
+     "connections p2p-max-connections-per-host does not limit, such as a proxy that rewrites the source address of inbound peers. "
+     "May be given more than once. Added to host_limit_exempt_subnets in p2p-parameters, which lists loopback by default.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
@@ -554,6 +560,13 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count( "p2p-max-connections-per-host" ) )
     my->max_connections_per_host = options.at( "p2p-max-connections-per-host" ).as< uint32_t >();
+
+  if( options.count( "p2p-host-limit-exempt" ) )
+  {
+    my->host_limit_exempt = options.at( "p2p-host-limit-exempt" ).as< vector< string > >();
+    for( const string& subnet : my->host_limit_exempt )
+      graphene::net::address_subnet::from_string( subnet ); // reject a malformed entry at startup
+  }
 
   if (options.count("p2p-seed-node"))
   {
@@ -684,6 +697,16 @@ void p2p_plugin::plugin_finalize_startup()
         ilog( "Overriding advanded_node_parameters[ \"maximum_connections_per_host\" ] with ${count}", ("count", *my->max_connections_per_host) );
 
       my->config.set( "maximum_connections_per_host", fc::variant( *my->max_connections_per_host ) );
+    }
+
+    if( !my->host_limit_exempt.empty() )
+    {
+      vector< string > subnets = my->config.find( "host_limit_exempt_subnets" ) != my->config.end()
+        ? my->config[ "host_limit_exempt_subnets" ].as< vector< string > >()
+        : graphene::net::node_configuration().host_limit_exempt_subnets;
+      subnets.insert( subnets.end(), my->host_limit_exempt.begin(), my->host_limit_exempt.end() );
+      ilog( "Exempting ${subnets} from the per-host connection limit", ("subnets", subnets) );
+      my->config.set( "host_limit_exempt_subnets", fc::variant( subnets ) );
     }
 
     ilog("Setting parameters");
