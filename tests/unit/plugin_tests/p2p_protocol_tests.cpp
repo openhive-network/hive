@@ -33,7 +33,8 @@
  * should have are generated at once with debug_node; blocks it should sync from a test peer are generated
  * by a short-lived source node with the same genesis (generate_chain()). An idle node is not at live sync,
  * so it ignores transaction advertisements: the cases that need it to fetch or relay transactions start a
- * producing node (the witness_fixture default, genesis 3 s ahead and a block every 3 s). Blocks an idle node
+ * producing node (the witness_fixture default, genesis 3 s ahead and a block every 3 s); those that need its pending
+ * pool to hold still while they check it stop its block production (stop_block_production()). Blocks an idle node
  * should get in live mode come from a peer that delivers them when asked but doesn't offer them for sync
  * (test_peer::provide_blocks()). A pruned node is an idle node without a block log (block-log-split 0), which
  * keeps only its last irreversible block.
@@ -210,6 +211,28 @@ struct p2p_protocol_fixture : public witness_fixture
     peer->provide_blocks( chain );
     connect_active( *peer );
     return peer;
+  }
+
+  /**
+   * Stops a producing node's block production for the rest of the case, so that what the case puts in the pending
+   * pool stays there however long its checks take. The node stays at live sync for a minute after its last block.
+   * A block the witness plugin began producing before the stop can still land after this returns (it waits a block
+   * interval for one), but no later one does.
+   */
+  void stop_block_production()
+  {
+    // under the write lock: the witness plugin reads its witnesses while it applies a block
+    db->with_write_lock( [&]() { witness_plugin->set_witnesses( {} ); } );
+    fc::usleep( fc::seconds( HIVE_BLOCK_INTERVAL ) );
+  }
+
+  /// Waits until the pending pool size the node's fetch gate reads exceeds @p threshold or a block comes; requires one of them
+  void wait_for_pool_over( uint64_t threshold, uint32_t head )
+  {
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]()
+    {
+      return get_chain_plugin().get_published_pending_transactions_size() > threshold || get_block_num() != head;
+    }, reply_timeout ), "the pending pool is " << get_chain_plugin().get_published_pending_transactions_size() << " bytes" );
   }
 
   bool head_reaches( uint32_t num, fc::microseconds timeout = reply_timeout )
@@ -1805,15 +1828,14 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
     auto observer = make_peer( "observer" );
     connect_in_sync( *observer );
 
-    // the checks need the pool over the threshold until they end, and the next block includes what took it there;
-    // when a block comes before they end, they are made again after it
+    // a block would include what takes the pool over the threshold; one that was under way when production stopped
+    // can still come, and then the checks are made again
+    stop_block_production();
     bool checked_while_gated = false;
     fc::time_point gated_since;
     for( int attempt = 0; attempt < 3 && !checked_while_gated; ++attempt )
     {
-      // right after a block, so that the next one comes well after the checks below, API transactions take
-      // the pool over the threshold
-      const uint32_t filled_at = wait_for_block_num( get_block_num() + 1 );
+      const uint32_t head = get_block_num();
       gated_since = fc::time_point::now();
       uint64_t filled = 0;
       for( int i = 0; filled <= threshold; ++i )
@@ -1824,7 +1846,9 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
         schedule_transaction( filler );
         filled += filler->get_transaction_size();
       }
-      BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), threshold );
+      wait_for_pool_over( threshold, head );
+      if( get_block_num() != head )
+        continue;
 
       std::vector< item_hash_t > flood;
       for( int i = 0; i < 50; ++i )
@@ -1838,18 +1862,19 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
       const item_hash_t hash = fast_confirm->get_legacy_transaction_message_hash();
       source->provide( { fast_confirm } );
       source->advertise( { hash } );
-      const block_id_type next_block = fake_block_id( filled_at + 1, "advertised while gated " + std::to_string( attempt ) );
+      const block_id_type next_block = fake_block_id( head + 1, "advertised while gated " + std::to_string( attempt ) );
       block_source->advertise( block_message_type, { next_block } );
 
       const bool fetched = wait_until( [&]()
       {
         return ( source->was_requested( hash ) && times_requested( *block_source, next_block ) != 0 && observer->was_advertised( hash ) ) ||
-               get_block_num() != filled_at;
+               get_block_num() != head;
       }, reply_timeout );
       BOOST_REQUIRE( fetched );
-      checked_while_gated = get_block_num() == filled_at && get_chain_plugin().get_published_pending_transactions_size() > threshold;
+      checked_while_gated = get_block_num() == head;
     }
     BOOST_REQUIRE_MESSAGE( checked_while_gated, "a block came before the checks of the gated pool ended, every time" );
+    BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), threshold );
     // what the flooder was asked for while the pool was over the threshold came no more than the minimum at a time
     const fc::time_point checked_at = fc::time_point::now();
     size_t requested_while_gated = 0;
@@ -1879,11 +1904,12 @@ BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
     fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
     wait_for_block_num( 1 );
 
-    // as in transaction_fetch_gate_test, the checks are made again after a block that came before they ended
+    // as in transaction_fetch_gate_test, the checks are made again after a block that was under way when production stopped
+    stop_block_production();
     bool checked_while_gated = false;
     for( int attempt = 0; attempt < 3 && !checked_while_gated; ++attempt )
     {
-      const uint32_t filled_at = wait_for_block_num( get_block_num() + 1 );
+      const uint32_t head = get_block_num();
       uint64_t filled = 0;
       for( int i = 0; filled <= threshold; ++i )
       {
@@ -1893,7 +1919,9 @@ BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
         schedule_transaction( filler );
         filled += filler->get_transaction_size();
       }
-      BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), threshold );
+      wait_for_pool_over( threshold, head );
+      if( get_block_num() != head )
+        continue;
 
       auto relay = make_peer( "relay " + std::to_string( attempt ) );
       connect_active( *relay );
@@ -1910,10 +1938,11 @@ BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
       inventory.push_back( hash );
       relay->advertise( inventory );
 
-      BOOST_REQUIRE( wait_until( [&]() { return relay->was_requested( hash ) || get_block_num() != filled_at; }, reply_timeout ) );
-      checked_while_gated = get_block_num() == filled_at && get_chain_plugin().get_published_pending_transactions_size() > threshold;
+      BOOST_REQUIRE( wait_until( [&]() { return relay->was_requested( hash ) || get_block_num() != head; }, reply_timeout ) );
+      checked_while_gated = get_block_num() == head;
       if( !checked_while_gated )
         continue;
+      BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), threshold );
       std::vector< fetch_items_message > transaction_requests;
       for( const fetch_items_message& request : relay->received_as< fetch_items_message >() )
         if( request.item_type == trx_message_type )
