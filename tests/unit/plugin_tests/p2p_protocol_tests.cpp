@@ -1809,11 +1809,13 @@ BOOST_AUTO_TEST_CASE( transaction_relay_test )
 /// D17: while the pending pool holds more than a third of max-mempool-size the node asks its peers for no more than
 /// GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH transactions per GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS, and for
 /// blocks as always; so a fast-confirm one peer advertises while another floods it is still fetched and relayed to the
-/// peers in sync
+/// peers in sync.  The flooder's own window doesn't bound it: it has delivered small transactions, so one request may
+/// ask it for its whole flood, and it answers at once that it doesn't have them, so none stays outstanding
 BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
 {
   const uint64_t max_mempool_size = 6 * 1024;
   const uint64_t threshold = transaction_fetch_gate_threshold( max_mempool_size );
+  const size_t flood_size = 50;
   start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
   run( [&]()
   {
@@ -1821,6 +1823,7 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
     wait_for_block_num( 1 );
 
     auto flooder = make_peer( "flooding peer" );
+    flooder->stop_withholding();
     connect_active( *flooder );
     auto source = make_peer( "fast-confirm source" );
     connect_active( *source );
@@ -1829,11 +1832,32 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
     auto observer = make_peer( "observer" );
     connect_in_sync( *observer );
 
+    // the flooder delivers small transactions until the node's estimate of its transaction size, followed here,
+    // lets one request ask it for the whole flood
+    transaction_size_estimate flooder_estimate;
+    std::vector< full_transaction_ptr > warm_up;
+    while( flooder_estimate.transactions_to_request( 0 ) < flood_size )
+    {
+      warm_up.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                         "warm-up " + std::to_string( warm_up.size() ), get_default_expiration() ) );
+      flooder_estimate.record( warm_up.back()->get_transaction_size() );
+    }
+    std::vector< item_hash_t > warm_up_hashes;
+    for( const full_transaction_ptr& transaction : warm_up )
+      warm_up_hashes.push_back( transaction->get_legacy_transaction_message_hash() );
+    flooder->provide( warm_up );
+    flooder->advertise( warm_up_hashes );
+    BOOST_REQUIRE( wait_until( [&]()
+    {
+      return std::all_of( warm_up_hashes.begin(), warm_up_hashes.end(), [&]( const item_hash_t& hash ) { return observer->was_advertised( hash ); } );
+    }, reply_timeout ) );
+
     // a block would include what takes the pool over the threshold; one that was under way when production stopped
     // can still come, and then the checks are made again
     stop_block_production();
     bool checked_while_gated = false;
     fc::time_point gated_since;
+    std::vector< item_hash_t > flood;
     for( int attempt = 0; attempt < 3 && !checked_while_gated; ++attempt )
     {
       const uint32_t head = get_block_num();
@@ -1851,8 +1875,8 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
       if( get_block_num() != head )
         continue;
 
-      std::vector< item_hash_t > flood;
-      for( int i = 0; i < 50; ++i )
+      flood.clear();
+      for( size_t i = 0; i < flood_size; ++i )
         flood.push_back( fc::ripemd160::hash( "flooded transaction " + std::to_string( attempt ) + "/" + std::to_string( i ) ) );
       flooder->advertise( flood );
 
@@ -1868,7 +1892,8 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
 
       const bool fetched = wait_until( [&]()
       {
-        return ( source->was_requested( hash ) && times_requested( *block_source, next_block ) != 0 && observer->was_advertised( hash ) ) ||
+        return ( source->was_requested( hash ) && times_requested( *block_source, next_block ) != 0 && observer->was_advertised( hash ) &&
+                 std::all_of( flood.begin(), flood.end(), [&]( const item_hash_t& flooded ) { return flooder->was_requested( flooded ); } ) ) ||
                get_block_num() != head;
       }, reply_timeout );
       BOOST_REQUIRE( fetched );
@@ -1876,17 +1901,35 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
     }
     BOOST_REQUIRE_MESSAGE( checked_while_gated, "a block came before the checks of the gated pool ended, every time" );
     BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), threshold );
-    // what the flooder was asked for while the pool was over the threshold came no more than the minimum at a time
+    // the flood the flooder was asked for while the pool was over the threshold came no more than the minimum per
+    // recheck interval (less what delivering a request may have taken), so in at least three passes
     const fc::time_point checked_at = fc::time_point::now();
-    size_t requested_while_gated = 0;
+    std::vector< std::pair< fc::time_point, size_t > > requests;
     for( const received_message& r : flooder->received( fetch_items_message_type ) )
       if( r.time >= gated_since && r.time <= checked_at )
       {
         const fetch_items_message request = r.msg.as< fetch_items_message >();
         BOOST_CHECK_LE( request.items_to_fetch.size(), size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH ) );
-        requested_while_gated += request.items_to_fetch.size();
+        const size_t flooded = std::count_if( request.items_to_fetch.begin(), request.items_to_fetch.end(),
+                                              [&]( const item_hash_t& item ) { return std::find( flood.begin(), flood.end(), item ) != flood.end(); } );
+        if( flooded != 0 )
+          requests.emplace_back( r.time, flooded );
       }
-    BOOST_CHECK_LT( requested_while_gated, 50u );
+    BOOST_REQUIRE( !requests.empty() );
+    const fc::microseconds pass_spacing = fc::milliseconds( GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS * 4 / 5 );
+    size_t requested_while_gated = 0;
+    for( const auto& [ requested_at, requested ] : requests )
+    {
+      size_t requested_in_pass = 0;
+      for( const auto& [ earlier_at, earlier ] : requests )
+        if( earlier_at <= requested_at && requested_at - earlier_at < pass_spacing )
+          requested_in_pass += earlier;
+      BOOST_CHECK_LE( requested_in_pass, size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH ) );
+      requested_while_gated += requested;
+    }
+    BOOST_CHECK_EQUAL( requested_while_gated, flood_size );
+    BOOST_CHECK_GE( ( requests.back().first - requests.front().first ).count(),
+                    pass_spacing.count() * int64_t( ( flood_size - 1 ) / GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH ) );
     require_kept( *source );
   } );
 }
