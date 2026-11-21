@@ -1330,13 +1330,19 @@ namespace graphene { namespace net {
     // A connection let past the defaulted per-host limit gives way to a host under it.  While we are full, one candidate
     // under the limit is dialed past the desired number (up to the maximum); once it is active,
     // give_way_to_connection_under_host_limit() closes a connection over the limit.  Dialing first means a
-    // candidate that fails to connect costs nothing, and the node never drops below the desired number for it
+    // candidate that fails to connect costs nothing, and the node never drops below the desired number for it.  Only
+    // active connections count toward the desired number here, so a handshaking one (a peer that never sends its hello)
+    // does not hold the dial back; one dial of ours at a time is handshaking, so the extra stays one connection
     void node_impl::dial_new_host_for_connection_over_host_limit()
     {
       VERIFY_CORRECT_THREAD();
       if (node_is_shutting_down() || !is_host_limit_relaxed() ||
-          get_number_of_connections() != _node_configuration.desired_number_of_connections ||
+          _active_connections.size() < _node_configuration.desired_number_of_connections ||
           get_number_of_connections() >= _node_configuration.maximum_number_of_connections ||
+          std::any_of(_handshaking_connections.begin(), _handshaking_connections.end(), [](const peer_connection_ptr& peer) {
+            // a connection we dial is outbound once its task starts, an accepted one inbound
+            return peer->direction != peer_connection_direction::inbound;
+          }) ||
           !find_active_connection_over_host_limit(nullptr))
         return;
       uint32_t unroutable_ipv4_candidates = 0;
@@ -2527,8 +2533,10 @@ namespace graphene { namespace net {
     }
 
     // Whether a hello over the per-host limit is accepted all the same: while the limit is relaxed and we hold fewer
-    // than the desired number of connections (counting those whose hello we accepted, as the limit does).  That covers
-    // the connections the connect loop dialed past the limit too
+    // than the desired number of connections (counting those whose hello we accepted, as the limit does).  A connection
+    // the connect loop dialed past the limit was picked one step at a time already (select_connection_candidates);
+    // an inbound one only when its host is at the lowest relaxed step (accepts_connection_over_host_limit), so that one
+    // host does not fill the slots short of the desired number
     bool node_impl::accept_hello_over_host_limit(const peer_connection* peer, const fc::ip::address& address)
     {
       VERIFY_CORRECT_THREAD();
@@ -2536,6 +2544,10 @@ namespace graphene { namespace net {
         return false;
       std::vector<fc::ip::address> addresses = get_connection_addresses(true, peer);
       if (addresses.size() >= _node_configuration.desired_number_of_connections)
+        return false;
+      if (peer->direction != peer_connection_direction::outbound &&
+          !accepts_connection_over_host_limit(address, addresses, _node_configuration.maximum_connections_per_host,
+                                              _node_configuration.desired_number_of_connections))
         return false;
       addresses.push_back(address);
       log_host_limit_relaxed(addresses);
@@ -8968,6 +8980,26 @@ namespace graphene { namespace net {
     return on_host * 2 > inbound_addresses.size() + 1;
   }
 
+  namespace
+  {
+    /// The hosts (connection_host_of) of @p addresses, in order of first appearance, with how many of them each has
+    std::vector<std::pair<fc::ip::address, uint32_t>> count_connections_per_host(const std::vector<fc::ip::address>& addresses)
+    {
+      std::vector<std::pair<fc::ip::address, uint32_t>> hosts;
+      for (const fc::ip::address& address : addresses)
+      {
+        const fc::ip::address host = connection_host_of(address);
+        const auto counted = std::find_if(hosts.begin(), hosts.end(),
+                                          [&host](const std::pair<fc::ip::address, uint32_t>& h) { return h.first == host; });
+        if (counted == hosts.end())
+          hosts.emplace_back(host, 1);
+        else
+          ++counted->second;
+      }
+      return hosts;
+    }
+  }
+
   std::vector<fc::ip::endpoint> select_connection_candidates(const std::vector<connection_candidate>& candidates,
                                                              const std::vector<fc::ip::address>& held_addresses,
                                                              const connection_selection_limits& limits)
@@ -9006,32 +9038,87 @@ namespace graphene { namespace net {
     take(true, limits.free_slots);
     take(false, limits.free_slots);
 
-    if (limits.relax_connections_per_host && limits.maximum_connections_per_host != 0)
-      while (selected.size() < limits.free_slots)
-      {
-        // every candidate left is on a host at the limit (an exempt one was taken above)
-        fc::optional<size_t> fewest;
-        size_t fewest_held = 0;
-        for (size_t i = 0; i < candidates.size(); ++i)
+    if (limits.relax_connections_per_host && limits.maximum_connections_per_host != 0 && selected.size() < limits.free_slots)
+    {
+      std::vector<fc::ip::address> available_addresses(held_addresses);
+      for (const connection_candidate& candidate : candidates)
+        available_addresses.push_back(candidate.endpoint.get_address());
+      std::vector<uint32_t> available_per_host;
+      for (const std::pair<fc::ip::address, uint32_t>& host : count_connections_per_host(available_addresses))
+        available_per_host.push_back(host.second);
+      const uint32_t relaxed = get_relaxed_connections_per_host(available_per_host, limits.maximum_connections_per_host,
+                                                                limits.desired_connections);
+      // every candidate left is on a host at the limit (an exempt one was taken above), so a host under the step holds
+      // one less than it: each gets one connection per step
+      for (uint32_t step = limits.maximum_connections_per_host + 1; step <= relaxed && selected.size() < limits.free_slots; ++step)
+        while (selected.size() < limits.free_slots)
         {
-          if (taken[i])
-            continue;
-          const fc::ip::address host = connection_host_of(candidates[i].endpoint.get_address());
-          const size_t held = std::count_if(addresses.begin(), addresses.end(),
-                                            [&host](const fc::ip::address& address) { return connection_host_of(address) == host; });
-          if (!fewest || held < fewest_held)
+          fc::optional<size_t> fewest;
+          size_t fewest_held = 0;
+          for (size_t i = 0; i < candidates.size(); ++i)
           {
-            fewest = i;
-            fewest_held = held;
+            if (taken[i])
+              continue;
+            const fc::ip::address host = connection_host_of(candidates[i].endpoint.get_address());
+            const size_t held = std::count_if(addresses.begin(), addresses.end(),
+                                              [&host](const fc::ip::address& address) { return connection_host_of(address) == host; });
+            if (held < step && (!fewest || held < fewest_held))
+            {
+              fewest = i;
+              fewest_held = held;
+            }
           }
+          if (!fewest)
+            break;
+          taken[*fewest] = true;
+          addresses.push_back(candidates[*fewest].endpoint.get_address());
+          selected.push_back(candidates[*fewest].endpoint);
         }
-        if (!fewest)
-          break;
-        taken[*fewest] = true;
-        addresses.push_back(candidates[*fewest].endpoint.get_address());
-        selected.push_back(candidates[*fewest].endpoint);
-      }
+    }
     return selected;
+  }
+
+  uint32_t get_relaxed_connections_per_host(const std::vector<uint32_t>& available_per_host, uint32_t maximum_connections_per_host,
+                                            uint32_t desired_connections)
+  {
+    if (maximum_connections_per_host == 0 || available_per_host.empty())
+      return maximum_connections_per_host;
+    for (uint32_t step = maximum_connections_per_host; step <= desired_connections; ++step)
+    {
+      uint64_t reached = 0;
+      for (uint32_t available : available_per_host)
+        reached += std::min(available, step);
+      if (reached >= desired_connections)
+        return step;
+    }
+    const uint32_t hosts = static_cast<uint32_t>(available_per_host.size());
+    return std::max(maximum_connections_per_host, (desired_connections + hosts - 1) / hosts);
+  }
+
+  bool accepts_connection_over_host_limit(const fc::ip::address& address, const std::vector<fc::ip::address>& accepted_addresses,
+                                          uint32_t maximum_connections_per_host, uint32_t desired_connections)
+  {
+    if (maximum_connections_per_host == 0)
+      return true;
+    if (accepted_addresses.size() >= desired_connections)
+      return false;
+    const fc::ip::address host = connection_host_of(address);
+    const std::vector<std::pair<fc::ip::address, uint32_t>> held_per_host = count_connections_per_host(accepted_addresses);
+    uint32_t held_by_host = 0;
+    std::vector<uint32_t> available_per_host;
+    for (const std::pair<fc::ip::address, uint32_t>& held : held_per_host)
+    {
+      if (held.first == host)
+        held_by_host = held.second;
+      available_per_host.push_back(held.first == host ? held.second + 1 : held.second);
+    }
+    if (held_by_host == 0)
+      available_per_host.push_back(1);
+    if (held_by_host >= get_relaxed_connections_per_host(available_per_host, maximum_connections_per_host, desired_connections))
+      return false;
+    return std::none_of(held_per_host.begin(), held_per_host.end(), [&](const std::pair<fc::ip::address, uint32_t>& held) {
+      return !(held.first == host) && held.second > maximum_connections_per_host && held.second < held_by_host;
+    });
   }
 
   connection_spread get_connection_spread(const std::vector<fc::ip::address>& addresses)
