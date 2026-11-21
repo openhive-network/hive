@@ -158,15 +158,16 @@ public:
    * which the test makes it dial with p2p_plugin::add_node()), and returns that endpoint. Once the node
    * connects and the key exchange is done, the handshake starts as after connect(). @p port 0 picks a
    * free port; another one is reused, e.g. to stand in for a peer that listened there before (the port
-   * can be listened on again while the previous connection on it is still closing).
+   * can be listened on again while the previous connection on it is still closing). Another loopback
+   * @p address (127.0.0.2, ...) stands in for another host.
    */
-  fc::ip::endpoint listen( uint16_t port = 0 )
+  fc::ip::endpoint listen( uint16_t port = 0, const std::string& address = "127.0.0.1" )
   {
     return _thread.async( [&]()
     {
       _server = std::make_unique< fc::tcp_server >();
       _server->set_reuse_address();
-      _server->listen( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), port ) );
+      _server->listen( fc::ip::endpoint( fc::ip::address( address ), port ) );
       _listening_endpoint = _server->get_local_endpoint();
       _hello.inbound_port = _listening_endpoint.port();
       _accept_task = fc::async( [this]()

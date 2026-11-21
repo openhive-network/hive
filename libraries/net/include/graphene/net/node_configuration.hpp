@@ -30,7 +30,11 @@ struct node_configuration
    uint32_t desired_number_of_connections = GRAPHENE_NET_DEFAULT_DESIRED_CONNECTIONS;
    /** if we have _maximum_number_of_connections or more, we will refuse any inbound connections */
    uint32_t maximum_number_of_connections = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS;
-   /** connections held to one host (an IPv4 address or an IPv6 /64) at most, counting active and accepted handshaking ones; 0 = no limit */
+   /**
+    * connections held to one host (an IPv4 address or an IPv6 /64) at most, counting active and accepted handshaking ones; 0 = no limit.
+    * A hard limit only when set in the advanced node parameters; otherwise it gives way while other hosts can't fill
+    * desired_number_of_connections (a value saved in node_config.json doesn't count as set)
+    */
    uint32_t maximum_connections_per_host = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST;
    /**
     * addresses and subnets ("172.17.0.1", "10.0.0.0/8", "2001:db8::/32") whose connections maximum_connections_per_host

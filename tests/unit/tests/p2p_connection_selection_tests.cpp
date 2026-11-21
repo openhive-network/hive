@@ -12,9 +12,11 @@ using graphene::net::connection_host_of;
 using graphene::net::connection_selection_limits;
 using graphene::net::exceeds_connections_per_host;
 using graphene::net::get_connection_spread;
+using graphene::net::host_limited_connection;
 using graphene::net::inbound_connections_share_host;
 using graphene::net::is_in_any_subnet;
 using graphene::net::select_connection_candidates;
+using graphene::net::select_connection_over_host_limit;
 
 namespace
 {
@@ -46,6 +48,22 @@ namespace
     result.maximum_connections_per_host = per_host;
     result.reserved_address_family_percent = reserved_percent;
     return result;
+  }
+
+  connection_selection_limits relaxed_limits( uint32_t free_slots, uint32_t per_host, uint32_t desired = 20 )
+  {
+    connection_selection_limits result = limits( free_slots, per_host, 25, desired );
+    result.relax_connections_per_host = true;
+    return result;
+  }
+
+  /// `count` candidates on the one IPv4 host `host`, on ports from 2001
+  std::vector< connection_candidate > ports_on_host( const std::string& host, int count )
+  {
+    std::vector< connection_candidate > candidates;
+    for( int i = 0; i < count; ++i )
+      candidates.push_back( { endpoint( host, 2001 + i ) } );
+    return candidates;
   }
 
   size_t count_on_host( const std::vector< fc::ip::endpoint >& selected, const fc::ip::address& host )
@@ -274,6 +292,97 @@ BOOST_AUTO_TEST_CASE( single_family_candidates_fill_every_slot )
   selected = select_connection_candidates( single_hosts( false, 30 ), {}, limits( 20, 2, 25 ) );
   BOOST_CHECK_EQUAL( selected.size(), 20u );
   BOOST_CHECK_EQUAL( count_ipv4( selected ), 20u );
+}
+
+/// Candidates on 2 hosts only, 10 on each: the default (relaxed) limit fills all 20 slots, 10 per host, while a hard
+/// limit of 2 stops at 2 per host
+BOOST_AUTO_TEST_CASE( relaxed_limit_fills_slots_from_few_hosts )
+{
+  std::vector< connection_candidate > candidates = ports_on_host( "198.51.100.1", 10 );
+  const std::vector< connection_candidate > second = ports_on_host( "198.51.100.2", 10 );
+  candidates.insert( candidates.end(), second.begin(), second.end() );
+
+  std::vector< fc::ip::endpoint > selected = select_connection_candidates( candidates, {}, relaxed_limits( 20, 2 ) );
+  BOOST_CHECK_EQUAL( selected.size(), 20u );
+  BOOST_CHECK_EQUAL( count_on_host( selected, address( "198.51.100.1" ) ), 10u );
+  BOOST_CHECK_EQUAL( count_on_host( selected, address( "198.51.100.2" ) ), 10u );
+
+  selected = select_connection_candidates( candidates, {}, limits( 20, 2, 25 ) );
+  BOOST_CHECK_EQUAL( selected.size(), 4u );
+  BOOST_CHECK_EQUAL( count_on_host( selected, address( "198.51.100.1" ) ), 2u );
+  BOOST_CHECK_EQUAL( count_on_host( selected, address( "198.51.100.2" ) ), 2u );
+
+  // relaxed, but nothing to limit with 0
+  connection_selection_limits unlimited = relaxed_limits( 20, 0 );
+  BOOST_CHECK_EQUAL( select_connection_candidates( candidates, {}, unlimited ).size(), 20u );
+}
+
+/// Past the limit, each slot goes to the host holding the fewest connections then, counting the ones held already
+BOOST_AUTO_TEST_CASE( relaxed_limit_prefers_hosts_with_fewest_connections )
+{
+  std::vector< connection_candidate > candidates = ports_on_host( "198.51.100.1", 6 );
+  const std::vector< connection_candidate > second = ports_on_host( "198.51.100.2", 6 );
+  candidates.insert( candidates.end(), second.begin(), second.end() );
+  const std::vector< fc::ip::address > held = { address( "198.51.100.1" ), address( "198.51.100.1" ), address( "198.51.100.1" ),
+                                                address( "198.51.100.1" ) };
+
+  // the 2nd host gets its 2 under the limit, then 2 more before the 1st host (holding 4) gets another
+  std::vector< fc::ip::endpoint > selected = select_connection_candidates( candidates, held, relaxed_limits( 5, 2 ) );
+  BOOST_REQUIRE_EQUAL( selected.size(), 5u );
+  BOOST_CHECK_EQUAL( count_on_host( selected, address( "198.51.100.2" ) ), 4u );
+  BOOST_CHECK_EQUAL( count_on_host( selected, address( "198.51.100.1" ) ), 1u );
+  BOOST_CHECK( connection_host_of( selected.back().get_address() ) == address( "198.51.100.1" ) );
+
+  // fewer candidates than free slots: every one of them is picked, no more
+  selected = select_connection_candidates( candidates, held, relaxed_limits( 20, 2 ) );
+  BOOST_CHECK_EQUAL( selected.size(), 12u );
+}
+
+/// With candidates on many hosts the relaxed limit takes none past it: it gives way only to slots that would stay empty
+BOOST_AUTO_TEST_CASE( relaxed_limit_holds_with_many_hosts )
+{
+  std::vector< connection_candidate > candidates;
+  for( int host = 1; host <= 12; ++host )
+  {
+    const std::vector< connection_candidate > on_host = ports_on_host( "198.51.100." + std::to_string( host ), 5 );
+    candidates.insert( candidates.end(), on_host.begin(), on_host.end() );
+  }
+  const std::vector< fc::ip::endpoint > selected = select_connection_candidates( candidates, {}, relaxed_limits( 20, 2 ) );
+  BOOST_CHECK_EQUAL( selected.size(), 20u );
+  for( int host = 1; host <= 12; ++host )
+    BOOST_CHECK_LE( count_on_host( selected, address( "198.51.100." + std::to_string( host ) ) ), 2u );
+}
+
+/// The connection that gives way to a new host: not exempt, on the host with the most connections over the limit,
+/// the last one of that host; none when nothing is over the limit or there is no limit
+BOOST_AUTO_TEST_CASE( connection_over_host_limit )
+{
+  const fc::ip::address a = address( "198.51.100.1" );
+  const fc::ip::address b = address( "198.51.100.2" );
+  const fc::ip::address c = address( "198.51.100.3" );
+
+  BOOST_CHECK( !select_connection_over_host_limit( { { a }, { a }, { b }, { b }, { c } }, 2 ) );
+  BOOST_CHECK( !select_connection_over_host_limit( { { a }, { a }, { a } }, 0 ) );
+
+  fc::optional< size_t > selected = select_connection_over_host_limit( { { a }, { b }, { a }, { b }, { b }, { a }, { b }, { c } }, 2 );
+  BOOST_REQUIRE( selected );
+  BOOST_CHECK_EQUAL( *selected, 6u ); // b holds 4, a 3: the last of b
+
+  // equal hosts: the first one over the limit, its last connection
+  selected = select_connection_over_host_limit( { { a }, { b }, { a }, { b }, { b }, { a } }, 2 );
+  BOOST_REQUIRE( selected );
+  BOOST_CHECK_EQUAL( *selected, 5u );
+
+  // an exempt connection counts against its host, but is never the one closed
+  selected = select_connection_over_host_limit( { { a }, { a }, { a, true } }, 2 );
+  BOOST_REQUIRE( selected );
+  BOOST_CHECK_EQUAL( *selected, 1u );
+  BOOST_CHECK( !select_connection_over_host_limit( { { a, true }, { a, true }, { a, true } }, 2 ) );
+
+  // an IPv6 host is its /64
+  selected = select_connection_over_host_limit( { { address( "2001:db8::1" ) }, { address( "2001:db8::2" ) }, { address( "2001:db8::3" ) } }, 2 );
+  BOOST_REQUIRE( selected );
+  BOOST_CHECK_EQUAL( *selected, 2u );
 }
 
 /// The connection log line's spread: distinct hosts, and connections per family (an IPv4-mapped address is IPv4)
