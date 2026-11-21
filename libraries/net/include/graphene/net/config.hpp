@@ -89,13 +89,12 @@
 // advanced for it and nothing we asked for is outstanding, advertisement or not.
 #define GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC                       60
 
-// default node_configuration::idle_peer_disconnect_timeout: a peer that gave us no block, sync
-// block, block ids we lacked or timely block advertisement for this long, while it should have,
-// is disconnected so its slot goes to another candidate.  Longer than
-// GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restarting sync with the peers we have is tried first.
-// 0 disables it, and it is off by default until its known defects are fixed: a single peer
-// claiming a higher head lets every halted node replace its honest peers, and a replaced peer
-// can reconnect long before the window ends.  180 is the value to set to enable it
+// default node_configuration::idle_peer_disconnect_timeout: a peer that gave us no block that
+// linked, nor advertised one we have, for this long while our head is behind and another peer
+// delivered blocks, is disconnected so its slot goes to another candidate, and may not take a
+// slot again, inbound or outbound, for as long.  Longer than GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC,
+// so restarting sync with the peers we have is tried first.  0 disables it, and it is off by
+// default until a live check of the fixed feature decides otherwise; 180 is the value to set to enable it
 #define GRAPHENE_NET_DEFAULT_IDLE_PEER_DISCONNECT_TIMEOUT_SEC      0
 
 // idle peers are only replaced while our head block is older than this (the gap at which the
@@ -103,8 +102,14 @@
 // deliver or advertise one first, so their silence says nothing about them
 #define GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC                    60
 
-// replacing idle peers leaves at least this many active connections, idle or not
+// replacing idle peers leaves at least this many active connections, idle or not, and at least
+// half of node_configuration::desired_number_of_connections
 #define GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST                      2
+
+// idle-peer disconnects logged at warn level per interval; the rest go to the debug log and are
+// counted in the next warning
+#define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNINGS_PER_INTERVAL    10
+#define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNING_INTERVAL_SEC     60
 
 /**
  * Define this to enable debugging code in the p2p network interface.

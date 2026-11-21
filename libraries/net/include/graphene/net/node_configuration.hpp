@@ -49,9 +49,9 @@ struct node_configuration
    /** how many seconds of inactivity are permitted before disconnecting a peer */
    uint32_t peer_inactivity_timeout = GRAPHENE_NET_PEER_HANDSHAKE_INACTIVITY_TIMEOUT;
    /**
-    * seconds an active peer may give us no useful data (blocks, block ids we lack, timely block advertisements)
-    * while our head is behind and another peer could serve it, before it is disconnected and replaced; 0 = never,
-    * the default until the feature's known defects are fixed. Keep it above GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC so sync is restarted with the peers we have first
+    * seconds an active peer may give us no useful data (blocks that link, timely advertisements of blocks we have)
+    * while our head is behind and another peer delivered blocks, before it is disconnected and replaced; it may not
+    * take a slot again for as long.  0 = never, the default.  Keep it above GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC so sync is restarted with the peers we have first
     */
    uint32_t idle_peer_disconnect_timeout = GRAPHENE_NET_DEFAULT_IDLE_PEER_DISCONNECT_TIMEOUT_SEC;
 
