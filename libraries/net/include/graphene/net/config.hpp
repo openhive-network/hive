@@ -89,9 +89,9 @@
 // advanced for it and nothing we asked for is outstanding, advertisement or not.
 #define GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC                       60
 
-// default node_configuration::idle_peer_disconnect_timeout: a peer that gave us no block that
-// linked, nor advertised one we have, for this long while our head is behind and another peer
-// delivered blocks, is disconnected so its slot goes to another candidate, and may not take a
+// default node_configuration::idle_peer_disconnect_timeout: a peer that delivered us no block that
+// we pushed for this long while our head is behind and another peer delivered blocks (asking us
+// for blocks or advertising them doesn't count), is disconnected so its slot goes to another candidate, and may not take a
 // slot again, inbound or outbound, for as long.  Longer than GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC,
 // so restarting sync with the peers we have is tried first.  0 disables it, and it is off by
 // default until a live check of the fixed feature decides otherwise; 180 is the value to set to enable it
@@ -110,6 +110,27 @@
 // counted in the next warning
 #define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNINGS_PER_INTERVAL    10
 #define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNING_INTERVAL_SEC     60
+
+// a block we asked a peer for during normal operation and haven't received after this long is asked
+// of another peer that advertised it too, and the peer that kept us waiting is asked for blocks only
+// when no other peer has them (see peer_connection::is_block_fetching_deprioritized()).  Its request
+// stays outstanding, so it may still deliver, and is judged by active_ignored_request_timeout as before.
+// A block is propagated in well under a second, so a peer that withholds one costs us about this long
+#define GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS                    1000
+
+// a peer that answers item_not_available for an item it advertised to us is asked for no transactions,
+// and for blocks only when no other peer has them, for this long; such answers count as one strike per
+// this interval.  At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes with no item delivered in between
+// it is disconnected.  An honest peer says so only when an item left its cache or its send queue to us is
+// backed up, so the strikes cost it little; a peer advertising items it doesn't have would otherwise hold
+// requests (and the fetch gate's headroom) for nothing as often as it likes
+#define GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC                 10
+#define GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES                  3
+
+// how often, at most, a node warns that it answered a peer's transaction requests as not available
+// because the replies already waiting for that peer's send queue are at their limit; the requests
+// answered so in between are counted in the next warning
+#define GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC            60
 
 /**
  * Define this to enable debugging code in the p2p network interface.
@@ -214,6 +235,24 @@
  * candidates on other hosts fill its desired connections.
  */
 #define GRAPHENE_NET_HOST_LIMIT_RELAXED_LOG_INTERVAL_SEC     600
+/**
+ * Default node_configuration::host_limit_relax_delay: for how many seconds after the node starts the default per-host
+ * limit stays hard.  Right after a restart the connect loop knows few hosts, and relaxing at once would let the first
+ * host it reaches take most of the slots before peer exchange names others.
+ */
+#define GRAPHENE_NET_DEFAULT_HOST_LIMIT_RELAX_DELAY_SEC      60
+/**
+ * How many of the candidates the per-host limit left out the connect loop considers per pass while the limit is
+ * relaxed (the first ones, in the peer database's order: most recently seen first).  Each relaxed step looks at each
+ * of them, so this bounds a pass however many candidates one host offers.
+ */
+#define GRAPHENE_NET_MAX_RELAXED_CANDIDATES_PER_PASS         64
+/**
+ * How many failed attempts a rejection with too_many_connections_from_host counts toward a peer's retry backoff at
+ * most: such a rejection says the peer's host is full now, maybe because another node shares our address (a NAT or
+ * a shared /64), not that the peer is gone, so the redial delay stops growing at (this + 1) * peer_connection_retry_timeout.
+ */
+#define GRAPHENE_NET_MAX_HOST_LIMIT_REJECTIONS_COUNTED       2
 
 #define GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES        (1024 * 1024)
 /**
