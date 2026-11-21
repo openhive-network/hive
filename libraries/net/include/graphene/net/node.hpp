@@ -1325,6 +1325,8 @@ namespace graphene { namespace net {
     uint32_t desired_connections = 0;             ///< the reserved family share is a percentage of these
     uint32_t maximum_connections_per_host = 0;    ///< 0 for no limit
     uint32_t reserved_address_family_percent = 0; ///< capped at 50
+    /// the per-host limit is the default one, not set by the operator: slots no candidate under it can fill go to the others
+    bool relax_connections_per_host = false;
   };
 
   /**
@@ -1335,7 +1337,9 @@ namespace graphene { namespace net {
    * unless it is exempt; an exempt connection still counts against its host's limit for the others.  Each
    * family is first given candidates until it holds its reserved share of the desired connections, or runs
    * out of candidates; the remaining slots go to IPv6 candidates first, then IPv4 ones.  So with candidates of
-   * both families, neither is shut out by the other filling the slots first.
+   * both families, neither is shut out by the other filling the slots first.  With relax_connections_per_host, the
+   * slots still free after that go to the candidates the per-host limit left out, each to one on the host then
+   * holding the fewest connections (the first in database order among equals).
    */
   std::vector<fc::ip::endpoint> select_connection_candidates(const std::vector<connection_candidate>& candidates,
                                                              const std::vector<fc::ip::address>& held_addresses,
@@ -1350,6 +1354,22 @@ namespace graphene { namespace net {
   };
 
   connection_spread get_connection_spread(const std::vector<fc::ip::address>& addresses);
+
+  /// A connection held, as the per-host limit sees it
+  struct host_limited_connection
+  {
+    fc::ip::address address;
+    bool exempt = false; ///< a seed or add-node target or an exempt address: counts against its host, but is never over the limit
+  };
+
+  /**
+   * Which of @p connections (its index) to close so that a connection to a host under the per-host limit can take its
+   * slot, or none: a connection that is not exempt, on a host holding more than @p maximum_connections_per_host
+   * connections, the one with the most; the last such one of that host in @p connections.  None when
+   * @p maximum_connections_per_host is 0.
+   */
+  fc::optional<size_t> select_connection_over_host_limit(const std::vector<host_limited_connection>& connections,
+                                                         uint32_t maximum_connections_per_host);
 
   /// What the idle-peer sweep knows about one active peer
   struct idle_peer_candidate

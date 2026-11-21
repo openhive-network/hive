@@ -13,6 +13,7 @@
 #include <graphene/net/core_messages.hpp>
 
 #include <fc/bitutil.hpp>
+#include <fc/io/json.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -2182,6 +2183,172 @@ BOOST_AUTO_TEST_CASE( per_host_rejection_backs_off_test )
       BOOST_CHECK_MESSAGE( dialed[ k ] - dialed[ k - 1 ] > fc::seconds( k ),
                            "redialed " << ( dialed[ k ] - dialed[ k - 1 ] ).count() / 1000 << " ms after rejection " << k );
     require_kept( *relay );
+  } );
+}
+
+/// Left at its default, the per-host limit (2) gives way to inbound peers while the node holds fewer than its desired
+/// connections (3 here): with loopback not exempt, the third peer from 127.0.0.1 is accepted, the fourth is rejected
+/// with too_many_connections_from_host
+BOOST_AUTO_TEST_CASE( default_per_host_limit_relaxed_for_hellos_test )
+{
+  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[])" );
+  run( [&]()
+  {
+    std::vector< std::unique_ptr< test_peer > > peers;
+    for( int i = 0; i < 3; ++i )
+    {
+      peers.push_back( make_peer( "peer " + std::to_string( i ) + " on the host" ) );
+      connect_active( *peers.back() );
+    }
+    auto fourth = make_peer( "fourth on the host" );
+    fourth->connect( node_endpoint() );
+    require_rejected( *fourth, rejection_reason_code::too_many_connections_from_host );
+    for( const auto& peer : peers )
+      require_kept( *peer );
+  } );
+}
+
+/// A per-host limit set with p2p-max-connections-per-host is a hard limit: in the setup above, the third peer from
+/// 127.0.0.1 is rejected although the node holds fewer than its desired connections. (One set in p2p-parameters is
+/// one too, see hello_over_per_host_limit_rejected_test.)
+BOOST_AUTO_TEST_CASE( explicit_per_host_limit_not_relaxed_test )
+{
+  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[])", false,
+              { config_line_t( { "p2p-max-connections-per-host", { "2" } } ) } );
+  run( [&]()
+  {
+    auto first = make_peer( "first on the host" );
+    connect_active( *first );
+    auto second = make_peer( "second on the host" );
+    connect_active( *second );
+    auto third = make_peer( "third on the host" );
+    third->connect( node_endpoint() );
+    require_rejected( *third, rejection_reason_code::too_many_connections_from_host );
+    require_kept( *first );
+    require_kept( *second );
+  } );
+}
+
+/// The node saves its whole configuration to node_config.json, the per-host limit included, and loads it on the next
+/// start. A limit found only there was not set by the operator, so it stays relaxed: as in
+/// default_per_host_limit_relaxed_for_hellos_test, the third peer from 127.0.0.1 is accepted
+BOOST_AUTO_TEST_CASE( saved_per_host_limit_stays_relaxed_test )
+{
+  const fc::path data_dir = hive::utilities::temp_directory_path() / "p2p-protocol-saved-node-config";
+  fc::remove_all( data_dir );
+  fc::create_directories( data_dir / "p2p" );
+  fc::json::save_to_file( fc::mutable_variant_object( "maximum_connections_per_host", 2 ), data_dir / "p2p" / "node_config.json" );
+  set_data_dir( data_dir.string() );
+  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[])" );
+  run( [&]()
+  {
+    BOOST_REQUIRE_EQUAL( p2p().get_advanced_node_parameters().maximum_connections_per_host, 2u );
+    std::vector< std::unique_ptr< test_peer > > peers;
+    for( int i = 0; i < 3; ++i )
+    {
+      peers.push_back( make_peer( "peer " + std::to_string( i ) + " on the host" ) );
+      connect_active( *peers.back() );
+    }
+    require_kept( *peers.front() );
+  } );
+}
+
+namespace
+{
+  /// Peers listening on @p count ports of @p host, each for one connection from the node; their endpoints go to @p endpoints
+  std::vector< std::unique_ptr< test_peer > > listening_peers( p2p_protocol_fixture& fixture, const std::string& host, int count,
+                                                               std::vector< fc::ip::endpoint >& endpoints )
+  {
+    std::vector< std::unique_ptr< test_peer > > peers;
+    for( int i = 0; i < count; ++i )
+    {
+      peers.push_back( fixture.make_peer( "listening on " + host + " #" + std::to_string( i ) ) );
+      endpoints.push_back( peers.back()->listen( 0, host ) );
+    }
+    return peers;
+  }
+
+  /// Makes the node learn @p endpoints from @p relay (not as add-node targets, which the per-host limit leaves alone)
+  void relay_addresses( test_peer& relay, const std::vector< fc::ip::endpoint >& endpoints )
+  {
+    address_message relayed;
+    for( const fc::ip::endpoint& endpoint : endpoints )
+      relayed.addresses.emplace_back( endpoint, fc::time_point::now(), fc::microseconds( 0 ), node_id_t(),
+                                      peer_connection_direction::inbound, firewalled_state::not_firewalled );
+    relay.send( relayed );
+  }
+
+  size_t count_connected( const std::vector< std::unique_ptr< test_peer > >& peers )
+  {
+    return std::count_if( peers.begin(), peers.end(), []( const std::unique_ptr< test_peer >& peer ) { return peer->accepted() && !peer->closed(); } );
+  }
+}
+
+/// Candidates on 2 hosts only: a relay on 127.0.0.1 and 5 peers on 127.0.0.2. With the default per-host limit the
+/// node dials past it until it holds its desired 4 connections, so 3 of the 5 peers
+BOOST_AUTO_TEST_CASE( default_per_host_limit_relaxed_for_few_hosts_test )
+{
+  start_node( R"("desired_number_of_connections":4,"maximum_number_of_connections":6,"host_limit_exempt_subnets":[])" );
+  run( [&]()
+  {
+    auto relay = make_peer( "address relay" );
+    connect_active( *relay );
+    std::vector< fc::ip::endpoint > endpoints;
+    const auto peers = listening_peers( *this, "127.0.0.2", 5, endpoints );
+    relay_addresses( *relay, endpoints );
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return count_connected( peers ) == 3; }, reply_timeout ),
+                           "connected to " << count_connected( peers ) << " of the peers" );
+    fc::usleep( quiet_period );
+    BOOST_CHECK_EQUAL( count_connected( peers ), 3u );
+    BOOST_CHECK_EQUAL( number_of_connections(), 4u );
+  } );
+}
+
+/// The same with p2p-max-connections-per-host = 2: the node stays at 2 connections to 127.0.0.2
+BOOST_AUTO_TEST_CASE( explicit_per_host_limit_for_few_hosts_test )
+{
+  start_node( R"("desired_number_of_connections":4,"maximum_number_of_connections":6,"host_limit_exempt_subnets":[])", false,
+              { config_line_t( { "p2p-max-connections-per-host", { "2" } } ) } );
+  run( [&]()
+  {
+    auto relay = make_peer( "address relay" );
+    connect_active( *relay );
+    std::vector< fc::ip::endpoint > endpoints;
+    const auto peers = listening_peers( *this, "127.0.0.2", 5, endpoints );
+    relay_addresses( *relay, endpoints );
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return count_connected( peers ) == 2; }, reply_timeout ),
+                           "connected to " << count_connected( peers ) << " of the peers" );
+    fc::usleep( quiet_period );
+    BOOST_CHECK_EQUAL( count_connected( peers ), 2u );
+    BOOST_CHECK_EQUAL( number_of_connections(), 3u );
+  } );
+}
+
+/// A connection held past the default per-host limit gives way to a peer on a new host: with 3 peers from 127.0.0.1
+/// filling the desired 3, the node, told of a peer on 127.0.0.2, dials it past the desired number, and once it is
+/// connected closes the newest of the 3 (not as an error). The other two are kept, and the node holds 3 connections
+BOOST_AUTO_TEST_CASE( relaxed_connection_gives_way_to_new_host_test )
+{
+  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[])" );
+  run( [&]()
+  {
+    std::vector< std::unique_ptr< test_peer > > peers;
+    for( int i = 0; i < 3; ++i )
+    {
+      peers.push_back( make_peer( "peer " + std::to_string( i ) + " on the first host" ) );
+      connect_active( *peers.back() );
+    }
+    std::vector< fc::ip::endpoint > endpoints;
+    const auto new_host = listening_peers( *this, "127.0.0.2", 1, endpoints );
+    relay_addresses( *peers.front(), endpoints );
+    BOOST_REQUIRE_MESSAGE( new_host.front()->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ),
+                           "the node did not take up the peer on the new host" );
+    require_closed_with( *peers.back(), "making room for a peer on another host" );
+    BOOST_CHECK( !peers.back()->closing_message()->closing_due_to_error );
+    require_kept( *peers[ 0 ] );
+    require_kept( *peers[ 1 ] );
+    BOOST_CHECK( !new_host.front()->closed() );
+    BOOST_CHECK_EQUAL( number_of_connections(), 3u );
   } );
 }
 
