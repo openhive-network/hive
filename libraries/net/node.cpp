@@ -336,6 +336,9 @@ namespace graphene { namespace net {
       /// seed and add-node targets: dialing them, and their hellos on the connections we dialed, is not
       /// limited by maximum_connections_per_host (though they count against their host's limit)
       std::set<fc::ip::endpoint> _host_limit_exempt_endpoints;
+      /// parsed from _node_configuration.host_limit_exempt_subnets: not limited by maximum_connections_per_host at all
+      std::vector<address_subnet> _host_limit_exempt_subnets;
+      fc::time_point _last_shared_inbound_host_warning_time;
 
       peer_database             _potential_peer_db;
       coalescing_loop_trigger   _connect_loop_trigger;
@@ -619,6 +622,7 @@ namespace graphene { namespace net {
       /// remote addresses of the active and handshaking connections; with @p accepted_only, of those whose hello we accepted
       std::vector<fc::ip::address> get_connection_addresses(bool accepted_only, const peer_connection* excluded = nullptr);
       bool is_exempt_from_host_limit(const peer_connection* peer);
+      void warn_if_inbound_connections_share_host(const fc::ip::address& refused_address);
       connection_spread get_active_connection_spread();
       bool merge_address_info_with_potential_peer_database( const std::vector<address_info> addresses );
       void display_current_connections();
@@ -1207,7 +1211,8 @@ namespace graphene { namespace net {
               if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
                   is_due_for_connection_attempt(*iter, delay_until_retry, fc::time_point::now()))
                 candidates.push_back(connection_candidate{iter->endpoint,
-                                                          _host_limit_exempt_endpoints.count(iter->endpoint) != 0});
+                                                          _host_limit_exempt_endpoints.count(iter->endpoint) != 0 ||
+                                                          is_in_any_subnet(iter->endpoint.get_address(), _host_limit_exempt_subnets)});
             }
 
             connection_selection_limits limits;
@@ -2351,10 +2356,37 @@ namespace graphene { namespace net {
     bool node_impl::is_exempt_from_host_limit(const peer_connection* peer)
     {
       VERIFY_CORRECT_THREAD();
-      // only the connections we dialed: an inbound one comes from an ephemeral port, whichever node it is
       fc::optional<fc::ip::endpoint> remote_endpoint = peer->get_remote_endpoint();
-      return peer->direction == peer_connection_direction::outbound && remote_endpoint &&
+      if (!remote_endpoint)
+        return false;
+      if (is_in_any_subnet(remote_endpoint->get_address(), _host_limit_exempt_subnets))
+        return true;
+      // seeds and add-node targets only on the connections we dialed: an inbound one comes from an ephemeral port,
+      // whichever node it is
+      return peer->direction == peer_connection_direction::outbound &&
              _host_limit_exempt_endpoints.count(*remote_endpoint) != 0;
+    }
+
+    void node_impl::warn_if_inbound_connections_share_host(const fc::ip::address& refused_address)
+    {
+      VERIFY_CORRECT_THREAD();
+      const fc::time_point now = fc::time_point::now();
+      if (_last_shared_inbound_host_warning_time != fc::time_point() &&
+          now - _last_shared_inbound_host_warning_time < fc::seconds(GRAPHENE_NET_SHARED_INBOUND_HOST_WARNING_INTERVAL_SEC))
+        return;
+      std::vector<fc::ip::address> inbound_addresses;
+      for (const std::unordered_set<peer_connection_ptr>* connections : { &_active_connections, &_handshaking_connections })
+        for (const peer_connection_ptr& peer : *connections)
+          if (peer->direction == peer_connection_direction::inbound &&
+              peer->their_state == peer_connection::their_connection_state::connection_accepted && peer->get_remote_endpoint())
+            inbound_addresses.push_back(peer->get_remote_endpoint()->get_address());
+      if (!inbound_connections_share_host(refused_address, inbound_addresses))
+        return;
+      _last_shared_inbound_host_warning_time = now;
+      wlog("Most inbound peers come from ${host}, and the per-host limit of ${limit} refuses more of them. If ${host} is a proxy "
+           "that rewrites source addresses (docker-proxy, rootless Docker), add it to p2p-host-limit-exempt or set "
+           "p2p-max-connections-per-host = 0",
+           ("host", connection_host_of(refused_address))("limit", _node_configuration.maximum_connections_per_host));
     }
 
     // merge addresses received from a peer into our database
@@ -2848,18 +2880,19 @@ namespace graphene { namespace net {
                                               get_connection_addresses(true, originating_peer),
                                               _node_configuration.maximum_connections_per_host))
         {
-          // rejected as already_connected, which no peer counts as a failed attempt: the peer is up, this node
-          // just holds enough connections to its host (other nodes on the same machine)
+          // a reason the dialer counts as a failed attempt, so it backs off instead of redialing every
+          // peer_connection_retry_timeout while this node holds its host's connections
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
           std::ostringstream rejection_message;
           rejection_message << "I'm already connected to " << _node_configuration.maximum_connections_per_host << " nodes on your host";
           send_connection_rejected_message(originating_peer,
                                            originating_peer->get_socket().remote_endpoint(),
-                                           rejection_reason_code::already_connected,
+                                           rejection_reason_code::too_many_connections_from_host,
                                            rejection_message.str());
           ilog("Received a hello_message from peer ${peer}, but I hold ${limit} connections to its host already, rejection",
                ("peer", originating_peer->get_remote_endpoint())
                ("limit", _node_configuration.maximum_connections_per_host));
+          warn_if_inbound_connections_share_host(originating_peer->get_socket().remote_endpoint().get_address());
         }
 #ifdef ENABLE_P2P_DEBUGGING_API
         else if(!_allowed_peers.empty() &&
@@ -3041,7 +3074,7 @@ namespace graphene { namespace net {
               updated_peer_record->last_connection_attempt_time = fc::time_point::now();
               updated_peer_record->last_failed_time = updated_peer_record->last_connection_attempt_time;
               // count the rejection like a failed attempt so the retry backoff grows.  Without
-              // this, a node that rejects us (full, incompatible, ...) is redialed every
+              // this, a node that rejects us (full, at its per-host limit, incompatible, ...) is redialed every
               // peer_connection_retry_timeout forever -- against a node with a reduced
               // connection limit this was measured at ~75 attempts/minute network-wide,
               // sustained for as long as the condition lasted
@@ -7327,6 +7360,11 @@ namespace graphene { namespace net {
 
       fc::from_variant( params, _node_configuration );
 
+      std::vector<address_subnet> exempt_subnets;
+      for (const std::string& subnet : _node_configuration.host_limit_exempt_subnets)
+        exempt_subnets.push_back(address_subnet::from_string(subnet));
+      _host_limit_exempt_subnets = std::move(exempt_subnets);
+
       if( _node_configuration.private_key == fc::ecc::private_key() )
       {
          ilog( "generating new private key for this node" );
@@ -8533,6 +8571,9 @@ namespace graphene { namespace net {
       return address.to_ipv4_address();
     if (address.is_loopback_address()) // ::1 is a host of its own; its /64 would be ::
       return address;
+    const fc::array<uint8_t, 16>& bytes = address.get_ipv6().addr;
+    if (bytes.data[0] == 0xFE && (bytes.data[1] & 0xC0) == 0x80) // link-local: every machine has fe80::/64
+      return address;
     std::array<uint8_t, 16> prefix;
     std::copy(address.get_ipv6().addr.begin(), address.get_ipv6().addr.end(), prefix.begin());
     std::fill(prefix.begin() + 8, prefix.end(), uint8_t(0));
@@ -8543,11 +8584,69 @@ namespace graphene { namespace net {
                                     uint32_t maximum_connections_per_host)
   {
     const fc::ip::address host = connection_host_of(address);
-    if (maximum_connections_per_host == 0 || host.is_loopback_address())
+    if (maximum_connections_per_host == 0)
       return false;
     const size_t held_to_host = std::count_if(held_addresses.begin(), held_addresses.end(),
                                               [&host](const fc::ip::address& held) { return connection_host_of(held) == host; });
     return held_to_host >= maximum_connections_per_host;
+  }
+
+  address_subnet address_subnet::from_string(const std::string& text)
+  {
+    const size_t slash = text.find('/');
+    address_subnet subnet;
+    subnet.network = fc::ip::address(fc::string(text.substr(0, slash)));
+    if (subnet.network.is_ipv4_mapped_ipv6())
+      subnet.network = subnet.network.to_ipv4_address();
+    const uint32_t address_bits = subnet.network.is_ipv4() ? 32 : 128;
+    uint32_t prefix_length = address_bits;
+    if (slash != std::string::npos)
+    {
+      const std::string length_text = text.substr(slash + 1);
+      FC_ASSERT(!length_text.empty() && length_text.size() <= 3 &&
+                std::all_of(length_text.begin(), length_text.end(), [](char c) { return c >= '0' && c <= '9'; }),
+                "invalid prefix length in subnet ${subnet}", ("subnet", text));
+      prefix_length = std::stoul(length_text);
+    }
+    FC_ASSERT(prefix_length <= address_bits, "prefix length over ${bits} in subnet ${subnet}", ("bits", address_bits)("subnet", text));
+    subnet.prefix_length = static_cast<uint8_t>(prefix_length);
+    return subnet;
+  }
+
+  bool address_subnet::contains(const fc::ip::address& address) const
+  {
+    const fc::ip::address candidate = address.is_ipv4_mapped_ipv6() ? address.to_ipv4_address() : address;
+    if (candidate.is_ipv4() != network.is_ipv4())
+      return false;
+    if (candidate.is_ipv4())
+    {
+      const uint32_t mask = prefix_length == 0 ? 0 : ~uint32_t(0) << (32 - prefix_length);
+      return (candidate.get_ipv4().addr & mask) == (network.get_ipv4().addr & mask);
+    }
+    const fc::array<uint8_t, 16>& candidate_bytes = candidate.get_ipv6().addr;
+    const fc::array<uint8_t, 16>& network_bytes = network.get_ipv6().addr;
+    for (uint32_t bit = 0; bit < prefix_length; bit += 8)
+    {
+      const uint32_t bits_in_byte = std::min<uint32_t>(8, prefix_length - bit);
+      const uint8_t mask = static_cast<uint8_t>(0xFF << (8 - bits_in_byte));
+      if ((candidate_bytes.data[bit / 8] & mask) != (network_bytes.data[bit / 8] & mask))
+        return false;
+    }
+    return true;
+  }
+
+  bool is_in_any_subnet(const fc::ip::address& address, const std::vector<address_subnet>& subnets)
+  {
+    return std::any_of(subnets.begin(), subnets.end(), [&address](const address_subnet& subnet) { return subnet.contains(address); });
+  }
+
+  bool inbound_connections_share_host(const fc::ip::address& refused_address,
+                                      const std::vector<fc::ip::address>& inbound_addresses)
+  {
+    const fc::ip::address host = connection_host_of(refused_address);
+    const size_t on_host = 1 + std::count_if(inbound_addresses.begin(), inbound_addresses.end(),
+                                             [&host](const fc::ip::address& inbound) { return connection_host_of(inbound) == host; });
+    return on_host * 2 > inbound_addresses.size() + 1;
   }
 
   std::vector<fc::ip::endpoint> select_connection_candidates(const std::vector<connection_candidate>& candidates,

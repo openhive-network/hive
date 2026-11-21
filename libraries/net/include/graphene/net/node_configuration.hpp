@@ -5,6 +5,9 @@
 #include <fc/crypto/elliptic.hpp>
 #include <fc/network/ip.hpp>
 
+#include <string>
+#include <vector>
+
 namespace graphene { namespace net {
 
 struct node_configuration
@@ -29,6 +32,12 @@ struct node_configuration
    uint32_t maximum_number_of_connections = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS;
    /** connections held to one host (an IPv4 address or an IPv6 /64) at most, counting active and accepted handshaking ones; 0 = no limit */
    uint32_t maximum_connections_per_host = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST;
+   /**
+    * addresses and subnets ("172.17.0.1", "10.0.0.0/8", "2001:db8::/32") whose connections maximum_connections_per_host
+    * does not limit, e.g. a proxy that rewrites the source address of every inbound peer.  Setting it replaces the
+    * default, so list loopback again to keep it exempt
+    */
+   std::vector<std::string> host_limit_exempt_subnets = { "127.0.0.0/8", "::1/128" };
    /** percent of `desired_number_of_connections` the connect loop keeps for each address family that has candidates (at most 50) */
    uint32_t reserved_address_family_percent = GRAPHENE_NET_DEFAULT_RESERVED_ADDRESS_FAMILY_PERCENT;
    /** retry connections to peers that have failed or rejected us this often, in seconds */
@@ -60,6 +69,7 @@ FC_REFLECT(graphene::net::node_configuration,
    (desired_number_of_connections)
    (maximum_number_of_connections)
    (maximum_connections_per_host)
+   (host_limit_exempt_subnets)
    (reserved_address_family_percent)
    (peer_connection_retry_timeout)
    (peer_inactivity_timeout)

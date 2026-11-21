@@ -6,11 +6,14 @@
 #include <string>
 #include <vector>
 
+using graphene::net::address_subnet;
 using graphene::net::connection_candidate;
 using graphene::net::connection_host_of;
 using graphene::net::connection_selection_limits;
 using graphene::net::exceeds_connections_per_host;
 using graphene::net::get_connection_spread;
+using graphene::net::inbound_connections_share_host;
+using graphene::net::is_in_any_subnet;
 using graphene::net::select_connection_candidates;
 
 namespace
@@ -79,7 +82,20 @@ BOOST_AUTO_TEST_CASE( hosts_are_ipv4_addresses_and_ipv6_prefixes )
   BOOST_CHECK( connection_host_of( address( "::1" ) ) == address( "::1" ) );
 }
 
-/// The limit counts connections to the host, not to the address; loopback and a limit of 0 are never exceeded
+/// Every machine on a link has an address in fe80::/64, so a link-local address is a host of its own
+BOOST_AUTO_TEST_CASE( link_local_addresses_are_hosts_of_their_own )
+{
+  BOOST_CHECK( connection_host_of( address( "fe80::1c2d:3eff:fe4f:5a6b" ) ) == address( "fe80::1c2d:3eff:fe4f:5a6b" ) );
+  BOOST_CHECK( connection_host_of( address( "fe80::1c2d:3eff:fe4f:5a6b" ) ) != connection_host_of( address( "fe80::1c2d:3eff:fe4f:5a6c" ) ) );
+  BOOST_CHECK( connection_host_of( address( "febf::1" ) ) == address( "febf::1" ) );
+  BOOST_CHECK( connection_host_of( address( "fec0::1" ) ) == address( "fec0::" ) );
+
+  const std::vector< fc::ip::address > two_neighbours = { address( "fe80::1" ), address( "fe80::2" ) };
+  BOOST_CHECK( !exceeds_connections_per_host( address( "fe80::3" ), two_neighbours, 2 ) );
+  BOOST_CHECK( exceeds_connections_per_host( address( "fe80::2" ), two_neighbours, 1 ) );
+}
+
+/// The limit counts connections to the host, not to the address; a limit of 0 is never exceeded
 BOOST_AUTO_TEST_CASE( per_host_limit )
 {
   const fc::ip::address host_a = address( "2a01:4f8:172:2b8f::2" );
@@ -93,10 +109,64 @@ BOOST_AUTO_TEST_CASE( per_host_limit )
   BOOST_CHECK( !exceeds_connections_per_host( address( "2a01:4f8:172:2b90::2" ), two_held, 2 ) );
 
   BOOST_CHECK( exceeds_connections_per_host( address( "::ffff:23.145.40.230" ), { address( "23.145.40.230" ) }, 1 ) );
+}
 
-  const std::vector< fc::ip::address > loopback = { address( "127.0.0.1" ), address( "127.0.0.1" ), address( "127.0.0.1" ) };
-  BOOST_CHECK( !exceeds_connections_per_host( address( "127.0.0.1" ), loopback, 2 ) );
-  BOOST_CHECK( !exceeds_connections_per_host( address( "::1" ), { address( "::1" ), address( "::1" ) }, 1 ) );
+/// Exempt subnets: one address, a prefix of either family, an IPv4-mapped address matched as IPv4
+BOOST_AUTO_TEST_CASE( exempt_subnets )
+{
+  const address_subnet proxy = address_subnet::from_string( "172.17.0.1" );
+  BOOST_CHECK_EQUAL( proxy.prefix_length, 32u );
+  BOOST_CHECK( proxy.contains( address( "172.17.0.1" ) ) );
+  BOOST_CHECK( proxy.contains( address( "::ffff:172.17.0.1" ) ) );
+  BOOST_CHECK( !proxy.contains( address( "172.17.0.2" ) ) );
+
+  const address_subnet private_block = address_subnet::from_string( "10.0.0.0/8" );
+  BOOST_CHECK( private_block.contains( address( "10.255.1.2" ) ) );
+  BOOST_CHECK( !private_block.contains( address( "11.0.0.1" ) ) );
+  BOOST_CHECK( !private_block.contains( address( "::a00:1" ) ) );
+
+  const address_subnet odd_prefix = address_subnet::from_string( "2001:db8:8000::/33" );
+  BOOST_CHECK( odd_prefix.contains( address( "2001:db8:ffff::1" ) ) );
+  BOOST_CHECK( !odd_prefix.contains( address( "2001:db8:7fff::1" ) ) );
+  BOOST_CHECK( !odd_prefix.contains( address( "10.0.0.1" ) ) );
+
+  BOOST_CHECK( address_subnet::from_string( "0.0.0.0/0" ).contains( address( "198.51.100.7" ) ) );
+  BOOST_CHECK( address_subnet::from_string( "::/0" ).contains( address( "2a01:4f8::1" ) ) );
+
+  BOOST_CHECK_THROW( address_subnet::from_string( "10.0.0.0/33" ), fc::exception );
+  BOOST_CHECK_THROW( address_subnet::from_string( "2001:db8::/129" ), fc::exception );
+  BOOST_CHECK_THROW( address_subnet::from_string( "10.0.0.0/" ), fc::exception );
+  BOOST_CHECK_THROW( address_subnet::from_string( "10.0.0.0/8x" ), fc::exception );
+  BOOST_CHECK_THROW( address_subnet::from_string( "docker-proxy" ), fc::exception );
+}
+
+/// Local test networks run many nodes on loopback, which the default exempt list covers
+BOOST_AUTO_TEST_CASE( loopback_exempt_by_default )
+{
+  std::vector< address_subnet > defaults;
+  for( const std::string& subnet : graphene::net::node_configuration().host_limit_exempt_subnets )
+    defaults.push_back( address_subnet::from_string( subnet ) );
+  BOOST_CHECK( is_in_any_subnet( address( "127.0.0.1" ), defaults ) );
+  BOOST_CHECK( is_in_any_subnet( address( "127.1.2.3" ), defaults ) );
+  BOOST_CHECK( is_in_any_subnet( address( "::1" ), defaults ) );
+  BOOST_CHECK( !is_in_any_subnet( address( "10.0.0.1" ), defaults ) );
+  BOOST_CHECK( !is_in_any_subnet( address( "::2" ), defaults ) );
+}
+
+/// The shared-host warning: counting the refused hello, more than half of the inbound connections are on its host
+BOOST_AUTO_TEST_CASE( inbound_connections_on_one_host )
+{
+  const fc::ip::address proxy = address( "172.17.0.1" );
+  BOOST_CHECK( inbound_connections_share_host( proxy, {} ) );
+  BOOST_CHECK( inbound_connections_share_host( proxy, { proxy, proxy } ) );
+  BOOST_CHECK( inbound_connections_share_host( proxy, { proxy, proxy, address( "198.51.100.1" ) } ) );
+  BOOST_CHECK( inbound_connections_share_host( proxy, { proxy, proxy, address( "198.51.100.1" ), address( "198.51.100.2" ) } ) );
+  BOOST_CHECK( !inbound_connections_share_host( proxy, { proxy, proxy, address( "198.51.100.1" ), address( "198.51.100.2" ),
+                                                         address( "198.51.100.3" ) } ) );
+  BOOST_CHECK( !inbound_connections_share_host( proxy, { proxy, address( "198.51.100.1" ), address( "198.51.100.2" ),
+                                                         address( "198.51.100.3" ) } ) );
+  BOOST_CHECK( inbound_connections_share_host( address( "2a01:4f8:172:2b8f::9" ),
+                                               { address( "2a01:4f8:172:2b8f::2" ), address( "2a01:4f8:172:2b8f::3" ), proxy } ) );
 }
 
 /// One host offering 7 ports, ahead of 13 single-port hosts in the database: at most 2 of its ports are dialed,

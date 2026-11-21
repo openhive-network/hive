@@ -1185,24 +1185,52 @@ namespace graphene { namespace net {
   /**
    * The host a connection to @p address counts against for the per-host connection limit: an IPv4
    * address (an IPv4-mapped IPv6 address counts as the IPv4 address it maps), or the /64 prefix of
-   * an IPv6 address, the block one machine is normally given.  ::1 stays ::1.
+   * an IPv6 address, the block one machine is normally given.  ::1 and link-local addresses (fe80::/10),
+   * which every machine on a link has its own of in the same /64, stay the full address.
+   * fc::ip::address keeps no scope id, so the same link-local address seen on two links is one host.
    */
   fc::ip::address connection_host_of(const fc::ip::address& address);
 
   /**
    * Whether one more connection to @p address would exceed @p maximum_connections_per_host, given the
    * remote addresses of the connections already held (@p held_addresses, not including the new one).
-   * Loopback addresses are never limited, as local test networks run many nodes on one, and nothing
-   * is when @p maximum_connections_per_host is 0.
+   * Nothing is when @p maximum_connections_per_host is 0.  Exemptions (address_subnet, seeds) are the
+   * caller's to apply.
    */
   bool exceeds_connections_per_host(const fc::ip::address& address, const std::vector<fc::ip::address>& held_addresses,
                                     uint32_t maximum_connections_per_host);
+
+  /// An address block, e.g. 10.0.0.0/8 or 2001:db8::/32; one address is a block of its full length
+  struct address_subnet
+  {
+    fc::ip::address network;
+    uint8_t prefix_length = 0;
+
+    /**
+     * Parses "address" or "address/prefix_length".  Throws fc::exception for an unparsable address, or
+     * a prefix length over the family's address length.
+     */
+    static address_subnet from_string(const std::string& text);
+
+    /// An IPv4-mapped IPv6 address is matched as the IPv4 address it maps
+    bool contains(const fc::ip::address& address) const;
+  };
+
+  bool is_in_any_subnet(const fc::ip::address& address, const std::vector<address_subnet>& subnets);
+
+  /**
+   * Whether a refused hello from @p refused_address comes from the host most inbound connections do:
+   * counting the refused one, more than half of @p inbound_addresses (the remote addresses of the inbound
+   * connections held) and it are on its host.  That is what a proxy rewriting source addresses looks like.
+   */
+  bool inbound_connections_share_host(const fc::ip::address& refused_address,
+                                      const std::vector<fc::ip::address>& inbound_addresses);
 
   /// A peer the connect loop could dial now: routable, due for an attempt and not connected
   struct connection_candidate
   {
     fc::ip::endpoint endpoint;
-    bool exempt_from_host_limit = false; ///< a seed or add-node target: dialed whatever its host holds already
+    bool exempt_from_host_limit = false; ///< a seed or add-node target or an exempt address: dialed whatever its host holds already
   };
 
   struct connection_selection_limits
