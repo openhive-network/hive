@@ -3290,6 +3290,36 @@ BOOST_AUTO_TEST_CASE( idle_peers_kept_on_halted_chain_test )
   } );
 }
 
+/// F5a (T): with no configuration, idle peers are never replaced: on the halted chain of
+/// idle_peers_kept_on_halted_chain_test, with a peer claiming a head past the node's, the node disconnects nobody
+BOOST_AUTO_TEST_CASE( idle_peers_kept_by_default_test )
+{
+  BOOST_REQUIRE_EQUAL( graphene::net::node_configuration().idle_peer_disconnect_timeout, 0u );
+  const uint32_t synced = 5;
+  const std::vector< block_ptr > chain = generate_chain( synced );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, synced );
+    BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
+
+    std::vector< std::unique_ptr< test_peer > > peers;
+    for( const char* name : { "first serving peer", "second serving peer", "third serving peer" } )
+    {
+      peers.push_back( make_peer( name ) );
+      peers.back()->serve_blocks( chain );
+      connect_active( *peers.back() );
+    }
+    peers.push_back( make_peer( "peer claiming a head past the node's" ) );
+    peers.back()->hello().last_known_block_number = synced + 10;
+    connect_active( *peers.back() );
+    fc::usleep( fc::seconds( 10 ) );
+    for( const auto& peer : peers )
+      BOOST_CHECK_MESSAGE( !peer->closed(), "the node disconnected " << peer->hello().user_agent );
+    BOOST_CHECK_EQUAL( number_of_connections(), peers.size() );
+  } );
+}
+
 /// F6 (T): a node in sync (it produces blocks, so its head is current) disconnects no peer for idleness, although its
 /// peers give it nothing and one claims a head past the node's, which would let the idle peers be replaced on a node
 /// that is behind (idle_peers_kept_on_halted_chain_test)
