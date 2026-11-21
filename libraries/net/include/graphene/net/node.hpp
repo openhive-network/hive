@@ -973,7 +973,7 @@ namespace graphene { namespace net {
   class requested_items
   {
   public:
-    using map_type = std::unordered_map<item_id, fc::time_point>;
+    using map_type = std::unordered_map<item_id, fc::time_point, p2p_item_hash>;
     using const_iterator = map_type::const_iterator;
 
     void insert(const item_id& item, fc::time_point requested);
@@ -1092,7 +1092,7 @@ namespace graphene { namespace net {
       boost::multi_index::indexed_by<
         boost::multi_index::hashed_unique<boost::multi_index::tag<by_item>,
                                           boost::multi_index::member<record, item_hash_t, &record::item>,
-                                          std::hash<item_hash_t>>,
+                                          p2p_item_hash>,
         boost::multi_index::sequenced<boost::multi_index::tag<by_last_recorded>>>> record_set_type;
 
     void set_bit(const record& item_record, slot_type slot, unsigned kind);

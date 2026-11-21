@@ -1193,6 +1193,52 @@ BOOST_AUTO_TEST_CASE( fetch_items_unknown_type_test )
   } );
 }
 
+/// C4: a fetch_items asking for more blocks than GRAPHENE_NET_MAX_BLOCKS_PER_FETCH_REQUEST or more transactions than
+/// GRAPHENE_NET_MAX_TRANSACTIONS_PER_FETCH_REQUEST ends the connection; a request of exactly that size is served
+BOOST_AUTO_TEST_CASE( fetch_items_cap_test )
+{
+  start_node();
+  run( [&]()
+  {
+    schedule_blocks( 3 );
+    const auto unknown_ids = []( size_t count )
+    {
+      std::vector< item_hash_t > ids;
+      for( size_t i = 0; i < count; ++i )
+        ids.push_back( fc::ripemd160::hash( "unknown item " + std::to_string( i ) ) );
+      return ids;
+    };
+
+    auto blocks_at_cap = make_peer( "peer asking for the most blocks" );
+    connect_active( *blocks_at_cap );
+    std::vector< item_hash_t > blocks = unknown_ids( GRAPHENE_NET_MAX_BLOCKS_PER_FETCH_REQUEST - 1 );
+    blocks.insert( blocks.begin(), block_id( 2 ) );
+    blocks_at_cap->send( fetch_items_message( block_message_type, blocks ) );
+    BOOST_REQUIRE( blocks_at_cap->wait_for( compressed_block_message_type, reply_timeout ) );
+    BOOST_REQUIRE( blocks_at_cap->wait_for( item_not_available_message_type, reply_timeout, GRAPHENE_NET_MAX_BLOCKS_PER_FETCH_REQUEST - 1 ) );
+
+    auto transactions_at_cap = make_peer( "peer asking for the most transactions" );
+    connect_active( *transactions_at_cap );
+    transactions_at_cap->send( fetch_items_message( trx_message_type, unknown_ids( GRAPHENE_NET_MAX_TRANSACTIONS_PER_FETCH_REQUEST ) ) );
+    BOOST_REQUIRE( transactions_at_cap->wait_for( item_not_available_message_type, reply_timeout, GRAPHENE_NET_MAX_TRANSACTIONS_PER_FETCH_REQUEST ) );
+
+    auto too_many_blocks = make_peer( "peer asking for too many blocks" );
+    connect_active( *too_many_blocks );
+    too_many_blocks->send( fetch_items_message( block_message_type, unknown_ids( GRAPHENE_NET_MAX_BLOCKS_PER_FETCH_REQUEST + 1 ) ) );
+    require_closed_with( *too_many_blocks, "You asked for more items in one request than allowed" );
+    BOOST_CHECK_EQUAL( too_many_blocks->count( item_not_available_message_type ), 0u );
+
+    auto too_many_transactions = make_peer( "peer asking for too many transactions" );
+    connect_active( *too_many_transactions );
+    too_many_transactions->send( fetch_items_message( trx_message_type, unknown_ids( GRAPHENE_NET_MAX_TRANSACTIONS_PER_FETCH_REQUEST + 1 ) ) );
+    require_closed_with( *too_many_transactions, "You asked for more items in one request than allowed" );
+    BOOST_CHECK_EQUAL( too_many_transactions->count( item_not_available_message_type ), 0u );
+
+    require_kept( *blocks_at_cap );
+    require_kept( *transactions_at_cap );
+  } );
+}
+
 /// C5: current_time_request is answered with the request time echoed and the node's times filled in
 BOOST_AUTO_TEST_CASE( current_time_test )
 {
@@ -1767,6 +1813,65 @@ BOOST_AUTO_TEST_CASE( block_advertisements_not_throttled_test )
     flooder->advertise( block_message_type, { block } );
     BOOST_CHECK( wait_until( [&]() { return times_requested( *flooder, block ) != 0; }, reply_timeout ) );
     BOOST_CHECK( !flooder->closed() );
+  } );
+}
+
+/// D15: a peer advertising as many transaction ids as its inventory takes in a minute
+/// (GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER), all sharing their first 8 bytes, doesn't hold up the p2p thread:
+/// a block another peer advertises right after is asked for within a block interval.  An inventory message with more
+/// ids than that ends the connection (the node no longer lists the peer).  The flooder withholds everything it is asked for, so the ignored-request
+/// timeout is raised out of the way.
+BOOST_AUTO_TEST_CASE( colliding_transaction_ids_test )
+{
+  start_node( R"("active_ignored_request_timeout_microseconds":)" + std::to_string( fc::seconds( 120 ).count() ), true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+    const auto colliding_ids = []( uint32_t count )
+    {
+      std::vector< item_hash_t > ids;
+      for( uint32_t n = 0; n < count; ++n )
+      {
+        item_hash_t id;
+        id._hash[ 0 ] = 0x12345678;
+        id._hash[ 1 ] = 0x9abcdef0;
+        id._hash[ 2 ] = n;
+        id._hash[ 3 ] = ~n;
+        ids.push_back( id );
+      }
+      return ids;
+    };
+
+    auto flooder = make_peer( "flooding peer" );
+    connect_active( *flooder );
+    auto block_source = make_peer( "block source" );
+    connect_active( *block_source );
+    flooder->advertise( colliding_ids( GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER ) );
+    const block_id_type block = fake_block_id( get_block_num() + 1, "advertised block" );
+    const fc::time_point advertised = fc::time_point::now();
+    block_source->advertise( block_message_type, { block } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *block_source, block ) != 0; }, reply_timeout ) );
+    const fc::microseconds latency = first_request_time( *block_source, block ) - advertised;
+    BOOST_TEST_MESSAGE( "block requested " << latency.count() / 1000 << " ms after it was advertised" );
+    BOOST_CHECK_LT( latency.count(), fc::seconds( HIVE_BLOCK_INTERVAL ).count() );
+    BOOST_CHECK( flooder->wait_for( fetch_items_message_type, reply_timeout ) );
+    BOOST_CHECK( !flooder->closed() );
+
+    // a test_peer's own send queue doesn't take a message that large, so it goes out on a raw connection
+    raw_connection oversized( peer_thread );
+    oversized.connect_secure( node_endpoint() );
+    oversized.handshake( db->get_chain_id() );
+    const fc::ip::endpoint oversized_endpoint = oversized.local_endpoint();
+    const auto node_lists_oversized = [&]()
+    {
+      const std::vector< hive::plugins::p2p::api_peer_status > peers = p2p().get_connected_peers();
+      return std::any_of( peers.begin(), peers.end(), [&]( const hive::plugins::p2p::api_peer_status& p ) { return p.host == oversized_endpoint; } );
+    };
+    BOOST_REQUIRE( wait_until( node_lists_oversized, reply_timeout ) );
+    oversized.send( item_ids_inventory_message( trx_message_type, colliding_ids( GRAPHENE_NET_MAX_ITEM_IDS_PER_INVENTORY_MESSAGE + 1 ) ) );
+    BOOST_CHECK( wait_until( [&]() { return !node_lists_oversized(); }, reply_timeout ) );
+    BOOST_CHECK( node_lists( *flooder ) );
   } );
 }
 

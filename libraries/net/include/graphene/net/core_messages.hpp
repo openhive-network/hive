@@ -70,6 +70,18 @@ namespace graphene { namespace net {
       }
   };
 
+  /**
+   * The hasher of every hashed container or index keyed by item ids (item_hash_t, item_id, block or transaction
+   * ids) in the p2p code.  Those ids come from peers, and std::hash<fc::ripemd160> is just an id's first 8 bytes,
+   * so a peer could send any number of ids that land in one bucket and make each lookup scan them all.  This is
+   * SipHash-1-3 over the whole id, keyed once per process with random bytes, so a peer can't choose ids that collide.
+   */
+  struct p2p_item_hash
+  {
+    size_t operator()(const item_hash_t& hash) const;
+    size_t operator()(const item_id& item) const;
+  };
+
   enum core_message_type_enum
   {
     trx_message_type                                    = 1000,
@@ -694,17 +706,3 @@ FC_REFLECT(graphene::net::get_current_connections_reply_message, (upload_rate_on
                                                             (download_rate_one_hour)
                                                             (current_connections))
 
-#include <unordered_map>
-#include <fc/crypto/city.hpp>
-#include <fc/crypto/sha224.hpp>
-namespace std
-{
-    template<>
-    struct hash<graphene::net::item_id>
-    {
-       size_t operator()(const graphene::net::item_id& item_to_hash) const
-       {
-          return fc::city_hash_size_t((char*)&item_to_hash, sizeof(item_to_hash));
-       }
-    };
-}

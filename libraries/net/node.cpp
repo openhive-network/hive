@@ -369,7 +369,7 @@ namespace graphene { namespace net {
       bool                      _sync_items_to_fetch_updated;
       fc::future<void>          _fetch_sync_items_loop_done;
 
-      typedef std::unordered_map<graphene::net::block_id_type, fc::time_point> active_sync_requests_map;
+      typedef std::unordered_map<graphene::net::block_id_type, fc::time_point, p2p_item_hash> active_sync_requests_map;
 
       active_sync_requests_map              _active_sync_requests; /// list of sync blocks we've asked for from peers but have not yet received
 
@@ -410,7 +410,7 @@ namespace graphene { namespace net {
                                            boost::multi_index::indexed_by<boost::multi_index::ordered_unique<boost::multi_index::identity<prioritized_item_id> >,
                                                                           boost::multi_index::hashed_unique<boost::multi_index::tag<item_id_index>,
                                                                                                             boost::multi_index::member<prioritized_item_id, item_id, &prioritized_item_id::item>,
-                                                                                                            std::hash<item_id> >,
+                                                                                                            p2p_item_hash >,
                                                                           boost::multi_index::ordered_non_unique<boost::multi_index::tag<item_timestamp_index>,
                                                                                                                  boost::multi_index::member<prioritized_item_id, fc::time_point, &prioritized_item_id::timestamp> > >
                                            > items_to_fetch_set_type;
@@ -1446,7 +1446,7 @@ namespace graphene { namespace net {
               (peer->is_block_fetching_deprioritized() ? deprioritized_peers : peers_in_request_order).push_back(peer);
             const size_t first_deprioritized_peer = peers_in_request_order.size();
             peers_in_request_order.insert(peers_in_request_order.end(), deprioritized_peers.begin(), deprioritized_peers.end());
-            std::unordered_set<item_hash_t> sync_items_left_to_preferred_peers;
+            std::unordered_set<item_hash_t, p2p_item_hash> sync_items_left_to_preferred_peers;
             if (!deprioritized_peers.empty())
               for (size_t peer_index = 0; peer_index < first_deprioritized_peer; ++peer_index)
               {
@@ -1499,7 +1499,8 @@ namespace graphene { namespace net {
                         // then schedule a request from this peer
                         sync_item_requests_to_send[peer].push_back(item_to_potentially_request);
                         sync_items_to_request.insert(item_to_potentially_request);
-                        if (sync_item_requests_to_send[peer].size() >= _node_configuration.maximum_blocks_per_peer_during_syncing)
+                        if (sync_item_requests_to_send[peer].size() >= std::min<size_t>(_node_configuration.maximum_blocks_per_peer_during_syncing,
+                                                                                         GRAPHENE_NET_MAX_BLOCKS_PER_FETCH_REQUEST))
                           break;
                       }
                     } //for each item to get
@@ -4006,6 +4007,21 @@ namespace graphene { namespace net {
     void node_impl::on_fetch_items_message(peer_connection* originating_peer, const fetch_items_message& fetch_items_message_received)
     {
       VERIFY_CORRECT_THREAD();
+      const size_t max_items_per_request = fetch_items_message_received.item_type == block_message_type ? GRAPHENE_NET_MAX_BLOCKS_PER_FETCH_REQUEST :
+                                           fetch_items_message_received.item_type == trx_message_type ? GRAPHENE_NET_MAX_TRANSACTIONS_PER_FETCH_REQUEST :
+                                           std::numeric_limits<size_t>::max();
+      if (fetch_items_message_received.items_to_fetch.size() > max_items_per_request)
+      {
+        wlog("peer ${endpoint} asked for ${count} items of type ${type} in one request, more than the ${max} allowed, disconnecting from peer",
+             ("endpoint", originating_peer->get_remote_endpoint())("count", fetch_items_message_received.items_to_fetch.size())
+             ("type", fetch_items_message_received.item_type)("max", max_items_per_request));
+        fc::exception detailed_error(FC_LOG_MESSAGE(error, "You asked for ${count} items of type ${type} in one request, more than the ${max} allowed",
+                                                    ("count", fetch_items_message_received.items_to_fetch.size())
+                                                    ("type", fetch_items_message_received.item_type)("max", max_items_per_request)));
+        disconnect_from_peer(originating_peer, "You asked for more items in one request than allowed", true, detailed_error);
+        return;
+      }
+
       dlog("received items request for ids ${ids} of type ${type} from peer ${endpoint}",
            ("ids", fetch_items_message_received.items_to_fetch)
            ("type", fetch_items_message_received.item_type)
@@ -4025,7 +4041,7 @@ namespace graphene { namespace net {
         // so the blocks held for a peer stay a few however many it asks for, and the queue limit is reached only by
         // a request for far more blocks than a sync request asks for.  An id asked for more than once in a request
         // is answered once
-        std::unordered_set<item_hash_t> ids_queued;
+        std::unordered_set<item_hash_t, p2p_item_hash> ids_queued;
         for (const item_hash_t& item_hash : fetch_items_message_received.items_to_fetch)
         {
           if (connection_is_closing())
@@ -4038,7 +4054,7 @@ namespace graphene { namespace net {
       {
         // an id asked for more than once in a request is answered once: each answer is a full copy of the
         // transaction in the send queue
-        std::unordered_set<item_hash_t> ids_answered;
+        std::unordered_set<item_hash_t, p2p_item_hash> ids_answered;
         std::vector<item_hash_t> ids_to_answer;
         std::vector<std::shared_ptr<full_transaction_type>> reply_transactions;
         for (const item_hash_t& item_hash : fetch_items_message_received.items_to_fetch)
@@ -4155,6 +4171,18 @@ namespace graphene { namespace net {
         dlog("ignoring inventory of ${count} items from peer ${endpoint}: its connection is closing",
              ("count", item_ids_inventory_message_received.item_hashes_available.size())
              ("endpoint", originating_peer->get_remote_endpoint()));
+        return;
+      }
+
+      if (item_ids_inventory_message_received.item_hashes_available.size() > GRAPHENE_NET_MAX_ITEM_IDS_PER_INVENTORY_MESSAGE)
+      {
+        wlog("peer ${endpoint} advertised ${count} items in one inventory message, more than the ${max} allowed, disconnecting from peer",
+             ("endpoint", originating_peer->get_remote_endpoint())("count", item_ids_inventory_message_received.item_hashes_available.size())
+             ("max", GRAPHENE_NET_MAX_ITEM_IDS_PER_INVENTORY_MESSAGE));
+        fc::exception detailed_error(FC_LOG_MESSAGE(error, "You advertised ${count} items in one inventory message, more than the ${max} allowed",
+                                                    ("count", item_ids_inventory_message_received.item_hashes_available.size())
+                                                    ("max", GRAPHENE_NET_MAX_ITEM_IDS_PER_INVENTORY_MESSAGE)));
+        disconnect_from_peer(originating_peer, "You advertised more items in one inventory message than allowed", true, detailed_error);
         return;
       }
 
@@ -4404,7 +4432,7 @@ namespace graphene { namespace net {
 
     bool node_impl::is_inventory_advertised_to_us_list_full_for_transactions(const peer_connection* peer) const
     {
-      return inventory_advertised_to_us_size(peer) > GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60;
+      return inventory_advertised_to_us_size(peer) > GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER;
     }
 
     bool node_impl::is_inventory_advertised_to_us_list_full(const peer_connection* peer) const
@@ -4413,7 +4441,7 @@ namespace graphene { namespace net {
       // plus the maximum number of blocks that would be generated in GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES (plus one,
       // to give us some wiggle room)
       return inventory_advertised_to_us_size(peer) >
-        GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60 +
+        GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER +
         (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES + 1) * 60 / HIVE_BLOCK_INTERVAL;
     }
 

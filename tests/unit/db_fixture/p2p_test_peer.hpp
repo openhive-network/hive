@@ -839,6 +839,41 @@ public:
     _thread.async( [&]() { _socket.write( bytes.data(), bytes.size() ); _socket.flush(); } ).wait();
   }
 
+  /// Writes @p m after the key exchange in one frame, however large: unlike test_peer::send(), no send queue limits it
+  void send( const graphene::net::message& m ) { write( frame( m.size, m.msg_type, m.data ) ); }
+
+  /// After the key exchange, sends a valid hello for the chain @p chain_id, connection_accepted and an address message,
+  /// which make the node take the connection up as an active peer
+  void handshake( const hive::protocol::chain_id_type& chain_id )
+  {
+    using namespace graphene::net;
+    fc::sha512 shared_secret;
+    fc::ip::endpoint local_endpoint;
+    _thread.async( [&]()
+    {
+      shared_secret = _socket.get_shared_secret();
+      local_endpoint = _socket.get_socket().local_endpoint();
+    } ).wait();
+    fc::sha256::encoder shared_secret_encoder;
+    shared_secret_encoder.write( shared_secret.data(), sizeof( shared_secret ) );
+    const fc::ecc::private_key key = fc::ecc::private_key::generate();
+    const node_id_t public_key = key.get_public_key().serialize();
+    fc::mutable_variant_object user_data;
+    user_data[ "node_id" ] = public_key;
+    user_data[ "chain_id" ] = chain_id;
+    send( hello_message( "raw peer", GRAPHENE_NET_PROTOCOL_VERSION, local_endpoint.get_address(), 0, local_endpoint.port(), public_key,
+                         key.sign_compact( shared_secret_encoder.result() ), user_data ) );
+    send( connection_accepted_message() );
+    send( address_message() );
+  }
+
+  fc::ip::endpoint local_endpoint()
+  {
+    fc::ip::endpoint endpoint;
+    _thread.async( [&]() { endpoint = _socket.get_socket().local_endpoint(); } ).wait();
+    return endpoint;
+  }
+
   /// A message header claiming @p size bytes of type @p msg_type, followed by @p payload, padded to 16 bytes
   static std::vector< char > frame( uint32_t size, uint32_t msg_type, const std::vector< char >& payload = {} )
   {

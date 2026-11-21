@@ -92,7 +92,7 @@ namespace graphene { namespace net {
     typedef boost::multi_index_container
       <message_info,
        boost::multi_index::indexed_by<
-         boost::multi_index::hashed_unique<boost::multi_index::tag<message_hash_index>, get_message_hash, std::hash<item_hash_t>>,
+         boost::multi_index::hashed_unique<boost::multi_index::tag<message_hash_index>, get_message_hash, p2p_item_hash>,
          boost::multi_index::ordered_non_unique<boost::multi_index::tag<message_contents_hash_index>, get_message_contents_hash>,
          boost::multi_index::ordered_non_unique<boost::multi_index::tag<block_clock_index>,
                                                 boost::multi_index::member<message_info, uint32_t, &message_info::block_clock_when_received>>>> message_cache_container;
