@@ -2158,7 +2158,8 @@ BOOST_AUTO_TEST_CASE( transaction_relay_test )
 /// GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH transactions per GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS, and for
 /// blocks as always; so a fast-confirm one peer advertises while another floods it is still fetched and relayed to the
 /// peers in sync.  The flooder's own window doesn't bound it: it has delivered small transactions, so one request may
-/// ask it for its whole flood, and it answers at once that it doesn't have them, so none stays outstanding
+/// ask it for its whole flood, and it delivers each at once, so none stays outstanding.  (One answering that it doesn't
+/// have transactions it advertised would be demoted for that, see unavailable_advertised_items_test.)
 BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
 {
   const uint64_t max_mempool_size = 6 * 1024;
@@ -2171,7 +2172,6 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
     wait_for_block_num( 1 );
 
     auto flooder = make_peer( "flooding peer" );
-    flooder->stop_withholding();
     connect_active( *flooder );
     auto source = make_peer( "fast-confirm source" );
     connect_active( *source );
@@ -2224,8 +2224,15 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
         continue;
 
       flood.clear();
+      std::vector< full_transaction_ptr > flooded_transactions;
       for( size_t i = 0; i < flood_size; ++i )
-        flood.push_back( fc::ripemd160::hash( "flooded transaction " + std::to_string( attempt ) + "/" + std::to_string( i ) ) );
+      {
+        flooded_transactions.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                        "flooded " + std::to_string( attempt ) + "/" + std::to_string( i ),
+                                                        get_default_expiration() ) );
+        flood.push_back( flooded_transactions.back()->get_legacy_transaction_message_hash() );
+      }
+      flooder->provide( flooded_transactions );
       flooder->advertise( flood );
 
       witness_block_approve_operation approve;
@@ -2350,8 +2357,9 @@ BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
 }
 
 /// D17: below the threshold the node asks for no more transactions than fit under it with those already on their
-/// way: a peer that has sent none yet is expected to send ones of HIVE_MAX_TRANSACTION_SIZE, so with a threshold
-/// smaller than that the headroom is used up by the first transaction requested.  What it expects on their way
+/// way: a peer that has sent none yet is expected to send ones of the mean size of those peers sent that validated,
+/// HIVE_MAX_TRANSACTION_SIZE while there are none (as here), so with a threshold smaller than that the headroom is used
+/// up by the first transaction requested.  What it expects on their way
 /// doesn't stop the empty pool fetching: the gate's minimum asks for the rest, but no sooner than
 /// GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS after the last pass that asked for some of its minimum, however
 /// soon more is advertised
@@ -2444,6 +2452,190 @@ BOOST_AUTO_TEST_CASE( fallback_after_not_available_test )
   } );
 }
 
+/// D17 (T): a peer that answers item_not_available for transactions it advertised is demoted: for
+/// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC (10 s) it is asked for no transactions, however many more it advertises,
+/// and the GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES-th (3rd) time it answers so it is disconnected. So it holds the
+/// node's requests, and the fetch gate's headroom, for nothing only a few times. A peer that delivers what it
+/// advertises is asked for each transaction meanwhile
+BOOST_AUTO_TEST_CASE( unavailable_advertised_items_test )
+{
+  start_node( "", true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto empty_handed = make_peer( "peer advertising transactions it doesn't have" );
+    empty_handed->stop_withholding();
+    connect_active( *empty_handed );
+    auto delivering = make_peer( "peer delivering what it advertises" );
+    connect_active( *delivering );
+
+    const fc::microseconds demotion = fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC );
+    const fc::time_point deadline = fc::time_point::now() + fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC * GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES ) +
+                                    reply_timeout;
+    std::vector< item_hash_t > delivered;
+    // both advertise new transactions every half second
+    for( int round = 0; !empty_handed->closed() && fc::time_point::now() < deadline; ++round )
+    {
+      std::vector< item_hash_t > not_had;
+      for( int i = 0; i < 3; ++i )
+        not_had.push_back( fc::ripemd160::hash( "not had " + std::to_string( round ) + "/" + std::to_string( i ) ) );
+      empty_handed->advertise( not_had );
+      const full_transaction_ptr transaction = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                              "delivered " + std::to_string( round ), get_default_expiration() );
+      delivering->provide( { transaction } );
+      delivering->advertise( { transaction->get_legacy_transaction_message_hash() } );
+      delivered.push_back( transaction->get_legacy_transaction_message_hash() );
+      fc::usleep( fc::milliseconds( 500 ) );
+    }
+    require_closed_with( *empty_handed, "advertising items you don't have" );
+
+    // its transaction requests came in one burst per strike (each answered at once), a demotion apart
+    std::vector< fc::time_point > bursts;
+    for( const received_message& r : empty_handed->received( fetch_items_message_type ) )
+      if( r.msg.as< fetch_items_message >().item_type == trx_message_type && ( bursts.empty() || r.time - bursts.back() > fc::seconds( 1 ) ) )
+        bursts.push_back( r.time );
+    BOOST_CHECK_EQUAL( bursts.size(), size_t( GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES ) );
+    for( size_t k = 1; k < bursts.size(); ++k )
+      BOOST_CHECK_MESSAGE( bursts[ k ] - bursts[ k - 1 ] >= demotion - fc::milliseconds( 100 ),
+                           "asked again " << ( bursts[ k ] - bursts[ k - 1 ] ).count() / 1000 << " ms after strike " << k );
+    BOOST_REQUIRE( wait_until( [&]()
+    {
+      return std::all_of( delivered.begin(), delivered.end(), [&]( const item_hash_t& hash ) { return delivering->was_requested( hash ); } );
+    }, reply_timeout ) );
+    require_kept( *delivering );
+  } );
+}
+
+/// D17: peers that advertise transactions and never deliver them can't use up the fetch gate's headroom for free: a
+/// request to a peer that has sent no transaction counts as one of the mean size of those peers sent that validated,
+/// not of HIVE_MAX_TRANSACTION_SIZE. With 66 such peers each holding a full window of requests (8, by their own
+/// estimate: worth more than the threshold at the largest size), a peer that delivers is still asked for its whole
+/// new inventory in one request, not for the gate's minimum per recheck
+BOOST_AUTO_TEST_CASE( withholding_peers_headroom_test )
+{
+  const uint64_t max_mempool_size = 12 * 1024 * 1024;
+  const uint64_t threshold = transaction_fetch_gate_threshold( max_mempool_size );
+  const size_t withholding_count = 66;
+  const size_t window = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / HIVE_MAX_TRANSACTION_SIZE;
+  const size_t batch_size = 100;
+  BOOST_REQUIRE_GT( uint64_t( withholding_count * window ) * HIVE_MAX_TRANSACTION_SIZE, threshold );
+  start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto source = make_peer( "delivering peer" );
+    connect_active( *source );
+    auto observer = make_peer( "observer" );
+    connect_in_sync( *observer );
+    const auto transfers = [&]( const std::string& memo, size_t count )
+    {
+      std::vector< full_transaction_ptr > transactions;
+      for( size_t i = 0; i < count; ++i )
+        transactions.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                memo + " " + std::to_string( i ), get_default_expiration() ) );
+      return transactions;
+    };
+    const auto hashes_of = []( const std::vector< full_transaction_ptr >& transactions )
+    {
+      std::vector< item_hash_t > hashes;
+      for( const full_transaction_ptr& transaction : transactions )
+        hashes.push_back( transaction->get_legacy_transaction_message_hash() );
+      return hashes;
+    };
+
+    // the node validates transactions the source delivers, which sets the size it expects of a new peer's
+    const std::vector< full_transaction_ptr > warm_up = transfers( "warm-up", 100 );
+    const std::vector< item_hash_t > warm_up_hashes = hashes_of( warm_up );
+    source->provide( warm_up );
+    source->advertise( warm_up_hashes );
+    BOOST_REQUIRE( wait_until( [&]()
+    {
+      return std::all_of( warm_up_hashes.begin(), warm_up_hashes.end(), [&]( const item_hash_t& hash ) { return observer->was_advertised( hash ); } );
+    }, reply_timeout ) );
+
+    std::vector< std::unique_ptr< test_peer > > withholding;
+    std::vector< std::vector< item_hash_t > > withheld( withholding_count );
+    for( size_t i = 0; i < withholding_count; ++i )
+    {
+      withholding.push_back( make_peer( "withholding peer " + std::to_string( i ) ) );
+      connect_active( *withholding.back() );
+      for( size_t j = 0; j < window; ++j )
+        withheld[ i ].push_back( fc::ripemd160::hash( "withheld " + std::to_string( i ) + "/" + std::to_string( j ) ) );
+    }
+    for( size_t i = 0; i < withholding_count; ++i )
+      withholding[ i ]->advertise( withheld[ i ] );
+    BOOST_REQUIRE( wait_until( [&]()
+    {
+      for( size_t i = 0; i < withholding_count; ++i )
+        if( !std::all_of( withheld[ i ].begin(), withheld[ i ].end(), [&]( const item_hash_t& hash ) { return withholding[ i ]->was_requested( hash ); } ) )
+          return false;
+      return true;
+    }, reply_timeout ) );
+
+    // while their requests are outstanding (until active_ignored_request_timeout, 6 s), the source advertises more
+    const std::vector< full_transaction_ptr > batch = transfers( "batch", batch_size );
+    const std::vector< item_hash_t > batch_hashes = hashes_of( batch );
+    source->provide( batch );
+    source->advertise( batch_hashes );
+    BOOST_REQUIRE( wait_until( [&]()
+    {
+      return std::all_of( batch_hashes.begin(), batch_hashes.end(), [&]( const item_hash_t& hash ) { return source->was_requested( hash ); } );
+    }, reply_timeout ) );
+    for( const fetch_items_message& request : source->received_as< fetch_items_message >() )
+      if( std::find( request.items_to_fetch.begin(), request.items_to_fetch.end(), batch_hashes.front() ) != request.items_to_fetch.end() )
+      {
+        BOOST_CHECK_GT( request.items_to_fetch.size(), size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH ) );
+        BOOST_CHECK_EQUAL( request.items_to_fetch.size(), batch_size );
+        break;
+      }
+  } );
+}
+
+/// Category 2 (fallback): peers that advertise blocks and withhold them delay a block about
+/// GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS (1 s) in all. A withholding peer that advertises a block first is asked
+/// for it; once it has kept the node waiting that long, the node asks another advertiser, and of the several idle ones
+/// it asks the one that delivered it a block before, not another withholding peer that never did. The default
+/// active_ignored_request_timeout (6 s) ends the first one's connection only later
+BOOST_AUTO_TEST_CASE( withholding_block_advertisers_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 7 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    const auto id = [&]( uint32_t num ) { return item_hash_t( chain[ num - 1 ]->get_block_id() ); };
+    auto proven = connect_live_peer( "peer that delivered a block", chain );
+    proven->advertise( block_message_type, { id( 6 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 6 ), "head is " << get_block_num() );
+
+    std::vector< std::unique_ptr< test_peer > > withholding;
+    for( int i = 0; i < 3; ++i )
+    {
+      withholding.push_back( make_peer( "withholding advertiser " + std::to_string( i ) ) );
+      withholding.back()->ignore( fetch_items_message_type );
+      connect_active( *withholding.back() );
+    }
+    withholding.front()->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *withholding.front(), id( 7 ) ) != 0; }, reply_timeout ) );
+    for( size_t i = 1; i < withholding.size(); ++i )
+      withholding[ i ]->advertise( block_message_type, { id( 7 ) } );
+    proven->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 7 ), "head is " << get_block_num() );
+    const fc::microseconds asked_after = first_request_time( *proven, id( 7 ) ) - first_request_time( *withholding.front(), id( 7 ) );
+    BOOST_CHECK_GE( asked_after.count(), fc::milliseconds( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS - 100 ).count() );
+    BOOST_CHECK_MESSAGE( asked_after < fc::milliseconds( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS + 1000 ),
+                         "the peer that delivered before was asked " << asked_after.count() / 1000 << " ms after the first one" );
+    for( size_t i = 1; i < withholding.size(); ++i )
+      BOOST_CHECK_EQUAL( times_requested( *withholding[ i ], id( 7 ) ), 0u );
+    BOOST_CHECK( !withholding.front()->closed() );
+    require_kept( *proven );
+  } );
+}
+
 /// Connection limit (category 2): with maximum_number_of_connections connections, the next peer's hello is
 /// rejected with not_accepting_connections
 BOOST_AUTO_TEST_CASE( connection_limit_test )
@@ -2523,9 +2715,11 @@ BOOST_AUTO_TEST_CASE( exempt_address_not_limited_per_host_test )
 }
 
 /// A peer that rejects the node's hello with too_many_connections_from_host is redialed with the failure backoff,
-/// not every peer_connection_retry_timeout (1 s here): after its k-th rejection the node waits over k seconds.
-/// Another peer keeps relaying the refusing peer's address, which runs the connect loop about once a second, so
-/// the retry delay rather than the loop's 10 s idle wait sets when the node dials again
+/// not every peer_connection_retry_timeout (1 s here): after its k-th rejection the node waits over k seconds, up to
+/// GRAPHENE_NET_MAX_HOST_LIMIT_REJECTIONS_COUNTED rejections; later ones grow the wait no further (another node behind
+/// the same address may be what fills the peer's share for it). Another peer keeps relaying the refusing peer's
+/// address, which runs the connect loop about once a second, so the retry delay rather than the loop's 10 s idle wait
+/// sets when the node dials again
 BOOST_AUTO_TEST_CASE( per_host_rejection_backs_off_test )
 {
   start_node( R"("peer_connection_retry_timeout":1)" );
@@ -2549,7 +2743,8 @@ BOOST_AUTO_TEST_CASE( per_host_rejection_backs_off_test )
     const fc::ip::endpoint refusing_endpoint = refusing->listen();
     p2p().add_node( refusing_endpoint );
     std::vector< fc::time_point > dialed;
-    for( int round = 0; round < 4; ++round )
+    const size_t counted = GRAPHENE_NET_MAX_HOST_LIMIT_REJECTIONS_COUNTED;
+    for( size_t round = 0; round < counted + 3; ++round )
     {
       if( round > 0 )
       {
@@ -2571,29 +2766,37 @@ BOOST_AUTO_TEST_CASE( per_host_rejection_backs_off_test )
       refusing.reset();
     }
     for( size_t k = 1; k < dialed.size(); ++k )
-      BOOST_CHECK_MESSAGE( dialed[ k ] - dialed[ k - 1 ] > fc::seconds( k ),
+    {
+      BOOST_CHECK_MESSAGE( dialed[ k ] - dialed[ k - 1 ] > fc::seconds( std::min( k, counted ) ),
                            "redialed " << ( dialed[ k ] - dialed[ k - 1 ] ).count() / 1000 << " ms after rejection " << k );
+      // counted in full, the delay would be k + 1 seconds; the connect loop runs about once a second
+      if( k > counted )
+        BOOST_CHECK_MESSAGE( dialed[ k ] - dialed[ k - 1 ] < fc::milliseconds( ( counted + 1 ) * 1000 + 1500 ),
+                             "redialed " << ( dialed[ k ] - dialed[ k - 1 ] ).count() / 1000 << " ms after rejection " << k );
+    }
     require_kept( *relay );
   } );
 }
 
-/// Left at its default, the per-host limit (2) gives way to inbound peers while the node holds fewer than its desired
-/// connections (3 here): with loopback not exempt, the third peer from 127.0.0.1 is accepted, the fourth is rejected
-/// with too_many_connections_from_host
-BOOST_AUTO_TEST_CASE( default_per_host_limit_relaxed_for_hellos_test )
+/// Left at its default, the per-host limit (2) gives way only to peers the node dials: a peer dialing it is held to the
+/// limit, also once the relax delay is over (0 here) and while the node holds fewer than its desired connections (3).
+/// With loopback not exempt, the third peer from 127.0.0.1 is rejected with too_many_connections_from_host, so one host
+/// dialing a restarted node first can't fill its slots
+BOOST_AUTO_TEST_CASE( default_per_host_limit_holds_for_hellos_test )
 {
-  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[])" );
+  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[],)"
+              R"("host_limit_relax_delay":0)" );
   run( [&]()
   {
     std::vector< std::unique_ptr< test_peer > > peers;
-    for( int i = 0; i < 3; ++i )
+    for( int i = 0; i < 2; ++i )
     {
       peers.push_back( make_peer( "peer " + std::to_string( i ) + " on the host" ) );
       connect_active( *peers.back() );
     }
-    auto fourth = make_peer( "fourth on the host" );
-    fourth->connect( node_endpoint() );
-    require_rejected( *fourth, rejection_reason_code::too_many_connections_from_host );
+    auto third = make_peer( "third on the host" );
+    third->connect( node_endpoint() );
+    require_rejected( *third, rejection_reason_code::too_many_connections_from_host );
     for( const auto& peer : peers )
       require_kept( *peer );
   } );
@@ -2617,30 +2820,6 @@ BOOST_AUTO_TEST_CASE( explicit_per_host_limit_not_relaxed_test )
     require_rejected( *third, rejection_reason_code::too_many_connections_from_host );
     require_kept( *first );
     require_kept( *second );
-  } );
-}
-
-/// The node saves its whole configuration to node_config.json, the per-host limit included, and loads it on the next
-/// start. A limit found only there was not set by the operator, so it stays relaxed: as in
-/// default_per_host_limit_relaxed_for_hellos_test, the third peer from 127.0.0.1 is accepted
-BOOST_AUTO_TEST_CASE( saved_per_host_limit_stays_relaxed_test )
-{
-  const fc::path data_dir = hive::utilities::temp_directory_path() / "p2p-protocol-saved-node-config";
-  fc::remove_all( data_dir );
-  fc::create_directories( data_dir / "p2p" );
-  fc::json::save_to_file( fc::mutable_variant_object( "maximum_connections_per_host", 2 ), data_dir / "p2p" / "node_config.json" );
-  set_data_dir( data_dir.string() );
-  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[])" );
-  run( [&]()
-  {
-    BOOST_REQUIRE_EQUAL( p2p().get_advanced_node_parameters().maximum_connections_per_host, 2u );
-    std::vector< std::unique_ptr< test_peer > > peers;
-    for( int i = 0; i < 3; ++i )
-    {
-      peers.push_back( make_peer( "peer " + std::to_string( i ) + " on the host" ) );
-      connect_active( *peers.back() );
-    }
-    require_kept( *peers.front() );
   } );
 }
 
@@ -2675,13 +2854,21 @@ namespace
   }
 }
 
-/// Candidates on 2 hosts only: a relay on 127.0.0.1 and 5 peers on 127.0.0.2. With the default per-host limit the
-/// node dials past it until it holds its desired 4 connections, so 3 of the 5 peers
-BOOST_AUTO_TEST_CASE( default_per_host_limit_relaxed_for_few_hosts_test )
+/// The node saves its whole configuration to node_config.json, the per-host limit included, and loads it on the next
+/// start. A limit found only there was not set by the operator, so it stays relaxed: as in
+/// default_per_host_limit_relaxed_for_few_hosts_test, the node dials 3 of 5 peers on 127.0.0.2 to reach its desired 4
+BOOST_AUTO_TEST_CASE( saved_per_host_limit_stays_relaxed_test )
 {
-  start_node( R"("desired_number_of_connections":4,"maximum_number_of_connections":6,"host_limit_exempt_subnets":[])" );
+  const fc::path data_dir = hive::utilities::temp_directory_path() / "p2p-protocol-saved-node-config";
+  fc::remove_all( data_dir );
+  fc::create_directories( data_dir / "p2p" );
+  fc::json::save_to_file( fc::mutable_variant_object( "maximum_connections_per_host", 2 ), data_dir / "p2p" / "node_config.json" );
+  set_data_dir( data_dir.string() );
+  start_node( R"("desired_number_of_connections":4,"maximum_number_of_connections":6,"host_limit_exempt_subnets":[],)"
+              R"("host_limit_relax_delay":0)" );
   run( [&]()
   {
+    BOOST_REQUIRE_EQUAL( p2p().get_advanced_node_parameters().maximum_connections_per_host, 2u );
     auto relay = make_peer( "address relay" );
     connect_active( *relay );
     std::vector< fc::ip::endpoint > endpoints;
@@ -2689,6 +2876,35 @@ BOOST_AUTO_TEST_CASE( default_per_host_limit_relaxed_for_few_hosts_test )
     relay_addresses( *relay, endpoints );
     BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return count_connected( peers ) == 3; }, reply_timeout ),
                            "connected to " << count_connected( peers ) << " of the peers" );
+  } );
+}
+
+/// Candidates on 2 hosts only: a relay on 127.0.0.1 and 5 peers on 127.0.0.2. With the default per-host limit the
+/// node dials 2 of the peers at once, and once host_limit_relax_delay (5 s here) has passed since it started, dials
+/// past the limit until it holds its desired 4 connections, so 3 of the 5 peers
+BOOST_AUTO_TEST_CASE( default_per_host_limit_relaxed_for_few_hosts_test )
+{
+  const fc::microseconds relax_delay = fc::seconds( 5 );
+  const fc::time_point before_start = fc::time_point::now();
+  start_node( R"("desired_number_of_connections":4,"maximum_number_of_connections":6,"host_limit_exempt_subnets":[],)"
+              R"("host_limit_relax_delay":)" + std::to_string( relax_delay.to_seconds() ) );
+  run( [&]()
+  {
+    auto relay = make_peer( "address relay" );
+    connect_active( *relay );
+    std::vector< fc::ip::endpoint > endpoints;
+    const auto peers = listening_peers( *this, "127.0.0.2", 5, endpoints );
+    relay_addresses( *relay, endpoints );
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return count_connected( peers ) == 2; }, reply_timeout ),
+                           "connected to " << count_connected( peers ) << " of the peers" );
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return count_connected( peers ) == 3; }, relax_delay + reply_timeout ),
+                           "connected to " << count_connected( peers ) << " of the peers" );
+    fc::time_point third_connected_at;
+    for( const auto& peer : peers )
+      if( peer->accepted() )
+        third_connected_at = std::max( third_connected_at, peer->connected_at() );
+    BOOST_CHECK_MESSAGE( third_connected_at >= before_start + relax_delay,
+                         "dialed past the limit " << ( third_connected_at - before_start ).count() / 1000 << " ms after start" );
     fc::usleep( quiet_period );
     BOOST_CHECK_EQUAL( count_connected( peers ), 3u );
     BOOST_CHECK_EQUAL( number_of_connections(), 4u );
@@ -2715,50 +2931,87 @@ BOOST_AUTO_TEST_CASE( explicit_per_host_limit_for_few_hosts_test )
   } );
 }
 
-/// A connection held past the default per-host limit gives way to a peer on a new host: with 3 peers from 127.0.0.1
-/// filling the desired 3, the node, told of a peer on 127.0.0.2, dials it past the desired number, and once it is
-/// connected closes the newest of the 3 (not as an error). The other two are kept, and the node holds 3 connections
+namespace
+{
+  /**
+   * Has @p fixture's node (desired 4, default per-host limit relaxed at once) fill its slots past the limit: a relay on
+   * 127.0.0.1 tells it of 5 peers on 127.0.0.2, and it dials 3 of them. Returns those peers; the 3 it holds are @p held
+   */
+  std::vector< std::unique_ptr< test_peer > > fill_slots_past_host_limit( p2p_protocol_fixture& fixture, test_peer& relay,
+                                                                          std::vector< test_peer* >& held )
+  {
+    std::vector< fc::ip::endpoint > endpoints;
+    auto peers = listening_peers( fixture, "127.0.0.2", 5, endpoints );
+    relay_addresses( relay, endpoints );
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return count_connected( peers ) == 3; }, reply_timeout ),
+                           "connected to " << count_connected( peers ) << " of the peers" );
+    for( const auto& peer : peers )
+      if( peer->accepted() && !peer->closed() )
+        held.push_back( peer.get() );
+    return peers;
+  }
+
+  /**
+   * Requires exactly one of @p held (dialed at about the same time, so which one the node dialed last isn't known
+   * here) to be closed to make room for a peer on another host, and the others to be kept
+   */
+  void require_one_gives_way( const std::vector< test_peer* >& held )
+  {
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() {
+      return std::any_of( held.begin(), held.end(), []( const test_peer* peer ) { return peer->closed(); } );
+    }, reply_timeout ), "no connection over the limit gave way" );
+    for( const test_peer* peer : held )
+      if( peer->closed() )
+      {
+        p2p_protocol_fixture::require_closed_with( *peer, "making room for a peer on another host" );
+        BOOST_CHECK( !peer->closing_message()->closing_due_to_error );
+      }
+    fc::usleep( quiet_period );
+    BOOST_CHECK_EQUAL( std::count_if( held.begin(), held.end(), []( const test_peer* peer ) { return peer->closed(); } ), 1 );
+  }
+}
+
+/// A connection held past the default per-host limit gives way to a peer on a new host: with a relay on 127.0.0.1 and
+/// 3 peers the node dialed on 127.0.0.2 filling the desired 4, the node, told of a peer on 127.0.0.3, dials it past the
+/// desired number, and once it is connected closes one of the 3 (the one dialed last, not as an error). The others are
+/// kept, and the node holds 4 connections
 BOOST_AUTO_TEST_CASE( relaxed_connection_gives_way_to_new_host_test )
 {
-  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[])" );
+  start_node( R"("desired_number_of_connections":4,"maximum_number_of_connections":6,"host_limit_exempt_subnets":[],)"
+              R"("host_limit_relax_delay":0)" );
   run( [&]()
   {
-    std::vector< std::unique_ptr< test_peer > > peers;
-    for( int i = 0; i < 3; ++i )
-    {
-      peers.push_back( make_peer( "peer " + std::to_string( i ) + " on the first host" ) );
-      connect_active( *peers.back() );
-    }
+    auto relay = make_peer( "address relay" );
+    connect_active( *relay );
+    std::vector< test_peer* > held;
+    const auto peers = fill_slots_past_host_limit( *this, *relay, held );
+    BOOST_REQUIRE_EQUAL( held.size(), 3u );
     std::vector< fc::ip::endpoint > endpoints;
-    const auto new_host = listening_peers( *this, "127.0.0.2", 1, endpoints );
-    relay_addresses( *peers.front(), endpoints );
+    const auto new_host = listening_peers( *this, "127.0.0.3", 1, endpoints );
+    relay_addresses( *relay, endpoints );
     BOOST_REQUIRE_MESSAGE( new_host.front()->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ),
                            "the node did not take up the peer on the new host" );
-    require_closed_with( *peers.back(), "making room for a peer on another host" );
-    BOOST_CHECK( !peers.back()->closing_message()->closing_due_to_error );
-    require_kept( *peers[ 0 ] );
-    require_kept( *peers[ 1 ] );
+    require_one_gives_way( held );
+    require_kept( *relay );
     BOOST_CHECK( !new_host.front()->closed() );
-    BOOST_CHECK_EQUAL( number_of_connections(), 3u );
+    BOOST_CHECK_EQUAL( number_of_connections(), 4u );
   } );
 }
 
-/// The same while a connection that never sends its hello is held open past the desired 3: the node still dials the
-/// peer on the new host at once (in the connect loop pass the relayed address triggers), and the newest of the 3
-/// gives way to it
+/// The same while a connection that never sends its hello is held open past the desired 4: the node still dials the
+/// peer on the new host at once (in the connect loop pass the relayed address triggers), and one of the 3 gives way to it
 BOOST_AUTO_TEST_CASE( relaxed_connection_gives_way_with_handshaking_connection_test )
 {
   // long enough that the node does not close the silent connection during the test
-  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[],)"
-              R"("peer_inactivity_timeout":60)" );
+  start_node( R"("desired_number_of_connections":4,"maximum_number_of_connections":6,"host_limit_exempt_subnets":[],)"
+              R"("peer_inactivity_timeout":60,"host_limit_relax_delay":0)" );
   run( [&]()
   {
-    std::vector< std::unique_ptr< test_peer > > peers;
-    for( int i = 0; i < 3; ++i )
-    {
-      peers.push_back( make_peer( "peer " + std::to_string( i ) + " on the first host" ) );
-      connect_active( *peers.back() );
-    }
+    auto relay = make_peer( "address relay" );
+    connect_active( *relay );
+    std::vector< test_peer* > held;
+    const auto peers = fill_slots_past_host_limit( *this, *relay, held );
+    BOOST_REQUIRE_EQUAL( held.size(), 3u );
     auto no_hello = make_peer( "silent after key exchange" );
     no_hello->hello().count = 0;
     no_hello->ignore( hello_message_type );
@@ -2767,26 +3020,24 @@ BOOST_AUTO_TEST_CASE( relaxed_connection_gives_way_with_handshaking_connection_t
     BOOST_REQUIRE( wait_until( [&]() { return no_hello->connected(); }, reply_timeout ) );
 
     std::vector< fc::ip::endpoint > endpoints;
-    const auto new_host = listening_peers( *this, "127.0.0.2", 1, endpoints );
+    const auto new_host = listening_peers( *this, "127.0.0.3", 1, endpoints );
     const fc::time_point relayed = fc::time_point::now();
-    relay_addresses( *peers.front(), endpoints );
+    relay_addresses( *relay, endpoints );
     BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return new_host.front()->connected(); }, reply_timeout ),
                            "the node did not dial the peer on the new host" );
     BOOST_CHECK_MESSAGE( new_host.front()->connected_at() - relayed < fc::seconds( 5 ),
                          "dialed " << ( new_host.front()->connected_at() - relayed ).count() / 1000 << " ms after the address arrived" );
     BOOST_CHECK( !no_hello->closed() );
-    require_closed_with( *peers.back(), "making room for a peer on another host" );
-    require_kept( *peers[ 0 ] );
-    require_kept( *peers[ 1 ] );
+    require_one_gives_way( held );
     BOOST_CHECK( !new_host.front()->closed() );
   } );
 }
 
 /// Category 2 (fallback), D9, D12: a block the node asked one peer for is fetched from another peer that
-/// advertised it too when the first one doesn't deliver it: when it ignores the request (it is disconnected once
-/// active_ignored_request_timeout, 2 s here, passes, and only then is the other peer asked), when it answers
-/// item_not_available (it is kept), and when it sends a copy whose body doesn't match the header (it is
-/// disconnected, #999, and the block is fetched again from the other peer, #1001)
+/// advertised it too when the first one doesn't deliver it: when it ignores the request (the other peer is asked
+/// once GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS, 1 s, passes, before active_ignored_request_timeout, 2 s here, ends
+/// the silent peer's connection), when it answers item_not_available (it is kept), and when it sends a copy whose
+/// body doesn't match the header (it is disconnected, #999, and the block is fetched again from the other peer, #1001)
 BOOST_AUTO_TEST_CASE( block_fallback_test )
 {
   const fc::microseconds timeout = fc::seconds( 2 );
@@ -2807,8 +3058,9 @@ BOOST_AUTO_TEST_CASE( block_fallback_test )
     BOOST_REQUIRE_MESSAGE( head_reaches( 6, timeout + fc::seconds( 1 + 10 ) ), "head is " << get_block_num() );
     BOOST_CHECK( silent->wait_closed( reply_timeout ) );
     BOOST_CHECK_EQUAL( times_requested( *backup, id( 6 ) ), 1u );
-    BOOST_CHECK_GE( ( first_request_time( *backup, id( 6 ) ) - first_request_time( *silent, id( 6 ) ) ).count(),
-                    timeout.count() - fc::milliseconds( 100 ).count() );
+    const fc::microseconds asked_after = first_request_time( *backup, id( 6 ) ) - first_request_time( *silent, id( 6 ) );
+    BOOST_CHECK_GE( asked_after.count(), fc::milliseconds( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS - 100 ).count() );
+    BOOST_CHECK_LT( asked_after.count(), timeout.count() );
 
     auto empty_handed = make_peer( "empty-handed advertiser" );
     empty_handed->stop_withholding();
@@ -3555,13 +3807,14 @@ BOOST_AUTO_TEST_CASE( outbound_retry_delay_test )
   } );
 }
 
-/// F4 (T): while the node is behind (an idle node: its head is far older than a minute), a peer that gives it no blocks
-/// or timely block advertisements for idle_peer_disconnect_timeout (5 s here) is disconnected, if another peer delivers
-/// blocks meanwhile. The peer that delivers them is kept, and so are a slower peer that advertises each block after the
-/// node already has it and a peer that only asks the node for blocks (it syncs from the node). A disconnected idle peer
-/// takes no slot for a whole window: its hello on a new inbound connection is rejected, and the node dials the one it
-/// dialed again only after the window, although the retry delay of a failed attempt (peer_connection_retry_timeout,
-/// 2 s here, times two) is shorter. Six desired connections leave a floor of three, so the two idle peers can go.
+/// F4 (T): while the node is behind (an idle node: its head is far older than a minute), a peer that delivers it no
+/// blocks for idle_peer_disconnect_timeout (5 s here) is disconnected, if another peer delivers blocks meanwhile. The two
+/// peers that deliver them, taking turns, are kept. Disconnected are the idle peers, a slower peer that advertises each
+/// block after the node already has it and a stale peer that asks the node for each block it pushes (it syncs from the
+/// node): advertising and asking cost nothing and give the node nothing. A disconnected idle peer takes no slot for a
+/// whole window: its hello on a new inbound connection is rejected, and the node dials the one it dialed again only
+/// after the window, although the retry delay of a failed attempt (peer_connection_retry_timeout, 2 s here, times two)
+/// is shorter. Four desired connections leave a floor of two, so the four peers that deliver nothing can go.
 BOOST_AUTO_TEST_CASE( idle_peers_replaced_test )
 {
   const uint32_t synced = 5;
@@ -3572,15 +3825,16 @@ BOOST_AUTO_TEST_CASE( idle_peers_replaced_test )
   BOOST_REQUIRE_GT( idle_timeout, 2 * retry );
   const std::vector< block_ptr > chain = generate_chain( synced + live );
   start_node( R"("idle_peer_disconnect_timeout":)" + std::to_string( idle_timeout ) +
-              R"(,"peer_connection_retry_timeout":)" + std::to_string( retry ) + R"(,"desired_number_of_connections":6)" );
+              R"(,"peer_connection_retry_timeout":)" + std::to_string( retry ) + R"(,"desired_number_of_connections":4)" );
   run( [&]()
   {
     sync_node( chain, synced );
     BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
 
     auto serving = connect_live_peer( "serving peer", chain );
+    auto second_serving = connect_live_peer( "second serving peer", chain );
     auto slower = connect_live_peer( "slower advertising peer", chain );
-    auto syncing = make_peer( "peer syncing from the node" );
+    auto syncing = make_peer( "stale peer syncing from the node" );
     syncing->hello().last_known_block_number = 1;
     connect_active( *syncing );
     // the node takes a peer up (and starts its idle time) before it asks it for block ids
@@ -3594,22 +3848,28 @@ BOOST_AUTO_TEST_CASE( idle_peers_replaced_test )
     BOOST_REQUIRE_MESSAGE( idle_outbound->wait_for( fetch_blockchain_item_ids_message_type, fc::seconds( 30 ) ), "the node did not dial the idle peer" );
     const fc::time_point all_connected = fc::time_point::now();
 
-    // a block a second: the serving peer advertises it and delivers it, then the slower peer advertises it too
+    // a block a second: one of the serving peers, in turn, advertises it and delivers it, then the slower peer
+    // advertises it too, and the stale peer asks for it (and for an older one)
     uint32_t next = synced;
     const auto deliver_next_block = [&]()
     {
       BOOST_REQUIRE_LT( next, chain.size() );
-      serving->advertise( block_message_type, { chain[ next ]->get_block_id() } );
+      ( next % 2 ? serving : second_serving )->advertise( block_message_type, { chain[ next ]->get_block_id() } );
       BOOST_REQUIRE_MESSAGE( head_reaches( next + 1 ), "head is " << get_block_num() );
-      slower->advertise( block_message_type, { chain[ next ]->get_block_id() } );
-      syncing->request_blocks( { chain[ next - synced ]->get_block_id() } );
+      if( !slower->closed() )
+        slower->advertise( block_message_type, { chain[ next ]->get_block_id() } );
+      if( !syncing->closed() )
+        syncing->request_blocks( { chain[ next ]->get_block_id(), chain[ next - synced ]->get_block_id() } );
       ++next;
       fc::usleep( fc::seconds( 1 ) );
     };
     const fc::time_point deadline = all_connected + fc::seconds( idle_timeout + 10 );
-    while( !( idle_inbound->closed() && idle_outbound->closed() ) && fc::time_point::now() < deadline )
+    const auto all_idle_closed = [&]() { return idle_inbound->closed() && idle_outbound->closed() && slower->closed() && syncing->closed(); };
+    while( !all_idle_closed() && fc::time_point::now() < deadline )
       deliver_next_block();
-    BOOST_REQUIRE_MESSAGE( idle_inbound->closed() && idle_outbound->closed(), "the node did not disconnect the idle peers" );
+    BOOST_REQUIRE_MESSAGE( all_idle_closed(), "the node did not disconnect the peers that delivered nothing" );
+    require_closed_with( *slower, "nothing I could use" );
+    require_closed_with( *syncing, "nothing I could use" );
     // the node checks once a second and its timestamps are in whole seconds
     require_closed_with( *idle_inbound, "nothing I could use" );
     BOOST_CHECK_GE( ( idle_inbound->closed_at() - inbound_taken_up ).count(), fc::seconds( idle_timeout - 1 ).count() );
@@ -3638,7 +3898,7 @@ BOOST_AUTO_TEST_CASE( idle_peers_replaced_test )
     BOOST_CHECK_GE( ( again->connected_at() - idle_outbound_closed ).count(), fc::seconds( idle_timeout - 1 ).count() );
     BOOST_CHECK( wait_until( [&]() { return node_lists( *again ); }, reply_timeout ) );
 
-    for( test_peer* kept : { serving.get(), slower.get(), syncing.get() } )
+    for( test_peer* kept : { serving.get(), second_serving.get() } )
     {
       BOOST_CHECK_MESSAGE( !kept->closed(), "the node closed the connection to a useful peer" );
       BOOST_CHECK( node_lists( *kept ) );
@@ -3679,8 +3939,8 @@ BOOST_AUTO_TEST_CASE( idle_peers_kept_on_halted_chain_test )
 }
 
 /// F5c (T): a peer whose hello claims a head past the node's, but that delivers nothing, is judged like any other while
-/// another peer delivers the node blocks: it is the one replaced, and the peer that delivers and a slower peer that
-/// advertises each block after the node has it are kept. Four desired connections leave a floor of two
+/// other peers deliver the node blocks: it is the one replaced, and the two peers that deliver, taking turns, are kept.
+/// Four desired connections leave a floor of two
 BOOST_AUTO_TEST_CASE( idle_peer_claiming_a_higher_head_replaced_test )
 {
   const uint32_t synced = 5;
@@ -3694,7 +3954,7 @@ BOOST_AUTO_TEST_CASE( idle_peer_claiming_a_higher_head_replaced_test )
     BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
 
     auto serving = connect_live_peer( "serving peer", chain );
-    auto slower = connect_live_peer( "slower advertising peer", chain );
+    auto second_serving = connect_live_peer( "second serving peer", chain );
     auto ahead = make_peer( "peer claiming a head past the node's" );
     ahead->hello().last_known_block_number = synced + live + 100;
     connect_active( *ahead );
@@ -3702,14 +3962,13 @@ BOOST_AUTO_TEST_CASE( idle_peer_claiming_a_higher_head_replaced_test )
     uint32_t next = synced;
     while( !ahead->closed() && next < chain.size() )
     {
-      serving->advertise( block_message_type, { chain[ next ]->get_block_id() } );
+      ( next % 2 ? serving : second_serving )->advertise( block_message_type, { chain[ next ]->get_block_id() } );
       BOOST_REQUIRE_MESSAGE( head_reaches( next + 1 ), "head is " << get_block_num() );
-      slower->advertise( block_message_type, { chain[ next ]->get_block_id() } );
       ++next;
       fc::usleep( fc::seconds( 1 ) );
     }
     require_closed_with( *ahead, "nothing I could use" );
-    for( test_peer* kept : { serving.get(), slower.get() } )
+    for( test_peer* kept : { serving.get(), second_serving.get() } )
       BOOST_CHECK_MESSAGE( !kept->closed(), "the node closed the connection to " << kept->hello().user_agent );
   } );
 }

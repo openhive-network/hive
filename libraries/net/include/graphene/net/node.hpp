@@ -942,6 +942,8 @@ namespace graphene { namespace net {
 
     void record(size_t transaction_size);
     size_t mean() const { return _mean; }
+    /// whether record() was called: until then mean() is only the initial assumption
+    bool recorded() const { return _recorded; }
     /// whether the peer queues our replies only as its send queue drains (GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES);
     /// false until set
     void set_peer_defers_replies(bool defers) { _peer_defers_replies = defers; }
@@ -961,6 +963,7 @@ namespace graphene { namespace net {
 
   private:
     size_t _mean;
+    bool _recorded = false;
     bool _peer_defers_replies = false;
   };
 
@@ -1201,15 +1204,17 @@ namespace graphene { namespace net {
     bool deprioritized = false;    ///< peer_connection::is_block_fetching_deprioritized()
     bool can_take_request = false; ///< we may send the peer another request now
     bool idle = false;             ///< nothing is outstanding with the peer, not even transactions
+    bool delivered = false;        ///< peer_connection::delivered_block
   };
 
   /**
    * Which of @p candidates, every peer that advertised a block, to request the block from now; none means wait.
    * Candidates come in the order we would rather ask them (least loaded first).  A deprioritized peer is
    * asked only when no other peer advertised the block: while one did but cannot take a request yet, the
-   * block waits for it.  Among the others an idle one is asked before one with transactions outstanding,
-   * whose replies the peer would send ahead of the block; one with transactions outstanding is asked only
-   * if no idle one can take the request.  The returned index is always that of a candidate that can take a request.
+   * block waits for it.  Among the others that can take a request, a peer that delivered us a block before is asked
+   * first: one that never did may advertise blocks only to be asked for them and withhold them.  Then an idle one is
+   * asked before one with transactions outstanding, whose replies the peer would send ahead of the block.  The first
+   * one ranked so wins.  The returned index is always that of a candidate that can take a request.
    */
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates);
 
@@ -1341,7 +1346,8 @@ namespace graphene { namespace net {
    * slots still free after that go to the candidates the per-host limit left out, one step at a time: at step
    * limit + 1, then limit + 2, ..., each host holding fewer than the step gets one more connection, the host then
    * holding the fewest first (the first in database order among equals).  The steps stop at
-   * get_relaxed_connections_per_host() of the hosts' connections held plus candidates.
+   * get_relaxed_connections_per_host() of the hosts' connections held plus candidates.  Only the first
+   * GRAPHENE_NET_MAX_RELAXED_CANDIDATES_PER_PASS candidates left out take part in the steps.
    */
   std::vector<fc::ip::endpoint> select_connection_candidates(const std::vector<connection_candidate>& candidates,
                                                              const std::vector<fc::ip::address>& held_addresses,
@@ -1359,14 +1365,13 @@ namespace graphene { namespace net {
                                             uint32_t desired_connections);
 
   /**
-   * Whether a hello from @p address, whose host holds @p maximum_connections_per_host or more of
-   * @p accepted_addresses (the remote addresses of the connections whose hello was accepted, not the new one), is
-   * accepted all the same while the default limit is relaxed: with fewer than @p desired_connections accepted, its
-   * host under get_relaxed_connections_per_host() (each host's connections held, one more for this one), and no
-   * other host over the limit holding fewer than it, so that one host at a time goes a step further.
+   * Whether an address a peer at @p relayed_from sent us in an address message goes into the peer database.  A public
+   * address does.  A loopback one only from a peer at a loopback address, and a private or link-local one only from a
+   * peer that is not at a public address itself: such an address names a machine on the relaying peer's own network,
+   * and from a peer elsewhere it would only have us dial into ours (where the per-host limit does not hold for
+   * loopback by default).  Multicast and unspecified addresses never do.
    */
-  bool accepts_connection_over_host_limit(const fc::ip::address& address, const std::vector<fc::ip::address>& accepted_addresses,
-                                          uint32_t maximum_connections_per_host, uint32_t desired_connections);
+  bool accepts_exchanged_address(const fc::ip::address& address, const fc::ip::address& relayed_from);
 
   /// How a set of connections spreads over hosts (connection_host_of) and address families
   struct connection_spread
@@ -1399,7 +1404,7 @@ namespace graphene { namespace net {
   {
     /// peer_connection::last_useful_data_time, or since when our head is behind if that is later
     fc::time_point last_useful_data_time;
-    bool exempt = false; ///< it is fed by us and claims no head past ours, or a request to it is still pending
+    bool exempt = false; ///< sync blocks we asked it for are still pending (asking us for blocks exempts nobody)
   };
 
   /// The node-wide state the idle-peer sweep judges peers in; it runs only while our head is behind
@@ -1413,7 +1418,7 @@ namespace graphene { namespace net {
 
   /**
    * Which of @p peers (their indices) to disconnect as idle, the longest idle first.  A peer is idle when it is not
-   * exempt and gave us no useful data for longer than the window.  Nobody is idle unless some peer delivered us a block
+   * exempt and delivered us no block for longer than the window.  Nobody is idle unless some peer delivered us a block
    * within the window (on a halted chain nobody has anything new, and nobody is replaced), and no more are picked than
    * leave sweep.kept_at_least of all @p peers.
    */

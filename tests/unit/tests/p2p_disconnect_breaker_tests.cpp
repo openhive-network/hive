@@ -134,6 +134,24 @@ BOOST_AUTO_TEST_CASE( block_source_asks_peer_with_transactions_outstanding_when_
   BOOST_CHECK( choose_block_source( { deprioritized_idle, with_transactions } ) == std::optional<size_t>( 1 ) );
 }
 
+/// A peer that delivered us a block before is asked before one that never did, idle or not: a peer may advertise
+/// blocks only to be asked for them and withhold them.  Among peers alike in that, the idle one still goes first, and a
+/// deprioritized peer still only when no other peer advertised the block
+BOOST_AUTO_TEST_CASE( block_source_prefers_peer_that_delivered_a_block )
+{
+  const block_source_candidate unproven_idle{ false, true, true, false };
+  const block_source_candidate proven_idle{ false, true, true, true };
+  const block_source_candidate proven_with_transactions{ false, true, false, true };
+  const block_source_candidate proven_blocked{ false, false, true, true };
+  const block_source_candidate proven_deprioritized{ true, true, true, true };
+  BOOST_CHECK( choose_block_source( { unproven_idle, proven_with_transactions } ) == std::optional<size_t>( 1 ) );
+  BOOST_CHECK( choose_block_source( { unproven_idle, proven_with_transactions, proven_idle } ) == std::optional<size_t>( 2 ) );
+  BOOST_CHECK( choose_block_source( { proven_idle, unproven_idle } ) == std::optional<size_t>( 0 ) );
+  // a proven peer that can't take a request now doesn't hold the block back from one that can
+  BOOST_CHECK( choose_block_source( { proven_blocked, unproven_idle } ) == std::optional<size_t>( 1 ) );
+  BOOST_CHECK( choose_block_source( { proven_deprioritized, unproven_idle } ) == std::optional<size_t>( 1 ) );
+}
+
 /// A peer kept despite a body mismatch is deprioritized until it delivers a block we accept.
 BOOST_AUTO_TEST_CASE( deprioritization_ends_when_peer_delivers_good_block )
 {

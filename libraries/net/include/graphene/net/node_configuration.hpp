@@ -32,8 +32,9 @@ struct node_configuration
    uint32_t maximum_number_of_connections = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS;
    /**
     * connections held to one host (an IPv4 address or an IPv6 /64) at most, counting active and accepted handshaking ones; 0 = no limit.
-    * A hard limit only when set in the advanced node parameters; otherwise it gives way while other hosts can't fill
-    * desired_number_of_connections (a value saved in node_config.json doesn't count as set)
+    * A hard limit only when set in the advanced node parameters; otherwise, host_limit_relax_delay after start, it gives
+    * way to connections we dial while other hosts can't fill desired_number_of_connections (a value saved in
+    * node_config.json doesn't count as set)
     */
    uint32_t maximum_connections_per_host = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST;
    /**
@@ -42,6 +43,12 @@ struct node_configuration
     * default, so list loopback again to keep it exempt
     */
    std::vector<std::string> host_limit_exempt_subnets = { "127.0.0.0/8", "::1/128" };
+   /**
+    * seconds after the node starts during which maximum_connections_per_host stays hard even when not set; after that
+    * the default limit gives way to connections we dial while other hosts can't fill desired_number_of_connections.
+    * A hello from a peer that dialed us is held to the limit always
+    */
+   uint32_t host_limit_relax_delay = GRAPHENE_NET_DEFAULT_HOST_LIMIT_RELAX_DELAY_SEC;
    /** percent of `desired_number_of_connections` the connect loop keeps for each address family that has candidates (at most 50) */
    uint32_t reserved_address_family_percent = GRAPHENE_NET_DEFAULT_RESERVED_ADDRESS_FAMILY_PERCENT;
    /** retry connections to peers that have failed or rejected us this often, in seconds */
@@ -49,7 +56,7 @@ struct node_configuration
    /** how many seconds of inactivity are permitted before disconnecting a peer */
    uint32_t peer_inactivity_timeout = GRAPHENE_NET_PEER_HANDSHAKE_INACTIVITY_TIMEOUT;
    /**
-    * seconds an active peer may give us no useful data (blocks that link, timely advertisements of blocks we have)
+    * seconds an active peer may deliver us no block that we push (its requests and advertisements don't count)
     * while our head is behind and another peer delivered blocks, before it is disconnected and replaced; it may not
     * take a slot again for as long.  0 = never, the default.  Keep it above GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC so sync is restarted with the peers we have first
     */
@@ -80,6 +87,7 @@ FC_REFLECT(graphene::net::node_configuration,
    (maximum_number_of_connections)
    (maximum_connections_per_host)
    (host_limit_exempt_subnets)
+   (host_limit_relax_delay)
    (reserved_address_family_percent)
    (peer_connection_retry_timeout)
    (peer_inactivity_timeout)
