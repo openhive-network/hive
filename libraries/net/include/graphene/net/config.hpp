@@ -126,7 +126,8 @@
 /**
  * How many connections, at most, are held to one host: an IPv4 address or an IPv6 /64.  Several nodes run on one
  * machine have node ids of their own, so without it a host offering many ports can take most of the connection
- * slots.  0 for no limit.  Loopback addresses are never limited, and neither are seed and add-node targets.
+ * slots.  0 for no limit.  Addresses in node_configuration::host_limit_exempt_subnets (loopback by default) are
+ * never limited, and neither are seed and add-node targets.
  */
 #define GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST        2
 /**
@@ -134,6 +135,11 @@
  * that family has candidates to dial; the rest go IPv6 first.  At most 50.
  */
 #define GRAPHENE_NET_DEFAULT_RESERVED_ADDRESS_FAMILY_PERCENT 25
+/**
+ * How often, at most, a node refusing hellos for the per-host limit warns that most of its inbound connections come
+ * from the refused peer's host, which is what a proxy rewriting source addresses looks like.
+ */
+#define GRAPHENE_NET_SHARED_INBOUND_HOST_WARNING_INTERVAL_SEC 600
 
 #define GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES        (1024 * 1024)
 /**

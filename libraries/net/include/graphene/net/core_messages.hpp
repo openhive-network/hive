@@ -313,7 +313,10 @@ namespace graphene { namespace net {
                                      not_accepting_connections,
                                      blocked,
                                      invalid_hello_message,
-                                     client_too_old };
+                                     client_too_old,
+                                     /// the node holds its limit of connections to the peer's host; the dialer counts it
+                                     /// as a failed attempt and backs off, as an older node does with any code it doesn't know
+                                     too_many_connections_from_host };
 
   struct legacy_connection_rejected_message
   {
@@ -619,7 +622,8 @@ FC_REFLECT_ENUM(graphene::net::rejection_reason_code, (unspecified)
                                                  (not_accepting_connections)
                                                  (blocked)
                                                  (invalid_hello_message)
-                                                 (client_too_old))
+                                                 (client_too_old)
+                                                 (too_many_connections_from_host))
 
 FC_REFLECT( graphene::net::legacy_connection_rejected_message, (user_agent)
                                                           (core_protocol_version)

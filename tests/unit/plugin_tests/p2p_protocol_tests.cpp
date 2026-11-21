@@ -672,7 +672,8 @@ BOOST_AUTO_TEST_CASE( peer_rejects_node_test )
     const std::vector< rejection_reason_code > codes = {
       rejection_reason_code::unspecified, rejection_reason_code::different_chain, rejection_reason_code::already_connected,
       rejection_reason_code::connected_to_self, rejection_reason_code::not_accepting_connections, rejection_reason_code::blocked,
-      rejection_reason_code::invalid_hello_message, rejection_reason_code::client_too_old };
+      rejection_reason_code::invalid_hello_message, rejection_reason_code::client_too_old,
+      rejection_reason_code::too_many_connections_from_host };
     const auto rejecting_peer = [&]( rejection_reason_code code, const std::string& name )
     {
       auto peer = make_peer( name );
@@ -1960,8 +1961,8 @@ BOOST_AUTO_TEST_CASE( connection_limit_test )
   } );
 }
 
-/// The per-host connection limit leaves loopback alone, where local test networks run all their nodes: with a limit
-/// of 1, three peers from 127.0.0.1 are all accepted
+/// The per-host connection limit leaves loopback alone by default, where local test networks run all their nodes:
+/// with a limit of 1, three peers from 127.0.0.1 are all accepted
 BOOST_AUTO_TEST_CASE( loopback_not_limited_per_host_test )
 {
   start_node( R"("maximum_connections_per_host":1)" );
@@ -1975,6 +1976,102 @@ BOOST_AUTO_TEST_CASE( loopback_not_limited_per_host_test )
     connect_active( *third );
     require_kept( *first );
     require_kept( *second );
+  } );
+}
+
+/// With loopback not exempt, it is one host like any other: with a limit of 1, a second peer's hello is rejected
+/// with too_many_connections_from_host while the first is connected, and the first is kept. Once the first is
+/// gone, the next peer is accepted
+BOOST_AUTO_TEST_CASE( hello_over_per_host_limit_rejected_test )
+{
+  start_node( R"("maximum_connections_per_host":1,"host_limit_exempt_subnets":[])" );
+  run( [&]()
+  {
+    auto first = make_peer( "first" );
+    connect_active( *first );
+    auto second = make_peer( "second on the host" );
+    second->connect( node_endpoint() );
+    require_rejected( *second, rejection_reason_code::too_many_connections_from_host );
+    BOOST_CHECK( second->rejection()->reason_string.find( "nodes on your host" ) != std::string::npos );
+    require_kept( *first );
+
+    first->close();
+    BOOST_REQUIRE( wait_until( [&]() { return !node_lists( *first ); }, reply_timeout ) );
+    auto third = make_peer( "third, after the first left" );
+    connect_active( *third );
+  } );
+}
+
+/// An exempt address stands in for a proxy that rewrites the source address of every inbound peer: with a limit
+/// of 1 and 127.0.0.1 exempt, three peers from it are all accepted
+BOOST_AUTO_TEST_CASE( exempt_address_not_limited_per_host_test )
+{
+  start_node( R"("maximum_connections_per_host":1,"host_limit_exempt_subnets":["127.0.0.1"])" );
+  run( [&]()
+  {
+    auto first = make_peer( "first via the proxy" );
+    connect_active( *first );
+    auto second = make_peer( "second via the proxy" );
+    connect_active( *second );
+    auto third = make_peer( "third via the proxy" );
+    connect_active( *third );
+    require_kept( *first );
+    require_kept( *second );
+  } );
+}
+
+/// A peer that rejects the node's hello with too_many_connections_from_host is redialed with the failure backoff,
+/// not every peer_connection_retry_timeout (1 s here): after its k-th rejection the node waits over k seconds.
+/// Another peer keeps relaying the refusing peer's address, which runs the connect loop about once a second, so
+/// the retry delay rather than the loop's 10 s idle wait sets when the node dials again
+BOOST_AUTO_TEST_CASE( per_host_rejection_backs_off_test )
+{
+  start_node( R"("peer_connection_retry_timeout":1)" );
+  run( [&]()
+  {
+    auto relay = make_peer( "address relay" );
+    connect_active( *relay );
+
+    const auto refusing_peer = [&]()
+    {
+      auto peer = make_peer( "refusing peer" );
+      peer->on( hello_message_type, []( test_peer& self, const message& )
+      {
+        self.send( connection_rejected_message( "test peer", GRAPHENE_NET_PROTOCOL_VERSION, self.endpoint(),
+                                                rejection_reason_code::too_many_connections_from_host, "rejected by the test" ) );
+      } );
+      return peer;
+    };
+
+    auto refusing = refusing_peer();
+    const fc::ip::endpoint refusing_endpoint = refusing->listen();
+    p2p().add_node( refusing_endpoint );
+    std::vector< fc::time_point > dialed;
+    for( int round = 0; round < 4; ++round )
+    {
+      if( round > 0 )
+      {
+        refusing = refusing_peer();
+        refusing->listen( refusing_endpoint.port() );
+      }
+      const fc::time_point deadline = fc::time_point::now() + fc::seconds( round + 10 );
+      while( !refusing->connected() && fc::time_point::now() < deadline )
+      {
+        address_message relayed;
+        relayed.addresses.emplace_back( refusing_endpoint, fc::time_point::now(), fc::microseconds( 0 ), node_id_t(),
+                                        peer_connection_direction::inbound, firewalled_state::not_firewalled );
+        relay->send( relayed );
+        fc::usleep( fc::milliseconds( 250 ) );
+      }
+      BOOST_REQUIRE_MESSAGE( refusing->connected(), "the node did not dial the refusing peer again, round " << round );
+      dialed.push_back( refusing->connected_at() );
+      require_closed_with( *refusing, "You rejected my connection request" );
+      refusing.reset();
+    }
+    for( size_t k = 1; k < dialed.size(); ++k )
+      BOOST_CHECK_MESSAGE( dialed[ k ] - dialed[ k - 1 ] > fc::seconds( k ),
+                           "redialed " << ( dialed[ k ] - dialed[ k - 1 ] ).count() / 1000 << " ms after rejection " << k );
+    require_kept( *relay );
   } );
 }
 
