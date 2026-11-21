@@ -44,6 +44,12 @@ struct node_configuration
    uint32_t peer_connection_retry_timeout = GRAPHENE_NET_DEFAULT_PEER_CONNECTION_RETRY_TIME;
    /** how many seconds of inactivity are permitted before disconnecting a peer */
    uint32_t peer_inactivity_timeout = GRAPHENE_NET_PEER_HANDSHAKE_INACTIVITY_TIMEOUT;
+   /**
+    * seconds an active peer may give us no useful data (blocks, block ids we lack, timely block advertisements)
+    * while our head is behind and another peer could serve it, before it is disconnected and replaced; 0 = never.
+    * Keep it above GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC so sync is restarted with the peers we have first
+    */
+   uint32_t idle_peer_disconnect_timeout = GRAPHENE_NET_DEFAULT_IDLE_PEER_DISCONNECT_TIMEOUT_SEC;
 
    bool peer_advertising_disabled = false;
 
@@ -73,6 +79,7 @@ FC_REFLECT(graphene::net::node_configuration,
    (reserved_address_family_percent)
    (peer_connection_retry_timeout)
    (peer_inactivity_timeout)
+   (idle_peer_disconnect_timeout)
    (peer_advertising_disabled)
    (maximum_number_of_blocks_to_handle_at_one_time)
    (maximum_number_of_sync_blocks_to_prefetch)

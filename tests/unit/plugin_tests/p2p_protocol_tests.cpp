@@ -2929,6 +2929,154 @@ BOOST_AUTO_TEST_CASE( outbound_retry_delay_test )
   } );
 }
 
+/// F4 (T): while the node is behind (an idle node: its head is far older than a minute), a peer that gives it no blocks,
+/// block ids or timely block advertisements for idle_peer_disconnect_timeout (5 s here) is disconnected, if another peer
+/// delivers blocks meanwhile. The peer that delivers them is kept, and so are a slower peer that advertises each block
+/// after the node already has it and a peer that only asks the node for blocks (it syncs from the node). An idle peer
+/// the node dialed is dialed again only after the retry delay of a failed attempt: peer_connection_retry_timeout (2 s
+/// here) times two.
+BOOST_AUTO_TEST_CASE( idle_peers_replaced_test )
+{
+  const uint32_t synced = 5;
+  // a block a second for the whole case, the redial included
+  const uint32_t live = 40;
+  const uint32_t idle_timeout = 5;
+  const uint32_t retry = 2;
+  const std::vector< block_ptr > chain = generate_chain( synced + live );
+  start_node( R"("idle_peer_disconnect_timeout":)" + std::to_string( idle_timeout ) +
+              R"(,"peer_connection_retry_timeout":)" + std::to_string( retry ) );
+  run( [&]()
+  {
+    sync_node( chain, synced );
+    BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
+
+    auto serving = connect_live_peer( "serving peer", chain );
+    auto slower = connect_live_peer( "slower advertising peer", chain );
+    auto syncing = make_peer( "peer syncing from the node" );
+    syncing->hello().last_known_block_number = 1;
+    connect_active( *syncing );
+    // the node takes a peer up (and starts its idle time) before it asks it for block ids
+    const fc::time_point inbound_taken_up = fc::time_point::now();
+    auto idle_inbound = make_peer( "idle inbound peer" );
+    connect_active( *idle_inbound );
+    auto idle_outbound = make_peer( "idle outbound peer" );
+    const fc::ip::endpoint idle_outbound_endpoint = idle_outbound->listen();
+    const fc::time_point outbound_taken_up = fc::time_point::now();
+    p2p().add_node( idle_outbound_endpoint );
+    BOOST_REQUIRE_MESSAGE( idle_outbound->wait_for( fetch_blockchain_item_ids_message_type, fc::seconds( 30 ) ), "the node did not dial the idle peer" );
+    const fc::time_point all_connected = fc::time_point::now();
+
+    // a block a second: the serving peer advertises it and delivers it, then the slower peer advertises it too
+    uint32_t next = synced;
+    const auto deliver_next_block = [&]()
+    {
+      BOOST_REQUIRE_LT( next, chain.size() );
+      serving->advertise( block_message_type, { chain[ next ]->get_block_id() } );
+      BOOST_REQUIRE_MESSAGE( head_reaches( next + 1 ), "head is " << get_block_num() );
+      slower->advertise( block_message_type, { chain[ next ]->get_block_id() } );
+      syncing->request_blocks( { chain[ next - synced ]->get_block_id() } );
+      ++next;
+      fc::usleep( fc::seconds( 1 ) );
+    };
+    const fc::time_point deadline = all_connected + fc::seconds( idle_timeout + 10 );
+    while( !( idle_inbound->closed() && idle_outbound->closed() ) && fc::time_point::now() < deadline )
+      deliver_next_block();
+    BOOST_REQUIRE_MESSAGE( idle_inbound->closed() && idle_outbound->closed(), "the node did not disconnect the idle peers" );
+    // the node checks once a second and its timestamps are in whole seconds
+    require_closed_with( *idle_inbound, "nothing I could use" );
+    BOOST_CHECK_GE( ( idle_inbound->closed_at() - inbound_taken_up ).count(), fc::seconds( idle_timeout - 1 ).count() );
+    require_closed_with( *idle_outbound, "nothing I could use" );
+    BOOST_CHECK_GE( ( idle_outbound->closed_at() - outbound_taken_up ).count(), fc::seconds( idle_timeout - 1 ).count() );
+    BOOST_CHECK( syncing->count( block_message_type ) + syncing->count( compressed_block_message_type ) != 0 );
+
+    // a new peer listens on the idle outbound peer's port (the old one must be gone, its server would take the
+    // node's connection); meanwhile the others go on as before
+    const fc::time_point idle_outbound_closed = idle_outbound->closed_at();
+    idle_outbound.reset();
+    auto again = make_peer( "idle outbound peer listening again" );
+    again->listen( idle_outbound_endpoint.port() );
+    while( !again->connected() && fc::time_point::now() < idle_outbound_closed + fc::seconds( 2 * retry + GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC + 5 ) )
+      deliver_next_block();
+    BOOST_REQUIRE_MESSAGE( again->connected(), "the node did not dial the idle peer again" );
+    // the node records the attempt in whole seconds
+    BOOST_CHECK_GE( ( again->connected_at() - idle_outbound_closed ).count(), fc::seconds( 2 * retry - 1 ).count() );
+
+    for( test_peer* kept : { serving.get(), slower.get(), syncing.get() } )
+    {
+      BOOST_CHECK_MESSAGE( !kept->closed(), "the node closed the connection to a useful peer" );
+      BOOST_CHECK( node_lists( *kept ) );
+    }
+  } );
+}
+
+/// F5 (T): on a halted chain (an idle node whose peers all have its head and nothing more), nobody is disconnected for
+/// idleness, however long the peers give the node nothing. Once a peer whose hello claims a head past the node's
+/// connects, some peer could serve the node, and the idle peers are replaced, the longest idle first, down to
+/// GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST (2) connections; the newcomer, idle for less long, is kept.
+BOOST_AUTO_TEST_CASE( idle_peers_kept_on_halted_chain_test )
+{
+  const uint32_t synced = 5;
+  const uint32_t idle_timeout = 3;
+  const std::vector< block_ptr > chain = generate_chain( synced );
+  start_node( R"("idle_peer_disconnect_timeout":)" + std::to_string( idle_timeout ) );
+  run( [&]()
+  {
+    sync_node( chain, synced );
+    BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
+
+    std::vector< std::unique_ptr< test_peer > > serving;
+    for( const char* name : { "first serving peer", "second serving peer", "third serving peer" } )
+    {
+      serving.push_back( make_peer( name ) );
+      serving.back()->serve_blocks( chain );
+      connect_active( *serving.back() );
+    }
+    fc::usleep( fc::seconds( 3 * idle_timeout + 2 ) );
+    for( const auto& peer : serving )
+      BOOST_REQUIRE_MESSAGE( !peer->closed(), "the node disconnected a peer on a halted chain" );
+
+    auto ahead = make_peer( "peer claiming a head past the node's" );
+    ahead->hello().last_known_block_number = synced + 10;
+    connect_active( *ahead );
+    BOOST_REQUIRE( wait_until( [&]()
+    {
+      return std::count_if( serving.begin(), serving.end(), []( const std::unique_ptr< test_peer >& peer ) { return peer->closed(); } ) == 2;
+    }, fc::seconds( 10 ) ) );
+    for( const auto& peer : serving )
+      if( peer->closed() )
+        require_closed_with( *peer, "nothing I could use" );
+    fc::usleep( fc::seconds( idle_timeout + 2 ) );
+    BOOST_CHECK_EQUAL( number_of_connections(), GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST );
+    BOOST_CHECK( !ahead->closed() );
+  } );
+}
+
+/// F6 (T): a node in sync (it produces blocks, so its head is current) disconnects no peer for idleness, although its
+/// peers give it nothing and one claims a head past the node's, which would let the idle peers be replaced on a node
+/// that is behind (idle_peers_kept_on_halted_chain_test)
+BOOST_AUTO_TEST_CASE( idle_peers_kept_in_sync_test )
+{
+  const uint32_t idle_timeout = 3;
+  start_node( R"("idle_peer_disconnect_timeout":)" + std::to_string( idle_timeout ), true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+    std::vector< std::unique_ptr< test_peer > > peers;
+    for( const char* name : { "first silent peer", "second silent peer", "third silent peer" } )
+    {
+      peers.push_back( make_peer( name ) );
+      connect_active( *peers.back() );
+    }
+    peers.push_back( make_peer( "silent peer claiming a head past the node's" ) );
+    peers.back()->hello().last_known_block_number = 1000;
+    connect_active( *peers.back() );
+    fc::usleep( fc::seconds( 3 * idle_timeout + 2 ) );
+    for( const auto& peer : peers )
+      BOOST_CHECK_MESSAGE( !peer->closed(), "the node disconnected " << peer->hello().user_agent );
+  } );
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
