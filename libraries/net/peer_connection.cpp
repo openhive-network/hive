@@ -92,6 +92,14 @@ namespace graphene { namespace net
       {
         return sizeof(uint32_t) + fc::raw::pack_size(fc::unsigned_int(static_cast<uint32_t>(count))) + count * sizeof(item_hash_t);
       }
+
+      /// how many items, up to @p at_most, an item_ids_inventory_message may list to take no more than @p room in the send queue
+      size_t inventory_ids_fitting(size_t room, size_t at_most)
+      {
+        // the count's encoding is no longer for fewer items
+        const size_t overhead = inventory_size_in_queue(at_most) - at_most * sizeof(item_hash_t);
+        return room <= overhead ? 0 : std::min(at_most, (room - overhead) / sizeof(item_hash_t));
+      }
     }
 
     message_to_write peer_connection::queued_message::get_message_to_write(peer_connection_delegate* node, peer_connection* peer,
@@ -640,15 +648,27 @@ namespace graphene { namespace net
       VERIFY_CORRECT_THREAD();
       // an inventory only tells the peer what it may ask for, so a burst of them toward a peer reading slower than
       // they come waits for the queue rather than closing the connection, and is thinned out only past a bound
-      if (_send_queue_limit_exceeded)
+      if (_send_queue_limit_exceeded || ids.empty())
         return;
-      _deferred_transaction_inventory.insert(_deferred_transaction_inventory.end(), ids.begin(), ids.end());
+      _deferred_transaction_inventory.push_back(deferred_transaction_inventory{fc::time_point::now(), ids});
+      _deferred_transaction_inventory_ids += ids.size();
       queue_deferred_transaction_inventory();
-      if (_deferred_transaction_inventory.size() > GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER)
+      if (_deferred_transaction_inventory_ids > GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER)
       {
-        const size_t excess = _deferred_transaction_inventory.size() - GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER;
-        _deferred_transaction_inventory.erase(_deferred_transaction_inventory.begin(), _deferred_transaction_inventory.begin() + excess);
+        size_t excess = _deferred_transaction_inventory_ids - GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER;
         _transaction_inventory_ids_dropped_since_report += excess;
+        _deferred_transaction_inventory_ids -= excess;
+        while (excess > 0)
+        {
+          std::vector<item_hash_t>& oldest = _deferred_transaction_inventory.front().ids;
+          if (oldest.size() > excess)
+          {
+            oldest.erase(oldest.begin(), oldest.begin() + excess);
+            break;
+          }
+          excess -= oldest.size();
+          _deferred_transaction_inventory.pop_front();
+        }
         report_dropped_transaction_inventory();
       }
     }
@@ -715,41 +735,75 @@ namespace graphene { namespace net
 
     bool peer_connection::queue_deferred_transaction_inventory()
     {
-      // an inventory of GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE ids fits its budget, so one is queued
-      // whenever the queue holds no more than what is left of that
+      drop_stale_transaction_inventory(fc::time_point::now() - fc::milliseconds(GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS));
       bool queued_any = false;
-      while (!_deferred_transaction_inventory.empty() && !_send_queue_limit_exceeded)
+      while (!_deferred_transaction_inventory.empty() && !_send_queue_limit_exceeded &&
+             _total_queued_messages_size < GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES)
       {
-        const size_t count = std::min<size_t>(_deferred_transaction_inventory.size(), GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE);
-        if (_total_queued_messages_size + inventory_size_in_queue(count) > GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES)
+        // as many as the room left in the budget takes, so the next ids don't wait for room for a whole message
+        const size_t count = inventory_ids_fitting(GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES - _total_queued_messages_size,
+                                                   std::min<size_t>(_deferred_transaction_inventory_ids, GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE));
+        if (count == 0)
           break;
-        const auto ids_end = _deferred_transaction_inventory.begin() + count;
-        std::unique_ptr<queued_message> inventory(new real_queued_message(
-          message(item_ids_inventory_message(trx_message_type, std::vector<item_hash_t>(_deferred_transaction_inventory.begin(), ids_end)))));
+        // the newest first: a burst that waits for the queue to drain doesn't hold up the transactions after it,
+        // fast-confirms among them
+        std::vector<item_hash_t> ids;
+        ids.reserve(count);
+        while (ids.size() < count && !_deferred_transaction_inventory.empty())
+        {
+          std::vector<item_hash_t>& newest = _deferred_transaction_inventory.back().ids;
+          const size_t taken = std::min(count - ids.size(), newest.size());
+          for (auto id = newest.end() - taken; id != newest.end(); ++id)
+            if (_node->is_transaction_to_advertise(*id))
+              ids.push_back(*id);
+            else
+              ++_stale_transaction_inventory_ids_since_report;
+          newest.resize(newest.size() - taken);
+          _deferred_transaction_inventory_ids -= taken;
+          if (newest.empty())
+            _deferred_transaction_inventory.pop_back();
+        }
+        if (ids.empty())
+          continue;
+        std::unique_ptr<queued_message> inventory(new real_queued_message(message(item_ids_inventory_message(trx_message_type, ids))));
         inventory->may_wait_for_batch = true;
-        _deferred_transaction_inventory.erase(_deferred_transaction_inventory.begin(), ids_end);
         send_queueable_message(std::move(inventory));
         queued_any = true;
       }
       // the count left from the last burst that dropped some is logged once the ones that waited are on their way
-      if (queued_any && _deferred_transaction_inventory.empty())
+      if (_deferred_transaction_inventory.empty())
         report_dropped_transaction_inventory();
       return queued_any;
     }
 
+    void peer_connection::drop_stale_transaction_inventory(fc::time_point oldest_to_keep)
+    {
+      while (!_deferred_transaction_inventory.empty() && _deferred_transaction_inventory.front().deferred_at < oldest_to_keep)
+      {
+        const size_t stale = _deferred_transaction_inventory.front().ids.size();
+        _stale_transaction_inventory_ids_since_report += stale;
+        _deferred_transaction_inventory_ids -= stale;
+        _deferred_transaction_inventory.pop_front();
+      }
+    }
+
     void peer_connection::report_dropped_transaction_inventory()
     {
-      if (_transaction_inventory_ids_dropped_since_report == 0)
+      if (_transaction_inventory_ids_dropped_since_report == 0 && _stale_transaction_inventory_ids_since_report == 0)
         return;
       const fc::time_point now = fc::time_point::now();
       if (now - _last_dropped_transaction_inventory_report_time < fc::seconds(GRAPHENE_NET_DROPPED_TRANSACTION_INVENTORY_REPORT_INTERVAL_SEC))
         return;
-      wlog("dropped ${count} transaction id(s) to advertise to peer ${peer} since the last report: more than ${max} waited "
-           "for its send queue, which holds ${queued} bytes, to drain below the ${budget} bytes transaction inventory may take",
-           ("count", _transaction_inventory_ids_dropped_since_report)("peer", get_remote_endpoint())
+      wlog("dropped ${count} transaction id(s) to advertise to peer ${peer} since the last report: ${over} because more than "
+           "${max} waited for its send queue, which holds ${queued} bytes, to drain below the ${budget} bytes transaction "
+           "inventory may take, and ${stale} that waited over ${age} ms or whose transaction is no longer cached",
+           ("count", _transaction_inventory_ids_dropped_since_report + _stale_transaction_inventory_ids_since_report)
+           ("peer", get_remote_endpoint())("over", _transaction_inventory_ids_dropped_since_report)
            ("max", GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER)("queued", _total_queued_messages_size)
-           ("budget", GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES));
+           ("budget", GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES)
+           ("stale", _stale_transaction_inventory_ids_since_report)("age", GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS));
       _transaction_inventory_ids_dropped_since_report = 0;
+      _stale_transaction_inventory_ids_since_report = 0;
       _last_dropped_transaction_inventory_report_time = now;
     }
 

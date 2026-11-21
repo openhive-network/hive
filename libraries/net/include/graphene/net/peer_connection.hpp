@@ -80,6 +80,10 @@ namespace graphene { namespace net
       /// Looks up the block @p peer asked for as @p requested_item (a block id or a legacy block message hash),
       /// when its turn to be sent is close (see virtual_queued_block_message); null when we don't have it
       virtual std::shared_ptr<full_block_type> get_block_to_send(peer_connection* peer, const item_hash_t& requested_item) = 0;
+      /// Whether a transaction id waiting to be advertised to a peer (peer_connection::send_transaction_inventory()) is
+      /// still worth advertising: the transaction @p message_hash is still at hand to send if the peer asks for it.
+      /// The default keeps every id
+      virtual bool is_transaction_to_advertise(const item_hash_t& /*message_hash*/) { return true; }
     };
 
     class peer_connection;
@@ -230,10 +234,19 @@ namespace graphene { namespace net
       /// the number of queued messages up to and including the last queued block traffic, where block traffic is queued next
       size_t _queued_block_traffic_end = 0;
       bool _send_queue_limit_exceeded = false; // set once the queue would have grown over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES
-      /// transaction ids to advertise waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES, oldest first
-      std::deque<item_hash_t> _deferred_transaction_inventory;
+      /// transaction ids to advertise that started waiting together, for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES
+      struct deferred_transaction_inventory
+      {
+        fc::time_point deferred_at;
+        std::vector<item_hash_t> ids;
+      };
+      /// oldest first; none is empty
+      std::deque<deferred_transaction_inventory> _deferred_transaction_inventory;
+      size_t _deferred_transaction_inventory_ids = 0;
       /// waiting transaction ids dropped past GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER since they were last logged
       size_t _transaction_inventory_ids_dropped_since_report = 0;
+      /// waiting transaction ids dropped as stale (see drop_stale_transaction_inventory()) since they were last logged
+      size_t _stale_transaction_inventory_ids_since_report = 0;
       fc::time_point _last_dropped_transaction_inventory_report_time;
       /// requested transactions waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES, oldest first
       std::deque<std::shared_ptr<full_transaction_type>> _deferred_transaction_replies;
@@ -426,11 +439,14 @@ namespace graphene { namespace net
       fc::time_point get_transaction_reply_send_progress_time() const;
       /// queues the message; a transaction inventory is sent as send_transaction_inventory() sends its ids
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);
-      /** advertises the transactions @p ids to the peer, after the ones advertised before, in inventory messages of
-       * at most GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE ids each.  The ids wait outside the send queue
-       * while it holds more than GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES with their message, so
-       * inventory never closes the connection; when more than GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER
-       * wait, the oldest are dropped
+      /** advertises the transactions @p ids to the peer, in inventory messages of at most
+       * GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE ids each.  The ids wait outside the send queue while it
+       * has no room for them within GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES, so inventory never closes
+       * the connection; as it drains, each message takes as many as there is room for, newest first, so new ids don't
+       * wait behind a backlog.  Waiting ids are dropped once they are older than
+       * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS or the delegate no longer has their transaction
+       * (peer_connection_delegate::is_transaction_to_advertise()), and the oldest when more than
+       * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER wait
        */
       void send_transaction_inventory(const std::vector<item_hash_t>& ids);
       void send_item(const item_id& item_to_send);
@@ -491,8 +507,10 @@ namespace graphene { namespace net
       void send_queued_messages_task();
       /// queues the deferred transaction replies the queue has room for, and at least one if it is empty; true if it queued any
       bool queue_deferred_transaction_replies();
-      /// queues inventories of the waiting transaction ids while the queue has room for them; true if it queued any
+      /// queues inventories of the waiting transaction ids, newest first, while the queue has room for any; true if it queued any
       bool queue_deferred_transaction_inventory();
+      /// drops the waiting transaction ids that started waiting before @p oldest_to_keep
+      void drop_stale_transaction_inventory(fc::time_point oldest_to_keep);
       /// logs, at most once per GRAPHENE_NET_DROPPED_TRANSACTION_INVENTORY_REPORT_INTERVAL_SEC, the waiting transaction ids dropped since the last time
       void report_dropped_transaction_inventory();
       bool send_flush_wait_is_over() const;

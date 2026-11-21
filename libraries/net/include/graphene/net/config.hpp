@@ -145,7 +145,7 @@
 #define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES  (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2)
 /**
  * A transaction inventory we advertise to a peer is queued only if the peer's send queue holds at most this many
- * bytes with it; otherwise its ids wait outside the queue and are queued, in order, as the queue drains (see
+ * bytes with it; otherwise its ids wait outside the queue and are queued, newest first, as the queue drains (see
  * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER).  Inventories are queued for every peer as fast as
  * transactions arrive, whatever the peer reads, so a burst of new transactions toward a slow reader would otherwise
  * take its queue over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES and close the connection.  The budget is the one
@@ -161,12 +161,21 @@
 /**
  * How many transaction ids to advertise may wait, per peer, for its send queue to drain below
  * GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES: as many as that budget holds.  Past it the oldest are
- * dropped, and the peer learns of those transactions from another peer or from a block.
+ * dropped, and the peer learns of those transactions from another peer or from a block.  Stale ids are dropped
+ * sooner (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS).
  */
 #define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 20)
 /**
+ * How long, at most, a transaction id to advertise waits for the peer's send queue to drain
+ * (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES) before it is dropped as stale: two block intervals.  By
+ * then the transaction is probably in a block or the peer has it from another peer, and a fast-confirm that late
+ * no longer helps its block become irreversible sooner.
+ */
+#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS 6000
+/**
  * How often (at most) we log, per peer, the transaction ids to advertise that were dropped because too many waited
- * for its send queue (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER)
+ * for its send queue (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER) or they had waited too long
+ * (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS) or were no longer cached
  */
 #define GRAPHENE_NET_DROPPED_TRANSACTION_INVENTORY_REPORT_INTERVAL_SEC 10
 /**
@@ -299,19 +308,23 @@
  * While the pending pool holds more than a third of max-mempool-size (graphene::net::is_transaction_fetching_gated())
  * the node requests no transactions, and checks again this often whether the pool has drained below that while
  * transactions wait to be fetched.  The pool drains when a block is applied, so a fraction of the block interval
- * is enough.
+ * is enough.  Meanwhile arriving inventory and replies wake the fetch loop no more often than this either (blocks
+ * still wake it at once), since only the gate's minimum (GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH) could be requested.
  */
 #define GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS  100
 
 /**
- * However many transactions the transaction fetch gate withholds in a pass (closed, or bounded by its headroom;
- * graphene::net::transaction_fetch_gate), the pass still requests this many in all, from the peers in turn
+ * However many transactions the transaction fetch gate withholds (closed, or bounded by its headroom;
+ * graphene::net::transaction_fetch_gate), a fetch pass still requests this many in all, from the peers in turn
  * (graphene::net::fetch_turn_order), so relay never stops: small and privileged transactions such as fast-confirms
- * (witness_block_approve) can't be told from the rest before they are fetched.  One per pass bounds a gated node's
- * intake by its pass rate, at most 200 transactions a second at the default p2p-fetch-items-minimum-interval-us of
- * 5 ms, rather than by its peers' windows.
+ * (witness_block_approve) can't be told from the rest before they are fetched.  A pass may do so only once per
+ * GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS (graphene::net::fetch_minimum_schedule), so a gated node's intake is
+ * at most 200 transactions a second, in requests of several transactions, however often replies and inventory wake
+ * the fetch loop.  The minimum takes each peer's newest candidates first (graphene::net::fetch_candidate_order): a
+ * fast-confirm is broadcast as soon as its block arrives, so it is among the newest ids its relays advertised, while
+ * a flood's backlog is older.
  */
-#define GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS  1
+#define GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH  20
 
 /**
  * While the transaction fetch gate withholds transactions (closed or bounded by its headroom), how often (at most)

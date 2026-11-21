@@ -14,9 +14,11 @@
 #include <string>
 #include <vector>
 
+using graphene::net::fetch_candidate_order;
 using graphene::net::fetch_candidate_queue;
 using graphene::net::fetch_candidate_verdict;
 using graphene::net::fetch_expiry_warning_limiter;
+using graphene::net::fetch_minimum_schedule;
 using graphene::net::fetch_turn_order;
 using graphene::net::is_relay_sample;
 using graphene::net::is_transaction_fetching_gated;
@@ -60,10 +62,11 @@ struct fetching_peer
 
 /// One pass of choosing transactions to request from @p peers (in connection order) as the node's fetch loop
 /// runs it, each request expected to bring @p transaction_bytes; @p wanted holds the transactions still to fetch,
-/// and a transaction requested from one peer leaves it, so the others drop it
-void fetch_pass( std::vector<fetching_peer>& peers, fetch_turn_order& order, transaction_fetch_gate& gate,
-                 std::set<message_hash_type>& wanted, uint64_t transaction_bytes )
+/// and a transaction requested from one peer leaves it, so the others drop it.  Returns what was requested, in turn
+std::vector<message_hash_type> fetch_pass( std::vector<fetching_peer>& peers, fetch_turn_order& order, transaction_fetch_gate& gate,
+                                           std::set<message_hash_type>& wanted, uint64_t transaction_bytes )
 {
+  std::vector<message_hash_type> requested;
   uint64_t examined = 0;
   const auto is_wanted = [&]( const item_id& candidate ) { return wanted.count( candidate.item_hash ) != 0; };
   std::vector<fetching_peer*> listed;
@@ -89,7 +92,9 @@ void fetch_pass( std::vector<fetching_peer>& peers, fetch_turn_order& order, tra
     fetching_peer& peer = *listed[ turn ];
     const bool include_transactions =
       gate.may_request_more( [&]() { return peer.candidates.has_transaction_to_take( is_wanted, examined ); } );
-    const std::optional<item_id> item = peer.candidates.take_next( include_transactions, [&]( const item_id& candidate )
+    const fetch_candidate_order candidate_order = include_transactions && gate.next_request_is_minimum() ?
+      fetch_candidate_order::newest_first : fetch_candidate_order::oldest_first;
+    const std::optional<item_id> item = peer.candidates.take_next( include_transactions, candidate_order, [&]( const item_id& candidate )
       { return wanted.erase( candidate.item_hash ) != 0 ? fetch_candidate_verdict::take : fetch_candidate_verdict::drop; }, examined );
     if( !item )
     {
@@ -99,9 +104,11 @@ void fetch_pass( std::vector<fetching_peer>& peers, fetch_turn_order& order, tra
     gate.record_request( transaction_bytes );
     order.record_transaction( &peer );
     ++peer.requested;
+    requested.push_back( item->item_hash );
     done[ turn ] = ++taken[ turn ] >= limits[ turn ];
     return true;
   } );
+  return requested;
 }
 
 } // namespace
@@ -290,14 +297,16 @@ BOOST_AUTO_TEST_CASE( the_gate_holds_back_only_transactions_that_would_have_been
   const uint64_t max_mempool_size = 90000;
   const pending_transaction_pool_size over{ 40000, max_mempool_size };
   const pending_transaction_pool_size under{ 20000, max_mempool_size };
-  static_assert( GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS == 1, "the checks below take one per pass" );
 
-  transaction_fetch_gate closed( over, 0 );
+  transaction_fetch_gate closed( over, 0, 1 );
   BOOST_CHECK( closed.closed() );
   BOOST_CHECK_EQUAL( closed.transactions_to_request( 0, candidates ), 0u );   // window full or fetching inhibited
   BOOST_CHECK_EQUAL( closed.transactions_to_request( 400, candidates ), 400u ); // its minimum, from whichever peer takes it
   BOOST_CHECK( closed.may_request_more( candidates ) );
+  BOOST_CHECK( closed.next_request_is_minimum() );
+  BOOST_CHECK( !closed.requested_minimum() );
   closed.record_request( 1000 );
+  BOOST_CHECK( closed.requested_minimum() );
   BOOST_CHECK( !closed.held_back() );
   BOOST_CHECK( !closed.may_request_more( no_candidates ) ); // nothing (live) advertised
   BOOST_CHECK( !closed.held_back() );
@@ -307,12 +316,18 @@ BOOST_AUTO_TEST_CASE( the_gate_holds_back_only_transactions_that_would_have_been
   BOOST_CHECK( closed.held_back() );
   BOOST_CHECK( !closed.bounded() );
 
-  // with no minimum the closed gate requests nothing
+  // with no minimum the closed gate requests nothing, and once one peer has been found to have candidates the
+  // others are not looked at
   transaction_fetch_gate shut( over, 0, 0 );
   BOOST_CHECK_EQUAL( shut.transactions_to_request( 400, no_candidates ), 0u );
   BOOST_CHECK( !shut.held_back() );
   BOOST_CHECK_EQUAL( shut.transactions_to_request( 400, candidates ), 0u );
   BOOST_CHECK( shut.held_back() );
+  size_t looked_at = 0;
+  BOOST_CHECK_EQUAL( shut.transactions_to_request( 400, [&]() { ++looked_at; return true; } ), 0u );
+  BOOST_CHECK( !shut.may_request_more( [&]() { ++looked_at; return true; } ) );
+  BOOST_CHECK_EQUAL( looked_at, 0u );
+  BOOST_CHECK( !shut.requested_minimum() );
 
   transaction_fetch_gate open( under, 0 );
   BOOST_CHECK( !open.closed() );
@@ -320,6 +335,9 @@ BOOST_AUTO_TEST_CASE( the_gate_holds_back_only_transactions_that_would_have_been
   BOOST_CHECK_EQUAL( open.transactions_to_request( 0, candidates ), 0u );
   BOOST_CHECK( !open.held_back() );
   BOOST_CHECK( !open.bounded() );
+  BOOST_CHECK( !open.next_request_is_minimum() );
+  open.record_request( 1000 );
+  BOOST_CHECK( !open.requested_minimum() );
 }
 
 /// Below the threshold a pass requests no more than fits under it with what is already on its way into the pool,
@@ -329,7 +347,7 @@ BOOST_AUTO_TEST_CASE( a_pass_requests_no_more_than_the_headroom_below_the_thresh
   const uint64_t max_mempool_size = 90000; // threshold 30000
   const pending_transaction_pool_size under{ 20000, max_mempool_size };
 
-  transaction_fetch_gate gate( under, 6000 ); // headroom 4000
+  transaction_fetch_gate gate( under, 6000, 0 ); // headroom 4000; a pass whose minimum isn't due
   BOOST_CHECK( !gate.closed() );
   BOOST_CHECK_EQUAL( gate.transactions_to_request( 400, candidates ), 400u );
   size_t requested = 0;
@@ -341,10 +359,11 @@ BOOST_AUTO_TEST_CASE( a_pass_requests_no_more_than_the_headroom_below_the_thresh
   BOOST_CHECK_EQUAL( requested, 14u ); // 13 fit, the 14th goes past by 200 bytes
   BOOST_CHECK( gate.bounded() );
   BOOST_CHECK( !gate.held_back() );
+  BOOST_CHECK( !gate.requested_minimum() );
   BOOST_CHECK_EQUAL( gate.transactions_to_request( 400, candidates ), 0u );
 
   // a peer with nothing more to give doesn't count as held back
-  transaction_fetch_gate drained( under, 0 );
+  transaction_fetch_gate drained( under, 0, 0 );
   drained.record_request( 20000 );
   BOOST_CHECK( !drained.may_request_more( no_candidates ) );
   BOOST_CHECK( !drained.bounded() );
@@ -361,9 +380,10 @@ BOOST_AUTO_TEST_CASE( a_pass_requests_no_more_than_the_headroom_below_the_thresh
     taken.record_request( 300 );
     ++requested_beyond_headroom;
   }
-  BOOST_CHECK_EQUAL( requested_beyond_headroom, size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS ) );
+  BOOST_CHECK_EQUAL( requested_beyond_headroom, size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH ) );
   BOOST_CHECK( taken.bounded() );
   BOOST_CHECK( !taken.held_back() );
+  BOOST_CHECK( taken.requested_minimum() );
 
   // with max-mempool-size 0 there is no gate and no bound
   transaction_fetch_gate disabled( pending_transaction_pool_size{ 1024 * 1024, 0 }, 1024 * 1024 );
@@ -397,7 +417,8 @@ BOOST_AUTO_TEST_CASE( a_tight_headroom_rotates_over_the_peers_from_pass_to_pass 
   std::vector<std::vector<size_t>> requested_after_pass;
   for( int pass = 0; pass < 5; ++pass )
   {
-    transaction_fetch_gate gate( under, 9500 ); // headroom 500: one 1000-byte transaction goes past it
+    // headroom 500: one 1000-byte transaction goes past it; passes whose minimum isn't due
+    transaction_fetch_gate gate( under, 9500, 0 );
     fetch_pass( peers, order, gate, wanted, 1000 );
     BOOST_CHECK( gate.bounded() );
     std::vector<size_t> requested;
@@ -424,7 +445,7 @@ BOOST_AUTO_TEST_CASE( only_transactions_still_to_fetch_count_as_bounded )
   for( fetching_peer& peer : peers )
     peer.candidates.push( shared, queued_at, fc::time_point() );
   fetch_turn_order order;
-  transaction_fetch_gate gate( under, 9500 ); // headroom 500
+  transaction_fetch_gate gate( under, 9500, 0 ); // headroom 500
   fetch_pass( peers, order, gate, wanted, 1000 );
   BOOST_CHECK_EQUAL( peers[ 0 ].requested + peers[ 1 ].requested, 1u );
   BOOST_CHECK( !gate.bounded() );
@@ -434,16 +455,15 @@ BOOST_AUTO_TEST_CASE( only_transactions_still_to_fetch_count_as_bounded )
   peers[ 1 ].candidates.push( own, queued_at, fc::time_point() );
   wanted = { shared.item_hash, own.item_hash };
   peers[ 0 ].candidates.push( shared, queued_at, fc::time_point() );
-  transaction_fetch_gate bounded( under, 9500 );
+  transaction_fetch_gate bounded( under, 9500, 0 );
   fetch_pass( peers, order, bounded, wanted, 1000 );
   BOOST_CHECK( bounded.bounded() );
   BOOST_CHECK( wanted == std::set<message_hash_type>{ own.item_hash } );
 
   // with no headroom left before the pass and its minimum requested, a peer whose candidates were all taken isn't
   // counted either
-  transaction_fetch_gate taken( under, 10000 );
-  for( size_t i = 0; i < GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS; ++i )
-    taken.record_request( 1000 );
+  transaction_fetch_gate taken( under, 10000, 1 );
+  taken.record_request( 1000 );
   uint64_t examined = 0;
   fetch_candidate_queue stale;
   stale.push( shared, queued_at, fc::time_point() );
@@ -455,13 +475,12 @@ BOOST_AUTO_TEST_CASE( only_transactions_still_to_fetch_count_as_bounded )
 }
 
 /// However many peers advertise transactions, a pass of the closed gate requests its minimum in all, and over
-/// successive passes that minimum goes to every peer with candidates in turn; so its intake is bounded by the pass
-/// rate rather than by the peers' windows.  A fast-confirm advertised by one peer among flooding ones is requested
-/// within as many passes as there are peers
+/// successive passes that minimum goes to every peer with candidates in turn; so its intake is bounded by the rate
+/// of passes that get a minimum rather than by the peers' windows.  With a minimum of one per pass, a fast-confirm
+/// advertised by one peer among flooding ones is requested within as many passes as there are peers
 BOOST_AUTO_TEST_CASE( a_closed_gate_requests_its_minimum_per_pass_from_the_peers_in_turn )
 {
   const pending_transaction_pool_size over{ 40000, 90000 }; // threshold 30000
-  static_assert( GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS == 1, "the expected turns take one per pass" );
   std::vector<fetching_peer> peers( 4 );
   std::set<message_hash_type> wanted;
   uint32_t next_transaction = 0;
@@ -482,7 +501,7 @@ BOOST_AUTO_TEST_CASE( a_closed_gate_requests_its_minimum_per_pass_from_the_peers
   std::vector<std::vector<size_t>> requested_after_pass;
   for( int pass = 0; pass < 6; ++pass )
   {
-    transaction_fetch_gate gate( over, 0 );
+    transaction_fetch_gate gate( over, 0, 1 );
     fetch_pass( peers, order, gate, wanted, 200 );
     BOOST_CHECK( gate.held_back() );
     BOOST_CHECK( !gate.bounded() );
@@ -507,9 +526,10 @@ BOOST_AUTO_TEST_CASE( an_empty_pool_keeps_fetching_whatever_is_estimated_on_its_
   const uint64_t estimated_on_their_way = 8 * uint64_t( GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER );
   BOOST_REQUIRE_GT( estimated_on_their_way, transaction_fetch_gate_threshold( max_mempool_size ) );
 
+  const uint32_t minimum = GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH;
   std::vector<fetching_peer> peers( 3 );
   std::set<message_hash_type> wanted;
-  for( uint32_t i = 0; i < 30; ++i )
+  for( uint32_t i = 0; i < 3 * 30; ++i )
   {
     peers[ i % peers.size() ].candidates.push( transaction( i ), queued_at, fc::time_point() );
     wanted.insert( hash_of( i ) );
@@ -521,14 +541,16 @@ BOOST_AUTO_TEST_CASE( an_empty_pool_keeps_fetching_whatever_is_estimated_on_its_
     BOOST_CHECK( !gate.closed() );
     fetch_pass( peers, order, gate, wanted, 200 );
     BOOST_CHECK( gate.bounded() );
+    BOOST_CHECK( gate.requested_minimum() );
   }
-  BOOST_CHECK_EQUAL( wanted.size(), 30u - 3 * GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS );
+  BOOST_CHECK_EQUAL( wanted.size(), 3 * 30 - 3 * minimum );
+  // the turns go round the peers from pass to pass, so over three passes each peer gave a minimum's worth
   for( const fetching_peer& peer : peers )
-    BOOST_CHECK_EQUAL( peer.requested, size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS ) );
+    BOOST_CHECK_EQUAL( peer.requested, size_t( minimum ) );
 
   // a lone peer with more to give than the minimum makes the pass count as bounded, so the node checks again soon
   std::vector<fetching_peer> lone( 1 );
-  for( uint32_t i = 100; i < 103; ++i )
+  for( uint32_t i = 1000; i < 1000 + minimum + 3; ++i )
   {
     lone[ 0 ].candidates.push( transaction( i ), queued_at, fc::time_point() );
     wanted.insert( hash_of( i ) );
@@ -536,8 +558,82 @@ BOOST_AUTO_TEST_CASE( an_empty_pool_keeps_fetching_whatever_is_estimated_on_its_
   fetch_turn_order lone_order;
   transaction_fetch_gate gate( empty, estimated_on_their_way );
   fetch_pass( lone, lone_order, gate, wanted, 200 );
-  BOOST_CHECK_EQUAL( lone[ 0 ].requested, size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS ) );
+  BOOST_CHECK_EQUAL( lone[ 0 ].requested, size_t( minimum ) );
   BOOST_CHECK( gate.bounded() );
+}
+
+/// The closed gate's minimum takes each peer's newest candidates: a fast-confirm a peer advertised after a backlog of
+/// flooded transactions is requested in the first pass, before the backlog is (an open gate takes the oldest first)
+BOOST_AUTO_TEST_CASE( the_minimum_takes_a_fast_confirm_behind_a_backlog_on_the_same_peer_first )
+{
+  const pending_transaction_pool_size over{ 40000, 90000 }; // threshold 30000
+  const size_t backlog = 10 * GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH;
+  std::vector<fetching_peer> peers( 1 );
+  std::set<message_hash_type> wanted;
+  for( uint32_t i = 0; i <= backlog; ++i ) // the last one is the fast-confirm
+  {
+    peers[ 0 ].candidates.push( transaction( i ), queued_at + fc::milliseconds( i ), fc::time_point() );
+    wanted.insert( hash_of( i ) );
+  }
+  const message_hash_type fast_confirm = hash_of( uint32_t( backlog ) );
+
+  fetch_turn_order order;
+  transaction_fetch_gate gate( over, 0 );
+  const std::vector<message_hash_type> requested = fetch_pass( peers, order, gate, wanted, 200 );
+  BOOST_CHECK( gate.held_back() );
+  BOOST_REQUIRE_EQUAL( requested.size(), size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH ) );
+  BOOST_CHECK( requested.front() == fast_confirm );
+  // newest first, all of it from the end of the backlog
+  for( size_t i = 0; i < requested.size(); ++i )
+    BOOST_CHECK( requested[ i ] == hash_of( uint32_t( backlog - i ) ) );
+
+  // a pass whose minimum isn't due requests nothing
+  transaction_fetch_gate not_due( over, 0, 0 );
+  BOOST_CHECK( fetch_pass( peers, order, not_due, wanted, 200 ).empty() );
+  BOOST_CHECK( not_due.held_back() );
+
+  // an open gate takes the oldest first (with headroom enough for all of them)
+  const pending_transaction_pool_size under{ 0, 900000 };
+  transaction_fetch_gate open( under, 0 );
+  const std::vector<message_hash_type> rest = fetch_pass( peers, order, open, wanted, 200 );
+  BOOST_REQUIRE_EQUAL( rest.size(), backlog + 1 - GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH );
+  BOOST_CHECK( rest.front() == hash_of( 0 ) );
+  BOOST_CHECK( wanted.empty() );
+}
+
+/// A pass gets a minimum only an interval after the last one that requested some of it; a pass that was due one
+/// but requested none leaves the next pass due, and the check of a withholding gate is then an interval later
+BOOST_AUTO_TEST_CASE( the_minimum_is_given_once_per_interval )
+{
+  const fc::time_point start = fc::time_point::from_iso_string( "2026-11-20T00:00:00" );
+  const fc::microseconds interval = fc::milliseconds( GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS );
+  const size_t minimum = GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH;
+  const pending_transaction_pool_size over{ 40000, 90000 };
+  const pending_transaction_pool_size under{ 0, 90000 };
+  fetch_minimum_schedule schedule( interval );
+
+  BOOST_CHECK_EQUAL( schedule.minimum_for_pass( start ), minimum );
+  transaction_fetch_gate first( over, 0, schedule.minimum_for_pass( start ) );
+  first.record_request( 200 );
+  BOOST_CHECK( schedule.record_pass( first, start ) == start + interval );
+
+  // the passes woken in between (5 ms apart at the default fetch interval) get none, and say when the next is due
+  for( int pass = 1; pass < 20; ++pass )
+  {
+    const fc::time_point pass_start = start + fc::milliseconds( 5 * pass );
+    BOOST_CHECK_EQUAL( schedule.minimum_for_pass( pass_start ), 0u );
+    transaction_fetch_gate gate( over, 0, schedule.minimum_for_pass( pass_start ) );
+    BOOST_CHECK( !gate.may_request_more( candidates ) );
+    BOOST_CHECK( schedule.record_pass( gate, pass_start ) == start + interval );
+  }
+
+  // due again; an open gate with headroom requests nothing of its minimum, so the next pass is still due
+  const fc::time_point due = start + interval;
+  BOOST_CHECK_EQUAL( schedule.minimum_for_pass( due ), minimum );
+  transaction_fetch_gate open( under, 0, schedule.minimum_for_pass( due ) );
+  open.record_request( 200 );
+  BOOST_CHECK( schedule.record_pass( open, due ) == due + interval );
+  BOOST_CHECK_EQUAL( schedule.minimum_for_pass( due + fc::milliseconds( 5 ) ), minimum );
 }
 
 /// While the gate withholds transactions the expiry warning comes at most once per interval, with the sum since the

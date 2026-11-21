@@ -111,8 +111,8 @@ namespace graphene { namespace net {
   };
 
   /**
-   * The pending pool size above which the node requests no more than GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS
-   * transactions per pass: a third of @p max_bytes, which leaves the rest of the pool for API submissions, fork
+   * The pending pool size above which the node requests no more than GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH
+   * transactions per GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS: a third of @p max_bytes, which leaves the rest of the pool for API submissions, fork
    * switches and replies already on their way, and at least 1.  0 when @p max_bytes is 0: the pool then keeps only
    * what fits in the reapply window, so it needs no gate.
    *
@@ -139,27 +139,28 @@ namespace graphene { namespace net {
    *
    * Whether closed or out of headroom, the gate lets a pass request @p minimum_transactions in all, so transactions
    * it can't tell apart before fetching them, such as fast-confirms, keep flowing however full the pool is, and the
-   * bytes estimated to be on their way can't hold an empty pool at no fetching at all.
+   * bytes estimated to be on their way can't hold an empty pool at no fetching at all.  fetch_minimum_schedule says
+   * which passes get a minimum.
    */
   class transaction_fetch_gate
   {
   public:
     transaction_fetch_gate(const pending_transaction_pool_size& pool, uint64_t bytes_on_their_way,
-                           size_t minimum_transactions = GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS);
+                           size_t minimum_transactions = GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH);
 
     /**
      * How many transactions to request from a peer whose window has room for @p window: @p window, or none while
      * the gate is closed or no headroom is left and the pass has requested its minimum (until then
      * may_request_more() bounds what the pass takes).  The gate holds transactions back only when there was room
-     * to request them and @p has_candidates (called as `bool()`, only then) says the peer has a transaction
-     * candidate that would have been requested.
+     * to request them and @p has_candidates (called as `bool()`, only then, and only until one peer has been found
+     * to have some) says the peer has a transaction candidate that would have been requested.
      */
     template<typename HasCandidates>
     size_t transactions_to_request(size_t window, HasCandidates&& has_candidates)
     {
-      if ((!_closed && _headroom > 0) || _requested < _minimum)
+      if (may_request_any())
         return window;
-      if (window > 0 && has_candidates())
+      if (window > 0 && !withheld() && has_candidates())
         record_withheld();
       return 0;
     }
@@ -167,18 +168,21 @@ namespace graphene { namespace net {
     /**
      * Whether the pass may request another transaction from a peer: false once the requests recorded with
      * record_request() have used up the headroom, or the gate is closed, and the pass has requested its minimum.
-     * The gate withholds a transaction only when @p has_candidates (called as `bool()`, only then) says the peer
-     * has one that would have been requested.
+     * The gate withholds a transaction only when @p has_candidates (called as `bool()`, only then, and only until
+     * one peer has been found to have some) says the peer has one that would have been requested.
      */
     template<typename HasCandidates>
     bool may_request_more(HasCandidates&& has_candidates)
     {
-      if ((!_closed && _headroom > 0) || _requested < _minimum)
+      if (may_request_any())
         return true;
-      if (has_candidates())
+      if (!withheld() && has_candidates())
         record_withheld();
       return false;
     }
+
+    /// Whether the next transaction the pass may request is one of its minimum rather than within the headroom
+    bool next_request_is_minimum() const { return _closed || _headroom == 0; }
 
     /// Counts a transaction of @p expected_bytes requested in this pass against the headroom and the minimum
     void record_request(uint64_t expected_bytes);
@@ -188,8 +192,12 @@ namespace graphene { namespace net {
     bool held_back() const { return _held_back; }
     /// whether the open gate withheld any transactions in this pass because the headroom was used up
     bool bounded() const { return _bounded; }
+    /// whether the pass requested any transaction of its minimum (next_request_is_minimum())
+    bool requested_minimum() const { return _requested_minimum; }
 
   private:
+    bool may_request_any() const { return (!_closed && _headroom > 0) || _requested < _minimum; }
+    bool withheld() const { return _held_back || _bounded; }
     void record_withheld();
 
     bool _closed;
@@ -198,6 +206,40 @@ namespace graphene { namespace net {
     size_t _requested = 0;
     bool _held_back = false;
     bool _bounded = false;
+    bool _requested_minimum = false;
+  };
+
+  /**
+   * Which fetch passes may request the transaction fetch gate's minimum (GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH):
+   * a pass that begins at least @p interval after the last one that requested some of its minimum
+   * (transaction_fetch_gate::requested_minimum()).  Passes run whenever inventory, a reply or a block arrives, at most
+   * every p2p-fetch-items-minimum-interval-us, so a minimum on every pass would make a gated node ask for a
+   * transaction or two at a time, hundreds of times a second, each reply waking the loop again.
+   */
+  class fetch_minimum_schedule
+  {
+  public:
+    explicit fetch_minimum_schedule(fc::microseconds interval) : _interval(interval) {}
+
+    /// The minimum to give the gate of a pass that begins at @p pass_start
+    size_t minimum_for_pass(fc::time_point pass_start) const
+    {
+      return is_due(pass_start) ? GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH : 0;
+    }
+
+    /**
+     * Records the pass that began at @p pass_start with @p gate, and returns when the next pass whose gate gets a
+     * minimum is due: @p interval after this pass if it was due one (whether it requested any or not, so a gate
+     * that withholds is checked again no sooner than that), otherwise @p interval after the last pass that
+     * requested some.
+     */
+    fc::time_point record_pass(const transaction_fetch_gate& gate, fc::time_point pass_start);
+
+  private:
+    bool is_due(fc::time_point pass_start) const { return pass_start - _last_minimum >= _interval; }
+
+    fc::microseconds _interval;
+    fc::time_point _last_minimum = fc::time_point::min();
   };
 
   /**
@@ -693,6 +735,15 @@ namespace graphene { namespace net {
     keep  ///< not now: look at the entry again in the next pass
   };
 
+  /// The end of its lane fetch_candidate_queue::take_next() takes transactions from
+  enum class fetch_candidate_order
+  {
+    oldest_first,
+    /// for the transaction fetch gate's minimum (GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH): the newest ids are
+    /// the likeliest to be fast-confirms, which their witnesses broadcast as soon as the block arrives
+    newest_first
+  };
+
   /**
    * The items one peer advertised to us that we want to fetch, so that choosing what to request from the peer
    * looks at nothing else.  Blocks come before transactions, each lane in the order the items were added.
@@ -714,18 +765,26 @@ namespace graphene { namespace net {
 
     /**
      * Within a pass, the next entry @p judge (called as `fetch_candidate_verdict(const item_id&)`) says to take,
-     * looking at transactions only if @p include_transactions; none once the pass has looked at every entry.
-     * Taken and dropped entries are removed, kept ones stay for the next pass.  @p examined counts every entry
-     * looked at.
+     * looking at transactions only if @p include_transactions, from the end of their lane @p order says; none once
+     * the pass has looked at every entry.  Taken and dropped entries are removed, kept ones stay for the next pass.
+     * @p examined counts every entry looked at.
      */
+    template<typename Judge>
+    std::optional<item_id> take_next(bool include_transactions, fetch_candidate_order order, Judge&& judge, uint64_t& examined)
+    {
+      if (std::optional<item_id> item = take_oldest_from(_blocks, _blocks_kept, 0, judge, examined))
+        return item;
+      if (!include_transactions)
+        return std::nullopt;
+      if (order == fetch_candidate_order::newest_first)
+        return take_newest_from(_transactions, _transactions_kept, _transactions_newest_kept, judge, examined);
+      return take_oldest_from(_transactions, _transactions_kept, _transactions_newest_kept, judge, examined);
+    }
+
     template<typename Judge>
     std::optional<item_id> take_next(bool include_transactions, Judge&& judge, uint64_t& examined)
     {
-      if (std::optional<item_id> item = take_next_from(_blocks, _blocks_kept, judge, examined))
-        return item;
-      if (include_transactions)
-        return take_next_from(_transactions, _transactions_kept, judge, examined);
-      return std::nullopt;
+      return take_next(include_transactions, fetch_candidate_order::oldest_first, judge, examined);
     }
 
     /**
@@ -736,7 +795,7 @@ namespace graphene { namespace net {
     template<typename Wanted>
     bool has_transaction_to_take(Wanted&& wanted, uint64_t& examined)
     {
-      while (_transactions_kept < _transactions.size())
+      while (_transactions_kept + _transactions_newest_kept < _transactions.size())
       {
         ++examined;
         if (wanted(_transactions[_transactions_kept].item))
@@ -760,11 +819,12 @@ namespace graphene { namespace net {
       fc::time_point queued;
     };
 
-    // kept entries are the first `kept` ones of their lane
+    // entries kept in this pass are the first `kept` and the last `newest_kept` ones of their lane
     template<typename Judge>
-    static std::optional<item_id> take_next_from(std::deque<entry>& lane, size_t& kept, Judge& judge, uint64_t& examined)
+    static std::optional<item_id> take_oldest_from(std::deque<entry>& lane, size_t& kept, size_t newest_kept, Judge& judge,
+                                                   uint64_t& examined)
     {
-      while (kept < lane.size())
+      while (kept + newest_kept < lane.size())
       {
         ++examined;
         const item_id item = lane[kept].item;
@@ -784,10 +844,36 @@ namespace graphene { namespace net {
       return std::nullopt;
     }
 
+    template<typename Judge>
+    static std::optional<item_id> take_newest_from(std::deque<entry>& lane, size_t kept, size_t& newest_kept, Judge& judge,
+                                                   uint64_t& examined)
+    {
+      while (kept + newest_kept < lane.size())
+      {
+        ++examined;
+        const auto position = lane.end() - 1 - newest_kept;
+        const item_id item = position->item;
+        switch (judge(item))
+        {
+        case fetch_candidate_verdict::take:
+          lane.erase(position);
+          return item;
+        case fetch_candidate_verdict::drop:
+          lane.erase(position);
+          break;
+        case fetch_candidate_verdict::keep:
+          ++newest_kept;
+          break;
+        }
+      }
+      return std::nullopt;
+    }
+
     std::deque<entry> _blocks;
     std::deque<entry> _transactions;
     size_t _blocks_kept = 0;
     size_t _transactions_kept = 0;
+    size_t _transactions_newest_kept = 0;
   };
 
   /**
