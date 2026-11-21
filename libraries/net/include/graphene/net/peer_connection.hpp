@@ -346,13 +346,22 @@ namespace graphene { namespace net
       // advertised blocks far past it, or while it may be ahead of us and nothing we asked for
       // was outstanding; see GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC)
       fc::time_point last_stalled_head_resync_time;
-      // when this peer last gave us useful data: a block we accepted, a block it offered for sync
-      // that linked, or an advertisement of a block we have or are pushing; when it became active if
-      // it hasn't yet.  A peer idle for idle_peer_disconnect_timeout while it should have contributed is replaced
+      // when this peer last delivered a block that we pushed (not one stored unvalidated on a shorter fork); when it
+      // became active if it hasn't yet.  Requests and advertisements cost a peer nothing, so they don't count.  A peer
+      // idle for idle_peer_disconnect_timeout while it should have contributed is replaced
       fc::time_point last_useful_data_time;
-      // when this peer last asked us for blocks or block ids: unless it claims a head past ours, it is
-      // syncing from us or fed by us and has nothing to give us, so it is not replaced as idle
-      fc::time_point last_block_request_time;
+      // whether this peer delivered a block that we pushed on this connection: a proven block source, asked for a
+      // block before peers that never delivered one (see choose_block_source())
+      bool delivered_block = false;
+      // item_not_available answers to items this peer advertised and we asked it for, counted at most once per
+      // GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC (when the last one counted), since it last delivered an item we
+      // asked for; at GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES it is disconnected
+      uint32_t unavailable_item_strikes = 0;
+      fc::time_point last_unavailable_item_strike_time;
+      // "answered as not available" warnings about this peer's requests are logged at most once per
+      // GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC; the requests answered so in between are counted in the next one
+      fc::time_point last_not_available_warning_time;
+      uint32_t not_available_answers_since_warning = 0;
       /// @}
       void reset_id_search_for_peer() { last_requested_block_number_for_peers_on_this_fork = first_id_block_number - 1; }
       /// latency timing data
@@ -402,8 +411,8 @@ namespace graphene { namespace net
       uint32_t uncompressed_blocks_received_from_peer = 0;
       /// @}
 
-      // if they're flooding us with transactions, we set this to avoid fetching for a few seconds to let the
-      // blockchain catch up
+      // until when we ask this peer for no transactions: it answered item_not_available for transactions it
+      // advertised (see unavailable_item_strikes)
       fc::time_point transaction_fetching_inhibited_until;
 
       uint32_t last_known_fork_block_number = 0;
@@ -502,8 +511,10 @@ namespace graphene { namespace net
       bool is_transaction_fetching_inhibited() const;
       /// Whether we ask this peer for a block only if no other peer offered it (see choose_block_source()):
       /// it sent us a block copy whose body did not match its header and the block-body-mismatch circuit
-      /// breaker kept it connected.  Lasts until restore_block_fetching_priority() or, if the peer delivers no
-      /// block we accept, for the breaker's window, so a peer corrupted once is not held back forever
+      /// breaker kept it connected, or it answered item_not_available for a block it advertised, or kept us
+      /// waiting for one past GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS.  Lasts until restore_block_fetching_priority()
+      /// or, if the peer delivers no block we accept, for the breaker's window, so a peer demoted once is not held
+      /// back forever
       bool is_block_fetching_deprioritized() const;
       void deprioritize_block_fetching();
       /// called once the peer delivered a block we accepted: its copies match their headers again

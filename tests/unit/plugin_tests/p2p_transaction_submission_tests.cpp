@@ -670,7 +670,9 @@ BOOST_AUTO_TEST_CASE( not_available_answers_do_not_keep_a_peer_holding_a_transac
 /// Transactions another peer advertised long before a trickling peer is asked for them, which waited in the queue to
 /// fetch meanwhile while both peers were kept busy, are fetched from that other peer once the trickler is dropped:
 /// asking the trickler for them renews the record of who advertised them, which would otherwise expire (the
-/// inventory lifetime after they were advertised) before the trickler's ceiling passes.
+/// inventory lifetime after they were advertised) before the trickler's ceiling passes.  The peers are kept busy by
+/// the node's own demotion of a peer that answers items it advertised as not available
+/// (GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC), batch after batch.
 BOOST_AUTO_TEST_CASE( transactions_queued_before_a_trickler_is_asked_are_fetched_from_the_earlier_advertiser )
 {
   try
@@ -685,24 +687,63 @@ BOOST_AUTO_TEST_CASE( transactions_queued_before_a_trickler_is_asked_are_fetched
                                                   memo + " " + std::to_string( i ), get_default_expiration() ) );
         return transactions;
       };
-      // each peer is kept busy until about @p batches times @p pace from now by items it advertises first and answers
-      // as not available @p pace after each request: a new peer is asked for a few at a time
-      // (GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE) and nothing it answers that way changes that
-      const auto fillers = []( const std::string& name, int count )
+      // each peer is asked for its items in requests of a full window: 8, as each request ends in a transaction of
+      // about HIVE_MAX_TRANSACTION_SIZE that it delivers at once, so its estimate stays near the initial one.  The rest
+      // of each request are fillers it answers as not available @p pace later, which demotes it for
+      // GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC; the delivery before keeps that from counting toward a disconnect.
+      // So each request comes pace + demotion after the one before, and the batches before the withheld transactions
+      // keep the trickler from them for about batches * (4 s + 10 s): past what the ceiling needs (lifetime - 18 s),
+      // short of the lifetime
+      const size_t batches = 4;
+      const size_t window = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / HIVE_MAX_TRANSACTION_SIZE;
+      const auto fillers = [&]( const std::string& name )
       {
-        std::set< graphene::net::item_hash_t > hashes;
-        for( int i = 0; i < count; ++i )
-          hashes.insert( fc::ripemd160::hash( name + " filler " + std::to_string( i ) ) );
+        std::vector< graphene::net::item_hash_t > hashes;
+        for( size_t i = 0; i < batches * ( window - 1 ); ++i )
+          hashes.push_back( fc::ripemd160::hash( name + " filler " + std::to_string( i ) ) );
         return hashes;
+      };
+      const auto large_transactions = [&]( const std::string& name )
+      {
+        std::vector< full_transaction_ptr > transactions;
+        for( size_t b = 0; b < batches; ++b )
+        {
+          signed_transaction tx;
+          db->with_read_lock( [&]()
+          {
+            tx.set_expiration( db->head_block_time() + get_default_expiration() );
+            tx.set_reference_block( db->head_block_id() );
+          } );
+          const std::string prefix = name + " large " + std::to_string( b ) + " ";
+          for( int i = 0; i < 30; ++i )
+          {
+            transfer_operation transfer;
+            transfer.from = HIVE_INIT_MINER_NAME;
+            transfer.to = HIVE_NULL_ACCOUNT;
+            transfer.amount = ASSET( "0.001 TESTS" );
+            transfer.memo = prefix + std::to_string( i ) + std::string( 2000, 'x' );
+            tx.operations.emplace_back( transfer );
+          }
+          transactions.push_back( build_transaction( tx ) );
+          BOOST_REQUIRE_LE( transactions.back()->get_transaction_size(), size_t( HIVE_MAX_TRANSACTION_SIZE ) );
+          BOOST_REQUIRE_GT( transactions.back()->get_transaction_size(), size_t( GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / ( window + 1 ) ) );
+        }
+        return transactions;
       };
       const std::vector< full_transaction_ptr > withheld = transfers( "queued", 4 );
       const std::vector< full_transaction_ptr > decoys = transfers( "trickled", 12 );
       std::map< graphene::net::item_hash_t, full_transaction_ptr > decoys_by_hash;
       for( const full_transaction_ptr& transaction : decoys )
         decoys_by_hash[ transaction->get_legacy_transaction_message_hash() ] = transaction;
-      const size_t filler_count = 104;
-      const std::set< graphene::net::item_hash_t > advertiser_fillers = fillers( "advertiser", filler_count );
-      const std::set< graphene::net::item_hash_t > trickler_fillers = fillers( "trickler", filler_count );
+      const std::vector< graphene::net::item_hash_t > advertiser_filler_list = fillers( "advertiser" );
+      const std::vector< graphene::net::item_hash_t > trickler_filler_list = fillers( "trickler" );
+      const std::set< graphene::net::item_hash_t > advertiser_fillers( advertiser_filler_list.begin(), advertiser_filler_list.end() );
+      const std::set< graphene::net::item_hash_t > trickler_fillers( trickler_filler_list.begin(), trickler_filler_list.end() );
+      const std::vector< full_transaction_ptr > advertiser_large = large_transactions( "advertiser" );
+      const std::vector< full_transaction_ptr > trickler_large = large_transactions( "trickler" );
+      std::map< graphene::net::item_hash_t, full_transaction_ptr > trickler_large_by_hash;
+      for( const full_transaction_ptr& transaction : trickler_large )
+        trickler_large_by_hash[ transaction->get_legacy_transaction_message_hash() ] = transaction;
       const auto refuse_fillers_after = []( const std::set< graphene::net::item_hash_t >& fillers, fc::microseconds pace )
       {
         return [&fillers, pace]( test_peer& self, const graphene::net::fetch_items_message& request )
@@ -719,9 +760,16 @@ BOOST_AUTO_TEST_CASE( transactions_queued_before_a_trickler_is_asked_are_fetched
             } );
         };
       };
-      const auto filler_hashes_then = []( const std::set< graphene::net::item_hash_t >& fillers, const std::vector< full_transaction_ptr >& transactions )
+      // in batches of the window: window - 1 fillers, then one large transaction; then @p transactions
+      const auto filler_hashes_then = [&]( const std::vector< graphene::net::item_hash_t >& fillers, const std::vector< full_transaction_ptr >& large,
+                                           const std::vector< full_transaction_ptr >& transactions )
       {
-        std::vector< graphene::net::item_hash_t > hashes( fillers.begin(), fillers.end() );
+        std::vector< graphene::net::item_hash_t > hashes;
+        for( size_t b = 0; b < batches; ++b )
+        {
+          hashes.insert( hashes.end(), fillers.begin() + b * ( window - 1 ), fillers.begin() + ( b + 1 ) * ( window - 1 ) );
+          hashes.push_back( large[ b ]->get_legacy_transaction_message_hash() );
+        }
         const std::vector< graphene::net::item_hash_t > rest = hashes_of( transactions );
         hashes.insert( hashes.end(), rest.begin(), rest.end() );
         return hashes;
@@ -751,6 +799,9 @@ BOOST_AUTO_TEST_CASE( transactions_queued_before_a_trickler_is_asked_are_fetched
       {
         const graphene::net::fetch_items_message request = m.as< graphene::net::fetch_items_message >();
         refuse_trickler_fillers( self, request );
+        for( const graphene::net::item_hash_t& hash : request.items_to_fetch )
+          if( trickler_large_by_hash.count( hash ) )
+            self.send( graphene::net::trx_message( trickler_large_by_hash.at( hash ) ) );
         std::lock_guard< std::mutex > guard( requests_mutex );
         for( const graphene::net::item_hash_t& hash : request.items_to_fetch )
         {
@@ -771,8 +822,9 @@ BOOST_AUTO_TEST_CASE( transactions_queued_before_a_trickler_is_asked_are_fetched
 
       const fc::time_point advertised_at = fc::time_point::now();
       advertiser.provide( withheld );
-      advertiser.advertise( filler_hashes_then( advertiser_fillers, withheld ) );
-      trickler.advertise( filler_hashes_then( trickler_fillers, withheld ) );
+      advertiser.provide( advertiser_large );
+      advertiser.advertise( filler_hashes_then( advertiser_filler_list, advertiser_large, withheld ) );
+      trickler.advertise( filler_hashes_then( trickler_filler_list, trickler_large, withheld ) );
       trickler.advertise( hashes_of( decoys ) );
 
       BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return all_requested_from_trickler( withheld ); }, fc::seconds( 70 ) ),

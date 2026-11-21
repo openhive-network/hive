@@ -59,12 +59,17 @@ size_t requests_until( transaction_size_estimate& estimate, size_t size, size_t 
 BOOST_AUTO_TEST_SUITE( p2p_transaction_request_size_tests )
 
 /// Before the peer sent a transaction, a request assumes the largest ones: its reply stays within the byte limit.
+/// The estimate says it holds no transaction yet.
 BOOST_AUTO_TEST_CASE( initial_estimate_assumes_largest_transactions )
 {
   transaction_size_estimate estimate;
   BOOST_CHECK_EQUAL( estimate.mean(), size_t( HIVE_MAX_TRANSACTION_SIZE ) );
   BOOST_CHECK_EQUAL( estimate.max_transactions_per_request(), max_bytes / HIVE_MAX_TRANSACTION_SIZE );
   BOOST_CHECK_LE( estimate.max_transactions_per_request() * HIVE_MAX_TRANSACTION_SIZE, max_bytes );
+  // only an assumption until the first transaction: the fetch gate counts such a peer's requests at the node's mean
+  BOOST_CHECK( !estimate.recorded() );
+  estimate.record( HIVE_MAX_TRANSACTION_SIZE );
+  BOOST_CHECK( estimate.recorded() );
 }
 
 /// Small transactions bring a request up to the item limit within a few round trips, and never past it.

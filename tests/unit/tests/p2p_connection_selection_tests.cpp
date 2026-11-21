@@ -1,12 +1,13 @@
 #include <boost/test/unit_test.hpp>
 
+#include <graphene/net/config.hpp>
 #include <graphene/net/node.hpp>
 
 #include <algorithm>
 #include <string>
 #include <vector>
 
-using graphene::net::accepts_connection_over_host_limit;
+using graphene::net::accepts_exchanged_address;
 using graphene::net::address_subnet;
 using graphene::net::connection_candidate;
 using graphene::net::connection_host_of;
@@ -421,30 +422,60 @@ BOOST_AUTO_TEST_CASE( relaxed_connections_per_host )
   BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 7, 1 }, 0, 20 ), 0u );
 }
 
-/// An inbound hello over the default limit: accepted below the desired connections while its host is under the
-/// relaxed limit and no other host over the limit holds fewer
-BOOST_AUTO_TEST_CASE( inbound_connection_over_host_limit )
+/// The relaxed steps look at the first GRAPHENE_NET_MAX_RELAXED_CANDIDATES_PER_PASS candidates the limit left out only:
+/// one host offering far more ports than that costs a pass no more, and a candidate past them waits for a later pass
+BOOST_AUTO_TEST_CASE( relaxed_limit_scans_a_bounded_number_of_candidates )
 {
-  const fc::ip::address a = address( "198.51.100.1" );
-  const fc::ip::address b = address( "198.51.100.2" );
-  const fc::ip::address c = address( "198.51.100.3" );
-  const fc::ip::address d = address( "198.51.100.4" );
-  const fc::ip::address e = address( "198.51.100.5" );
+  const fc::ip::address crowded = address( "198.51.100.1" );
+  const fc::ip::address late = address( "198.51.100.2" );
+  // the 2 under the limit, then GRAPHENE_NET_MAX_RELAXED_CANDIDATES_PER_PASS left out on the same host, then one on another
+  std::vector< connection_candidate > candidates = ports_on_host( "198.51.100.1", GRAPHENE_NET_MAX_RELAXED_CANDIDATES_PER_PASS + 2 );
+  candidates.push_back( { endpoint( "198.51.100.2", 2001 ) } );
+  // the late host has a slot under the limit: it is taken before the relaxed steps, whatever its position
+  std::vector< fc::ip::endpoint > selected = select_connection_candidates( candidates, {}, relaxed_limits( 4, 2 ) );
+  BOOST_REQUIRE_EQUAL( selected.size(), 4u );
+  BOOST_CHECK_EQUAL( count_on_host( selected, late ), 1u );
 
-  // one host only: up to the desired 3
-  BOOST_CHECK( accepts_connection_over_host_limit( a, { a, a }, 2, 3 ) );
-  BOOST_CHECK( !accepts_connection_over_host_limit( a, { a, a, a }, 2, 3 ) );
+  // held at the limit, the late host is one of the left out, past the scanned ones: the slots go to the crowded host
+  selected = select_connection_candidates( candidates, { late, late }, relaxed_limits( 20, 2 ) );
+  BOOST_CHECK_EQUAL( count_on_host( selected, late ), 0u );
+  BOOST_CHECK_EQUAL( count_on_host( selected, crowded ), 18u );
 
-  // 5 hosts, too few connections for the desired 20 anyway: one host stops at its share of 4
-  BOOST_CHECK( accepts_connection_over_host_limit( a, { a, a, a, b, c, d, e }, 2, 20 ) );
-  BOOST_CHECK( !accepts_connection_over_host_limit( a, { a, a, a, a, b, c, d, e }, 2, 20 ) );
+  // among the scanned ones it is picked first, holding fewer than the crowded host by then
+  std::rotate( candidates.begin() + 2, candidates.end() - 1, candidates.end() );
+  selected = select_connection_candidates( candidates, { late, late }, relaxed_limits( 20, 2 ) );
+  BOOST_CHECK_EQUAL( count_on_host( selected, late ), 1u );
+}
 
-  // a host a step further than another host over the limit waits for it
-  BOOST_CHECK( !accepts_connection_over_host_limit( a, { a, a, a, a, b, b, b }, 2, 20 ) );
-  BOOST_CHECK( accepts_connection_over_host_limit( a, { a, a, a, b, b, b }, 2, 20 ) );
-  BOOST_CHECK( accepts_connection_over_host_limit( b, { a, a, a, a, b, b, b }, 2, 20 ) );
+/// Addresses learned by peer exchange: public ones from anyone; loopback ones from a loopback peer only; private and
+/// link-local ones from a peer that is not public itself; unspecified and multicast ones from nobody
+BOOST_AUTO_TEST_CASE( exchanged_addresses )
+{
+  const fc::ip::address public_peer = address( "198.51.100.1" );
+  const fc::ip::address public_ipv6_peer = address( "2001:db8::1" );
+  const fc::ip::address loopback_peer = address( "127.0.0.1" );
+  const fc::ip::address private_peer = address( "10.1.2.3" );
 
-  BOOST_CHECK( accepts_connection_over_host_limit( a, { a, a, a }, 0, 3 ) );
+  BOOST_CHECK( accepts_exchanged_address( address( "203.0.113.7" ), public_peer ) );
+  BOOST_CHECK( accepts_exchanged_address( address( "2001:db8:1::7" ), private_peer ) );
+
+  for( const char* loopback : { "127.0.0.1", "127.0.0.2", "::1", "::ffff:127.0.0.1" } )
+  {
+    BOOST_CHECK_MESSAGE( !accepts_exchanged_address( address( loopback ), public_peer ), loopback );
+    BOOST_CHECK_MESSAGE( !accepts_exchanged_address( address( loopback ), public_ipv6_peer ), loopback );
+    BOOST_CHECK_MESSAGE( !accepts_exchanged_address( address( loopback ), private_peer ), loopback );
+    BOOST_CHECK_MESSAGE( accepts_exchanged_address( address( loopback ), loopback_peer ), loopback );
+  }
+  for( const char* local : { "10.0.0.5", "172.16.0.5", "192.168.1.5", "169.254.0.5", "fd00::5", "fe80::5" } )
+  {
+    BOOST_CHECK_MESSAGE( !accepts_exchanged_address( address( local ), public_peer ), local );
+    BOOST_CHECK_MESSAGE( accepts_exchanged_address( address( local ), private_peer ), local );
+    BOOST_CHECK_MESSAGE( accepts_exchanged_address( address( local ), loopback_peer ), local );
+  }
+  for( const char* never : { "0.0.0.0", "::", "224.0.0.1", "ff02::1" } )
+    BOOST_CHECK_MESSAGE( !accepts_exchanged_address( address( never ), loopback_peer ), never );
+  // a peer at an IPv4-mapped address is the IPv4 peer
+  BOOST_CHECK( accepts_exchanged_address( address( "127.0.0.2" ), address( "::ffff:127.0.0.1" ) ) );
 }
 
 /// The connection that gives way to a new host: not exempt, on the host with the most connections over the limit,
