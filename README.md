@@ -126,7 +126,7 @@ try the whole chain out, but such a pin is never merged.
 
 ## Config File
 
-Run `hived --dump-config` to generate a data directory and a config file. The default data directory location is `~/.hived`. If you want to modify the config to your liking, we have [example config](contrib/config-for-docker.ini) used in the docker image. All options will be present in the default config file and there may be more options that need to be changed from the docker configs (some of the options actually used in images are configured via command line).
+Run `hived --dump-config` to create a data directory (`~/.hived` unless `--data-dir` says otherwise) with a default `config.ini` that lists every option. For an exchange node, start from [contrib/example-exchange-config.ini](contrib/example-exchange-config.ini): it has the plugins and the tracked accounts of the published exchange snapshot, and the docker image ships it as `/home/hived/datadir/example-exchange-config.ini`.
 
 ## Seed Nodes
 

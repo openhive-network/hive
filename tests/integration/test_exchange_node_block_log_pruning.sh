@@ -121,8 +121,8 @@ shift 2
 
 echo "Create environment..."
 mkdir -vp "$DATA_DIR"
-echo "Copy example config.ini to data dir"
-cp "$CI_PROJECT_DIR/doc/example_config.ini" "$DATA_DIR/config.ini"
+echo "Copy example exchange config to data dir as config.ini"
+cp "$CI_PROJECT_DIR/contrib/example-exchange-config.ini" "$DATA_DIR/config.ini"
 
 echo "Snapshot will be stored in: ${DATA_DIR}/snapshot"
 

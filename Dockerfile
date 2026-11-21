@@ -190,7 +190,7 @@ RUN mkdir -p /home/hived/bin && \
 COPY --from=build --chown=hived:users \
     /home/hived/bin/*  /home/hived/bin/
 
-COPY --from=build --chown=hived:users /home/hived/source/${HIVE_SUBDIR}/doc/example_config.ini /home/hived/datadir/example_config.ini
+COPY --from=build --chown=hived:users /home/hived/source/${HIVE_SUBDIR}/contrib/example-exchange-config.ini /home/hived/datadir/example-exchange-config.ini
 
 COPY --from=build --chown=hived:users /home/hived/source/${HIVE_SUBDIR}/scripts /home/hived/scripts
 
