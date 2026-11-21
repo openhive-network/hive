@@ -92,8 +92,11 @@
 // default node_configuration::idle_peer_disconnect_timeout: a peer that gave us no block, sync
 // block, block ids we lacked or timely block advertisement for this long, while it should have,
 // is disconnected so its slot goes to another candidate.  Longer than
-// GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restarting sync with the peers we have is tried first
-#define GRAPHENE_NET_DEFAULT_IDLE_PEER_DISCONNECT_TIMEOUT_SEC      180
+// GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restarting sync with the peers we have is tried first.
+// 0 disables it, and it is off by default until its known defects are fixed: a single peer
+// claiming a higher head lets every halted node replace its honest peers, and a replaced peer
+// can reconnect long before the window ends.  180 is the value to set to enable it
+#define GRAPHENE_NET_DEFAULT_IDLE_PEER_DISCONNECT_TIMEOUT_SEC      0
 
 // idle peers are only replaced while our head block is older than this (the gap at which the
 // chain plugin leaves live sync): a node in sync gets its blocks, and most of its peers never
