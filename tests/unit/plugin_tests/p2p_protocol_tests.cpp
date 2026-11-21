@@ -3320,6 +3320,43 @@ BOOST_AUTO_TEST_CASE( idle_peers_kept_by_default_test )
   } );
 }
 
+/// F5b (T): a node_config.json saved by a build that replaced idle peers holds a non-zero idle_peer_disconnect_timeout
+/// (180 there; 3 s here, which would replace peers within the case, as in idle_peers_kept_on_halted_chain_test). Without
+/// it in p2p-parameters the node ignores it, and on the halted chain of idle_peers_kept_by_default_test disconnects nobody
+BOOST_AUTO_TEST_CASE( saved_idle_peer_disconnect_timeout_ignored_test )
+{
+  const uint32_t saved_idle_timeout = 3;
+  const fc::path data_dir = hive::utilities::temp_directory_path() / "p2p-protocol-saved-idle-timeout";
+  fc::remove_all( data_dir );
+  fc::create_directories( data_dir / "p2p" );
+  fc::json::save_to_file( fc::mutable_variant_object( "idle_peer_disconnect_timeout", saved_idle_timeout ), data_dir / "p2p" / "node_config.json" );
+  set_data_dir( data_dir.string() );
+  const uint32_t synced = 5;
+  const std::vector< block_ptr > chain = generate_chain( synced );
+  start_node();
+  run( [&]()
+  {
+    BOOST_REQUIRE_EQUAL( p2p().get_advanced_node_parameters().idle_peer_disconnect_timeout, 0u );
+    sync_node( chain, synced );
+    BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
+
+    std::vector< std::unique_ptr< test_peer > > peers;
+    for( const char* name : { "first serving peer", "second serving peer", "third serving peer" } )
+    {
+      peers.push_back( make_peer( name ) );
+      peers.back()->serve_blocks( chain );
+      connect_active( *peers.back() );
+    }
+    peers.push_back( make_peer( "peer claiming a head past the node's" ) );
+    peers.back()->hello().last_known_block_number = synced + 10;
+    connect_active( *peers.back() );
+    fc::usleep( fc::seconds( 10 ) );
+    for( const auto& peer : peers )
+      BOOST_CHECK_MESSAGE( !peer->closed(), "the node disconnected " << peer->hello().user_agent );
+    BOOST_CHECK_EQUAL( number_of_connections(), peers.size() );
+  } );
+}
+
 /// F6 (T): a node in sync (it produces blocks, so its head is current) disconnects no peer for idleness, although its
 /// peers give it nothing and one claims a head past the node's, which would let the idle peers be replaced on a node
 /// that is behind (idle_peers_kept_on_halted_chain_test)

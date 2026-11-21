@@ -6784,6 +6784,18 @@ namespace graphene { namespace net {
             _node_configuration.private_key = fc::ecc::private_key::generate();
           }
 
+          // node_config.json holds the whole configuration of the last run, so a value saved there may be a default of
+          // an older build rather than the operator's choice: replacing idle peers stays off unless this run's
+          // p2p-parameters (set_advanced_node_parameters(), called after this) asks for it
+          const uint32_t default_idle_peer_disconnect_timeout = node_configuration().idle_peer_disconnect_timeout;
+          if( _node_configuration.idle_peer_disconnect_timeout != default_idle_peer_disconnect_timeout )
+          {
+            wlog( "ignoring idle_peer_disconnect_timeout ${saved} saved in ${filename}, using ${default}; set it in p2p-parameters to replace idle peers",
+                  ("saved", _node_configuration.idle_peer_disconnect_timeout)("filename", configuration_file_name)
+                  ("default", default_idle_peer_disconnect_timeout) );
+            _node_configuration.idle_peer_disconnect_timeout = default_idle_peer_disconnect_timeout;
+          }
+
           node_configuration_loaded = true;
         }
         catch ( fc::parse_error_exception& parse_error )
