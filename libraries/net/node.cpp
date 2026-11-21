@@ -339,6 +339,11 @@ namespace graphene { namespace net {
       /// parsed from _node_configuration.host_limit_exempt_subnets: not limited by maximum_connections_per_host at all
       std::vector<address_subnet> _host_limit_exempt_subnets;
       fc::time_point _last_shared_inbound_host_warning_time;
+      /// maximum_connections_per_host came with the advanced node parameters (p2p-max-connections-per-host or
+      /// p2p-parameters), not from its default or a saved node_config.json: a hard limit.  Otherwise
+      /// is_host_limit_relaxed() lets connections past it while no others fill the desired number
+      bool _maximum_connections_per_host_set = false;
+      fc::time_point _last_host_limit_relaxed_log_time;
 
       peer_database             _potential_peer_db;
       coalescing_loop_trigger   _connect_loop_trigger;
@@ -626,6 +631,14 @@ namespace graphene { namespace net {
       std::vector<fc::ip::address> get_connection_addresses(bool accepted_only, const peer_connection* excluded = nullptr);
       bool is_exempt_from_host_limit(const peer_connection* peer);
       void warn_if_inbound_connections_share_host(const fc::ip::address& refused_address);
+      bool is_host_limit_relaxed() const;
+      bool accept_hello_over_host_limit(const peer_connection* peer, const fc::ip::address& address);
+      void log_host_limit_relaxed(const std::vector<fc::ip::address>& addresses);
+      std::vector<connection_candidate> get_connection_candidates(uint32_t& unroutable_ipv4_candidates, uint32_t& unroutable_ipv6_candidates);
+      connection_selection_limits get_connection_selection_limits(uint32_t free_slots) const;
+      peer_connection_ptr find_active_connection_over_host_limit(const peer_connection* excluded);
+      void dial_new_host_for_connection_over_host_limit();
+      void give_way_to_connection_under_host_limit(const peer_connection* new_peer);
       connection_spread get_active_connection_spread();
       bool merge_address_info_with_potential_peer_database( const std::vector<address_info> addresses );
       void display_current_connections();
@@ -1198,38 +1211,28 @@ namespace graphene { namespace net {
             // order biases dual-stack peers toward IPv6 without affecting single-family peers.
             uint32_t unroutable_ipv4_candidates = 0;
             uint32_t unroutable_ipv6_candidates = 0;
-            std::vector<connection_candidate> candidates;
-            for (peer_database::iterator iter = _potential_peer_db.begin(); iter != _potential_peer_db.end(); ++iter)
+            const std::vector<connection_candidate> candidates = get_connection_candidates(unroutable_ipv4_candidates, unroutable_ipv6_candidates);
+            const std::vector<fc::ip::address> held_addresses = get_connection_addresses(false);
+            const std::vector<fc::ip::endpoint> selected = select_connection_candidates(
+              candidates, held_addresses, get_connection_selection_limits(_node_configuration.desired_number_of_connections - get_number_of_connections()));
+            if (is_host_limit_relaxed())
             {
-              dlog("potential peer to connect to: ${iter}",("iter",*iter));
-              // skip peers we have no route to, but keep their entries: we still store and
-              // advertise them to peers that may be able to use them, and the route may appear
-              // later (the probe result is re-checked every GRAPHENE_NET_ROUTE_PROBE_CACHE_SEC)
-              if (!can_route_to(iter->endpoint.get_address()))
+              // a candidate that is not exempt and on a host at the limit was picked past it
+              bool relaxed = false;
+              std::vector<fc::ip::address> addresses = held_addresses;
+              for (const fc::ip::endpoint& endpoint : selected)
               {
-                dlog("skipping ${peer}: this host has no route to its address", ("peer", iter->endpoint));
-                (iter->endpoint.get_address().is_ipv6() ? unroutable_ipv6_candidates : unroutable_ipv4_candidates)++;
-                continue;
+                const bool exempt = std::any_of(candidates.begin(), candidates.end(), [&endpoint](const connection_candidate& candidate) {
+                  return candidate.endpoint == endpoint && candidate.exempt_from_host_limit;
+                });
+                relaxed = relaxed || (!exempt && exceeds_connections_per_host(endpoint.get_address(), addresses,
+                                                                              _node_configuration.maximum_connections_per_host));
+                addresses.push_back(endpoint.get_address());
               }
-              fc::microseconds delay_until_retry = fc::seconds((iter->number_of_failed_connection_attempts + 1) * _node_configuration.peer_connection_retry_timeout);
-              if (_active_connections.size() == 0) //if no active connections, we should try more often to find a peer, so limit the amount of delay time
-              {
-                delay_until_retry = std::min(delay_until_retry,fc::seconds(180));
-              }
-
-              if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
-                  is_due_for_connection_attempt(*iter, delay_until_retry, fc::time_point::now()))
-                candidates.push_back(connection_candidate{iter->endpoint,
-                                                          _host_limit_exempt_endpoints.count(iter->endpoint) != 0 ||
-                                                          is_in_any_subnet(iter->endpoint.get_address(), _host_limit_exempt_subnets)});
+              if (relaxed)
+                log_host_limit_relaxed(addresses);
             }
-
-            connection_selection_limits limits;
-            limits.free_slots = _node_configuration.desired_number_of_connections - get_number_of_connections();
-            limits.desired_connections = _node_configuration.desired_number_of_connections;
-            limits.maximum_connections_per_host = _node_configuration.maximum_connections_per_host;
-            limits.reserved_address_family_percent = _node_configuration.reserved_address_family_percent;
-            for (const fc::ip::endpoint& endpoint : select_connection_candidates(candidates, get_connection_addresses(false), limits))
+            for (const fc::ip::endpoint& endpoint : selected)
             {
               if (!is_wanting_new_connections())
                 break;
@@ -1256,6 +1259,8 @@ namespace graphene { namespace net {
               break;
           } /// while (is_wanting_new_connections())
 
+          dial_new_host_for_connection_over_host_limit();
+
           display_current_connections();
 
           if(node_is_shutting_down())
@@ -1277,6 +1282,73 @@ namespace graphene { namespace net {
         _connect_loop_trigger.wait(fc::milliseconds(GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS),
                                    fc::time_point::now() + fc::seconds(GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC));
       }// while(!canceled)
+    }
+
+    std::vector<connection_candidate> node_impl::get_connection_candidates(uint32_t& unroutable_ipv4_candidates,
+                                                                           uint32_t& unroutable_ipv6_candidates)
+    {
+      VERIFY_CORRECT_THREAD();
+      std::vector<connection_candidate> candidates;
+      for (peer_database::iterator iter = _potential_peer_db.begin(); iter != _potential_peer_db.end(); ++iter)
+      {
+        dlog("potential peer to connect to: ${iter}",("iter",*iter));
+        // skip peers we have no route to, but keep their entries: we still store and
+        // advertise them to peers that may be able to use them, and the route may appear
+        // later (the probe result is re-checked every GRAPHENE_NET_ROUTE_PROBE_CACHE_SEC)
+        if (!can_route_to(iter->endpoint.get_address()))
+        {
+          dlog("skipping ${peer}: this host has no route to its address", ("peer", iter->endpoint));
+          (iter->endpoint.get_address().is_ipv6() ? unroutable_ipv6_candidates : unroutable_ipv4_candidates)++;
+          continue;
+        }
+        fc::microseconds delay_until_retry = fc::seconds((iter->number_of_failed_connection_attempts + 1) * _node_configuration.peer_connection_retry_timeout);
+        if (_active_connections.size() == 0) //if no active connections, we should try more often to find a peer, so limit the amount of delay time
+        {
+          delay_until_retry = std::min(delay_until_retry,fc::seconds(180));
+        }
+
+        if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
+            is_due_for_connection_attempt(*iter, delay_until_retry, fc::time_point::now()))
+          candidates.push_back(connection_candidate{iter->endpoint,
+                                                    _host_limit_exempt_endpoints.count(iter->endpoint) != 0 ||
+                                                    is_in_any_subnet(iter->endpoint.get_address(), _host_limit_exempt_subnets)});
+      }
+      return candidates;
+    }
+
+    connection_selection_limits node_impl::get_connection_selection_limits(uint32_t free_slots) const
+    {
+      connection_selection_limits limits;
+      limits.free_slots = free_slots;
+      limits.desired_connections = _node_configuration.desired_number_of_connections;
+      limits.maximum_connections_per_host = _node_configuration.maximum_connections_per_host;
+      limits.reserved_address_family_percent = _node_configuration.reserved_address_family_percent;
+      limits.relax_connections_per_host = is_host_limit_relaxed();
+      return limits;
+    }
+
+    // A connection let past the defaulted per-host limit gives way to a host under it.  While we are full, one candidate
+    // under the limit is dialed past the desired number (up to the maximum); once it is active,
+    // give_way_to_connection_under_host_limit() closes a connection over the limit.  Dialing first means a
+    // candidate that fails to connect costs nothing, and the node never drops below the desired number for it
+    void node_impl::dial_new_host_for_connection_over_host_limit()
+    {
+      VERIFY_CORRECT_THREAD();
+      if (node_is_shutting_down() || !is_host_limit_relaxed() ||
+          get_number_of_connections() != _node_configuration.desired_number_of_connections ||
+          get_number_of_connections() >= _node_configuration.maximum_number_of_connections ||
+          !find_active_connection_over_host_limit(nullptr))
+        return;
+      uint32_t unroutable_ipv4_candidates = 0;
+      uint32_t unroutable_ipv6_candidates = 0;
+      connection_selection_limits limits = get_connection_selection_limits(1);
+      limits.relax_connections_per_host = false;
+      for (const fc::ip::endpoint& endpoint : select_connection_candidates(get_connection_candidates(unroutable_ipv4_candidates, unroutable_ipv6_candidates),
+                                                                           get_connection_addresses(false), limits))
+      {
+        ilog("dialing ${peer}, on a host under the per-host limit, to take the slot of a connection over it", ("peer", endpoint));
+        connect_to_endpoint(endpoint);
+      }
     }
 
     void node_impl::trigger_p2p_network_connect_loop()
@@ -2388,6 +2460,88 @@ namespace graphene { namespace net {
              _host_limit_exempt_endpoints.count(*remote_endpoint) != 0;
     }
 
+    // The default per-host limit spreads connections over hosts while other hosts can fill the slots, and gives way
+    // when none can: with candidates on few hosts (a testnet, a private network) it would leave the node short of
+    // connections without saying why.  A limit the operator set is kept whatever it costs
+    bool node_impl::is_host_limit_relaxed() const
+    {
+      return !_maximum_connections_per_host_set && _node_configuration.maximum_connections_per_host != 0;
+    }
+
+    void node_impl::log_host_limit_relaxed(const std::vector<fc::ip::address>& addresses)
+    {
+      VERIFY_CORRECT_THREAD();
+      const fc::time_point now = fc::time_point::now();
+      if (_last_host_limit_relaxed_log_time != fc::time_point() &&
+          now - _last_host_limit_relaxed_log_time < fc::seconds(GRAPHENE_NET_HOST_LIMIT_RELAXED_LOG_INTERVAL_SEC))
+        return;
+      _last_host_limit_relaxed_log_time = now;
+      ilog("per-host cap relaxed: ${peers} peers on ${hosts} hosts, desired ${desired}; the default limit of ${limit} per host "
+           "gives way while no other hosts fill the slots (set p2p-max-connections-per-host to make it a hard limit)",
+           ("peers", addresses.size())("hosts", get_connection_spread(addresses).hosts)
+           ("desired", _node_configuration.desired_number_of_connections)("limit", _node_configuration.maximum_connections_per_host));
+    }
+
+    peer_connection_ptr node_impl::find_active_connection_over_host_limit(const peer_connection* excluded)
+    {
+      VERIFY_CORRECT_THREAD();
+      std::vector<peer_connection_ptr> peers;
+      for (const peer_connection_ptr& peer : _active_connections)
+        if (peer->get_remote_endpoint())
+          peers.push_back(peer);
+      // the newest of a host is the one closed
+      std::sort(peers.begin(), peers.end(), [](const peer_connection_ptr& a, const peer_connection_ptr& b) {
+        return a->connection_initiation_time < b->connection_initiation_time;
+      });
+      std::vector<host_limited_connection> connections;
+      for (const peer_connection_ptr& peer : peers)
+        connections.push_back(host_limited_connection{peer->get_remote_endpoint()->get_address(),
+                                                      peer.get() == excluded || is_exempt_from_host_limit(peer.get())});
+      const fc::optional<size_t> selected = select_connection_over_host_limit(connections, _node_configuration.maximum_connections_per_host);
+      return selected ? peers[*selected] : peer_connection_ptr();
+    }
+
+    // see dial_new_host_for_connection_over_host_limit()
+    void node_impl::give_way_to_connection_under_host_limit(const peer_connection* new_peer)
+    {
+      VERIFY_CORRECT_THREAD();
+      if (!is_host_limit_relaxed() || _active_connections.size() <= _node_configuration.desired_number_of_connections ||
+          !new_peer->get_remote_endpoint())
+        return;
+      std::vector<fc::ip::address> others;
+      for (const peer_connection_ptr& peer : _active_connections)
+        if (peer.get() != new_peer && peer->get_remote_endpoint())
+          others.push_back(peer->get_remote_endpoint()->get_address());
+      // a connection over the limit itself doesn't take another one's slot
+      if (!is_exempt_from_host_limit(new_peer) &&
+          exceeds_connections_per_host(new_peer->get_remote_endpoint()->get_address(), others, _node_configuration.maximum_connections_per_host))
+        return;
+      const peer_connection_ptr over_limit = find_active_connection_over_host_limit(new_peer);
+      if (!over_limit)
+        return;
+      ilog("closing ${peer}, a connection over the per-host limit of ${limit}: ${new_peer}, on a host under it, takes its slot",
+           ("peer", over_limit->get_remote_endpoint())("limit", _node_configuration.maximum_connections_per_host)
+           ("new_peer", new_peer->get_remote_endpoint()));
+      // not caused by an error: the peer may dial us again, and we refuse it while we have enough connections
+      disconnect_from_peer(over_limit.get(), "I'm making room for a peer on another host than yours");
+    }
+
+    // Whether a hello over the per-host limit is accepted all the same: while the limit is relaxed and we hold fewer
+    // than the desired number of connections (counting those whose hello we accepted, as the limit does).  That covers
+    // the connections the connect loop dialed past the limit too
+    bool node_impl::accept_hello_over_host_limit(const peer_connection* peer, const fc::ip::address& address)
+    {
+      VERIFY_CORRECT_THREAD();
+      if (!is_host_limit_relaxed())
+        return false;
+      std::vector<fc::ip::address> addresses = get_connection_addresses(true, peer);
+      if (addresses.size() >= _node_configuration.desired_number_of_connections)
+        return false;
+      addresses.push_back(address);
+      log_host_limit_relaxed(addresses);
+      return true;
+    }
+
     void node_impl::warn_if_inbound_connections_share_host(const fc::ip::address& refused_address)
     {
       VERIFY_CORRECT_THREAD();
@@ -2899,7 +3053,8 @@ namespace graphene { namespace net {
         else if (!is_exempt_from_host_limit(originating_peer) &&
                  exceeds_connections_per_host(originating_peer->get_socket().remote_endpoint().get_address(),
                                               get_connection_addresses(true, originating_peer),
-                                              _node_configuration.maximum_connections_per_host))
+                                              _node_configuration.maximum_connections_per_host) &&
+                 !accept_hello_over_host_limit(originating_peer, originating_peer->get_socket().remote_endpoint().get_address()))
         {
           // a reason the dialer counts as a failed attempt, so it backs off instead of redialing every
           // peer_connection_retry_timeout while this node holds its host's connections
@@ -6925,6 +7080,7 @@ namespace graphene { namespace net {
               ("peer", peer->get_remote_endpoint())
               ("count", _active_connections.size())
               ("hosts", spread.hosts)("ipv4", spread.ipv4)("ipv6", spread.ipv6));
+      give_way_to_connection_under_host_limit(peer.get());
     }
 
     void node_impl::move_peer_to_closing_list(const peer_connection_ptr& peer)
@@ -7494,6 +7650,9 @@ namespace graphene { namespace net {
       ilog( "set_advanced_node_parameters ${params}", ("params", params) );
 
       fc::from_variant( params, _node_configuration );
+      // fc::from_variant assigns only the fields params has
+      if( params.contains( "maximum_connections_per_host" ) )
+        _maximum_connections_per_host_set = true;
 
       std::vector<address_subnet> exempt_subnets;
       for (const std::string& subnet : _node_configuration.host_limit_exempt_subnets)
@@ -8834,6 +8993,32 @@ namespace graphene { namespace net {
     take(!ipv6_first, ipv6_first ? ipv4_shortfall : ipv6_shortfall);
     take(true, limits.free_slots);
     take(false, limits.free_slots);
+
+    if (limits.relax_connections_per_host && limits.maximum_connections_per_host != 0)
+      while (selected.size() < limits.free_slots)
+      {
+        // every candidate left is on a host at the limit (an exempt one was taken above)
+        fc::optional<size_t> fewest;
+        size_t fewest_held = 0;
+        for (size_t i = 0; i < candidates.size(); ++i)
+        {
+          if (taken[i])
+            continue;
+          const fc::ip::address host = connection_host_of(candidates[i].endpoint.get_address());
+          const size_t held = std::count_if(addresses.begin(), addresses.end(),
+                                            [&host](const fc::ip::address& address) { return connection_host_of(address) == host; });
+          if (!fewest || held < fewest_held)
+          {
+            fewest = i;
+            fewest_held = held;
+          }
+        }
+        if (!fewest)
+          break;
+        taken[*fewest] = true;
+        addresses.push_back(candidates[*fewest].endpoint.get_address());
+        selected.push_back(candidates[*fewest].endpoint);
+      }
     return selected;
   }
 
@@ -8850,6 +9035,31 @@ namespace graphene { namespace net {
     }
     spread.hosts = static_cast<uint32_t>(hosts.size());
     return spread;
+  }
+
+  fc::optional<size_t> select_connection_over_host_limit(const std::vector<host_limited_connection>& connections,
+                                                         uint32_t maximum_connections_per_host)
+  {
+    fc::optional<size_t> selected;
+    if (maximum_connections_per_host == 0)
+      return selected;
+    size_t most_held = maximum_connections_per_host;
+    for (size_t i = 0; i < connections.size(); ++i)
+    {
+      if (connections[i].exempt)
+        continue;
+      const fc::ip::address host = connection_host_of(connections[i].address);
+      const size_t held = std::count_if(connections.begin(), connections.end(),
+                                        [&host](const host_limited_connection& c) { return connection_host_of(c.address) == host; });
+      // >= keeps the last one of the host with the most
+      if (held > maximum_connections_per_host && held >= most_held &&
+          (!selected || held > most_held || connection_host_of(connections[*selected].address) == host))
+      {
+        selected = i;
+        most_held = held;
+      }
+    }
+    return selected;
   }
 
   std::vector<size_t> select_idle_peers_to_disconnect(const std::vector<idle_peer_candidate>& peers,

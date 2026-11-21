@@ -526,7 +526,9 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
      "ones are not limited, and neither are the seed nodes and add_node targets this node dials (they still count against their host's limit). "
      "Behind a proxy that rewrites the source address of inbound peers (docker-proxy, rootless Docker) every inbound peer is on the proxy's "
      "host: exempt the proxy's address or set 0. "
-     "Default " BOOST_PP_STRINGIZE(GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST) "; 0 for no limit. Overrides maximum_connections_per_host in p2p-parameters.")
+     "Left unset (here and as maximum_connections_per_host in p2p-parameters), the default of " BOOST_PP_STRINGIZE(GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST)
+     " gives way while peers on other hosts can't fill the desired connections, and the connections past it give way to "
+     "peers on new hosts; a value set here or in p2p-parameters is a hard limit. 0 for no limit. Overrides maximum_connections_per_host in p2p-parameters.")
     ("p2p-host-limit-exempt", bpo::value<vector<string>>()->composing(), "An address or subnet (e.g. 172.17.0.1, 10.0.0.0/8, 2001:db8::/32) whose "
      "connections p2p-max-connections-per-host does not limit, such as a proxy that rewrites the source address of inbound peers. "
      "May be given more than once. Added to host_limit_exempt_subnets in p2p-parameters, which lists loopback by default.")
