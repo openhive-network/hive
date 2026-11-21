@@ -468,6 +468,8 @@ namespace graphene { namespace net {
       uint32_t _cached_head_block_num = 0;
       uint32_t _cached_last_irreversible_block_num = 0;
       fc::time_point _last_head_advance_time; // when _cached_head_block_num last increased
+      fc::time_point _last_useful_data_from_any_peer_time; // the latest peer_connection::last_useful_data_time of any peer
+      fc::time_point _idle_peers_judged_since; // since when our head is behind with the chain not held; see find_idle_peers_to_replace()
 
       uint32_t _sync_item_type;
       uint32_t _total_number_of_unfetched_items; /// the number of items we still need to fetch while syncing
@@ -721,6 +723,11 @@ namespace graphene { namespace net {
       bool stalled_head_resync_due(peer_connection* peer);
       uint32_t highest_block_number_known_for_peer(const peer_connection& peer);
       void restart_sync_if_head_stalled();
+      void record_useful_data_from(peer_connection* peer);
+      bool is_near_advancing_head(uint32_t block_num);
+      std::vector<peer_connection_ptr> find_idle_peers_to_replace();
+      void disconnect_idle_peer(peer_connection* peer);
+      void count_failed_connection_attempt(peer_connection* peer, potential_peer_last_connection_disposition disposition);
       bool invalid_block_disconnect_breaker_tripped();
       bool block_body_mismatch_disconnect_breaker_tripped();
       void refetch_block_from_other_peers(peer_connection* peer_that_sent_bad_copy, const item_id& block_item_id);
@@ -2100,6 +2107,10 @@ namespace graphene { namespace net {
       }
       peers_to_disconnect_for_rejected_blocks.clear();
 
+      // judged after the disconnects above, so the peers they closed don't count toward the floor
+      for( const peer_connection_ptr& peer : find_idle_peers_to_replace() )
+        disconnect_idle_peer(peer.get());
+
       for( const peer_connection_ptr& peer : peers_to_send_keep_alive )
         peer->send_message(current_time_request_message(),
                            offsetof(current_time_request_message, request_sent_time));
@@ -3073,25 +3084,13 @@ namespace graphene { namespace net {
         else
         {
           // update our database to record that we were rejected so we won't try to connect again for a while
-          // this only happens on connections we originate, so we should already know that peer is not firewalled
-          fc::optional<fc::ip::endpoint> endpoint_for_db = originating_peer->get_endpoint_for_db();
-          if (endpoint_for_db)
-          {
-            fc::optional<potential_peer_record> updated_peer_record = _potential_peer_db.lookup_entry_for_endpoint(*endpoint_for_db);
-            if (updated_peer_record)
-            {
-              updated_peer_record->last_connection_disposition = last_connection_rejected;
-              updated_peer_record->last_connection_attempt_time = fc::time_point::now();
-              updated_peer_record->last_failed_time = updated_peer_record->last_connection_attempt_time;
-              // count the rejection like a failed attempt so the retry backoff grows.  Without
-              // this, a node that rejects us (full, at its per-host limit, incompatible, ...) is redialed every
-              // peer_connection_retry_timeout forever -- against a node with a reduced
-              // connection limit this was measured at ~75 attempts/minute network-wide,
-              // sustained for as long as the condition lasted
-              updated_peer_record->number_of_failed_connection_attempts++;
-              _potential_peer_db.update_entry(*updated_peer_record);
-            }
-          }
+          // this only happens on connections we originate, so we should already know that peer is not firewalled.
+          // Count the rejection like a failed attempt so the retry backoff grows.  Without
+          // this, a node that rejects us (full, at its per-host limit, incompatible, ...) is redialed every
+          // peer_connection_retry_timeout forever -- against a node with a reduced
+          // connection limit this was measured at ~75 attempts/minute network-wide,
+          // sustained for as long as the condition lasted
+          count_failed_connection_attempt(originating_peer, last_connection_rejected);
         }
 
         originating_peer->negotiation_status = peer_connection::connection_negotiation_status::peer_connection_rejected;
@@ -3205,6 +3204,7 @@ namespace graphene { namespace net {
                                                          const fetch_blockchain_item_ids_message& fetch_blockchain_item_ids_message_received)
     {
       VERIFY_CORRECT_THREAD();
+      originating_peer->last_block_request_time = fc::time_point::now();
       item_id peers_last_item_seen = item_id(fetch_blockchain_item_ids_message_received.item_type, item_hash_t());
       if (fetch_blockchain_item_ids_message_received.blockchain_synopsis.empty())
       {
@@ -3582,6 +3582,7 @@ namespace graphene { namespace net {
             }
             else //some items are not in blockchain
             {
+              record_useful_data_from(originating_peer);
               if (first_item_not_in_blockchain_iter != item_hashes_received.begin()) //if some items are in the blockchain
               {
                 originating_peer->last_block_delegate_has_seen = *std::prev(first_item_not_in_blockchain_iter);
@@ -3602,6 +3603,7 @@ namespace graphene { namespace net {
           }
           else if (!item_hashes_received.empty())
           {
+            record_useful_data_from(originating_peer);
             // we received a list of items and we already have a list of items to fetch from this peer.
             // In the normal case, this list will immediately follow the existing list, meaning the
             // last hash of our existing list will match the first hash of the new list.
@@ -3827,6 +3829,7 @@ namespace graphene { namespace net {
 
       if (fetch_items_message_received.item_type == block_message_type)
       {
+        originating_peer->last_block_request_time = fc::time_point::now();
         // only the ids are queued: each block is looked up when its turn to be sent is close (get_block_to_send()),
         // so the blocks held for a peer stay a few however many it asks for, and the queue limit is reached only by
         // a request for far more blocks than a sync request asks for.  An id asked for more than once in a request
@@ -3993,9 +3996,12 @@ namespace graphene { namespace net {
           // we're in the middle of processing this item, no need to fetch it again (record_advertised_item() won't).
           // But if our copy of a block turns out to have a bad body, refetch_block_from_other_peers() has to
           // know this peer has the block too: it won't advertise it again
-          if (item_ids_inventory_message_received.item_type == graphene::net::block_message_type &&
-              !is_inventory_advertised_to_us_list_full(originating_peer))
-            record_advertised_item(originating_peer, advertised_item_id);
+          if (item_ids_inventory_message_received.item_type == graphene::net::block_message_type)
+          {
+            record_useful_data_from(originating_peer);
+            if (!is_inventory_advertised_to_us_list_full(originating_peer))
+              record_advertised_item(originating_peer, advertised_item_id);
+          }
           continue;
         }
 
@@ -4018,6 +4024,8 @@ namespace graphene { namespace net {
             switch (classify_advertised_block_id(item_hash))
             {
             case block_id_classification::known:
+              if (is_near_advancing_head(get_block_number(item_hash)))
+                record_useful_data_from(originating_peer);
               skip_this_item = true; // we already have it; nothing to fetch
               break;
             case block_id_classification::dead_fork:
@@ -4040,6 +4048,7 @@ namespace graphene { namespace net {
               skip_this_item = true;
               break;
             case block_id_classification::fetchable:
+              record_useful_data_from(originating_peer);
               break;
             }
             if (skip_this_item)
@@ -4048,7 +4057,9 @@ namespace graphene { namespace net {
           else
           {
             // then it's a legacy_block_message_hash: it has no embedded block number, so the
-            // recent-message cache remains the only dedupe available for these peers
+            // recent-message cache remains the only dedupe available for these peers.  Without the
+            // number we can't tell how recent it is, so the advertisement counts as useful either way
+            record_useful_data_from(originating_peer);
             if (_block_message_cache.contains_item(item_hash))
               continue;
           }
@@ -4477,6 +4488,108 @@ namespace graphene { namespace net {
       // sync blocks already received are pushed from the backlog, which otherwise runs only when a
       // block arrives or the chain finishes one; the restarted sync won't fetch them again
       trigger_process_backlog_of_sync_blocks();
+    }
+
+    void node_impl::record_useful_data_from(peer_connection* peer)
+    {
+      VERIFY_CORRECT_THREAD();
+      peer->last_useful_data_time = fc::time_point::now();
+      _last_useful_data_from_any_peer_time = peer->last_useful_data_time;
+    }
+
+    // Whether block @p block_num, which we have, is one we accepted just now: one of the last few blocks
+    // of a head that is advancing.  A peer offering it is keeping up, it was only slower than the peer
+    // that delivered it first
+    bool node_impl::is_near_advancing_head(uint32_t block_num)
+    {
+      VERIFY_CORRECT_THREAD();
+      return block_num + GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS > _cached_head_block_num &&
+             fc::time_point::now() - _last_head_advance_time < fc::seconds(GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC);
+    }
+
+    // A node can hold a full set of peers that answer keepalives and give it nothing else, and the connect
+    // loop dials nobody while the slots are full.  So while our head is behind, an active peer that gave us
+    // no useful data for idle_peer_disconnect_timeout is replaced, if some peer could serve us (see
+    // select_idle_peers_to_disconnect()).  The time counts only since we fell behind: a node in sync gets
+    // each block from whichever peer is first, so most of its peers never contribute, and their silence
+    // before says nothing.  Nor does it count while blocks we handed the chain wait on it: the peers are not
+    // why we are behind then.  A peer that asked us for blocks or block ids in that time is syncing from us
+    // or fed by us and has nothing to give us; a peer we are waiting for, or that offered blocks we haven't
+    // fetched yet, is judged by the request timeouts instead.  The timeout is longer than
+    // GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restart_sync_if_head_stalled() asks the peers we have first
+    std::vector<peer_connection_ptr> node_impl::find_idle_peers_to_replace()
+    {
+      VERIFY_CORRECT_THREAD();
+      std::vector<peer_connection_ptr> idle_peers;
+      if (_node_configuration.idle_peer_disconnect_timeout == 0 || _active_connections.empty())
+        return idle_peers;
+      const fc::time_point now = fc::time_point::now();
+      refresh_cached_chain_state();
+      const fc::time_point head_block_time = _delegate->get_block_time(_delegate->get_head_block_id());
+      const bool head_behind = head_block_time < now - fc::seconds(GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC);
+      const bool chain_held = get_number_of_handle_message_calls_in_progress() != 0 &&
+                              now - _last_head_advance_time >= fc::seconds(_recent_block_interval_in_seconds);
+      if (!head_behind || chain_held)
+      {
+        _idle_peers_judged_since = fc::time_point();
+        return idle_peers;
+      }
+      if (_idle_peers_judged_since == fc::time_point())
+        _idle_peers_judged_since = now;
+
+      idle_peer_sweep sweep;
+      sweep.now = now;
+      sweep.window = fc::seconds(_node_configuration.idle_peer_disconnect_timeout);
+      sweep.kept_at_least = GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST;
+      sweep.block_source_seen = now - _last_useful_data_from_any_peer_time <= sweep.window;
+      std::vector<peer_connection_ptr> peers;
+      std::vector<idle_peer_candidate> candidates;
+      for (const peer_connection_ptr& peer : _active_connections)
+      {
+        idle_peer_candidate candidate;
+        candidate.last_useful_data_time = std::max(peer->last_useful_data_time, _idle_peers_judged_since);
+        candidate.exempt = now - peer->last_block_request_time <= sweep.window ||
+                           peer->item_ids_requested_from_peer ||
+                           !peer->sync_items_requested_from_peer.empty() ||
+                           (peer->we_need_sync_items_from_peer && !peer->ids_of_items_to_get.empty());
+        sweep.block_source_seen = sweep.block_source_seen || highest_block_number_known_for_peer(*peer) > _cached_head_block_num;
+        peers.push_back(peer);
+        candidates.push_back(candidate);
+      }
+      for (size_t i : select_idle_peers_to_disconnect(candidates, sweep))
+        idle_peers.push_back(peers[i]);
+      return idle_peers;
+    }
+
+    void node_impl::disconnect_idle_peer(peer_connection* peer)
+    {
+      VERIFY_CORRECT_THREAD();
+      const int64_t idle_seconds = (fc::time_point::now() - peer->last_useful_data_time).to_seconds();
+      wlog("disconnecting idle peer ${peer}: it gave us no blocks, block ids or timely block advertisements for ${seconds}s "
+           "while our head is behind and other peers could serve us; its slot goes to another peer",
+           ("peer", peer->get_remote_endpoint())("seconds", idle_seconds));
+      fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You gave me no blocks, block ids or timely block advertisements for ${seconds} seconds while I was behind",
+                                                  ("seconds", idle_seconds)));
+      disconnect_from_peer(peer, "You gave me nothing I could use while I was behind", true, detailed_error);
+      count_failed_connection_attempt(peer, last_connection_failed);
+    }
+
+    // Counts a failed attempt against the peer's database entry, so the connect loop dials it again only after
+    // (number_of_failed_connection_attempts + 1) * peer_connection_retry_timeout.  A completed handshake clears it
+    void node_impl::count_failed_connection_attempt(peer_connection* peer, potential_peer_last_connection_disposition disposition)
+    {
+      VERIFY_CORRECT_THREAD();
+      const fc::optional<fc::ip::endpoint> endpoint_for_db = peer->get_endpoint_for_db();
+      if (!endpoint_for_db)
+        return;
+      fc::optional<potential_peer_record> updated_peer_record = _potential_peer_db.lookup_entry_for_endpoint(*endpoint_for_db);
+      if (!updated_peer_record)
+        return;
+      updated_peer_record->last_connection_disposition = disposition;
+      updated_peer_record->last_connection_attempt_time = fc::time_point::now();
+      updated_peer_record->last_failed_time = updated_peer_record->last_connection_attempt_time;
+      updated_peer_record->number_of_failed_connection_attempts++;
+      _potential_peer_db.update_entry(*updated_peer_record);
     }
 
     // Returns true when we have already disconnected so many peers over "invalid" blocks in
@@ -5068,6 +5181,7 @@ namespace graphene { namespace net {
           message_validated_time = fc::time_point::now();
           // the peer's copy matched its header, so its earlier bad copy no longer makes it a source of last resort
           originating_peer->restore_block_fetching_priority();
+          record_useful_data_from(originating_peer);
           ilog("Successfully pushed block ${block_num} (id:${block_id})", (block_num)(block_id));
           // a block only stored on a shorter fork was not validated, so it isn't recorded as accepted
           // (later copies are still recognized as known through has_item())
@@ -5285,6 +5399,7 @@ namespace graphene { namespace net {
         try
         {
           originating_peer->last_sync_item_received_time = fc::time_point::now();
+          record_useful_data_from(originating_peer);
           _active_sync_requests.erase(full_block->get_block_id());
           process_block_during_sync(originating_peer, full_block);
           if (originating_peer->idle())
@@ -6799,6 +6914,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _active_connections.insert(peer);
+      peer->last_useful_data_time = fc::time_point::now();
       if (!peer->transaction_inventory_slot)
         peer->transaction_inventory_slot = _transaction_inventory.acquire_slot();
       _handshaking_connections.erase(peer);
@@ -7257,6 +7373,7 @@ namespace graphene { namespace net {
         peer_details["current_head_block"] = peer->last_block_delegate_has_seen;
         peer_details["current_head_block_number"] = _delegate->get_block_number(peer->last_block_delegate_has_seen);
         peer_details["current_head_block_time"] = peer->last_block_time_delegate_has_seen;
+        peer_details["last_useful_data_time"] = peer->last_useful_data_time;
 
         this_peer_status.info = peer_details;
         statuses.push_back(this_peer_status);
@@ -8733,6 +8850,24 @@ namespace graphene { namespace net {
     }
     spread.hosts = static_cast<uint32_t>(hosts.size());
     return spread;
+  }
+
+  std::vector<size_t> select_idle_peers_to_disconnect(const std::vector<idle_peer_candidate>& peers,
+                                                      const idle_peer_sweep& sweep)
+  {
+    std::vector<size_t> idle;
+    if (sweep.window.count() <= 0 || !sweep.block_source_seen)
+      return idle;
+    for (size_t i = 0; i < peers.size(); ++i)
+      if (!peers[i].exempt && sweep.now - peers[i].last_useful_data_time > sweep.window)
+        idle.push_back(i);
+    std::stable_sort(idle.begin(), idle.end(), [&](size_t a, size_t b) {
+      return peers[a].last_useful_data_time < peers[b].last_useful_data_time;
+    });
+    const size_t most = peers.size() > sweep.kept_at_least ? peers.size() - sweep.kept_at_least : 0;
+    if (idle.size() > most)
+      idle.resize(most);
+    return idle;
   }
 
 } } // end namespace graphene::net
