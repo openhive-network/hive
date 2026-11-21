@@ -10,6 +10,7 @@
 #include <vector>
 
 using graphene::net::block_message_type;
+using graphene::net::fetch_candidate_order;
 using graphene::net::fetch_candidate_queue;
 using graphene::net::fetch_candidate_verdict;
 using graphene::net::item_hash_t;
@@ -199,6 +200,46 @@ BOOST_AUTO_TEST_CASE( has_block_finds_queued_blocks_only )
   BOOST_CHECK( queue.take_next( false, take_any, examined ) == std::optional<item_id>( block( 1 ) ) );
   BOOST_CHECK( !queue.has_block( block( 1 ) ) );
   BOOST_CHECK( queue.has_block( block( 3 ) ) );
+}
+
+/// Newest first, transactions are taken from the end of their lane, still after the blocks; an entry kept there
+/// in a pass is not looked at again in it from either end, and is again in the next pass.  Trimming the oldest
+/// entries reaches the ones kept at the end once those before them are gone
+BOOST_AUTO_TEST_CASE( transactions_can_be_taken_newest_first )
+{
+  fetch_candidate_queue queue;
+  for( uint32_t n = 1; n <= 4; ++n )
+    queue.push( transaction( n ), start + fc::seconds( n ), keep_all );
+  queue.push( block( 9 ), start, keep_all );
+
+  uint64_t examined = 0;
+  const auto keep_4 = [&]( const item_id& item )
+    { return item == transaction( 4 ) ? fetch_candidate_verdict::keep : fetch_candidate_verdict::take; };
+  queue.begin_pass();
+  BOOST_CHECK( queue.take_next( true, fetch_candidate_order::newest_first, keep_4, examined ) == std::optional<item_id>( block( 9 ) ) );
+  BOOST_CHECK( queue.take_next( true, fetch_candidate_order::newest_first, keep_4, examined ) == std::optional<item_id>( transaction( 3 ) ) );
+  BOOST_CHECK( queue.take_next( true, fetch_candidate_order::oldest_first, keep_4, examined ) == std::optional<item_id>( transaction( 1 ) ) );
+  BOOST_CHECK( queue.take_next( true, fetch_candidate_order::newest_first, keep_4, examined ) == std::optional<item_id>( transaction( 2 ) ) );
+  BOOST_CHECK( !queue.take_next( true, fetch_candidate_order::oldest_first, keep_4, examined ) );
+  BOOST_CHECK( !queue.has_transaction_to_take( []( const item_id& ) { return true; }, examined ) );
+  BOOST_CHECK_EQUAL( examined, 5u ); // 4 is looked at once
+  BOOST_CHECK_EQUAL( queue.size(), 1u );
+
+  // the next pass looks at it again
+  queue.begin_pass();
+  BOOST_CHECK( queue.take_next( true, fetch_candidate_order::newest_first, take_any, examined ) == std::optional<item_id>( transaction( 4 ) ) );
+
+  // kept at the end, then trimmed as the oldest
+  queue.push( transaction( 5 ), start + fc::seconds( 5 ), keep_all );
+  queue.push( transaction( 6 ), start + fc::seconds( 6 ), keep_all );
+  const auto keep_all_entries = []( const item_id& ) { return fetch_candidate_verdict::keep; };
+  queue.begin_pass();
+  BOOST_CHECK( !queue.take_next( true, fetch_candidate_order::newest_first, keep_all_entries, examined ) );
+  queue.trim( start + fc::seconds( 6 ) );
+  BOOST_CHECK_EQUAL( queue.size(), 1u );
+  BOOST_CHECK( !queue.take_next( true, fetch_candidate_order::oldest_first, take_any, examined ) );
+  queue.begin_pass();
+  BOOST_CHECK( queue.take_next( true, fetch_candidate_order::oldest_first, take_any, examined ) == std::optional<item_id>( transaction( 6 ) ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -42,6 +43,8 @@ public:
   size_t bytes_written = 0;
   /// the blocks get_block_to_send() serves, by id
   std::map<graphene::net::item_hash_t, std::shared_ptr<hive::chain::full_block_type>> blocks_to_send;
+  /// the transactions is_transaction_to_advertise() says are no longer to advertise
+  std::set<graphene::net::item_hash_t> transactions_gone;
 
   void on_message( peer_connection*, const message& received_message ) override
   {
@@ -54,6 +57,10 @@ public:
   {
     const auto found = blocks_to_send.find( requested_item );
     return found == blocks_to_send.end() ? nullptr : found->second;
+  }
+  bool is_transaction_to_advertise( const graphene::net::item_hash_t& message_hash ) override
+  {
+    return transactions_gone.count( message_hash ) == 0;
   }
   void on_messages_written( size_t message_count, size_t byte_count ) override
   {
@@ -241,6 +248,22 @@ struct blocking_queued_message : peer_connection::queued_message
   size_t get_size_in_queue() override { return 16; }
 };
 
+/// A queued message whose building takes @p stall, while it takes @p size_in_queue of the queue; it holds back the
+/// transaction inventory that the rest of the inventory budget has no room for
+struct stalling_queued_message : peer_connection::queued_message
+{
+  fc::microseconds stall;
+  size_t size_in_queue;
+
+  stalling_queued_message( fc::microseconds stall, size_t size_in_queue ) : stall( stall ), size_in_queue( size_in_queue ) {}
+  message get_message( graphene::net::peer_connection_delegate*, peer_connection* ) override
+  {
+    fc::usleep( stall );
+    return make_message( 5002, 16, 's' );
+  }
+  size_t get_size_in_queue() override { return size_in_queue; }
+};
+
 /// A message that alone takes the whole queue limit, so queueing it closes the connection unless the queue is empty.
 struct queue_limit_sized_message : peer_connection::queued_message
 {
@@ -273,6 +296,12 @@ std::vector<graphene::net::item_hash_t> transaction_ids( const std::string& pref
   std::vector<graphene::net::item_hash_t> ids;
   for( size_t i = 0; i < count; ++i )
     ids.push_back( fc::ripemd160::hash( prefix + "/" + std::to_string( i ) ) );
+  return ids;
+}
+
+std::vector<graphene::net::item_hash_t> sorted( std::vector<graphene::net::item_hash_t> ids )
+{
+  std::sort( ids.begin(), ids.end() );
   return ids;
 }
 
@@ -756,7 +785,7 @@ BOOST_AUTO_TEST_CASE( waiting_transaction_replies_are_bounded_in_bytes )
 }
 
 /// Transaction inventories queued faster than the peer reads them, far over their budget in the send queue, wait for
-/// the queue to drain instead of closing the connection or being dropped: every id arrives, in order, a block
+/// the queue to drain instead of closing the connection or being dropped: every id arrives, once, a block
 /// inventory queued after them still goes out first, and a message that is not transaction inventory still closes
 /// the connection when it would take the queue over its limit.
 BOOST_AUTO_TEST_CASE( transaction_inventory_over_its_budget_waits_for_the_queue_to_drain )
@@ -785,7 +814,7 @@ BOOST_AUTO_TEST_CASE( transaction_inventory_over_its_budget_waits_for_the_queue_
   BOOST_CHECK( !pair.receiver_delegate.closed );
   BOOST_REQUIRE( !pair.receiver_delegate.received.empty() );
   BOOST_CHECK( same_message( pair.receiver_delegate.received.front(), block_inventory ) );
-  BOOST_CHECK( advertised_transactions( pair.receiver_delegate ) == sent );
+  BOOST_CHECK( sorted( advertised_transactions( pair.receiver_delegate ) ) == sorted( sent ) );
 
   // anything else that does not fit closes the connection, as before
   pair.sender->send_message( make_message( 5000, 16, 'x' ) );
@@ -810,13 +839,13 @@ BOOST_AUTO_TEST_CASE( transaction_inventory_larger_than_its_budget_is_split )
 
   wait_for_advertised( pair, sent.size() );
   BOOST_CHECK( !pair.receiver_delegate.closed );
-  BOOST_CHECK( advertised_transactions( pair.receiver_delegate ) == sent );
+  BOOST_CHECK( sorted( advertised_transactions( pair.receiver_delegate ) ) == sorted( sent ) );
   BOOST_CHECK_GT( pair.receiver_delegate.received.size(), 1u );
 }
 
 /// Past the number of transaction ids that may wait for the send queue the oldest waiting ones are dropped: the peer
-/// gets the ones queued at once and the newest that waited, in order, the connection stays open, and once the queue
-/// has drained the next inventory goes out at once
+/// gets the ones queued at once and the newest that waited, the connection stays open, and once the queue has
+/// drained the next inventory goes out at once
 BOOST_AUTO_TEST_CASE( waiting_transaction_inventory_is_bounded )
 {
   connected_pair pair;
@@ -830,20 +859,76 @@ BOOST_AUTO_TEST_CASE( waiting_transaction_inventory_is_bounded )
     pair.sender->send_transaction_inventory( ids );
   }
   const size_t may_wait = GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER;
-  const std::vector<graphene::net::item_hash_t> burst = transaction_ids( "burst", may_wait + 5000 );
+  const size_t over = 5000;
+  const std::vector<graphene::net::item_hash_t> burst = transaction_ids( "burst", may_wait + over );
   pair.sender->send_transaction_inventory( burst );
 
-  std::vector<graphene::net::item_hash_t> expected = queued_at_once;
-  expected.insert( expected.end(), burst.end() - may_wait, burst.end() );
-  wait_for_advertised( pair, expected.size() );
+  // the room the fillers left takes fewer than another 1000 of the burst at once; of the rest the oldest are dropped
+  wait_for_advertised( pair, queued_at_once.size() + may_wait );
   fc::usleep( fc::milliseconds( 100 ) );
   BOOST_CHECK( !pair.receiver_delegate.closed );
-  BOOST_CHECK( advertised_transactions( pair.receiver_delegate ) == expected );
+  const std::vector<graphene::net::item_hash_t> advertised = advertised_transactions( pair.receiver_delegate );
+  BOOST_REQUIRE_GE( advertised.size(), queued_at_once.size() + may_wait );
+  const size_t burst_advertised = advertised.size() - queued_at_once.size();
+  BOOST_REQUIRE_LT( burst_advertised, may_wait + 1000 );
+  std::vector<graphene::net::item_hash_t> expected = queued_at_once;
+  expected.insert( expected.end(), burst.end() - burst_advertised, burst.end() );
+  BOOST_CHECK( std::vector<graphene::net::item_hash_t>( advertised.begin(), advertised.begin() + queued_at_once.size() ) == queued_at_once );
+  BOOST_CHECK( sorted( advertised ) == sorted( expected ) );
 
   const std::vector<graphene::net::item_hash_t> next = transaction_ids( "next", 10 );
   pair.sender->send_transaction_inventory( next );
   expected.insert( expected.end(), next.begin(), next.end() );
   wait_for_advertised( pair, expected.size() );
+  const std::vector<graphene::net::item_hash_t> advertised_after = advertised_transactions( pair.receiver_delegate );
+  BOOST_CHECK( std::vector<graphene::net::item_hash_t>( advertised_after.end() - next.size(), advertised_after.end() ) == next );
+}
+
+/// The inventory budget's room takes as many waiting ids as fit, rather than waiting for room for a whole message, and
+/// as the queue drains the newest ids go first: a fresh id doesn't wait behind the backlog
+BOOST_AUTO_TEST_CASE( waiting_transaction_inventory_goes_newest_first_as_far_as_it_fits )
+{
+  connected_pair pair;
+
+  // a stalled message leaves room for an inventory of 10 ids
+  const size_t room_for_ten = 4 + 1 + 10 * 20;
+  pair.sender->send_queueable_message( std::make_unique<stalling_queued_message>(
+    fc::milliseconds( 200 ), GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES - room_for_ten ) );
+  const std::vector<graphene::net::item_hash_t> backlog = transaction_ids( "backlog", 100 );
+  pair.sender->send_transaction_inventory( backlog );
+  const std::vector<graphene::net::item_hash_t> fresh = transaction_ids( "fresh", 5 );
+  pair.sender->send_transaction_inventory( fresh );
+
+  wait_for_advertised( pair, backlog.size() + fresh.size() );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
+  std::vector<graphene::net::item_hash_t> expected( backlog.end() - 10, backlog.end() );
+  expected.insert( expected.end(), fresh.begin(), fresh.end() );
+  expected.insert( expected.end(), backlog.begin(), backlog.end() - 10 );
+  BOOST_CHECK( advertised_transactions( pair.receiver_delegate ) == expected );
+}
+
+/// Waiting transaction ids are not advertised once they have waited over
+/// GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS, or once the delegate no longer has their transaction
+BOOST_AUTO_TEST_CASE( stale_waiting_transaction_inventory_is_not_advertised )
+{
+  connected_pair pair;
+
+  const fc::microseconds age = fc::milliseconds( GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS );
+  pair.sender->send_queueable_message( std::make_unique<stalling_queued_message>(
+    age + fc::milliseconds( 500 ), GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES ) );
+  const std::vector<graphene::net::item_hash_t> expired = transaction_ids( "expired", 10 );
+  pair.sender->send_transaction_inventory( expired );
+  fc::usleep( age + fc::milliseconds( 200 ) );
+  const std::vector<graphene::net::item_hash_t> recent = transaction_ids( "recent", 10 );
+  pair.sender_delegate.transactions_gone = { recent[ 2 ], recent[ 7 ] };
+  pair.sender->send_transaction_inventory( recent );
+
+  std::vector<graphene::net::item_hash_t> expected = recent;
+  expected.erase( expected.begin() + 7 );
+  expected.erase( expected.begin() + 2 );
+  wait_for_advertised( pair, expected.size() );
+  fc::usleep( fc::milliseconds( 100 ) );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
   BOOST_CHECK( advertised_transactions( pair.receiver_delegate ) == expected );
 }
 
