@@ -253,6 +253,10 @@ namespace graphene { namespace net
       size_t _deferred_transaction_reply_bytes = 0;
       /// when _deferred_transaction_replies last stopped being empty
       fc::time_point _transaction_replies_deferred_since;
+      /// set while the send task writes a batch it took off the queue
+      bool _write_in_progress = false;
+      /// when the queue last stopped being empty while no write was in progress
+      fc::time_point _send_pending_since;
       fc::future<void> _send_queued_messages_done;
       fc::microseconds _send_flush_delay;
       /// set while the send task waits for transaction traffic to accumulate; fulfilled to end the wait early
@@ -444,6 +448,9 @@ namespace graphene { namespace net
       /// while transaction replies wait (see send_transaction_reply()), when they started waiting or the queue was
       /// last written to the socket, whichever is later; fc::time_point::maximum() while none wait
       fc::time_point get_transaction_reply_send_progress_time() const;
+      /// while anything is queued or being written, when that started or bytes were last written to the socket,
+      /// whichever is later; fc::time_point::maximum() while nothing is
+      fc::time_point get_send_progress_time() const;
       /// queues the message; a transaction inventory is sent as send_transaction_inventory() sends its ids
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);
       /** advertises the transactions @p ids to the peer, in inventory messages of at most
@@ -463,6 +470,8 @@ namespace graphene { namespace net
       void set_send_flush_delay(fc::microseconds delay);
       void close_connection();
       void destroy_connection(const char* caller);
+      /// see message_oriented_connection::allow_full_size_messages()
+      void allow_full_size_messages();
       /// Records why the connection is closing, and whether that is a failure of the peer, unless a
       /// reason is already recorded; the first reason (a rejection, or whichever side asked to close
       /// first) is the one worth keeping

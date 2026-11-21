@@ -19,6 +19,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -340,6 +341,38 @@ private:
 };
 
 std::vector< char > garbage( size_t size, char value = '\xff' ) { return std::vector< char >( size, value ); }
+
+/// A current_time_request as a raw_connection writes it, which the node answers before a hello
+std::vector< char > time_request_frame()
+{
+  const message request( current_time_request_message( fc::time_point::now() ) );
+  return raw_connection::frame( request.size, request.msg_type, request.data );
+}
+
+/// Connects @p count raw connections to @p node with the key exchange, one after another, and returns those the
+/// node took on; the others it closed at accept, so their key exchange failed. Every tenth connection, each one
+/// taken on sends a time request, which keeps the handshake inactivity timeout from closing it.
+std::vector< std::unique_ptr< raw_connection > > connect_without_hello( fc::thread& thread, const fc::ip::endpoint& node, size_t count )
+{
+  std::vector< std::unique_ptr< raw_connection > > taken_on;
+  for( size_t i = 0; i < count; ++i )
+  {
+    auto connection = std::make_unique< raw_connection >( thread );
+    try
+    {
+      connection->connect_secure( node );
+      taken_on.push_back( std::move( connection ) );
+    }
+    catch( const fc::exception& )
+    {
+      // closed at accept: the node sent no key
+    }
+    if( i % 10 == 9 )
+      for( const auto& held : taken_on )
+        held->write( time_request_frame() );
+  }
+  return taken_on;
+}
 
 block_ptr with_bad_signature( const block_ptr& block )
 {
@@ -849,6 +882,127 @@ BOOST_AUTO_TEST_CASE( messages_before_hello_test )
   } );
 }
 
+/// A14 (T): 200 connections from one host (loopback, exempt from the per-host limit) that do the key exchange and
+/// never send a hello, though they send a time request every second, which the node answers: the node takes on
+/// GRAPHENE_NET_MAXIMUM_HANDSHAKING_INBOUND_CONNECTIONS of them and closes the rest at accept. They hold no
+/// connection slot, so meanwhile the node, short of its desired 2 connections, dials a peer another peer tells it
+/// about. The time requests don't keep them open: each is closed GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC after it
+/// started, not before. Then a peer connecting is taken up.
+BOOST_AUTO_TEST_CASE( pre_hello_flood_test )
+{
+  start_node( R"("desired_number_of_connections":2)" );
+  run( [&]()
+  {
+    auto relay = make_peer( "address relay" );
+    connect_active( *relay );
+
+    const fc::time_point flood_started = fc::time_point::now();
+    std::vector< std::unique_ptr< raw_connection > > held = connect_without_hello( peer_thread, node_endpoint(), 200 );
+    const fc::time_point flood_done = fc::time_point::now();
+    BOOST_REQUIRE_EQUAL( held.size(), size_t( GRAPHENE_NET_MAXIMUM_HANDSHAKING_INBOUND_CONNECTIONS ) );
+    const auto open_count = [&]() { return size_t( std::count_if( held.begin(), held.end(), []( const auto& c ) { return !c->closed(); } ) ); };
+    BOOST_REQUIRE_EQUAL( open_count(), held.size() );
+
+    // add_node() would dial however many connections the node has; a learned address is dialed only while it wants more
+    auto dialed = make_peer( "peer the node dials during the flood" );
+    const fc::ip::endpoint dialed_endpoint = dialed->listen();
+    const fc::time_point dial_deadline = fc::time_point::now() + reply_timeout;
+    while( !dialed->connected() && fc::time_point::now() < dial_deadline )
+    {
+      address_message relayed;
+      relayed.addresses.emplace_back( dialed_endpoint, fc::time_point::now(), fc::microseconds( 0 ), node_id_t(),
+                                      peer_connection_direction::inbound, firewalled_state::not_firewalled );
+      relay->send( relayed );
+      fc::usleep( fc::milliseconds( 250 ) );
+    }
+    BOOST_CHECK_MESSAGE( dialed->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ), "the node did not take up the peer it dialed" );
+    BOOST_CHECK( node_lists( *dialed ) );
+    BOOST_REQUIRE_MESSAGE( fc::time_point::now() < flood_started + fc::seconds( GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC - 2 ),
+                           "the dial took too long to tell whether the flood was still held" );
+    BOOST_CHECK_EQUAL( open_count(), held.size() );
+
+    // the node checks once a second; the slack is for a loaded host
+    const fc::time_point latest = flood_done + fc::seconds( GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC + 1 + 10 );
+    while( open_count() > 0 && fc::time_point::now() < latest )
+    {
+      for( const auto& connection : held )
+        if( !connection->closed() )
+        {
+          try
+          {
+            connection->write( time_request_frame() );
+          }
+          catch( const fc::exception& )
+          {
+            // the node closed it since closed() was read
+          }
+        }
+      fc::usleep( fc::seconds( 1 ) );
+    }
+    BOOST_REQUIRE_EQUAL( open_count(), 0u );
+    // all of them started after the flood did; the slack is for the node checking once a second
+    const fc::time_point earliest = flood_started + fc::seconds( GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC ) - fc::seconds( 1 );
+    for( const auto& connection : held )
+      BOOST_CHECK_GE( connection->closed_at().time_since_epoch().count(), earliest.time_since_epoch().count() );
+
+    auto after = make_peer( "peer after the flood" );
+    connect_active( *after );
+    require_kept( *dialed );
+    require_kept( *relay );
+  } );
+}
+
+/// A15: with loopback not exempt from the per-host limit, connections from 127.0.0.1 that do the key exchange and
+/// send no hello are taken on only GRAPHENE_NET_MAXIMUM_HANDSHAKING_CONNECTIONS_PER_HOST at a time: the rest, and a
+/// peer on that host that would send its hello, are closed at accept. A peer on another host (127.0.0.2) is taken up.
+BOOST_AUTO_TEST_CASE( pre_hello_connections_per_host_test )
+{
+  start_node( R"("host_limit_exempt_subnets":[],"peer_inactivity_timeout":60)" );
+  run( [&]()
+  {
+    std::vector< std::unique_ptr< raw_connection > > held = connect_without_hello( peer_thread, node_endpoint(), 20 );
+    BOOST_CHECK_EQUAL( held.size(), size_t( GRAPHENE_NET_MAXIMUM_HANDSHAKING_CONNECTIONS_PER_HOST ) );
+
+    auto same_host = make_peer( "peer on the flooding host" );
+    BOOST_CHECK_THROW( same_host->connect( node_endpoint() ), fc::exception );
+
+    auto other_host = make_peer( "peer on another host" );
+    other_host->connect( node_endpoint(), "127.0.0.2" );
+    BOOST_REQUIRE_MESSAGE( other_host->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ), "the node did not take up the peer" );
+    BOOST_CHECK( node_lists( *other_host ) );
+    for( const auto& connection : held )
+      BOOST_CHECK( !connection->closed() );
+  } );
+}
+
+/// A16: until the node accepts a peer's hello, a message header announcing more than
+/// GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE ends the connection as soon as it is read, while one announcing less
+/// waits for its bytes; once the hello is accepted, a larger message (of a type the node ignores) is read whole
+BOOST_AUTO_TEST_CASE( pre_hello_message_size_test )
+{
+  start_node();
+  run( [&]()
+  {
+    raw_connection oversized( peer_thread );
+    oversized.connect_secure( node_endpoint() );
+    oversized.write( raw_connection::frame( GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE + 1, current_time_request_message_type ) );
+
+    raw_connection within_limit( peer_thread );
+    within_limit.connect_secure( node_endpoint() );
+    within_limit.write( raw_connection::frame( GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE, current_time_request_message_type ) );
+
+    BOOST_CHECK( oversized.wait_closed( reply_timeout ) );
+    fc::usleep( quiet_period );
+    BOOST_CHECK( !within_limit.closed() );
+
+    auto active = make_peer( "active peer" );
+    connect_active( *active );
+    active->send_raw( 1234, garbage( 2 * GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE ) );
+    require_kept( *active );
+    request< current_time_reply_message >( *active, current_time_request_message( fc::time_point::now() ) );
+  } );
+}
+
 // ---------------------------------------------------------------------------------------------------------
 // B. Framing and decoding
 // ---------------------------------------------------------------------------------------------------------
@@ -1044,6 +1198,95 @@ BOOST_AUTO_TEST_CASE( send_queue_limit_test )
     BOOST_CHECK( stalled->wait_closed( reply_timeout ) );
     require_kept( *bystander );
     BOOST_CHECK( node_lists( *bystander ) );
+  } );
+}
+
+/// B7 (T): a peer that stops reading while the node has replies for it, and keeps sending it time requests so it
+/// doesn't look idle, is disconnected once nothing has been written to it for GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC,
+/// though its send queue never overflows. A peer that stops reading as long, less a few seconds, and then reads again
+/// is kept. Each stops reading by not returning from its handler of a reply, and asks for the ids of all 300 blocks
+/// (6 kB a reply) a few at a time until the node has written nothing to it for half a second, which leaves far less
+/// than GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES queued.
+BOOST_AUTO_TEST_CASE( slow_reader_test )
+{
+  start_node();
+  run( [&]()
+  {
+    schedule_blocks( 300 );
+    auto stalled = make_peer( "peer that stops reading" );
+    auto brief = make_peer( "peer that stops reading for a while" );
+    std::atomic< bool > stalled_reads = false;
+    std::atomic< bool > brief_reads = false;
+    BOOST_SCOPE_EXIT( &stalled_reads, &brief_reads ) { stalled_reads = true; brief_reads = true; } BOOST_SCOPE_EXIT_END
+    const auto stop_reading = []( test_peer& peer, std::atomic< bool >& reads )
+    {
+      peer.on( blockchain_item_ids_inventory_message_type, [&reads]( test_peer&, const message& )
+      {
+        while( !reads )
+          fc::usleep( fc::milliseconds( 20 ) );
+      } );
+    };
+    connect_active( *stalled );
+    connect_active( *brief );
+    BOOST_REQUIRE( wait_until( [&]() { return node_lists( *stalled ) && node_lists( *brief ); }, reply_timeout ) );
+    stop_reading( *stalled, stalled_reads );
+    stop_reading( *brief, brief_reads );
+
+    const auto bytes_sent_to = [&]( const test_peer& peer )
+    {
+      for( const hive::plugins::p2p::api_peer_status& status : p2p().get_connected_peers() )
+        if( status.host == peer.endpoint() )
+          return status.info[ "bytessent" ].as_uint64();
+      BOOST_FAIL( "the node does not list the peer" );
+      return uint64_t( 0 );
+    };
+    const fetch_blockchain_item_ids_message ids_request( block_message_type, {} );
+    std::vector< test_peer* > filling = { stalled.get(), brief.get() };
+    std::map< test_peer*, uint64_t > last_sent;
+    std::map< test_peer*, int > unchanged;
+    std::map< test_peer*, fc::time_point > stalled_at;
+    const fc::time_point fill_deadline = fc::time_point::now() + fc::seconds( 60 );
+    while( !filling.empty() && fc::time_point::now() < fill_deadline )
+    {
+      for( test_peer* peer : filling )
+        for( int i = 0; i < 10; ++i )
+          peer->send( ids_request );
+      fc::usleep( fc::milliseconds( 100 ) );
+      for( auto peer = filling.begin(); peer != filling.end(); )
+      {
+        const uint64_t sent = bytes_sent_to( **peer );
+        unchanged[ *peer ] = sent == last_sent[ *peer ] ? unchanged[ *peer ] + 1 : 0;
+        last_sent[ *peer ] = sent;
+        if( unchanged[ *peer ] < 5 )
+          ++peer;
+        else
+        {
+          stalled_at[ *peer ] = fc::time_point::now();
+          peer = filling.erase( peer );
+        }
+      }
+    }
+    BOOST_REQUIRE_MESSAGE( filling.empty(), "the node kept writing to a peer that doesn't read" );
+
+    // the stalled peer's read loop waits in its handler, so it is the node that tells when it dropped the peer
+    const fc::time_point latest = stalled_at[ stalled.get() ] + fc::seconds( GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC + 15 );
+    const fc::time_point brief_resumes = stalled_at[ brief.get() ] + fc::seconds( GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC - 10 );
+    while( node_lists( *stalled ) && fc::time_point::now() < latest )
+    {
+      stalled->send( current_time_request_message( fc::time_point::now() ) );
+      brief->send( current_time_request_message( fc::time_point::now() ) );
+      if( fc::time_point::now() >= brief_resumes )
+        brief_reads = true;
+      fc::usleep( fc::seconds( 1 ) );
+    }
+    const fc::time_point dropped_at = fc::time_point::now();
+    BOOST_REQUIRE_MESSAGE( !node_lists( *stalled ), "the node kept a peer that doesn't read" );
+    BOOST_CHECK_GE( ( dropped_at - stalled_at[ stalled.get() ] ).count(), fc::seconds( GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC - 5 ).count() );
+    stalled_reads = true;
+    BOOST_CHECK( stalled->wait_closed( reply_timeout ) );
+    BOOST_CHECK( brief_reads );
+    require_kept( *brief );
+    BOOST_CHECK( node_lists( *brief ) );
   } );
 }
 

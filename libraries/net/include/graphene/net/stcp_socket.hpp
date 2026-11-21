@@ -25,6 +25,7 @@
 #include <fc/network/tcp_socket.hpp>
 #include <fc/crypto/aes.hpp>
 #include <fc/crypto/elliptic.hpp>
+#include <fc/time.hpp>
 
 namespace graphene { namespace net {
 
@@ -56,6 +57,11 @@ class stcp_socket : public virtual fc::iostream
     using istream::get;
     void             get( char& c ) { read( &c, 1 ); }
     fc::sha512       get_shared_secret() const { return _shared_secret; }
+    /** the most one read or write takes, and the size of each of the read and write buffers (a multiple of 16);
+     *  a buffer of another size is replaced by the next read or write that uses it */
+    void             set_buffer_size( size_t buffer_size );
+    /// when a write last put bytes into the socket
+    fc::time_point   get_last_write_time() const { return _last_write_time; }
   private:
     void do_key_exchange();
 
@@ -66,8 +72,12 @@ class stcp_socket : public virtual fc::iostream
     fc::tcp_socket       _sock;
     fc::aes_encoder      _send_aes;
     fc::aes_decoder      _recv_aes;
+    size_t                _buffer_size;
     std::shared_ptr<char> _read_buffer;
+    size_t                _read_buffer_size = 0;
     std::shared_ptr<char> _write_buffer;
+    size_t                _write_buffer_size = 0;
+    fc::time_point        _last_write_time;
 #ifndef NDEBUG
     bool _read_buffer_in_use;
     bool _write_buffer_in_use;

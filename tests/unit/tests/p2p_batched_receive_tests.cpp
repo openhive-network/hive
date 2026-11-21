@@ -72,20 +72,23 @@ public:
   std::shared_ptr<hive::chain::full_block_type> get_block_to_send( peer_connection*, const graphene::net::item_hash_t& ) override { return {}; }
 };
 
-/// Counts the socket reads that have completed.
+/// Counts the socket reads that have completed, and records the most bytes one asked for.
 class read_counting_hooks : public fc::tcp_socket_io_hooks
 {
 public:
   size_t completed_reads = 0;
+  size_t largest_read_length = 0;
 
   size_t readsome( boost::asio::ip::tcp::socket& socket, char* buffer, size_t length ) override
   {
+    largest_read_length = std::max( largest_read_length, length );
     const size_t bytes_read = fc::asio::read_some( socket, buffer, length ).wait();
     ++completed_reads;
     return bytes_read;
   }
   size_t readsome( boost::asio::ip::tcp::socket& socket, const std::shared_ptr<char>& buffer, size_t length, size_t offset ) override
   {
+    largest_read_length = std::max( largest_read_length, length );
     const size_t bytes_read = fc::asio::read_some( socket, buffer, length, offset ).wait();
     ++completed_reads;
     return bytes_read;
@@ -132,6 +135,7 @@ void append_message( std::vector<char>& stream, const message& m )
 }
 
 /// A peer_connection receiving over loopback from a bare encrypted socket, which writes the stream in chunks of the test's choosing.
+/// Unless @p full_size_messages, the receiver stays as it is until a node accepts the peer's hello.
 struct raw_sender_pair
 {
   recording_delegate receiver_delegate;
@@ -139,7 +143,7 @@ struct raw_sender_pair
   read_counting_hooks hooks;
   graphene::net::stcp_socket sender;
 
-  raw_sender_pair()
+  explicit raw_sender_pair( bool full_size_messages = true )
   {
     receiver->get_socket().set_io_hooks( &hooks );
     fc::tcp_server server;
@@ -151,6 +155,11 @@ struct raw_sender_pair
     sender.connect_to( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), server.get_port() ) );
     sender.get_socket().set_no_delay( true );
     accepted.wait();
+    if( full_size_messages )
+    {
+      receiver->allow_full_size_messages();
+      sender.set_buffer_size( GRAPHENE_NET_CONNECTION_BUFFER_SIZE );
+    }
   }
 
   ~raw_sender_pair()
@@ -282,6 +291,44 @@ BOOST_AUTO_TEST_CASE( oversize_message_is_refused_from_its_header )
   BOOST_CHECK( pair.receiver_delegate.closed );
   BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 1u );
   BOOST_CHECK( same_message( pair.receiver_delegate.received[0], before ) );
+}
+
+/// Until the receiver allows full size messages, as before a node accepts the peer's hello, its reads ask for at most
+/// GRAPHENE_NET_HANDSHAKE_BUFFER_SIZE bytes, a message of GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE is handed out
+/// whole, and a header announcing one byte more closes the connection as soon as it is read. Once allowed, such a
+/// message is handed out and reads ask for more.
+BOOST_AUTO_TEST_CASE( handshake_limits_until_full_size_messages_are_allowed )
+{
+  const message largest_handshake_message = make_message( 5001, GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE, 'h' );
+  const message too_large_for_handshake = make_message( 5002, GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE + 1, 'f' );
+  {
+    raw_sender_pair pair( false );
+    std::vector<char> stream;
+    append_message( stream, largest_handshake_message );
+    message_header too_large = too_large_for_handshake;
+    append_message( stream, too_large, nullptr, 0 );
+
+    pair.write( stream.data(), stream.size() );
+    pair.wait_until( [&]() { return pair.receiver_delegate.closed; }, fc::seconds( 10 ) );
+
+    BOOST_CHECK( pair.receiver_delegate.closed );
+    BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 1u );
+    BOOST_CHECK( same_message( pair.receiver_delegate.received[0], largest_handshake_message ) );
+    BOOST_CHECK_LE( pair.hooks.largest_read_length, size_t( GRAPHENE_NET_HANDSHAKE_BUFFER_SIZE ) );
+  }
+  {
+    raw_sender_pair pair;
+    std::vector<char> stream;
+    append_message( stream, too_large_for_handshake );
+
+    pair.write( stream.data(), stream.size() );
+    pair.wait_until( [&]() { return !pair.receiver_delegate.received.empty() || pair.receiver_delegate.closed; } );
+
+    BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 1u );
+    BOOST_CHECK( same_message( pair.receiver_delegate.received[0], too_large_for_handshake ) );
+    BOOST_CHECK( !pair.receiver_delegate.closed );
+    BOOST_CHECK_GT( pair.hooks.largest_read_length, size_t( GRAPHENE_NET_HANDSHAKE_BUFFER_SIZE ) );
+  }
 }
 
 /// A connection closed locally by another task while the read loop yields to it, after a run of messages
