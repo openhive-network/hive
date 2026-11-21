@@ -68,6 +68,9 @@ namespace graphene { namespace net {
       bool _send_message_in_progress;
       /// set once we close the socket ourselves, after which the read loop failing is expected
       bool _closed_locally;
+      /// see allow_full_size_messages()
+      size_t _buffer_size = GRAPHENE_NET_HANDSHAKE_BUFFER_SIZE;
+      uint32_t _maximum_message_size = GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE;
 #ifndef NDEBUG
       fc::thread* _thread;
 #endif
@@ -89,12 +92,14 @@ namespace graphene { namespace net {
       void send_messages(const std::vector<message_to_write>& messages_to_send);
       void close_connection();
       void destroy_connection(const char* caller);
+      void allow_full_size_messages();
 
       uint64_t get_total_bytes_sent() const;
       uint64_t get_total_bytes_received() const;
 
       fc::time_point get_last_message_sent_time() const;
       fc::time_point get_last_message_received_time() const;
+      fc::time_point get_last_write_progress_time() const { return _sock.get_last_write_time(); }
       fc::time_point get_connection_time() const { return _connected_time; }
       fc::sha512 get_shared_secret() const;
     };
@@ -150,13 +155,13 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       // every async read reschedules this task, which on a busy p2p thread waits behind every other peer's
-      // tasks; so each read takes whatever the kernel holds, up to this much, and every complete message
-      // in it is handled before the next read
-      const size_t read_buffer_size = 64 * 1024;
-      // and this many messages are handled at most before other tasks get to run: a read whose bytes are already
-      // there may return without letting them run, so the count goes on across reads until the loop yields
+      // tasks; so each read takes whatever the kernel holds, up to the buffer's size (_buffer_size), and every
+      // complete message in it is handled before the next read.  At most this many messages are handled before
+      // other tasks get to run: a read whose bytes are already there may return without letting them run, so
+      // the count goes on across reads until the loop yields
       const size_t messages_between_yields = 256;
-      static_assert(read_buffer_size % 16 == 0, "reads must be whole AES blocks");
+      static_assert(GRAPHENE_NET_HANDSHAKE_BUFFER_SIZE % 16 == 0 && GRAPHENE_NET_CONNECTION_BUFFER_SIZE % 16 == 0,
+                    "reads must be whole AES blocks");
       static_assert(sizeof(message_header) <= 16, "a message header must fit in the first AES block");
 
       _connected_time = fc::time_point::now();
@@ -171,10 +176,19 @@ namespace graphene { namespace net {
         remote_endpoint = get_socket().remote_endpoint();
         // decrypted bytes not yet handed out are [buffer_begin, buffer_end); every message takes a whole
         // number of AES blocks, so both stay multiples of 16
+        size_t read_buffer_size = _buffer_size;
         std::unique_ptr<char[]> buffer(new char[read_buffer_size]);
         size_t buffer_begin = 0;
         size_t buffer_end = 0;
         size_t messages_since_last_yield = 0;
+        auto grow_buffer = [&]() {
+          std::unique_ptr<char[]> grown(new char[_buffer_size]);
+          memcpy(grown.get(), buffer.get() + buffer_begin, buffer_end - buffer_begin);
+          buffer = std::move(grown);
+          buffer_end -= buffer_begin;
+          buffer_begin = 0;
+          read_buffer_size = _buffer_size;
+        };
         auto buffer_at_least = [&](size_t byte_count) {
           if (buffer_end - buffer_begin >= byte_count)
             return;
@@ -188,10 +202,13 @@ namespace graphene { namespace net {
         message m;
         while( true )
         {
+          if (read_buffer_size != _buffer_size)
+            grow_buffer();
           buffer_at_least(16);
           memcpy((char*)&m, buffer.get() + buffer_begin, sizeof(message_header));
 
-          FC_ASSERT( m.size <= MAX_MESSAGE_SIZE, "", ("m.size",m.size)("MAX_MESSAGE_SIZE",MAX_MESSAGE_SIZE) );
+          // checked before anything is allocated for the message
+          FC_ASSERT( m.size <= _maximum_message_size, "", ("m.size",m.size)("maximum_message_size",_maximum_message_size) );
 
           const size_t size_with_padding = 16 * ((sizeof(message_header) + m.size + 15) / 16);
           if (size_with_padding <= read_buffer_size)
@@ -360,6 +377,14 @@ namespace graphene { namespace net {
       _sock.close();
     }
 
+    void message_oriented_connection_impl::allow_full_size_messages()
+    {
+      VERIFY_CORRECT_THREAD();
+      _maximum_message_size = MAX_MESSAGE_SIZE;
+      _buffer_size = GRAPHENE_NET_CONNECTION_BUFFER_SIZE;
+      _sock.set_buffer_size(GRAPHENE_NET_CONNECTION_BUFFER_SIZE);
+    }
+
     void message_oriented_connection_impl::destroy_connection(const char* caller)
     {
       VERIFY_CORRECT_THREAD();
@@ -470,6 +495,11 @@ namespace graphene { namespace net {
     my->destroy_connection(caller);
   }
 
+  void message_oriented_connection::allow_full_size_messages()
+  {
+    my->allow_full_size_messages();
+  }
+
   uint64_t message_oriented_connection::get_total_bytes_sent() const
   {
     return my->get_total_bytes_sent();
@@ -488,6 +518,10 @@ namespace graphene { namespace net {
   fc::time_point message_oriented_connection::get_last_message_received_time() const
   {
     return my->get_last_message_received_time();
+  }
+  fc::time_point message_oriented_connection::get_last_write_progress_time() const
+  {
+    return my->get_last_write_progress_time();
   }
   fc::time_point message_oriented_connection::get_connection_time() const
   {

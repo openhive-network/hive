@@ -142,13 +142,19 @@ public:
   hello_options& hello() { return _hello; }
   graphene::net::node_id_t node_id() const { return _hello.node_id ? *_hello.node_id : graphene::net::node_id_t( _key.get_public_key().serialize() ); }
 
-  /// Connects to the node (an inbound connection for the node) and, after the key exchange, starts the handshake
-  void connect( const fc::ip::endpoint& node_endpoint )
+  /**
+   * Connects to the node (an inbound connection for the node) and, after the key exchange, starts the handshake.
+   * Another loopback @p local_address (127.0.0.2, ...) stands in for another host.
+   */
+  void connect( const fc::ip::endpoint& node_endpoint, const std::string& local_address = "" )
   {
     _thread.async( [&]()
     {
       _connection = graphene::net::peer_connection::make_shared( this );
-      _connection->connect_to( node_endpoint );
+      if( local_address.empty() )
+        _connection->connect_to( node_endpoint );
+      else
+        _connection->connect_to( node_endpoint, fc::ip::endpoint( fc::ip::address( local_address ), 0 ) );
       on_connected();
     } ).wait();
   }
@@ -530,6 +536,8 @@ private:
       _local_endpoint = *_connection->get_local_endpoint();
       _connected_at = fc::time_point::now();
     }
+    // the test peer takes whatever the node sends, as if it had accepted the node's hello already
+    _connection->allow_full_size_messages();
     _connected = true;
     if( _hello.count == 0 )
       return;

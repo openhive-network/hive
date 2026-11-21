@@ -33,13 +33,14 @@
 #include <fc/exception/exception.hpp>
 
 #include <graphene/net/stcp_socket.hpp>
+#include <graphene/net/config.hpp>
 
 namespace graphene { namespace net {
 
 stcp_socket::stcp_socket()
-//:_buf_len(0)
+   : _buffer_size(GRAPHENE_NET_HANDSHAKE_BUFFER_SIZE)
 #ifndef NDEBUG
-   : _read_buffer_in_use(false),
+   , _read_buffer_in_use(false),
      _write_buffer_in_use(false)
 #endif
 {
@@ -101,11 +102,13 @@ size_t stcp_socket::readsome( char* buffer, size_t len )
 #endif
 
     // as large as message_oriented_connection's read buffer, so one read can take all it has room for
-    const size_t read_buffer_length = 64 * 1024;
-    if (!_read_buffer)
-      _read_buffer.reset(new char[read_buffer_length], [](char* p){ delete[] p; });
+    if (_read_buffer_size != _buffer_size)
+    {
+      _read_buffer.reset(new char[_buffer_size], [](char* p){ delete[] p; });
+      _read_buffer_size = _buffer_size;
+    }
 
-    len = std::min<size_t>(read_buffer_length, len);
+    len = std::min<size_t>(_read_buffer_size, len);
 
     size_t s = _sock.readsome( _read_buffer, len, 0 );
     if( s % 16 ) 
@@ -144,11 +147,12 @@ size_t stcp_socket::writesome( const char* buffer, size_t len )
 
     // the send cipher is one continuous CBC stream without padding, so the chunk size does not change
     // the ciphertext; it must stay a multiple of 16 to keep every chunk a whole number of AES blocks
-    const std::size_t write_buffer_length = 64 * 1024;
-    static_assert(write_buffer_length % 16 == 0, "write chunks must be whole AES blocks");
-    if (!_write_buffer)
-      _write_buffer.reset(new char[write_buffer_length], [](char* p){ delete[] p; });
-    len = std::min<size_t>(write_buffer_length, len);
+    if (_write_buffer_size != _buffer_size)
+    {
+      _write_buffer.reset(new char[_buffer_size], [](char* p){ delete[] p; });
+      _write_buffer_size = _buffer_size;
+    }
+    len = std::min<size_t>(_write_buffer_size, len);
     memset(_write_buffer.get(), 0, len); // just in case aes.encode screws up
     /**
      * every sizeof(crypt_buf) bytes the aes channel
@@ -159,12 +163,19 @@ size_t stcp_socket::writesome( const char* buffer, size_t len )
     uint32_t ciphertext_len = _send_aes.encode( buffer, len, _write_buffer.get() );
     assert(ciphertext_len == len);
     _sock.write( _write_buffer, ciphertext_len );
+    _last_write_time = fc::time_point::now();
     return ciphertext_len;
 } FC_RETHROW_EXCEPTIONS( warn, "", ("len",len) ) }
 
 size_t stcp_socket::writesome( const std::shared_ptr<const char>& buf, size_t len, size_t offset )
 {
   return writesome(buf.get() + offset, len);
+}
+
+void stcp_socket::set_buffer_size( size_t buffer_size )
+{
+  FC_ASSERT( buffer_size > 0 && buffer_size % 16 == 0, "buffers must hold whole AES blocks", ("buffer_size", buffer_size) );
+  _buffer_size = buffer_size;
 }
 
 void stcp_socket::flush()

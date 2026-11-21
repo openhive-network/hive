@@ -127,6 +127,39 @@ bool same_message( const message& a, const message& b )
   return a.msg_type == b.msg_type && a.size == b.size && a.data == b.data;
 }
 
+/// Writes nothing while `blocked`, as toward a peer whose receive window stays closed, and then as fc does.
+class blocking_write_hooks : public fc::tcp_socket_io_hooks
+{
+public:
+  bool blocked = true;
+
+  size_t readsome( boost::asio::ip::tcp::socket& socket, char* buffer, size_t length ) override
+  {
+    return fc::asio::read_some( socket, buffer, length ).wait();
+  }
+  size_t readsome( boost::asio::ip::tcp::socket& socket, const std::shared_ptr<char>& buffer, size_t length, size_t offset ) override
+  {
+    return fc::asio::read_some( socket, buffer, length, offset ).wait();
+  }
+  size_t writesome( boost::asio::ip::tcp::socket& socket, const char* buffer, size_t length ) override
+  {
+    wait_while_blocked();
+    return fc::asio::write_some( socket, buffer, length ).wait();
+  }
+  size_t writesome( boost::asio::ip::tcp::socket& socket, const std::shared_ptr<const char>& buffer, size_t length, size_t offset ) override
+  {
+    wait_while_blocked();
+    return fc::asio::write_some( socket, buffer, length, offset ).wait();
+  }
+
+private:
+  void wait_while_blocked()
+  {
+    while( blocked )
+      fc::usleep( fc::milliseconds( 1 ) );
+  }
+};
+
 /// Two peer_connections joined over loopback, with the sender's socket writes counted.
 struct connected_pair
 {
@@ -146,6 +179,9 @@ struct connected_pair
     }, "batched_send_test accept" );
     sender->connect_to( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), server.get_port() ) );
     accepted.wait();
+    // as when each has accepted the other's hello
+    sender->allow_full_size_messages();
+    receiver->allow_full_size_messages();
     sender->get_socket().set_io_hooks( &hooks );
   }
 
@@ -933,6 +969,42 @@ BOOST_AUTO_TEST_CASE( stale_waiting_transaction_inventory_is_not_advertised )
 }
 
 /// Canceling the send task while it builds a message still ends it; the build failure handling does not swallow the cancel.
+/// Toward a peer that reads nothing (its socket takes no bytes), however much transaction inventory waits outside the
+/// send queue, which doesn't close the connection, the connection's send progress time stays when sending started,
+/// which is what such a peer is disconnected on.  Once the socket takes bytes again, everything is written and, with
+/// nothing left to send, the time is fc::time_point::maximum().
+BOOST_AUTO_TEST_CASE( send_progress_stops_while_the_peer_reads_nothing )
+{
+  connected_pair pair;
+  blocking_write_hooks blocking;
+  pair.sender->get_socket().set_io_hooks( &blocking );
+  BOOST_CHECK( pair.sender->get_send_progress_time() == fc::time_point::maximum() );
+
+  const fc::time_point before = fc::time_point::now();
+  const auto advertise = [&]( size_t i ) {
+    pair.sender->send_message( message( graphene::net::item_ids_inventory_message( graphene::net::trx_message_type,
+                                                                                   transaction_ids( "unread " + std::to_string( i ), 1000 ) ) ) );
+  };
+  advertise( 0 );
+  const fc::time_point pending_since = pair.sender->get_send_progress_time();
+  BOOST_CHECK( pending_since >= before && pending_since <= fc::time_point::now() );
+  for( size_t i = 1; i < 100; ++i )
+  {
+    fc::usleep( fc::milliseconds( 10 ) );
+    advertise( i );
+  }
+  BOOST_CHECK( pair.sender->get_send_progress_time() == pending_since );
+  BOOST_CHECK( !pair.sender_delegate.closed );
+
+  blocking.blocked = false;
+  const fc::time_point deadline = fc::time_point::now() + fc::seconds( 30 );
+  while( pair.sender->get_send_progress_time() != fc::time_point::maximum() && fc::time_point::now() < deadline )
+    fc::usleep( fc::milliseconds( 1 ) );
+  BOOST_CHECK( pair.sender->get_send_progress_time() == fc::time_point::maximum() );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
+  BOOST_CHECK( !advertised_transactions( pair.receiver_delegate ).empty() );
+}
+
 BOOST_AUTO_TEST_CASE( canceling_the_send_task_while_building_ends_it )
 {
   size_t build_attempts = 0;

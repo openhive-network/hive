@@ -473,6 +473,8 @@ namespace graphene { namespace net
         } while (!_queued_messages.empty() && batch_size < GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES);
         try
         {
+          _write_in_progress = true;
+          BOOST_SCOPE_EXIT(this_) { this_->_write_in_progress = false; } BOOST_SCOPE_EXIT_END
           _message_connection.send_messages(messages_to_send);
           if (!messages_to_send.empty())
             _node->on_messages_written(messages_to_send.size(), batch_size);
@@ -593,6 +595,8 @@ namespace graphene { namespace net
         }
         return;
       }
+      if (_queued_messages.empty() && !_write_in_progress)
+        _send_pending_since = fc::time_point::now();
       _total_queued_messages_size += message_size;
       if (!message_to_send->may_wait_for_batch)
         ++_queued_messages_not_waiting_for_batch;
@@ -712,6 +716,14 @@ namespace graphene { namespace net
       if (_deferred_transaction_replies.empty())
         return fc::time_point::maximum();
       return std::max(_transaction_replies_deferred_since, get_last_message_sent_time());
+    }
+
+    fc::time_point peer_connection::get_send_progress_time() const
+    {
+      VERIFY_CORRECT_THREAD();
+      if (_queued_messages.empty() && !_write_in_progress)
+        return fc::time_point::maximum();
+      return std::max(_send_pending_since, _message_connection.get_last_write_progress_time());
     }
 
     bool peer_connection::queue_deferred_transaction_replies()
@@ -845,6 +857,12 @@ namespace graphene { namespace net
       VERIFY_CORRECT_THREAD();
       negotiation_status = connection_negotiation_status::closing;
       destroy(caller);
+    }
+
+    void peer_connection::allow_full_size_messages()
+    {
+      VERIFY_CORRECT_THREAD();
+      _message_connection.allow_full_size_messages();
     }
 
     uint64_t peer_connection::get_total_bytes_sent() const
