@@ -2395,6 +2395,45 @@ BOOST_AUTO_TEST_CASE( relaxed_connection_gives_way_to_new_host_test )
   } );
 }
 
+/// The same while a connection that never sends its hello is held open past the desired 3: the node still dials the
+/// peer on the new host at once (in the connect loop pass the relayed address triggers), and the newest of the 3
+/// gives way to it
+BOOST_AUTO_TEST_CASE( relaxed_connection_gives_way_with_handshaking_connection_test )
+{
+  // long enough that the node does not close the silent connection during the test
+  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[],)"
+              R"("peer_inactivity_timeout":60)" );
+  run( [&]()
+  {
+    std::vector< std::unique_ptr< test_peer > > peers;
+    for( int i = 0; i < 3; ++i )
+    {
+      peers.push_back( make_peer( "peer " + std::to_string( i ) + " on the first host" ) );
+      connect_active( *peers.back() );
+    }
+    auto no_hello = make_peer( "silent after key exchange" );
+    no_hello->hello().count = 0;
+    no_hello->ignore( hello_message_type );
+    no_hello->ignore( legacy_hello_message_type );
+    no_hello->connect( node_endpoint() );
+    BOOST_REQUIRE( wait_until( [&]() { return no_hello->connected(); }, reply_timeout ) );
+
+    std::vector< fc::ip::endpoint > endpoints;
+    const auto new_host = listening_peers( *this, "127.0.0.2", 1, endpoints );
+    const fc::time_point relayed = fc::time_point::now();
+    relay_addresses( *peers.front(), endpoints );
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return new_host.front()->connected(); }, reply_timeout ),
+                           "the node did not dial the peer on the new host" );
+    BOOST_CHECK_MESSAGE( new_host.front()->connected_at() - relayed < fc::seconds( 5 ),
+                         "dialed " << ( new_host.front()->connected_at() - relayed ).count() / 1000 << " ms after the address arrived" );
+    BOOST_CHECK( !no_hello->closed() );
+    require_closed_with( *peers.back(), "making room for a peer on another host" );
+    require_kept( *peers[ 0 ] );
+    require_kept( *peers[ 1 ] );
+    BOOST_CHECK( !new_host.front()->closed() );
+  } );
+}
+
 /// Category 2 (fallback), D9, D12: a block the node asked one peer for is fetched from another peer that
 /// advertised it too when the first one doesn't deliver it: when it ignores the request (it is disconnected once
 /// active_ignored_request_timeout, 2 s here, passes, and only then is the other peer asked), when it answers

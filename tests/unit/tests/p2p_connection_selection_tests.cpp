@@ -6,12 +6,14 @@
 #include <string>
 #include <vector>
 
+using graphene::net::accepts_connection_over_host_limit;
 using graphene::net::address_subnet;
 using graphene::net::connection_candidate;
 using graphene::net::connection_host_of;
 using graphene::net::connection_selection_limits;
 using graphene::net::exceeds_connections_per_host;
 using graphene::net::get_connection_spread;
+using graphene::net::get_relaxed_connections_per_host;
 using graphene::net::host_limited_connection;
 using graphene::net::inbound_connections_share_host;
 using graphene::net::is_in_any_subnet;
@@ -351,6 +353,98 @@ BOOST_AUTO_TEST_CASE( relaxed_limit_holds_with_many_hosts )
   BOOST_CHECK_EQUAL( selected.size(), 20u );
   for( int host = 1; host <= 12; ++host )
     BOOST_CHECK_LE( count_on_host( selected, address( "198.51.100." + std::to_string( host ) ) ), 2u );
+}
+
+/// Check B of hive#1170: 5 hosts, 7 candidates on one of them, too few in all for the desired 20.  Relaxed, the crowded
+/// host gets its share of 4, not all 7; with enough candidates on the others, only as many steps as fill the slots
+BOOST_AUTO_TEST_CASE( relaxed_limit_steps_one_host_at_a_time )
+{
+  const fc::ip::address crowded = address( "198.51.100.1" );
+  std::vector< connection_candidate > candidates = ports_on_host( "198.51.100.1", 7 );
+  for( int host = 2; host <= 5; ++host )
+  {
+    const std::vector< connection_candidate > on_host = ports_on_host( "198.51.100." + std::to_string( host ), 1 );
+    candidates.insert( candidates.end(), on_host.begin(), on_host.end() );
+  }
+  std::vector< fc::ip::endpoint > selected = select_connection_candidates( candidates, {}, relaxed_limits( 20, 2 ) );
+  BOOST_CHECK_EQUAL( count_on_host( selected, crowded ), 4u );
+  BOOST_CHECK_EQUAL( selected.size(), 8u );
+
+  // held already: the crowded host's share is reached, so nothing more there
+  selected = select_connection_candidates( candidates, { crowded, crowded, crowded, crowded }, relaxed_limits( 16, 2 ) );
+  BOOST_CHECK_EQUAL( count_on_host( selected, crowded ), 0u );
+  BOOST_CHECK_EQUAL( selected.size(), 4u );
+
+  // 4 candidates on each of the 4 other hosts: step 4 fills the 20 slots, 4 on every host
+  candidates = ports_on_host( "198.51.100.1", 7 );
+  for( int host = 2; host <= 5; ++host )
+  {
+    const std::vector< connection_candidate > on_host = ports_on_host( "198.51.100." + std::to_string( host ), 4 );
+    candidates.insert( candidates.end(), on_host.begin(), on_host.end() );
+  }
+  selected = select_connection_candidates( candidates, {}, relaxed_limits( 20, 2 ) );
+  BOOST_REQUIRE_EQUAL( selected.size(), 20u );
+  for( int host = 1; host <= 5; ++host )
+    BOOST_CHECK_EQUAL( count_on_host( selected, address( "198.51.100." + std::to_string( host ) ) ), 4u );
+
+  // with 7 slots past the 10 under the limit, every host gets its 3rd before any gets a 4th
+  selected = select_connection_candidates( candidates, {}, relaxed_limits( 17, 2 ) );
+  BOOST_REQUIRE_EQUAL( selected.size(), 17u );
+  for( int host = 1; host <= 5; ++host )
+    BOOST_CHECK_GE( count_on_host( selected, address( "198.51.100." + std::to_string( host ) ) ), 3u );
+
+  // a host already a step further than the others waits for them
+  const fc::ip::address other = address( "198.51.100.2" );
+  selected = select_connection_candidates( { { endpoint( "198.51.100.1", 3000 ) }, { endpoint( "198.51.100.2", 3000 ) } },
+                                           { crowded, crowded, crowded, other, other }, relaxed_limits( 1, 2 ) );
+  BOOST_REQUIRE_EQUAL( selected.size(), 1u );
+  BOOST_CHECK( connection_host_of( selected.front().get_address() ) == other );
+
+  // a hard limit takes none of them past it
+  selected = select_connection_candidates( candidates, {}, limits( 20, 2, 25 ) );
+  BOOST_CHECK_EQUAL( count_on_host( selected, crowded ), 2u );
+}
+
+/// The relaxed limit: the lowest step that reaches the desired connections, or each host's share when none does
+BOOST_AUTO_TEST_CASE( relaxed_connections_per_host )
+{
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 10, 10 }, 2, 20 ), 10u );
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 1, 5 }, 2, 4 ), 3u );     // the 2-host case: 1 + 3 reach 4
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 15, 5 }, 2, 20 ), 15u );
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 7, 1, 1, 1, 1 }, 2, 20 ), 4u ); // short anyway: ceil(20 / 5)
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 7, 3, 3, 3, 3 }, 2, 20 ), 4u );
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 7, 4, 4, 4, 4 }, 2, 20 ), 4u );
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 7, 7, 7 }, 2, 20 ), 7u );
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 }, 2, 20 ), 2u ); // not relaxed
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 1 }, 2, 1 ), 2u ); // never below the limit
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( {}, 2, 20 ), 2u );
+  BOOST_CHECK_EQUAL( get_relaxed_connections_per_host( { 7, 1 }, 0, 20 ), 0u );
+}
+
+/// An inbound hello over the default limit: accepted below the desired connections while its host is under the
+/// relaxed limit and no other host over the limit holds fewer
+BOOST_AUTO_TEST_CASE( inbound_connection_over_host_limit )
+{
+  const fc::ip::address a = address( "198.51.100.1" );
+  const fc::ip::address b = address( "198.51.100.2" );
+  const fc::ip::address c = address( "198.51.100.3" );
+  const fc::ip::address d = address( "198.51.100.4" );
+  const fc::ip::address e = address( "198.51.100.5" );
+
+  // one host only: up to the desired 3
+  BOOST_CHECK( accepts_connection_over_host_limit( a, { a, a }, 2, 3 ) );
+  BOOST_CHECK( !accepts_connection_over_host_limit( a, { a, a, a }, 2, 3 ) );
+
+  // 5 hosts, too few connections for the desired 20 anyway: one host stops at its share of 4
+  BOOST_CHECK( accepts_connection_over_host_limit( a, { a, a, a, b, c, d, e }, 2, 20 ) );
+  BOOST_CHECK( !accepts_connection_over_host_limit( a, { a, a, a, a, b, c, d, e }, 2, 20 ) );
+
+  // a host a step further than another host over the limit waits for it
+  BOOST_CHECK( !accepts_connection_over_host_limit( a, { a, a, a, a, b, b, b }, 2, 20 ) );
+  BOOST_CHECK( accepts_connection_over_host_limit( a, { a, a, a, b, b, b }, 2, 20 ) );
+  BOOST_CHECK( accepts_connection_over_host_limit( b, { a, a, a, a, b, b, b }, 2, 20 ) );
+
+  BOOST_CHECK( accepts_connection_over_host_limit( a, { a, a, a }, 0, 3 ) );
 }
 
 /// The connection that gives way to a new host: not exempt, on the host with the most connections over the limit,

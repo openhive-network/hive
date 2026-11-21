@@ -1338,12 +1338,35 @@ namespace graphene { namespace net {
    * family is first given candidates until it holds its reserved share of the desired connections, or runs
    * out of candidates; the remaining slots go to IPv6 candidates first, then IPv4 ones.  So with candidates of
    * both families, neither is shut out by the other filling the slots first.  With relax_connections_per_host, the
-   * slots still free after that go to the candidates the per-host limit left out, each to one on the host then
-   * holding the fewest connections (the first in database order among equals).
+   * slots still free after that go to the candidates the per-host limit left out, one step at a time: at step
+   * limit + 1, then limit + 2, ..., each host holding fewer than the step gets one more connection, the host then
+   * holding the fewest first (the first in database order among equals).  The steps stop at
+   * get_relaxed_connections_per_host() of the hosts' connections held plus candidates.
    */
   std::vector<fc::ip::endpoint> select_connection_candidates(const std::vector<connection_candidate>& candidates,
                                                              const std::vector<fc::ip::address>& held_addresses,
                                                              const connection_selection_limits& limits);
+
+  /**
+   * How many connections a host may hold while the default per-host limit is relaxed.  @p available_per_host holds,
+   * for each host, how many connections it could take (held plus candidates).  That is the lowest step, from
+   * @p maximum_connections_per_host up, at which the hosts together reach @p desired_connections; when no step
+   * does, each host's share of them, ceil(@p desired_connections / hosts), so that the host with the most candidates
+   * does not take them all while the slots stay short anyway.  Never below @p maximum_connections_per_host; 0 when it
+   * is 0 (no limit).
+   */
+  uint32_t get_relaxed_connections_per_host(const std::vector<uint32_t>& available_per_host, uint32_t maximum_connections_per_host,
+                                            uint32_t desired_connections);
+
+  /**
+   * Whether a hello from @p address, whose host holds @p maximum_connections_per_host or more of
+   * @p accepted_addresses (the remote addresses of the connections whose hello was accepted, not the new one), is
+   * accepted all the same while the default limit is relaxed: with fewer than @p desired_connections accepted, its
+   * host under get_relaxed_connections_per_host() (each host's connections held, one more for this one), and no
+   * other host over the limit holding fewer than it, so that one host at a time goes a step further.
+   */
+  bool accepts_connection_over_host_limit(const fc::ip::address& address, const std::vector<fc::ip::address>& accepted_addresses,
+                                          uint32_t maximum_connections_per_host, uint32_t desired_connections);
 
   /// How a set of connections spreads over hosts (connection_host_of) and address families
   struct connection_spread
