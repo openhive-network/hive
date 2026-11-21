@@ -473,8 +473,15 @@ namespace graphene { namespace net {
       uint32_t _cached_head_block_num = 0;
       uint32_t _cached_last_irreversible_block_num = 0;
       fc::time_point _last_head_advance_time; // when _cached_head_block_num last increased
-      fc::time_point _last_useful_data_from_any_peer_time; // the latest peer_connection::last_useful_data_time of any peer
+      fc::time_point _last_block_from_any_peer_time; // when a peer last gave us a block that we pushed; see record_block_delivered_by()
       fc::time_point _idle_peers_judged_since; // since when our head is behind with the chain not held; see find_idle_peers_to_replace()
+      // until when a peer disconnected as idle may not take a slot again, by node id and by the endpoint we dial it at
+      std::map<node_id_t, fc::time_point> _idle_peer_backoff_by_node_id;
+      std::map<fc::ip::endpoint, fc::time_point> _idle_peer_backoff_by_endpoint;
+      // idle disconnects warned about in the interval that began at _idle_disconnect_warnings_since, and those only dlogged
+      fc::time_point _idle_disconnect_warnings_since;
+      uint32_t _idle_disconnect_warnings = 0;
+      uint32_t _idle_disconnect_warnings_suppressed = 0;
 
       uint32_t _sync_item_type;
       uint32_t _total_number_of_unfetched_items; /// the number of items we still need to fetch while syncing
@@ -737,9 +744,12 @@ namespace graphene { namespace net {
       uint32_t highest_block_number_known_for_peer(const peer_connection& peer);
       void restart_sync_if_head_stalled();
       void record_useful_data_from(peer_connection* peer);
+      void record_block_delivered_by(peer_connection* peer);
       bool is_near_advancing_head(uint32_t block_num);
       std::vector<peer_connection_ptr> find_idle_peers_to_replace();
       void disconnect_idle_peer(peer_connection* peer);
+      void forget_expired_idle_peer_backoffs(fc::time_point now);
+      fc::optional<fc::time_point> idle_peer_backoff_end(const node_id_t& node_id, const fc::optional<fc::ip::endpoint>& endpoint);
       void count_failed_connection_attempt(peer_connection* peer, potential_peer_last_connection_disposition disposition);
       bool invalid_block_disconnect_breaker_tripped();
       bool block_body_mismatch_disconnect_breaker_tripped();
@@ -1308,7 +1318,8 @@ namespace graphene { namespace net {
         }
 
         if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
-            is_due_for_connection_attempt(*iter, delay_until_retry, fc::time_point::now()))
+            is_due_for_connection_attempt(*iter, delay_until_retry, fc::time_point::now()) &&
+            !idle_peer_backoff_end(node_id_t(), iter->endpoint))
           candidates.push_back(connection_candidate{iter->endpoint,
                                                     _host_limit_exempt_endpoints.count(iter->endpoint) != 0 ||
                                                     is_in_any_subnet(iter->endpoint.get_address(), _host_limit_exempt_subnets)});
@@ -3082,6 +3093,21 @@ namespace graphene { namespace net {
                ("limit", _node_configuration.maximum_connections_per_host));
           warn_if_inbound_connections_share_host(originating_peer->get_socket().remote_endpoint().get_address());
         }
+        else if (const fc::optional<fc::time_point> backoff_end = idle_peer_backoff_end(originating_peer->node_id, originating_peer->get_endpoint_for_db()))
+        {
+          // dialing us or dialed, a peer we replaced as idle would start a fresh idle window in its old slot.
+          // Any rejection but a duplicate connection counts as a failed attempt, so the dialer backs off too
+          const int64_t backoff_seconds = (*backoff_end - fc::time_point::now()).to_seconds() + 1;
+          originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
+          std::ostringstream rejection_message;
+          rejection_message << "You gave me nothing I could use while I was behind; I won't take you back for " << backoff_seconds << " seconds";
+          send_connection_rejected_message(originating_peer,
+                                           originating_peer->get_socket().remote_endpoint(),
+                                           rejection_reason_code::unspecified,
+                                           rejection_message.str());
+          ilog("Received a hello_message from peer ${peer}, which I disconnected as idle, ${seconds}s before its backoff ends, rejection",
+               ("peer", originating_peer->get_remote_endpoint())("seconds", backoff_seconds));
+        }
 #ifdef ENABLE_P2P_DEBUGGING_API
         else if(!_allowed_peers.empty() &&
                 _allowed_peers.find(originating_peer->node_id) == _allowed_peers.end())
@@ -3749,7 +3775,6 @@ namespace graphene { namespace net {
             }
             else //some items are not in blockchain
             {
-              record_useful_data_from(originating_peer);
               if (first_item_not_in_blockchain_iter != item_hashes_received.begin()) //if some items are in the blockchain
               {
                 originating_peer->last_block_delegate_has_seen = *std::prev(first_item_not_in_blockchain_iter);
@@ -3770,7 +3795,6 @@ namespace graphene { namespace net {
           }
           else if (!item_hashes_received.empty())
           {
-            record_useful_data_from(originating_peer);
             // we received a list of items and we already have a list of items to fetch from this peer.
             // In the normal case, this list will immediately follow the existing list, meaning the
             // last hash of our existing list will match the first hash of the new list.
@@ -4215,7 +4239,7 @@ namespace graphene { namespace net {
               skip_this_item = true;
               break;
             case block_id_classification::fetchable:
-              record_useful_data_from(originating_peer);
+              // only a claim until the block arrives: the peer gets credit when it delivers it
               break;
             }
             if (skip_this_item)
@@ -4224,11 +4248,13 @@ namespace graphene { namespace net {
           else
           {
             // then it's a legacy_block_message_hash: it has no embedded block number, so the
-            // recent-message cache remains the only dedupe available for these peers.  Without the
-            // number we can't tell how recent it is, so the advertisement counts as useful either way
-            record_useful_data_from(originating_peer);
+            // recent-message cache remains the only dedupe available for these peers.  A block in it is
+            // one we have lately, so the peer is keeping up; any other hash is only a claim until it delivers
             if (_block_message_cache.contains_item(item_hash))
+            {
+              record_useful_data_from(originating_peer);
               continue;
+            }
           }
         }
 
@@ -4657,11 +4683,21 @@ namespace graphene { namespace net {
       trigger_process_backlog_of_sync_blocks();
     }
 
+    // The peer showed it keeps up with the chain: it gave us a block that we pushed, offered us for sync a block that
+    // linked, or advertised a block we have or are pushing.  A block number in its hello or a block id it offers is
+    // only a claim, and counts for nothing until the block arrives and links
     void node_impl::record_useful_data_from(peer_connection* peer)
     {
       VERIFY_CORRECT_THREAD();
       peer->last_useful_data_time = fc::time_point::now();
-      _last_useful_data_from_any_peer_time = peer->last_useful_data_time;
+    }
+
+    // The peer delivered a block that we pushed: some peer can serve us, so idle peers may be worth replacing
+    void node_impl::record_block_delivered_by(peer_connection* peer)
+    {
+      VERIFY_CORRECT_THREAD();
+      record_useful_data_from(peer);
+      _last_block_from_any_peer_time = peer->last_useful_data_time;
     }
 
     // Whether block @p block_num, which we have, is one we accepted just now: one of the last few blocks
@@ -4676,13 +4712,17 @@ namespace graphene { namespace net {
 
     // A node can hold a full set of peers that answer keepalives and give it nothing else, and the connect
     // loop dials nobody while the slots are full.  So while our head is behind, an active peer that gave us
-    // no useful data for idle_peer_disconnect_timeout is replaced, if some peer could serve us (see
-    // select_idle_peers_to_disconnect()).  The time counts only since we fell behind: a node in sync gets
-    // each block from whichever peer is first, so most of its peers never contribute, and their silence
-    // before says nothing.  Nor does it count while blocks we handed the chain wait on it: the peers are not
-    // why we are behind then.  A peer that asked us for blocks or block ids in that time is syncing from us
-    // or fed by us and has nothing to give us; a peer we are waiting for, or that offered blocks we haven't
-    // fetched yet, is judged by the request timeouts instead.  The timeout is longer than
+    // no useful data (see record_useful_data_from()) for idle_peer_disconnect_timeout is replaced, if a peer
+    // delivered us a block within that time (see select_idle_peers_to_disconnect()).  A head claimed in a
+    // hello or offered block ids don't count for that, nor keep their peer from being judged: any peer can
+    // claim them, and on a halted chain one such peer would otherwise get every honest peer replaced.  When
+    // nobody delivers, nobody can serve us and replacing peers can't help.  The sweep leaves at least half of
+    // desired_number_of_connections: below that the connect loop dials anyway.  The time counts only since we
+    // fell behind: a node in sync gets each block from whichever peer is first, so most of its peers never
+    // contribute, and their silence before says nothing.  Nor does it count while blocks we handed the chain
+    // wait on it: the peers are not why we are behind then.  A peer that asked us for blocks or block ids in
+    // that time, and claims no head past ours, is syncing from us or fed by us and has nothing to give us; a
+    // peer we are waiting for is judged by the request timeouts instead.  The timeout is longer than
     // GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restart_sync_if_head_stalled() asks the peers we have first
     std::vector<peer_connection_ptr> node_impl::find_idle_peers_to_replace()
     {
@@ -4707,19 +4747,18 @@ namespace graphene { namespace net {
       idle_peer_sweep sweep;
       sweep.now = now;
       sweep.window = fc::seconds(_node_configuration.idle_peer_disconnect_timeout);
-      sweep.kept_at_least = GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST;
-      sweep.block_source_seen = now - _last_useful_data_from_any_peer_time <= sweep.window;
+      sweep.kept_at_least = std::max<size_t>(GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST, _node_configuration.desired_number_of_connections / 2);
+      sweep.block_source_seen = now - _last_block_from_any_peer_time <= sweep.window;
       std::vector<peer_connection_ptr> peers;
       std::vector<idle_peer_candidate> candidates;
       for (const peer_connection_ptr& peer : _active_connections)
       {
         idle_peer_candidate candidate;
         candidate.last_useful_data_time = std::max(peer->last_useful_data_time, _idle_peers_judged_since);
-        candidate.exempt = now - peer->last_block_request_time <= sweep.window ||
+        candidate.exempt = (now - peer->last_block_request_time <= sweep.window &&
+                            highest_block_number_known_for_peer(*peer) <= _cached_head_block_num) ||
                            peer->item_ids_requested_from_peer ||
-                           !peer->sync_items_requested_from_peer.empty() ||
-                           (peer->we_need_sync_items_from_peer && !peer->ids_of_items_to_get.empty());
-        sweep.block_source_seen = sweep.block_source_seen || highest_block_number_known_for_peer(*peer) > _cached_head_block_num;
+                           !peer->sync_items_requested_from_peer.empty();
         peers.push_back(peer);
         candidates.push_back(candidate);
       }
@@ -4728,17 +4767,79 @@ namespace graphene { namespace net {
       return idle_peers;
     }
 
+    // Closes the connection to an idle peer and keeps it from taking a slot again, dialed or dialing us, for one
+    // idle_peer_disconnect_timeout: back sooner, its idle time would start over and it could hold the slot again
+    // for a whole window
     void node_impl::disconnect_idle_peer(peer_connection* peer)
     {
       VERIFY_CORRECT_THREAD();
-      const int64_t idle_seconds = (fc::time_point::now() - peer->last_useful_data_time).to_seconds();
-      wlog("disconnecting idle peer ${peer}: it gave us no blocks, block ids or timely block advertisements for ${seconds}s "
-           "while our head is behind and other peers could serve us; its slot goes to another peer",
-           ("peer", peer->get_remote_endpoint())("seconds", idle_seconds));
-      fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You gave me no blocks, block ids or timely block advertisements for ${seconds} seconds while I was behind",
+      const fc::time_point now = fc::time_point::now();
+      const int64_t idle_seconds = (now - peer->last_useful_data_time).to_seconds();
+      const uint32_t claimed_head = highest_block_number_known_for_peer(*peer);
+      if (now - _idle_disconnect_warnings_since >= fc::seconds(GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNING_INTERVAL_SEC))
+      {
+        _idle_disconnect_warnings_since = now;
+        _idle_disconnect_warnings = 0;
+      }
+      if (_idle_disconnect_warnings < GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNINGS_PER_INTERVAL)
+      {
+        ++_idle_disconnect_warnings;
+        wlog("disconnecting idle peer ${peer}: it gave us no block, nor advertised one we have, for ${seconds}s while our head #${head} "
+             "is behind and a peer delivered a block ${delivered}s ago; it claims head #${claimed_head}; its slot goes to another "
+             "peer, and it may not take one for ${window}s (${suppressed} more idle disconnects only logged at debug level before this one)",
+             ("peer", peer->get_remote_endpoint())("seconds", idle_seconds)("head", _cached_head_block_num)
+             ("delivered", (now - _last_block_from_any_peer_time).to_seconds())("claimed_head", claimed_head)
+             ("window", _node_configuration.idle_peer_disconnect_timeout)("suppressed", _idle_disconnect_warnings_suppressed));
+        _idle_disconnect_warnings_suppressed = 0;
+      }
+      else
+      {
+        ++_idle_disconnect_warnings_suppressed;
+        dlog("disconnecting idle peer ${peer}: no useful data for ${seconds}s, it claims head #${claimed_head}",
+             ("peer", peer->get_remote_endpoint())("seconds", idle_seconds)("claimed_head", claimed_head));
+      }
+
+      forget_expired_idle_peer_backoffs(now);
+      const fc::time_point backoff_end = now + fc::seconds(_node_configuration.idle_peer_disconnect_timeout);
+      if (peer->node_id != node_id_t())
+        _idle_peer_backoff_by_node_id[peer->node_id] = backoff_end;
+      // an inbound peer only claims the endpoint it listens at: one at another host could name a third node's
+      const fc::optional<fc::ip::endpoint> endpoint = peer->get_endpoint_for_db();
+      const fc::optional<fc::ip::endpoint> remote_endpoint = peer->get_remote_endpoint();
+      if (endpoint && remote_endpoint && endpoint->get_address() == remote_endpoint->get_address())
+        _idle_peer_backoff_by_endpoint[*endpoint] = backoff_end;
+
+      fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You gave me no blocks for ${seconds} seconds while I was behind and another peer gave me some",
                                                   ("seconds", idle_seconds)));
       disconnect_from_peer(peer, "You gave me nothing I could use while I was behind", true, detailed_error);
       count_failed_connection_attempt(peer, last_connection_failed);
+    }
+
+    void node_impl::forget_expired_idle_peer_backoffs(fc::time_point now)
+    {
+      VERIFY_CORRECT_THREAD();
+      for (auto iter = _idle_peer_backoff_by_node_id.begin(); iter != _idle_peer_backoff_by_node_id.end();)
+        iter = iter->second <= now ? _idle_peer_backoff_by_node_id.erase(iter) : std::next(iter);
+      for (auto iter = _idle_peer_backoff_by_endpoint.begin(); iter != _idle_peer_backoff_by_endpoint.end();)
+        iter = iter->second <= now ? _idle_peer_backoff_by_endpoint.erase(iter) : std::next(iter);
+    }
+
+    // When the idle-peer backoff of the peer with @p node_id, or the one we dial at @p endpoint, ends; none if neither has one
+    fc::optional<fc::time_point> node_impl::idle_peer_backoff_end(const node_id_t& node_id, const fc::optional<fc::ip::endpoint>& endpoint)
+    {
+      VERIFY_CORRECT_THREAD();
+      const fc::time_point now = fc::time_point::now();
+      fc::optional<fc::time_point> end;
+      const auto by_node_id = _idle_peer_backoff_by_node_id.find(node_id);
+      if (by_node_id != _idle_peer_backoff_by_node_id.end() && by_node_id->second > now)
+        end = by_node_id->second;
+      if (endpoint)
+      {
+        const auto by_endpoint = _idle_peer_backoff_by_endpoint.find(*endpoint);
+        if (by_endpoint != _idle_peer_backoff_by_endpoint.end() && by_endpoint->second > now && (!end || by_endpoint->second > *end))
+          end = by_endpoint->second;
+      }
+      return end;
     }
 
     // Counts a failed attempt against the peer's database entry, so the connect loop dials it again only after
@@ -4821,7 +4922,10 @@ namespace graphene { namespace net {
         client_accepted_block = true;
         // as in process_block_during_normal_operation(): the delivering peer's copy matched its header
         if (const peer_connection_ptr delivering_peer = item.delivering_peer.lock())
+        {
           delivering_peer->restore_block_fetching_priority();
+          record_block_delivered_by(delivering_peer.get());
+        }
       }
       catch (const block_older_than_undo_history& e)
       {
@@ -4939,6 +5043,8 @@ namespace graphene { namespace net {
               auto items_being_processed_iter = peer->ids_of_items_being_processed.find(block_id);
               if (items_being_processed_iter != peer->ids_of_items_being_processed.end())
               {
+                // it offered us this block for sync, and the block linked
+                record_useful_data_from(peer.get());
                 peer->last_block_delegate_has_seen = block_id;
                 peer->last_block_time_delegate_has_seen = full_block->get_block_header().timestamp;
 
@@ -5348,7 +5454,7 @@ namespace graphene { namespace net {
           message_validated_time = fc::time_point::now();
           // the peer's copy matched its header, so its earlier bad copy no longer makes it a source of last resort
           originating_peer->restore_block_fetching_priority();
-          record_useful_data_from(originating_peer);
+          record_block_delivered_by(originating_peer);
           ilog("Successfully pushed block ${block_num} (id:${block_id})", (block_num)(block_id));
           // a block only stored on a shorter fork was not validated, so it isn't recorded as accepted
           // (later copies are still recognized as known through has_item())
@@ -5566,7 +5672,6 @@ namespace graphene { namespace net {
         try
         {
           originating_peer->last_sync_item_received_time = fc::time_point::now();
-          record_useful_data_from(originating_peer);
           _active_sync_requests.erase(full_block->get_block_id());
           process_block_during_sync(originating_peer, full_block);
           if (originating_peer->idle())

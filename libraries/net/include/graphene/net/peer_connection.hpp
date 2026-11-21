@@ -342,12 +342,12 @@ namespace graphene { namespace net
       // advertised blocks far past it, or while it may be ahead of us and nothing we asked for
       // was outstanding; see GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC)
       fc::time_point last_stalled_head_resync_time;
-      // when this peer last gave us useful data: a block we accepted, a sync block, block ids we
-      // lacked or a timely block advertisement; when it became active if it hasn't yet.  A peer
-      // idle for idle_peer_disconnect_timeout while it should have contributed is replaced
+      // when this peer last gave us useful data: a block we accepted, a block it offered for sync
+      // that linked, or an advertisement of a block we have or are pushing; when it became active if
+      // it hasn't yet.  A peer idle for idle_peer_disconnect_timeout while it should have contributed is replaced
       fc::time_point last_useful_data_time;
-      // when this peer last asked us for blocks or block ids: it is syncing from us or fed by us,
-      // and has nothing to give us, so it is never replaced as idle
+      // when this peer last asked us for blocks or block ids: unless it claims a head past ours, it is
+      // syncing from us or fed by us and has nothing to give us, so it is not replaced as idle
       fc::time_point last_block_request_time;
       /// @}
       void reset_id_search_for_peer() { last_requested_block_number_for_peers_on_this_fork = first_id_block_number - 1; }

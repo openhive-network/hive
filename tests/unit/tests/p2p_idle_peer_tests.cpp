@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE( exempt_peers_kept )
   BOOST_CHECK( select_idle_peers_to_disconnect( peers, sweep() ) == std::vector< size_t >( { 1 } ) );
 }
 
-/// When no peer gave us anything in the window and none is known to be ahead of us (a halted chain), nobody is picked
+/// When no peer delivered us a block in the window (a halted chain, whatever heads peers claim), nobody is picked
 BOOST_AUTO_TEST_CASE( nobody_picked_without_a_block_source )
 {
   const std::vector< idle_peer_candidate > peers = { useful_seconds_ago( 1000 ), useful_seconds_ago( 500 ), useful_seconds_ago( 300 ) };

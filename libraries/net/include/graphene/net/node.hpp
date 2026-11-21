@@ -1399,7 +1399,7 @@ namespace graphene { namespace net {
   {
     /// peer_connection::last_useful_data_time, or since when our head is behind if that is later
     fc::time_point last_useful_data_time;
-    bool exempt = false; ///< it is fed by us, or a request to it or blocks it offered are still pending
+    bool exempt = false; ///< it is fed by us and claims no head past ours, or a request to it is still pending
   };
 
   /// The node-wide state the idle-peer sweep judges peers in; it runs only while our head is behind
@@ -1408,14 +1408,14 @@ namespace graphene { namespace net {
     fc::time_point now;
     fc::microseconds window;  ///< idle_peer_disconnect_timeout; 0 replaces nobody
     size_t kept_at_least = 0; ///< active connections, idle or not, left after the sweep at least
-    bool block_source_seen = false; ///< within the window a peer gave us useful data, or a peer is known to be ahead of our head
+    bool block_source_seen = false; ///< within the window a peer delivered us a block that we pushed; a claimed head doesn't count
   };
 
   /**
    * Which of @p peers (their indices) to disconnect as idle, the longest idle first.  A peer is idle when it is not
-   * exempt and gave us no useful data for longer than the window.  Nobody is idle unless some peer could serve us (on
-   * a halted chain nobody has anything new, and nobody is replaced), and no more are picked than leave
-   * sweep.kept_at_least of all @p peers.
+   * exempt and gave us no useful data for longer than the window.  Nobody is idle unless some peer delivered us a block
+   * within the window (on a halted chain nobody has anything new, and nobody is replaced), and no more are picked than
+   * leave sweep.kept_at_least of all @p peers.
    */
   std::vector<size_t> select_idle_peers_to_disconnect(const std::vector<idle_peer_candidate>& peers,
                                                       const idle_peer_sweep& sweep);
