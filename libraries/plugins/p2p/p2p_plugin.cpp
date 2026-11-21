@@ -533,8 +533,8 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
      "connections p2p-max-connections-per-host does not limit, such as a proxy that rewrites the source address of inbound peers. "
      "May be given more than once. Added to host_limit_exempt_subnets in p2p-parameters, which lists loopback by default.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. idle_peer_disconnect_timeout is the seconds an active peer may give no useful data while "
-     "this node is behind before it is replaced; 0 disables replacing idle peers, and it is off by default until its known "
-     "defects are fixed (180 enables it). (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
+     "this node is behind and another peer delivers blocks, before it is replaced and kept out for as long; 0 disables replacing "
+     "idle peers, the default (180 enables it). (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
     ("p2p-force-validate", bpo::bool_switch()->default_value(false), "Force validation of all transactions." )
