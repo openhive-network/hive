@@ -544,6 +544,7 @@ namespace graphene { namespace net {
       uint64_t _transaction_bytes_being_validated = 0;
       std::set<block_id_type> _block_ids_currently_being_processed;
       fetch_turn_order _fetch_turn_order;
+      fetch_minimum_schedule _fetch_minimum_schedule{fc::milliseconds(GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS)};
 
       std::atomic_int        _activeCalls;
       fc::promise<void>::ptr _shutdownNotifier;
@@ -812,6 +813,7 @@ namespace graphene { namespace net {
       std::shared_ptr<full_block_type> get_full_block_by_block_id(const block_id_type& block_id) override;
       void on_messages_written(size_t message_count, size_t byte_count) override;
       std::shared_ptr<full_block_type> get_block_to_send(peer_connection* peer, const item_hash_t& requested_item) override;
+      bool is_transaction_to_advertise(const item_hash_t& message_hash) override;
 
       fc::variant_object         network_get_info() const;
       fc::variant_object         network_get_usage_stats() const;
@@ -1517,8 +1519,10 @@ namespace graphene { namespace net {
         const size_t expired_items = remove_expired_items_to_fetch();
         fc::time_point next_peer_unblocked_time = fc::time_point::maximum();
         // while the pending pool is over the threshold the pass asks for no more than the gate's minimum of
-        // transactions, blocks as always; below it for no more than fits under it with what is already on its way
-        transaction_fetch_gate gate(_delegate->get_pending_transaction_pool_size(), transaction_bytes_on_their_way());
+        // transactions, if one is due, blocks as always; below it for no more than fits under it with what is
+        // already on its way
+        transaction_fetch_gate gate(_delegate->get_pending_transaction_pool_size(), transaction_bytes_on_their_way(),
+                                    _fetch_minimum_schedule.minimum_for_pass(iteration_start));
         // candidates as old as the expired items are dropped too, so that none the gate holds back outlives them
         const fc::time_point oldest_candidate_to_keep = oldest_item_timestamp_to_fetch();
 
@@ -1574,8 +1578,10 @@ namespace graphene { namespace net {
           const peer_connection_ptr& peer = peer_and_items.peer;
           const bool include_transactions = peer_and_items.include_transactions &&
                                             gate.may_request_more([&]() { return has_transaction_to_fetch(peer); });
+          const fetch_candidate_order order = include_transactions && gate.next_request_is_minimum() ? fetch_candidate_order::newest_first
+                                                                                                      : fetch_candidate_order::oldest_first;
           const std::optional<item_id> item_id_to_fetch =
-            peer->fetch_candidates.take_next(include_transactions,
+            peer->fetch_candidates.take_next(include_transactions, order,
                                              [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate, idle_peers); },
                                              _statistics.fetch.candidates_examined);
           if (!item_id_to_fetch)
@@ -1602,6 +1608,7 @@ namespace graphene { namespace net {
           return true;
         });
 
+        const fc::time_point next_minimum_due = _fetch_minimum_schedule.record_pass(gate, iteration_start);
         ++_statistics.fetch.wakes;
         if (gate.held_back())
           ++_statistics.fetch.transactions_gated;
@@ -1660,12 +1667,15 @@ namespace graphene { namespace net {
         // max-mempool-size), so while live candidates wait for it the gate is checked again at an interval; once
         // they have all expired (trimmed above) the loop waits for a trigger.  API submissions may keep the pool
         // over the threshold for as long as they last (see transaction_fetch_gate_threshold()).  Replies that free
-        // the headroom need not open a peer's window, so they may not wake the loop either
+        // the headroom need not open a peer's window, so they may not wake the loop either.  The check is when the
+        // next minimum is due, which is what a closed gate could request then.  Until then inventory and replies
+        // don't wake a loop whose gate is closed: they could add nothing to fetch before it is due
         if (gate.held_back() || gate.bounded())
-          next_peer_unblocked_time = std::min(next_peer_unblocked_time,
-                                              fc::time_point::now() + fc::milliseconds(GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS));
-        _fetch_items_loop_trigger.wait(fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
-                                       next_peer_unblocked_time);
+          next_peer_unblocked_time = std::min(next_peer_unblocked_time, next_minimum_due);
+        fc::microseconds minimum_interval(_node_configuration.fetch_items_minimum_interval_microseconds);
+        if (gate.closed())
+          minimum_interval = std::max(minimum_interval, next_minimum_due - iteration_start);
+        _fetch_items_loop_trigger.wait(minimum_interval, next_peer_unblocked_time);
       } // while (!canceled)
     }
 
@@ -3725,6 +3735,14 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       _statistics.record_write(message_count, byte_count);
+    }
+
+    // a transaction that has left the cache is in a block many blocks back or has expired, and a peer asking for it
+    // would get item_not_available
+    bool node_impl::is_transaction_to_advertise(const item_hash_t& message_hash)
+    {
+      VERIFY_CORRECT_THREAD();
+      return _transaction_message_cache.contains_item(message_hash);
     }
 
     // this is only called when a peer wants a block from us
@@ -8065,12 +8083,15 @@ namespace graphene { namespace net {
         if (*kept > 0)
           --*kept;
       }
+    // once the entries kept from the front are gone, the ones kept from the back are trimmed next
+    _transactions_newest_kept = std::min(_transactions_newest_kept, _transactions.size() - _transactions_kept);
   }
 
   void fetch_candidate_queue::begin_pass()
   {
     _blocks_kept = 0;
     _transactions_kept = 0;
+    _transactions_newest_kept = 0;
   }
 
   bool fetch_candidate_queue::has_block(const item_id& item) const
@@ -8434,6 +8455,8 @@ namespace graphene { namespace net {
 
   void transaction_fetch_gate::record_request(uint64_t expected_bytes)
   {
+    if (next_request_is_minimum())
+      _requested_minimum = true;
     ++_requested;
     if (_headroom != std::numeric_limits<uint64_t>::max())
       _headroom -= std::min(_headroom, expected_bytes);
@@ -8445,6 +8468,14 @@ namespace graphene { namespace net {
       _held_back = true;
     else
       _bounded = true;
+  }
+
+  fc::time_point fetch_minimum_schedule::record_pass(const transaction_fetch_gate& gate, fc::time_point pass_start)
+  {
+    const bool was_due = is_due(pass_start);
+    if (gate.requested_minimum())
+      _last_minimum = pass_start;
+    return (was_due ? pass_start : _last_minimum) + _interval;
   }
 
   fetch_expiry_warning_limiter::fetch_expiry_warning_limiter(fc::microseconds interval) :

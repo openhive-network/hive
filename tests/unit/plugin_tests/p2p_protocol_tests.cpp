@@ -1783,8 +1783,9 @@ BOOST_AUTO_TEST_CASE( transaction_relay_test )
 }
 
 /// D17: while the pending pool holds more than a third of max-mempool-size the node asks its peers for no more than
-/// GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS transactions per pass, and for blocks as always; so a fast-confirm one
-/// peer advertises while another floods it is still fetched and relayed to the peers in sync
+/// GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH transactions per GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS, and for
+/// blocks as always; so a fast-confirm one peer advertises while another floods it is still fetched and relayed to the
+/// peers in sync
 BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
 {
   const uint64_t max_mempool_size = 6 * 1024;
@@ -1856,7 +1857,7 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
       if( r.time >= gated_since && r.time <= checked_at )
       {
         const fetch_items_message request = r.msg.as< fetch_items_message >();
-        BOOST_CHECK_LE( request.items_to_fetch.size(), size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS ) );
+        BOOST_CHECK_LE( request.items_to_fetch.size(), size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH ) );
         requested_while_gated += request.items_to_fetch.size();
       }
     BOOST_CHECK_LT( requested_while_gated, 50u );
@@ -1864,16 +1865,79 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
   } );
 }
 
+/// D17: while the gate is closed, a fast-confirm a peer advertises behind a backlog of flooded transactions is in the
+/// first request the node sends that peer: the gate's minimum takes the newest candidates first.  The peer withholds
+/// the backlog, so a node that took the oldest first (or did not gate) would fill the peer's window with those and
+/// never ask for the fast-confirm
+BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
+{
+  const uint64_t max_mempool_size = 6 * 1024;
+  const uint64_t threshold = transaction_fetch_gate_threshold( max_mempool_size );
+  start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    // as in transaction_fetch_gate_test, the checks are made again after a block that came before they ended
+    bool checked_while_gated = false;
+    for( int attempt = 0; attempt < 3 && !checked_while_gated; ++attempt )
+    {
+      const uint32_t filled_at = wait_for_block_num( get_block_num() + 1 );
+      uint64_t filled = 0;
+      for( int i = 0; filled <= threshold; ++i )
+      {
+        const full_transaction_ptr filler = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                            "backlog filler " + std::to_string( attempt ) + "/" + std::to_string( i ),
+                                                            get_default_expiration() );
+        schedule_transaction( filler );
+        filled += filler->get_transaction_size();
+      }
+      BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), threshold );
+
+      auto relay = make_peer( "relay " + std::to_string( attempt ) );
+      connect_active( *relay );
+      witness_block_approve_operation approve;
+      approve.witness = HIVE_INIT_MINER_NAME;
+      approve.block_id = head_block_id();
+      const full_transaction_ptr fast_confirm = build_transaction( approve, get_default_expiration() );
+      const item_hash_t hash = fast_confirm->get_legacy_transaction_message_hash();
+      relay->provide( { fast_confirm } );
+      // one inventory: the backlog, then the fast-confirm
+      std::vector< item_hash_t > inventory;
+      for( int i = 0; i < 200; ++i )
+        inventory.push_back( fc::ripemd160::hash( "backlog " + std::to_string( attempt ) + "/" + std::to_string( i ) ) );
+      inventory.push_back( hash );
+      relay->advertise( inventory );
+
+      BOOST_REQUIRE( wait_until( [&]() { return relay->was_requested( hash ) || get_block_num() != filled_at; }, reply_timeout ) );
+      checked_while_gated = get_block_num() == filled_at && get_chain_plugin().get_published_pending_transactions_size() > threshold;
+      if( !checked_while_gated )
+        continue;
+      std::vector< fetch_items_message > transaction_requests;
+      for( const fetch_items_message& request : relay->received_as< fetch_items_message >() )
+        if( request.item_type == trx_message_type )
+          transaction_requests.push_back( request );
+      BOOST_REQUIRE( !transaction_requests.empty() );
+      const std::vector< item_hash_t >& first = transaction_requests.front().items_to_fetch;
+      BOOST_CHECK( std::find( first.begin(), first.end(), hash ) != first.end() );
+      BOOST_CHECK_LE( first.size(), size_t( GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH ) );
+      require_kept( *relay );
+    }
+    BOOST_REQUIRE_MESSAGE( checked_while_gated, "a block came before the checks of the gated pool ended, every time" );
+  } );
+}
+
 /// D17: below the threshold the node asks for no more transactions than fit under it with those already on their
 /// way: a peer that has sent none yet is expected to send ones of HIVE_MAX_TRANSACTION_SIZE, so with a threshold
-/// smaller than that the node asks it for one of the transactions it advertised at a time, though its window would
-/// take them all in one request.  What it expects on their way doesn't stop the empty pool fetching: each pass asks
-/// for the gate's minimum, so the peer is asked for all of them, one request after the other
+/// smaller than that the headroom is used up by the first transaction requested.  What it expects on their way
+/// doesn't stop the empty pool fetching: the gate's minimum asks for the rest, but no sooner than
+/// GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS after the last pass that asked for some of its minimum, however
+/// soon more is advertised
 BOOST_AUTO_TEST_CASE( transaction_fetch_headroom_test )
 {
   const uint64_t max_mempool_size = 6 * 1024;
   BOOST_REQUIRE_LT( transaction_fetch_gate_threshold( max_mempool_size ), uint64_t( HIVE_MAX_TRANSACTION_SIZE ) );
-  static_assert( GRAPHENE_NET_MIN_TRANSACTIONS_PER_FETCH_PASS == 1, "each request is expected to carry one transaction" );
   start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
   run( [&]()
   {
@@ -1882,19 +1946,36 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_headroom_test )
 
     auto source = make_peer( "transaction source" );
     connect_active( *source );
-    std::vector< item_hash_t > hashes;
-    for( int i = 0; i < 3; ++i )
-      hashes.push_back( fc::ripemd160::hash( "withheld transaction " + std::to_string( i ) ) );
-    source->advertise( hashes );
-    BOOST_REQUIRE( wait_until( [&]()
+    const auto withheld = []( int first, int count )
+    {
+      std::vector< item_hash_t > hashes;
+      for( int i = first; i < first + count; ++i )
+        hashes.push_back( fc::ripemd160::hash( "withheld transaction " + std::to_string( i ) ) );
+      return hashes;
+    };
+    const auto all_requested = [&]( const std::vector< item_hash_t >& hashes )
     {
       return std::all_of( hashes.begin(), hashes.end(), [&]( const item_hash_t& hash ) { return source->was_requested( hash ); } );
-    }, reply_timeout ) );
+    };
+    const std::vector< item_hash_t > first = withheld( 0, 3 );
+    source->advertise( first );
+    BOOST_REQUIRE( wait_until( [&]() { return all_requested( first ); }, reply_timeout ) );
+    const std::vector< item_hash_t > second = withheld( 3, 3 );
+    source->advertise( second );
+    BOOST_REQUIRE( wait_until( [&]() { return all_requested( second ); }, reply_timeout ) );
     BOOST_CHECK_EQUAL( get_chain_plugin().get_published_pending_transactions_size(), 0u );
-    for( const fetch_items_message& request : source->received_as< fetch_items_message >() )
-      if( request.item_type == trx_message_type )
-        BOOST_CHECK_EQUAL( request.items_to_fetch.size(), 1u );
-    for( const item_hash_t& hash : hashes )
+
+    std::vector< fc::time_point > request_times;
+    for( const received_message& r : source->received( fetch_items_message_type ) )
+      if( r.msg.as< fetch_items_message >().item_type == trx_message_type )
+        request_times.push_back( r.time );
+    BOOST_REQUIRE_EQUAL( request_times.size(), 2u );
+    // the interval less what delivering the first request may have taken
+    BOOST_CHECK_GE( ( request_times[ 1 ] - request_times[ 0 ] ).count(),
+                    fc::milliseconds( GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS * 4 / 5 ).count() );
+    for( const item_hash_t& hash : first )
+      BOOST_CHECK_EQUAL( times_requested( *source, hash ), 1u );
+    for( const item_hash_t& hash : second )
       BOOST_CHECK_EQUAL( times_requested( *source, hash ), 1u );
   } );
 }
