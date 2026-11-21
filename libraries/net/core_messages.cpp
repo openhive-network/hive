@@ -29,8 +29,86 @@
 #include <hive/chain/full_block.hpp>
 #include <hive/chain/blockchain_worker_thread_pool.hpp>
 
+#include <fc/crypto/rand.hpp>
+
+#include <cstring>
+
 
 namespace graphene { namespace net {
+
+  namespace {
+
+    struct siphash_key
+    {
+      uint64_t k0;
+      uint64_t k1;
+    };
+
+    const siphash_key& process_siphash_key()
+    {
+      static const siphash_key key = []() {
+        siphash_key random_key;
+        fc::rand_bytes(reinterpret_cast<char*>(&random_key), sizeof(random_key));
+        return random_key;
+      }();
+      return key;
+    }
+
+    inline uint64_t rotate_left(uint64_t x, int bits)
+    {
+      return (x << bits) | (x >> (64 - bits));
+    }
+
+    /// SipHash-1-3 of @p data under the process key; words are read in host byte order, which only the process sees
+    uint64_t siphash13(const unsigned char* data, size_t length)
+    {
+      const siphash_key& key = process_siphash_key();
+      uint64_t v0 = 0x736f6d6570736575ULL ^ key.k0;
+      uint64_t v1 = 0x646f72616e646f6dULL ^ key.k1;
+      uint64_t v2 = 0x6c7967656e657261ULL ^ key.k0;
+      uint64_t v3 = 0x7465646279746573ULL ^ key.k1;
+      const auto sip_round = [&]() {
+        v0 += v1; v1 = rotate_left(v1, 13); v1 ^= v0; v0 = rotate_left(v0, 32);
+        v2 += v3; v3 = rotate_left(v3, 16); v3 ^= v2;
+        v0 += v3; v3 = rotate_left(v3, 21); v3 ^= v0;
+        v2 += v1; v1 = rotate_left(v1, 17); v1 ^= v2; v2 = rotate_left(v2, 32);
+      };
+      const size_t whole_words_end = length & ~size_t(7);
+      for (size_t i = 0; i < whole_words_end; i += 8)
+      {
+        uint64_t word;
+        std::memcpy(&word, data + i, sizeof(word));
+        v3 ^= word;
+        sip_round();
+        v0 ^= word;
+      }
+      uint64_t last_word = uint64_t(length) << 56;
+      for (size_t i = whole_words_end; i < length; ++i)
+        last_word |= uint64_t(data[i]) << (8 * (i - whole_words_end));
+      v3 ^= last_word;
+      sip_round();
+      v0 ^= last_word;
+      v2 ^= 0xff;
+      sip_round();
+      sip_round();
+      sip_round();
+      return v0 ^ v1 ^ v2 ^ v3;
+    }
+
+  } // namespace
+
+  size_t p2p_item_hash::operator()(const item_hash_t& hash) const
+  {
+    return siphash13(reinterpret_cast<const unsigned char*>(hash._hash), sizeof(hash._hash));
+  }
+
+  size_t p2p_item_hash::operator()(const item_id& item) const
+  {
+    unsigned char buffer[sizeof(item.item_type) + sizeof(item.item_hash._hash)];
+    std::memcpy(buffer, &item.item_type, sizeof(item.item_type));
+    std::memcpy(buffer + sizeof(item.item_type), item.item_hash._hash, sizeof(item.item_hash._hash));
+    return siphash13(buffer, sizeof(buffer));
+  }
 
   const core_message_type_enum trx_message::type                             = core_message_type_enum::trx_message_type;
   const core_message_type_enum block_message::type                           = core_message_type_enum::block_message_type;

@@ -417,6 +417,25 @@
 #define GRAPHENE_NET_MAX_TRX_PER_SECOND                      1000
 
 /**
+ * How many transactions one peer may have advertised to us within the inventory window
+ * (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES) before further advertisements wait or are dropped.  An item_ids_inventory
+ * message carrying more ids than this is no advertisement a peer could make, and its sender is disconnected.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER      (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60)
+#define GRAPHENE_NET_MAX_ITEM_IDS_PER_INVENTORY_MESSAGE      GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER
+
+/**
+ * The most blocks one fetch_items message may ask for: a sync request's worth.  Our own sync requests stay within it
+ * whatever maximum_blocks_per_peer_during_syncing says, and a peer asking for more is disconnected.
+ */
+#define GRAPHENE_NET_MAX_BLOCKS_PER_FETCH_REQUEST            GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING
+/**
+ * The most transactions one fetch_items message may ask for: twice what we ourselves keep outstanding with a peer
+ * (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER).  A peer asking for more is disconnected.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTIONS_PER_FETCH_REQUEST      (2 * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER)
+
+/**
  * Set the ignored request time out to 1 second.  When we request a block
  * or transaction from a peer, this timeout determines how long we wait for them
  * to reply before we give up and ask another peer for the item.

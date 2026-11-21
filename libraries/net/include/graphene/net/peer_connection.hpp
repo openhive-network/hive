@@ -315,7 +315,7 @@ namespace graphene { namespace net
       bool peer_supports_ipv6 = false;
       /// @}
 
-      typedef std::unordered_map<item_id, fc::time_point> item_to_time_map_type;
+      typedef std::unordered_map<item_id, fc::time_point, p2p_item_hash> item_to_time_map_type;
 
       /// blockchain synchronization state data
       /// @{
@@ -352,7 +352,7 @@ namespace graphene { namespace net
       /// @}
       void reset_id_search_for_peer() { last_requested_block_number_for_peers_on_this_fork = first_id_block_number - 1; }
       /// latency timing data
-      std::unordered_map< item_hash_t, fc::time_point > pending_item_request_times;
+      std::unordered_map< item_hash_t, fc::time_point, p2p_item_hash > pending_item_request_times;
       /// @}
 
       /// non-synchronization state data
@@ -369,7 +369,7 @@ namespace graphene { namespace net
       struct timestamp_index{};
       typedef boost::multi_index_container<timestamped_item_id,
                                            boost::multi_index::indexed_by<boost::multi_index::hashed_unique<boost::multi_index::member<timestamped_item_id, item_id, &timestamped_item_id::item>,
-                                                                                                            std::hash<item_id> >,
+                                                                                                            p2p_item_hash >,
                                                                           boost::multi_index::ordered_non_unique<boost::multi_index::tag<timestamp_index>,
                                                                                                                  boost::multi_index::member<timestamped_item_id, fc::time_point_sec, &timestamped_item_id::timestamp> > > > timestamped_items_set_type;
       // blocks only: what the peer knows of transactions is in the node's transaction_inventory, under this slot,
