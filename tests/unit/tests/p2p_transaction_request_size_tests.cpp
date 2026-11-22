@@ -302,9 +302,8 @@ BOOST_AUTO_TEST_CASE( block_request_times_out_from_its_request_whatever_the_peer
   BOOST_CHECK( with_transactions.timed_out( at( 6.1 ), timeout ) == block );
 }
 
-/// A block whose message is arriving from the peer at a rate that completes it within the ceiling from its request
-/// doesn't time out while its bytes keep coming, up to that ceiling; once they stop for the timeout, it does. One
-/// arriving slower, a few bytes at a time, times out as if nothing arrived
+/// A block whose message is arriving from the peer doesn't time out while its bytes keep coming, however slowly, up to
+/// the ceiling from its request; once they stop for the timeout, it does
 BOOST_AUTO_TEST_CASE( block_request_waits_while_its_message_arrives )
 {
   const fc::microseconds timeout = fc::seconds( 6 );
@@ -342,9 +341,11 @@ BOOST_AUTO_TEST_CASE( block_request_waits_while_its_message_arrives )
   // or the ceiling passes since it was requested
   const message_in_progress nearly_done = download( total, total - 1, ceiling + 0.05 );
   BOOST_CHECK( requested.timed_out( at( ceiling + 0.1 ), timeout, &nearly_done ) == block );
-  // a drip, a tenth of the message in 6 s, would take a minute: it holds nothing past the timeout
+  // a drip, a tenth of the message in 6 s, is still arriving: it is kept up to the ceiling, not judged by its rate
   const message_in_progress drip = download( total, total / 10, 6.05 );
-  BOOST_CHECK( requested.timed_out( at( 6.1 ), timeout, &drip ) == block );
+  BOOST_CHECK( !requested.timed_out( at( 6.1 ), timeout, &drip ) );
+  const message_in_progress dripping_on = download( total, total / 5, ceiling - 0.05 );
+  BOOST_CHECK( requested.timed_out( at( ceiling + 0.01 ), timeout, &dripping_on ) == block );
 
   // a transaction is not held by a block arriving
   const item_id transaction( graphene::net::trx_message_type, fc::ripemd160::hash( std::string( "beside" ) ) );
@@ -352,33 +353,6 @@ BOOST_AUTO_TEST_CASE( block_request_waits_while_its_message_arrives )
   with_transaction.insert( transaction, start );
   const message_in_progress arriving = download( total, total / 2, 6 );
   BOOST_CHECK( with_transaction.timed_out( at( 6.1 ), timeout, &arriving ) == transaction );
-}
-
-/// A block request records whether transactions requested from the peer were outstanding when it was made, and
-/// whether a download held it; neither outlives the request
-BOOST_AUTO_TEST_CASE( block_requests_record_what_was_ahead_and_holds )
-{
-  const fc::time_point start = fc::time_point::now();
-  const item_id alone( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "alone" ) ) );
-  const item_id behind( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "behind" ) ) );
-  const item_id transaction( graphene::net::trx_message_type, fc::ripemd160::hash( std::string( "ahead" ) ) );
-
-  requested_items requested;
-  requested.insert( alone, start, fc::seconds( 1 ) );
-  requested.insert( transaction, start );
-  requested.insert( behind, start, fc::seconds( 1 ) );
-  BOOST_CHECK( !requested.block_requested_behind_transactions( alone ) );
-  BOOST_CHECK( requested.block_requested_behind_transactions( behind ) );
-  BOOST_CHECK( !requested.block_request_held( alone ) );
-  requested.record_block_request_held( alone );
-  BOOST_CHECK( requested.block_request_held( alone ) );
-  BOOST_CHECK( !requested.block_request_held( behind ) );
-  requested.erase( requested.find( alone ) );
-  BOOST_CHECK( !requested.block_request_held( alone ) );
-  requested.record_block_request_held( alone ); // no longer requested: nothing to record
-  requested.insert( alone, start, fc::seconds( 1 ) );
-  BOOST_CHECK( !requested.block_request_held( alone ) );
-  BOOST_CHECK( requested.block_requested_behind_transactions( alone ) );
 }
 
 /// A block request counts as sent from when the request for it was written to the socket, once it was; a request

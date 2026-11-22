@@ -56,10 +56,13 @@ delegate.
 ```
 
 Blocks are also advertised by id and fetched the same way; a block is asked of an idle, proven advertiser first and
-re-asked of another advertiser when its request passes its deadline (`rerequest_overdue_blocks()`), unless its copy is
-arriving at a rate that completes it within its grace. A copy that completes past its grace is a withholding strike;
-strikes are cleared only by a delivery that passed validation (a transaction the chain accepted, or a block pushed onto
-the chain we follow). During sync,
+re-asked of another advertiser when its requests pass their deadlines (`rerequest_overdue_blocks()`: at 1, 3 and 7 s,
+at most `MAX_OUTSTANDING_REQUESTS_PER_BLOCK` outstanding), however much of a copy is arriving. A copy that completes
+past its request's deadline is late: it is no strike, it only leaves the peer deprioritized for blocks for
+`BLOCK_FETCHING_DEMOTION_SEC`, so others are asked first next time. A slow peer is asked later, not punished. Strikes
+come only from item_not_available for an item the peer advertised (and item_busy from a peer that doesn't defer its
+replies); they are cleared only by a delivery that passed validation (a transaction the chain accepted, or a block
+pushed onto the chain we follow). During sync,
 `fetch_sync_items_loop` requests ranges of blocks by id from peers ahead of us instead.
 
 ## What is held back, and where
@@ -105,7 +108,8 @@ report counts the times the cap was reached and for how long (`handoff.limit_wai
    1. inactive: no message from the peer for ten block intervals (disconnected with a reason)
    2. sync items ignored: no progress on requested sync blocks for `active_ignored_request_timeout`
    3. sync item ids ignored: no answer to a sync item id request for `active_ignored_request_timeout`
-   4. item request ignored: a requested block or transaction overdue (`requested_items::timed_out()`)
+   4. item request ignored: a requested block or transaction overdue (`requested_items::timed_out()`); a block whose
+      bytes are still arriving is overdue only `MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING` timeouts after its request
    5. send stalled, the slow-reader rule: something to send and nothing written for `SEND_STALL_DISCONNECT_SEC`
       (held-back replies and inventory count, since one of them is queued whenever the queue empties)
    6. keepalive (not a disconnect): no message for half the inactivity timeout, so we ask for the time
@@ -121,7 +125,8 @@ report counts the times the cap was reached and for how long (`handoff.limit_wai
    kept. Like an idle one, a replaced silent peer may not take a slot again for one window.
 
 Other disconnects happen where the cause is seen, not in this loop: the send queue passing its 1 MiB limit closes
-the connection at once; withholding strikes (`MAX_UNAVAILABLE_ITEM_STRIKES`), invalid blocks and blocks whose body
+the connection at once; withholding strikes (`MAX_UNAVAILABLE_ITEM_STRIKES` item_not_available answers for advertised
+items; late or slow block copies are no strike), invalid blocks and blocks whose body
 doesn't match their header (each behind its breaker), unrequested items, oversized inventory or requests, and the
 per-host limit at hello.
 
@@ -218,7 +223,6 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 | `GRAPHENE_NET_PROTOCOL_FIREWALL_CHECK_VERSION` | `106` | - | first version with the firewall check | n/a |
 | `GRAPHENE_NET_MINIMUM_PROTOCOL_VERSION` | `106` | - | oldest peer version accepted | n/a |
 | `GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES` | `"defers_transaction_replies"` | hello key | peer queues replies as its queue drains; enables our byte window | n/a |
-| `GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST` | `"queues_blocks_first"` | hello key | peer queues blocks ahead of transactions; late copies may be struck | n/a |
 | `GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY` | `"understands_item_busy"` | hello key | peer understands item_busy_message | n/a |
 | `ENABLE_P2P_DEBUGGING_API` | `1` | flag | debugging code for tests | n/a |
 | `MAX_MESSAGE_SIZE` | `(1024*1024*2 + 20)` | bytes | largest message read | inherited/reasoned |
@@ -308,7 +312,6 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 | `GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS` | `20` | blocks | advertised ids past our head | inherited/reasoned |
 | `GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS` | `1000` | ms | first block request deadline (doubles) | reasoned |
 | `GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK` | `3` | requests | concurrent requests for one block | reasoned |
-| `GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES` | `2` | deadlines | late copy grace | reasoned |
 
 #### Withholding
 
@@ -317,7 +320,7 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 | `GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC` | `10` | s | demotion pair: transactions; strike spacing | reasoned |
 | `GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES` | `3` | strikes | disconnect at this many | reasoned |
 | `GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC` | `600` | s | a strike is forgotten after it | reasoned |
-| `GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC` | `60` | s | demotion pair: blocks | reasoned |
+| `GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC` | `60` | s | demotion pair: blocks; also what a late block copy costs (no strike) | reasoned |
 | `GRAPHENE_NET_TRANSACTION_BUSY_WINDOW_SEC` | `30` | s | a peer busy (item_busy) for more than half of it is demoted for transactions | reasoned |
 | `GRAPHENE_NET_WITHHOLDING_WARNING_INTERVAL_SEC` | `60` | s | log rate | n/a |
 | `GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC` | `60` | s | log rate | n/a |
@@ -328,7 +331,7 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 |---|---|---|---|---|
 | `GRAPHENE_NET_ACTIVE_IGNORED_REQUEST_TIMEOUT_SECONDS` | `6` | s | documents the active_ignored_request_timeout default (6 s); not used in code | reasoned |
 | `GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING` | `3` | timeouts | transaction request bound while delivering | reasoned |
-| `GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING` | `2` | timeouts | block request bound while downloading | reasoned |
+| `GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING` | `2` | timeouts | block request bound while its bytes arrive; such a request leaves the per-block cap | reasoned |
 | `GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC` | `60` | s | the slow-reader rule | reasoned |
 | `GRAPHENE_NET_PEER_DISCONNECT_TIMEOUT` | `20` | s | peer asked to close must close within it | inherited/reasoned |
 | `GRAPHENE_NET_FAILED_TERMINATE_TIMEOUT_SECONDS` | `120` | s | terminated connection deleted after it | inherited/reasoned |
