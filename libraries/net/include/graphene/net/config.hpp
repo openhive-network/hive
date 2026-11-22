@@ -582,7 +582,7 @@
 //
 // Three rules act when our head has not advanced for 60 s, and don't overlap.  In every pass of
 // terminate_inactive_connections_loop() the breaker override comes first and drops only peers whose blocks were
-// rejected while a breaker held them; peer expansion (off by default) comes last but one and adds peers when none
+// rejected while a breaker held them; peer expansion comes last but one and adds peers when none
 // delivers blocks, with a window that must be longer than the restart's; the sync restart comes last and asks the
 // peers we keep.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -684,10 +684,11 @@
 // disconnected for it unless a peer taken up meanwhile delivers a block; then the peers we had that delivered none are
 // closed down to the desired number.  If none does, the peers taken up that delivered nothing are closed and the ones
 // we had are kept.  The next expansion comes no sooner than this long after one ends.  Longer than
-// GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restarting sync with the peers we have is tried first.  0 disables it, and
-// it is off by default until a live check shows it costs no node an honest peer; 90 is the value to set to enable it.
-// Basis: unvalidated (off by default).
-#define GRAPHENE_NET_DEFAULT_PEER_EXPANSION_TIMEOUT_SEC            0
+// GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restarting sync with the peers we have is tried first.  0 disables it.
+// Basis: measured (live check on loopback: a behind node whose peers delivered nothing dialed a serving candidate after
+// 90 s, synced from it and closed only peers that delivered nothing, down to the desired number; on a halted chain it
+// kept every peer and expanded once per 180 s; in sync it never expanded; no peer that delivered blocks was closed).
+#define GRAPHENE_NET_DEFAULT_PEER_EXPANSION_TIMEOUT_SEC            90
 
 // how many connections past those it holds (and past desired_number_of_connections) a peer expansion dials at most;
 // maximum_number_of_connections and the per-host limit still hold

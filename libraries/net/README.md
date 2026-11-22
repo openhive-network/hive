@@ -116,7 +116,7 @@ report counts the times the cap was reached and for how long (`handoff.limit_wai
    7. sync stalled: we need sync blocks from the peer and nothing from it is processed, requested or queued
 4. **Closing connections** that didn't close within `PEER_DISCONNECT_TIMEOUT`, and terminated ones that didn't finish
    within `FAILED_TERMINATE_TIMEOUT_SECONDS`.
-5. **Peer expansion** (stall rule 3, off by default, starts only while our head is behind), **silent-peer replacement**
+5. **Peer expansion** (stall rule 3, starts only while our head is behind), **silent-peer replacement**
    (stall rule 4, only while our head is not behind) and then the **sync restart** (stall rule 2), after the
    disconnects above. Silent-peer replacement drops a peer that for `silent_peer_disconnect_timeout` (30 min) relayed
    us no block and no block or transaction inventory and asked us for no block ids and no items, only while a
@@ -166,7 +166,10 @@ of dropping them:
 * **Bounds:** the next expansion starts a whole `peer_expansion_timeout` after one ends at the soonest, so a halted
   chain costs one expansion and one log line per two timeouts. A node in sync never expands.
 
-It is off by default (0) until a live check shows it costs no node an honest peer; 90 enables it. It replaced the
+It is on by default (90 s); 0 disables it. A live check on loopback showed no node losing a peer that delivered it
+blocks: behind with a serving candidate, it dialed the candidate after 90 s, synced and closed only peers that had
+delivered nothing, down to the desired number; on a halted chain it kept every peer and expanded once per 180 s; in
+sync it never expanded. It replaced the
 drop-based idle replacement (`idle_peer_disconnect_timeout`), which is gone: a config that sets
 `idle_peer_disconnect_timeout` in `p2p-parameters` (e.g. `{"idle_peer_disconnect_timeout":0}`) must drop it. The node
 ignores it, as it does any member it doesn't know.
@@ -205,7 +208,7 @@ host and must exempt the proxy's address or set the cap to 0.
 | - | `reserved_address_family_percent` | 25 | % of desired | share kept for each address family |
 | - | `peer_connection_retry_timeout` | 30 | s | redial backoff base |
 | - | `peer_inactivity_timeout` | 5 | s | handshake inactivity |
-| - | `peer_expansion_timeout` | 0 (off) | s | peer expansion trigger and duration; 90 enables it |
+| - | `peer_expansion_timeout` | 90 | s | peer expansion trigger and duration; 0 = off |
 | - | `silent_peer_disconnect_timeout` | 1800 | s | silent-peer replacement window; 0 = off |
 | - | `active_ignored_request_timeout_microseconds` | 6,000,000 | us | request timeout |
 | `p2p-transaction-flush-delay-us` | `transaction_flush_delay_microseconds` | 1000 | us | how long transaction traffic waits to share a write |
@@ -364,7 +367,7 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 | `GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_WINDOW_SEC` | `60` | s | its window | inherited/reasoned |
 | `GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC` | `60` | s | stall rule 1: breaker override | reasoned |
 | `GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC` | `60` | s | stall rule 2: sync restart | reasoned |
-| `GRAPHENE_NET_DEFAULT_PEER_EXPANSION_TIMEOUT_SEC` | `0` | s | stall rule 3: default peer_expansion_timeout (0 = off) | unvalidated: off by default |
+| `GRAPHENE_NET_DEFAULT_PEER_EXPANSION_TIMEOUT_SEC` | `90` | s | stall rule 3: default peer_expansion_timeout (0 = off) | measured: live check, no peer that delivered blocks closed |
 | `GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS` | `4` | connections | peer expansion dials at most this many past those held | reasoned |
 | `GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC` | `60` | s | peer expansion starts only this far behind, silent-peer replacement only nearer | inherited/reasoned |
 | `GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST` | `2` | connections | silent-peer replacement and expansion settle floor | inherited/reasoned |

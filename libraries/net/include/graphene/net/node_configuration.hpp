@@ -64,7 +64,7 @@ struct node_configuration
    /**
     * seconds our head may be behind with no peer delivering us a block that we push, before the node dials up to
     * GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS peers past those it holds for as long; peers we had that deliver
-    * nothing are closed only once a new one delivers.  0 = never, the default.  Keep it above
+    * nothing are closed only once a new one delivers.  0 = never; default 90.  Keep it above
     * GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC so sync is restarted with the peers we have first
     */
    uint32_t peer_expansion_timeout = GRAPHENE_NET_DEFAULT_PEER_EXPANSION_TIMEOUT_SEC;
