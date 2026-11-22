@@ -538,9 +538,14 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-host-limit-exempt", bpo::value<vector<string>>()->composing(), "An address or subnet (e.g. 172.17.0.1, 10.0.0.0/8, 2001:db8::/32) whose "
      "connections p2p-max-connections-per-host does not limit, such as a proxy that rewrites the source address of inbound peers. "
      "May be given more than once. Added to host_limit_exempt_subnets in p2p-parameters, which lists loopback by default.")
-    ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. peer_expansion_timeout is the seconds this node may be behind with no peer delivering "
-     "blocks, before it dials up to " BOOST_PP_STRINGIZE(GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS) " more peers for as long; "
-     "peers it had that deliver nothing are closed only once a new one delivers blocks; 0 disables it. "
+    ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. peer_expansion_timeout, N seconds, adds peers when none delivers blocks: "
+     "1. It starts when this node's head is more than " BOOST_PP_STRINGIZE(GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC) " s old "
+     "and no peer has delivered a block for N s. "
+     "2. It keeps every current peer and dials up to " BOOST_PP_STRINGIZE(GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS) " extra peers, "
+     "preferring new hosts; they get N s to deliver a block. "
+     "3. If a new peer delivers, it is kept and old peers that delivered nothing are closed down to the desired connection count; "
+     "if none delivers, the extra peers are closed and the originals kept. "
+     "4. The next trial starts no sooner than N s after the previous one ended. 0 disables it. "
      "silent_peer_disconnect_timeout is the seconds an active peer may relay no block "
      "or inventory and ask for nothing while this node is not behind, before it is replaced if a candidate can take its slot; "
      "0 disables it. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
