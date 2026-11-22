@@ -12,13 +12,12 @@ namespace {
 
 const fc::time_point now = fc::time_point::from_iso_string( "2026-11-21T00:00:00" );
 
-idle_peer_sweep sweep( bool block_source_seen = true, size_t kept_at_least = 2 )
+idle_peer_sweep sweep( size_t kept_at_least = 2 )
 {
   idle_peer_sweep result;
   result.now = now;
   result.window = fc::seconds( 180 );
   result.kept_at_least = kept_at_least;
-  result.block_source_seen = block_source_seen;
   return result;
 }
 
@@ -40,7 +39,7 @@ BOOST_AUTO_TEST_CASE( idle_peers_picked_longest_idle_first )
   BOOST_CHECK( picked == std::vector< size_t >( { 3, 1 } ) );
 }
 
-/// A peer fed by us, or one whose request or offered blocks are pending, is never picked however long it was idle
+/// An exempt peer (one taken up for a peer expansion, one we wait for sync blocks from) is never picked however long it was idle
 BOOST_AUTO_TEST_CASE( exempt_peers_kept )
 {
   const std::vector< idle_peer_candidate > peers = {
@@ -48,12 +47,11 @@ BOOST_AUTO_TEST_CASE( exempt_peers_kept )
   BOOST_CHECK( select_idle_peers_to_disconnect( peers, sweep() ) == std::vector< size_t >( { 1 } ) );
 }
 
-/// When no peer delivered us a block in the window (a halted chain, whatever heads peers claim), nobody is picked
-BOOST_AUTO_TEST_CASE( nobody_picked_without_a_block_source )
+/// With no floor every idle peer is picked
+BOOST_AUTO_TEST_CASE( all_idle_picked_without_a_floor )
 {
   const std::vector< idle_peer_candidate > peers = { useful_seconds_ago( 1000 ), useful_seconds_ago( 500 ), useful_seconds_ago( 300 ) };
-  BOOST_CHECK( select_idle_peers_to_disconnect( peers, sweep( false ) ).empty() );
-  BOOST_CHECK_EQUAL( select_idle_peers_to_disconnect( peers, sweep( true, 0 ) ).size(), 3u );
+  BOOST_CHECK( select_idle_peers_to_disconnect( peers, sweep( 0 ) ) == std::vector< size_t >( { 0, 1, 2 } ) );
 }
 
 /// The picks leave kept_at_least of all peers, idle or not; the most recently useful idle peers are the ones kept
@@ -69,10 +67,10 @@ BOOST_AUTO_TEST_CASE( floor_of_kept_connections )
   BOOST_CHECK( select_idle_peers_to_disconnect( peers, sweep() ).empty() );
 }
 
-/// A window of 0 (idle_peer_disconnect_timeout 0) replaces nobody
+/// A window of 0 (silent_peer_disconnect_timeout 0) replaces nobody
 BOOST_AUTO_TEST_CASE( zero_window_disables )
 {
-  idle_peer_sweep disabled = sweep( true, 0 );
+  idle_peer_sweep disabled = sweep( 0 );
   disabled.window = fc::microseconds();
   BOOST_CHECK( select_idle_peers_to_disconnect( { useful_seconds_ago( 1000 ) }, disabled ).empty() );
 }

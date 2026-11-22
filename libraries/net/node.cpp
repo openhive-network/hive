@@ -475,17 +475,19 @@ namespace graphene { namespace net {
       uint32_t _cached_last_irreversible_block_num = 0;
       fc::time_point _last_head_advance_time; // when _cached_head_block_num last increased
       fc::time_point _last_block_from_any_peer_time; // when a peer last gave us a block that we pushed; see record_block_delivered_by()
-      fc::time_point _idle_peers_judged_since; // since when our head is behind with the chain not held; see find_idle_peers_to_replace()
-      // until when a peer disconnected as idle or silent may not take a slot again, by node id and by the endpoint we dial it at
-      std::map<node_id_t, fc::time_point> _idle_peer_backoff_by_node_id;
-      std::map<fc::ip::endpoint, fc::time_point> _idle_peer_backoff_by_endpoint;
+      fc::time_point _behind_since; // since when our head is behind with the chain not held; see expand_peers_while_starved()
+      // the running peer expansion (see expand_peers_while_starved()): when it started, since when the peers we had
+      // delivered no block when it did, and how many connections it holds slots for; a target of 0 while none runs
+      fc::time_point _peer_expansion_started;
+      fc::time_point _peer_expansion_starved_since;
+      uint32_t _peer_expansion_target = 0;
+      fc::time_point _peer_expansion_ended; // when the last peer expansion ended
+      // until when a peer we replaced may not take a slot again, by node id and by the endpoint we dial it at
+      std::map<node_id_t, fc::time_point> _replaced_peer_backoff_by_node_id;
+      std::map<fc::ip::endpoint, fc::time_point> _replaced_peer_backoff_by_endpoint;
       // the node id that answered our hello at each endpoint we dialed, so another address of a node we are connected to
       // is not dialed (see is_endpoint_of_connected_node()); at most GRAPHENE_NET_MAX_PEERDB_SIZE entries
       std::map<fc::ip::endpoint, node_id_t> _node_id_by_dialed_endpoint;
-      // idle disconnects warned about in the interval that began at _idle_disconnect_warnings_since, and those only dlogged
-      fc::time_point _idle_disconnect_warnings_since;
-      uint32_t _idle_disconnect_warnings = 0;
-      uint32_t _idle_disconnect_warnings_suppressed = 0;
 
       uint32_t _sync_item_type;
       uint32_t _total_number_of_unfetched_items; /// the number of items we still need to fetch while syncing
@@ -700,6 +702,7 @@ namespace graphene { namespace net {
 
       bool is_accepting_new_connections(const peer_connection* peer);
       bool is_wanting_new_connections();
+      uint32_t get_desired_number_of_connections() const;
       uint32_t get_number_of_connections();
       bool holds_connection_slot(const peer_connection& peer) const;
       uint32_t get_number_of_connections_holding_slots() const;
@@ -823,15 +826,16 @@ namespace graphene { namespace net {
       void record_unavailable_advertised_item(peer_connection* peer, const item_id& item);
       void record_late_block_copy(peer_connection* peer, const item_id& item);
       void record_withholding_strike(peer_connection* peer, const item_id& item);
-      std::vector<peer_connection_ptr> find_idle_peers_to_replace();
-      void disconnect_idle_peer(peer_connection* peer);
+      void expand_peers_while_starved();
+      bool is_taken_up_for_peer_expansion(const peer_connection& peer) const;
+      void end_peer_expansion(bool new_peer_delivered);
       std::vector<peer_connection_ptr> find_silent_peers_to_replace();
       void disconnect_silent_peer(peer_connection* peer);
       void back_off_replaced_peer(peer_connection* peer, uint32_t seconds);
       void remember_node_id_of_dialed_endpoint(const fc::ip::endpoint& endpoint, const node_id_t& node_id);
       bool is_endpoint_of_connected_node(const fc::ip::endpoint& endpoint);
-      void forget_expired_idle_peer_backoffs(fc::time_point now);
-      fc::optional<fc::time_point> idle_peer_backoff_end(const node_id_t& node_id, const fc::optional<fc::ip::endpoint>& endpoint);
+      void forget_expired_replaced_peer_backoffs(fc::time_point now);
+      fc::optional<fc::time_point> replaced_peer_backoff_end(const node_id_t& node_id, const fc::optional<fc::ip::endpoint>& endpoint);
       void count_failed_connection_attempt(peer_connection* peer, potential_peer_last_connection_disposition disposition,
                                            uint32_t counted_at_most = std::numeric_limits<uint32_t>::max());
       bool invalid_block_disconnect_breaker_tripped();
@@ -1308,10 +1312,20 @@ namespace graphene { namespace net {
             // order biases dual-stack peers toward IPv6 without affecting single-family peers.
             uint32_t unroutable_ipv4_candidates = 0;
             uint32_t unroutable_ipv6_candidates = 0;
-            const std::vector<connection_candidate> candidates = get_connection_candidates(unroutable_ipv4_candidates, unroutable_ipv6_candidates);
+            std::vector<connection_candidate> candidates = get_connection_candidates(unroutable_ipv4_candidates, unroutable_ipv6_candidates);
             const std::vector<fc::ip::address> held_addresses = get_connection_addresses(false);
+            if (_peer_expansion_target != 0)
+            {
+              // a peer expansion looks for peers that can serve us where the ones we hold can't: hosts we hold no
+              // connection to first
+              std::stable_partition(candidates.begin(), candidates.end(), [&held_addresses](const connection_candidate& candidate) {
+                const fc::ip::address host = connection_host_of(candidate.endpoint.get_address());
+                return std::none_of(held_addresses.begin(), held_addresses.end(),
+                                    [&host](const fc::ip::address& held) { return connection_host_of(held) == host; });
+              });
+            }
             const std::vector<fc::ip::endpoint> selected = select_connection_candidates(
-              candidates, held_addresses, get_connection_selection_limits(_node_configuration.desired_number_of_connections - get_number_of_connections_holding_slots()));
+              candidates, held_addresses, get_connection_selection_limits(get_desired_number_of_connections() - get_number_of_connections_holding_slots()));
             if (is_host_limit_relaxed())
             {
               // a candidate that is not exempt and on a host at the limit was picked past it
@@ -1406,7 +1420,7 @@ namespace graphene { namespace net {
 
         if (!is_connection_to_endpoint_in_progress(iter->endpoint) &&
             is_due_for_connection_attempt(*iter, delay_until_retry, fc::time_point::now()) &&
-            !idle_peer_backoff_end(node_id_t(), iter->endpoint) &&
+            !replaced_peer_backoff_end(node_id_t(), iter->endpoint) &&
             !is_endpoint_of_connected_node(iter->endpoint))
           candidates.push_back(connection_candidate{iter->endpoint,
                                                     _host_limit_exempt_endpoints.count(iter->endpoint) != 0 ||
@@ -1436,7 +1450,7 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       if (node_is_shutting_down() || !is_host_limit_relaxed() ||
-          _active_connections.size() < _node_configuration.desired_number_of_connections ||
+          _active_connections.size() < get_desired_number_of_connections() ||
           get_number_of_connections_holding_slots() >= _node_configuration.maximum_number_of_connections ||
           std::any_of(_handshaking_connections.begin(), _handshaking_connections.end(), [](const peer_connection_ptr& peer) {
             // a connection we dial is outbound once its task starts, an accepted one inbound
@@ -2154,7 +2168,7 @@ namespace graphene { namespace net {
     //  2. handshaking connections past their deadline or inactive (judge_handshaking_connection())
     //  3. active connections, by the highest ranked reason that holds (judge_active_connection())
     //  4. connections we asked to close that didn't, and terminated connections that never finished closing
-    //  5. idle replacement (stall rule 3) and silent-peer replacement (stall rule 4), after the disconnects above so
+    //  5. peer expansion (stall rule 3) and silent-peer replacement (stall rule 4), after the disconnects above so
     //     the peers they closed don't count toward their floor, and then the sync restart (stall rule 2)
     // Steps 1-4 only sort the connections into the lists of an inactive_connection_actions without yielding; the
     // closes that don't yield follow at once, the ones that send a reason (and so may yield) after that.
@@ -2202,8 +2216,7 @@ namespace graphene { namespace net {
         disconnect_from_peer(peer.get(), "You delivered a block we rejected, and our chain has made no progress since", true, detailed_error);
       }
 
-      for (const peer_connection_ptr& peer : find_idle_peers_to_replace())
-        disconnect_idle_peer(peer.get());
+      expand_peers_while_starved();
       for (const peer_connection_ptr& peer : find_silent_peers_to_replace())
         disconnect_silent_peer(peer.get());
 
@@ -2599,7 +2612,14 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       return !node_is_shutting_down() && !_p2p_network_connect_loop_done.canceled() &&
-         get_number_of_connections_holding_slots() < _node_configuration.desired_number_of_connections;
+         get_number_of_connections_holding_slots() < get_desired_number_of_connections();
+    }
+
+    // desired_number_of_connections, or more while a peer expansion runs (see expand_peers_while_starved())
+    uint32_t node_impl::get_desired_number_of_connections() const
+    {
+      return std::max(_node_configuration.desired_number_of_connections,
+                      std::min(_peer_expansion_target, _node_configuration.maximum_number_of_connections));
     }
 
     uint32_t node_impl::get_number_of_connections()
@@ -2788,7 +2808,7 @@ namespace graphene { namespace net {
     void node_impl::give_way_to_connection_under_host_limit(const peer_connection* new_peer)
     {
       VERIFY_CORRECT_THREAD();
-      if (!is_host_limit_relaxed() || _active_connections.size() <= _node_configuration.desired_number_of_connections ||
+      if (!is_host_limit_relaxed() || _active_connections.size() <= get_desired_number_of_connections() ||
           !new_peer->get_remote_endpoint())
         return;
       std::vector<fc::ip::address> others;
@@ -3390,9 +3410,9 @@ namespace graphene { namespace net {
                ("limit", _node_configuration.maximum_connections_per_host));
           warn_if_inbound_connections_share_host(originating_peer->get_socket().remote_endpoint().get_address());
         }
-        else if (const fc::optional<fc::time_point> backoff_end = idle_peer_backoff_end(originating_peer->node_id, originating_peer->get_endpoint_for_db()))
+        else if (const fc::optional<fc::time_point> backoff_end = replaced_peer_backoff_end(originating_peer->node_id, originating_peer->get_endpoint_for_db()))
         {
-          // dialing us or dialed, a peer we replaced as idle or silent would start a fresh window in its old slot.
+          // dialing us or dialed, a peer we replaced would start a fresh window in its old slot.
           // Any rejection but a duplicate connection counts as a failed attempt, so the dialer backs off too
           const int64_t backoff_seconds = (*backoff_end - fc::time_point::now()).to_seconds() + 1;
           originating_peer->their_state = peer_connection::their_connection_state::connection_rejected;
@@ -3402,7 +3422,7 @@ namespace graphene { namespace net {
                                            originating_peer->get_socket().remote_endpoint(),
                                            rejection_reason_code::unspecified,
                                            rejection_message.str());
-          ilog("Received a hello_message from peer ${peer}, which I disconnected as idle or silent, ${seconds}s before its backoff ends, rejection",
+          ilog("Received a hello_message from peer ${peer}, which I replaced, ${seconds}s before its backoff ends, rejection",
                ("peer", originating_peer->get_remote_endpoint())("seconds", backoff_seconds));
         }
 #ifdef ENABLE_P2P_DEBUGGING_API
@@ -5069,7 +5089,7 @@ namespace graphene { namespace net {
     }
 
     // The peer delivered a block that we pushed (not one only stored on a shorter fork): it is useful to us, and
-    // some peer can serve us, so idle peers may be worth replacing.  Advertising a block, offering block ids or
+    // some peer can serve us (see expand_peers_while_starved()).  Advertising a block, offering block ids or
     // claiming a head in a hello costs a peer nothing, and asking us for blocks gives us nothing, so none of them
     // counts: only a delivery does
     void node_impl::record_block_delivered_by(peer_connection* peer)
@@ -5090,28 +5110,35 @@ namespace graphene { namespace net {
       peer->unavailable_item_strikes.clear();
     }
 
-    // A node can hold a full set of peers that answer keepalives and give it nothing else, and the connect
-    // loop dials nobody while the slots are full.  So while our head is behind, an active peer that delivered
-    // us no block that we pushed (see record_block_delivered_by()) for idle_peer_disconnect_timeout is replaced,
-    // if a peer delivered us one within that time (see select_idle_peers_to_disconnect()).  A head claimed in a
-    // hello, offered block ids or advertised blocks don't count for that, nor keep their peer from being judged:
-    // any peer can claim them, and on a halted chain one such peer would otherwise get every honest peer
-    // replaced.  Neither do requests for blocks or block ids: a peer syncing from us gives us nothing while we
-    // are behind, and asking costs nothing, so a peer that only asks would otherwise keep its slot over one that
-    // could serve us.  When nobody delivers, nobody can serve us and replacing peers can't help.  The sweep
-    // leaves at least half of desired_number_of_connections: below that the connect loop dials anyway.  The time
-    // counts only since we fell behind: a node in sync gets each block from whichever peer is first, so most of
-    // its peers never contribute, and their silence before says nothing.  Nor does it count while blocks we
-    // handed the chain wait on it: the peers are not why we are behind then.  A peer we are waiting for sync
-    // blocks from is judged by the request timeouts instead.  The timeout is longer than
+    // A node can hold a full set of peers that answer keepalives and give it nothing else, and the connect loop dials
+    // nobody while the slots are full.  So once our head has been behind, with no peer delivering us a block that we
+    // pushed (see record_block_delivered_by()), for peer_expansion_timeout, the node takes up to
+    // GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS connections past those it holds (see
+    // get_desired_number_of_connections()) for one more timeout, and the connect loop dials candidates for them.  That
+    // alone disconnects nobody: a head claimed in a hello, offered block ids or advertised blocks cost a peer nothing,
+    // and dropping peers on their strength would let one peer get honest ones dropped.  Once a peer taken up for the
+    // expansion delivers a block, end_peer_expansion() closes the peers we had that delivered none; if none does, it
+    // closes the peers taken up that delivered nothing, and the ones we had are kept.  The next expansion comes a whole
+    // timeout after one ends at the soonest.  The time counts only since we fell behind: a node in sync gets each
+    // block from whichever peer is first, so most of its peers never deliver one.  Nor does it count while blocks we
+    // handed the chain wait on it: the peers are not why we are behind then.  The timeout is longer than
     // GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restart_sync_if_head_stalled() asks the peers we have first
-    std::vector<peer_connection_ptr> node_impl::find_idle_peers_to_replace()
+    void node_impl::expand_peers_while_starved()
     {
       VERIFY_CORRECT_THREAD();
-      std::vector<peer_connection_ptr> idle_peers;
-      if (_node_configuration.idle_peer_disconnect_timeout == 0 || _active_connections.empty())
-        return idle_peers;
       const fc::time_point now = fc::time_point::now();
+      const fc::microseconds timeout = fc::seconds(_node_configuration.peer_expansion_timeout);
+      if (_peer_expansion_target != 0)
+      {
+        const bool new_peer_delivered = std::any_of(_active_connections.begin(), _active_connections.end(), [this](const peer_connection_ptr& peer) {
+          return peer->delivered_block && is_taken_up_for_peer_expansion(*peer);
+        });
+        if (new_peer_delivered || now - _peer_expansion_started >= timeout)
+          end_peer_expansion(new_peer_delivered);
+        return;
+      }
+      if (timeout.count() == 0)
+        return;
       refresh_cached_chain_state();
       const fc::time_point head_block_time = _delegate->get_block_time(_delegate->get_head_block_id());
       const bool head_behind = head_block_time < now - fc::seconds(GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC);
@@ -5119,30 +5146,92 @@ namespace graphene { namespace net {
                               now - _last_head_advance_time >= fc::seconds(_recent_block_interval_in_seconds);
       if (!head_behind || chain_held)
       {
-        _idle_peers_judged_since = fc::time_point();
-        return idle_peers;
+        _behind_since = fc::time_point();
+        return;
       }
-      if (_idle_peers_judged_since == fc::time_point())
-        _idle_peers_judged_since = now;
+      if (_behind_since == fc::time_point())
+        _behind_since = now;
+      const fc::time_point starved_since = std::max(_behind_since, _last_block_from_any_peer_time);
+      if (now - starved_since < timeout || (_peer_expansion_ended != fc::time_point() && now - _peer_expansion_ended < timeout))
+        return;
 
+      const uint32_t held = get_number_of_connections_holding_slots();
+      _peer_expansion_started = now;
+      _peer_expansion_starved_since = starved_since;
+      _peer_expansion_target = std::min(std::max(held, _node_configuration.desired_number_of_connections) + GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS,
+                                        _node_configuration.maximum_number_of_connections);
+      uint32_t unroutable_ipv4_candidates = 0;
+      uint32_t unroutable_ipv6_candidates = 0;
+      const uint32_t extra = _peer_expansion_target > held ? _peer_expansion_target - held : 0;
+      const size_t candidates = select_connection_candidates(get_connection_candidates(unroutable_ipv4_candidates, unroutable_ipv6_candidates),
+                                                             get_connection_addresses(false), get_connection_selection_limits(extra)).size();
+      wlog("no peer delivered a block for ${seconds}s while our head #${head} is behind: taking up to ${extra} peers past the "
+           "${held} connections held for ${timeout}s, ${candidates} candidates to dial now; peers we have are closed only if a new one delivers blocks",
+           ("seconds", (now - starved_since).to_seconds())("head", _cached_head_block_num)(extra)(held)
+           ("timeout", _node_configuration.peer_expansion_timeout)(candidates));
+      trigger_p2p_network_connect_loop();
+    }
+
+    // whether @p peer connected while the running peer expansion did, so it holds one of its slots
+    bool node_impl::is_taken_up_for_peer_expansion(const peer_connection& peer) const
+    {
+      return peer.connection_initiation_time >= _peer_expansion_started;
+    }
+
+    // Ends the running peer expansion (see expand_peers_while_starved()) and returns to desired_number_of_connections,
+    // never below it.  When a peer taken up for it delivered a block (@p new_peer_delivered), the peers we had that
+    // delivered no block since we were starved of them are closed and may not take a slot again for one
+    // peer_expansion_timeout, the longest idle first; when none did, the peers taken up that delivered nothing are
+    // closed.  A peer we are waiting for sync blocks from is judged by the request timeouts instead
+    void node_impl::end_peer_expansion(bool new_peer_delivered)
+    {
+      VERIFY_CORRECT_THREAD();
+      const fc::time_point now = fc::time_point::now();
       idle_peer_sweep sweep;
       sweep.now = now;
-      sweep.window = fc::seconds(_node_configuration.idle_peer_disconnect_timeout);
-      sweep.kept_at_least = std::max<size_t>(GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST, _node_configuration.desired_number_of_connections / 2);
-      sweep.block_source_seen = now - _last_block_from_any_peer_time <= sweep.window;
+      sweep.window = now - _peer_expansion_starved_since;
+      sweep.kept_at_least = std::max<size_t>(GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST, _node_configuration.desired_number_of_connections);
       std::vector<peer_connection_ptr> peers;
       std::vector<idle_peer_candidate> candidates;
       for (const peer_connection_ptr& peer : _active_connections)
       {
         idle_peer_candidate candidate;
-        candidate.last_useful_data_time = std::max(peer->last_useful_data_time, _idle_peers_judged_since);
-        candidate.exempt = !peer->sync_items_requested_from_peer.empty();
+        // a peer that never delivered a block is idle however recently it connected
+        candidate.last_useful_data_time = peer->delivered_block ? peer->last_useful_data_time : fc::time_point();
+        // settling closes peers we had, otherwise only peers taken up for the expansion are closed
+        candidate.exempt = is_taken_up_for_peer_expansion(*peer) == new_peer_delivered || !peer->sync_items_requested_from_peer.empty();
         peers.push_back(peer);
         candidates.push_back(candidate);
       }
-      for (size_t i : select_idle_peers_to_disconnect(candidates, sweep))
-        idle_peers.push_back(peers[i]);
-      return idle_peers;
+      const std::vector<size_t> selected = select_idle_peers_to_disconnect(candidates, sweep);
+      const uint32_t timeout = _node_configuration.peer_expansion_timeout;
+      if (new_peer_delivered)
+        wlog("a peer taken up while no peer delivered us blocks delivered one: closing ${count} of the peers we had that delivered "
+             "none for ${seconds}s, down to the ${desired} desired connections; they may not take a slot again for ${timeout}s",
+             ("count", selected.size())("seconds", sweep.window.to_seconds())
+             ("desired", _node_configuration.desired_number_of_connections)(timeout));
+      else
+        ilog("none of the peers taken up in ${timeout}s while no peer delivered us blocks delivered one: closing ${count} of them, "
+             "keeping the peers we had; the next expansion is ${timeout}s away at the soonest",
+             (timeout)("count", selected.size()));
+      _peer_expansion_target = 0;
+      _peer_expansion_started = fc::time_point();
+      _peer_expansion_ended = now;
+      for (size_t i : selected)
+      {
+        peer_connection* peer = peers[i].get();
+        dlog("closing ${peer} at the end of a peer expansion: it delivered us no block", ("peer", peer->get_remote_endpoint()));
+        if (new_peer_delivered)
+        {
+          back_off_replaced_peer(peer, timeout);
+          fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You gave me no blocks for ${seconds} seconds while I was behind and a new peer gave me some",
+                                                      ("seconds", sweep.window.to_seconds())));
+          disconnect_from_peer(peer, "You gave me nothing I could use while I was behind", true, detailed_error);
+        }
+        else
+          disconnect_from_peer(peer, "I took you up to find blocks, and you gave me none");
+        count_failed_connection_attempt(peer, last_connection_failed);
+      }
     }
 
     // The peer answered item_not_available for @p item, which it advertised and we asked it for.  It is demoted (no
@@ -5222,54 +5311,16 @@ namespace graphene { namespace net {
       disconnect_from_peer(peer, "You keep advertising items you don't have", true, detailed_error);
     }
 
-    // Closes the connection to an idle peer and keeps it from taking a slot again, dialed or dialing us, for one
-    // idle_peer_disconnect_timeout: back sooner, its idle time would start over and it could hold the slot again
-    // for a whole window
-    void node_impl::disconnect_idle_peer(peer_connection* peer)
-    {
-      VERIFY_CORRECT_THREAD();
-      const fc::time_point now = fc::time_point::now();
-      const int64_t idle_seconds = (now - peer->last_useful_data_time).to_seconds();
-      const uint32_t claimed_head = highest_block_number_known_for_peer(*peer);
-      if (now - _idle_disconnect_warnings_since >= fc::seconds(GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNING_INTERVAL_SEC))
-      {
-        _idle_disconnect_warnings_since = now;
-        _idle_disconnect_warnings = 0;
-      }
-      if (_idle_disconnect_warnings < GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNINGS_PER_INTERVAL)
-      {
-        ++_idle_disconnect_warnings;
-        wlog("disconnecting idle peer ${peer}: it delivered us no block for ${seconds}s while our head #${head} "
-             "is behind and a peer delivered a block ${delivered}s ago; it claims head #${claimed_head}; its slot goes to another "
-             "peer, and it may not take one for ${window}s (${suppressed} more idle disconnects only logged at debug level before this one)",
-             ("peer", peer->get_remote_endpoint())("seconds", idle_seconds)("head", _cached_head_block_num)
-             ("delivered", (now - _last_block_from_any_peer_time).to_seconds())("claimed_head", claimed_head)
-             ("window", _node_configuration.idle_peer_disconnect_timeout)("suppressed", _idle_disconnect_warnings_suppressed));
-        _idle_disconnect_warnings_suppressed = 0;
-      }
-      else
-      {
-        ++_idle_disconnect_warnings_suppressed;
-        dlog("disconnecting idle peer ${peer}: no block delivered for ${seconds}s, it claims head #${claimed_head}",
-             ("peer", peer->get_remote_endpoint())("seconds", idle_seconds)("claimed_head", claimed_head));
-      }
-
-      back_off_replaced_peer(peer, _node_configuration.idle_peer_disconnect_timeout);
-      fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You gave me no blocks for ${seconds} seconds while I was behind and another peer gave me some",
-                                                  ("seconds", idle_seconds)));
-      disconnect_from_peer(peer, "You gave me nothing I could use while I was behind", true, detailed_error);
-      count_failed_connection_attempt(peer, last_connection_failed);
-    }
-
     // A peer can answer keepalives and do nothing else for as long as it likes, and while our slots are full the
     // connect loop dials nobody, so a node in sync could keep such a peer forever.  So while our head is not behind
-    // (idle replacement, find_idle_peers_to_replace(), covers the opposite), an active peer that for
+    // (peer expansion, expand_peers_while_starved(), covers the opposite), an active peer that for
     // silent_peer_disconnect_timeout relayed us no block and no block or transaction inventory, and asked us for no
     // block ids and no items (see exchanges_items()), is replaced.  Both directions count: a node in sync gets each
     // block from whichever peer is first, so a peer downstream of us, or of a producer we are near, only asks us for
     // what we advertise, and a peer syncing from us only asks for blocks and block ids.  Asking costs nothing, so a peer
     // that only asks keeps its slot; this only clears peers that exchange nothing.  Only as many peers are replaced as
-    // the connect loop has candidates to dial in their place, and as many peers are kept as idle replacement keeps
+    // the connect loop has candidates to dial in their place, and at least GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST or
+    // half the desired connections are kept
     std::vector<peer_connection_ptr> node_impl::find_silent_peers_to_replace()
     {
       VERIFY_CORRECT_THREAD();
@@ -5281,7 +5332,6 @@ namespace graphene { namespace net {
       sweep.now = now;
       sweep.window = fc::seconds(_node_configuration.silent_peer_disconnect_timeout);
       sweep.kept_at_least = std::max<size_t>(GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST, _node_configuration.desired_number_of_connections / 2);
-      sweep.block_source_seen = true;
       std::vector<peer_connection_ptr> peers;
       std::vector<idle_peer_candidate> candidates;
       for (const peer_connection_ptr& peer : _active_connections)
@@ -5312,7 +5362,7 @@ namespace graphene { namespace net {
     }
 
     // Closes the connection to a silent peer (see find_silent_peers_to_replace()) and keeps it from taking a slot again
-    // for one silent_peer_disconnect_timeout, as disconnect_idle_peer() does.  Each one is logged: the window is long
+    // for one silent_peer_disconnect_timeout (see back_off_replaced_peer()).  Each one is logged: the window is long
     // and the floor and the candidates bound how many go at once
     void node_impl::disconnect_silent_peer(peer_connection* peer)
     {
@@ -5335,15 +5385,15 @@ namespace graphene { namespace net {
     {
       VERIFY_CORRECT_THREAD();
       const fc::time_point now = fc::time_point::now();
-      forget_expired_idle_peer_backoffs(now);
+      forget_expired_replaced_peer_backoffs(now);
       const fc::time_point backoff_end = now + fc::seconds(seconds);
       if (peer->node_id != node_id_t())
-        _idle_peer_backoff_by_node_id[peer->node_id] = backoff_end;
+        _replaced_peer_backoff_by_node_id[peer->node_id] = backoff_end;
       // an inbound peer only claims the endpoint it listens at: one at another host could name a third node's
       const fc::optional<fc::ip::endpoint> endpoint = peer->get_endpoint_for_db();
       const fc::optional<fc::ip::endpoint> remote_endpoint = peer->get_remote_endpoint();
       if (endpoint && remote_endpoint && endpoint->get_address() == remote_endpoint->get_address())
-        _idle_peer_backoff_by_endpoint[*endpoint] = backoff_end;
+        _replaced_peer_backoff_by_endpoint[*endpoint] = backoff_end;
     }
 
     // A node reachable at several addresses (a seed whose name resolves to an IPv4 and an IPv6 address, a node whose
@@ -5381,28 +5431,28 @@ namespace graphene { namespace net {
       return true;
     }
 
-    void node_impl::forget_expired_idle_peer_backoffs(fc::time_point now)
+    void node_impl::forget_expired_replaced_peer_backoffs(fc::time_point now)
     {
       VERIFY_CORRECT_THREAD();
-      for (auto iter = _idle_peer_backoff_by_node_id.begin(); iter != _idle_peer_backoff_by_node_id.end();)
-        iter = iter->second <= now ? _idle_peer_backoff_by_node_id.erase(iter) : std::next(iter);
-      for (auto iter = _idle_peer_backoff_by_endpoint.begin(); iter != _idle_peer_backoff_by_endpoint.end();)
-        iter = iter->second <= now ? _idle_peer_backoff_by_endpoint.erase(iter) : std::next(iter);
+      for (auto iter = _replaced_peer_backoff_by_node_id.begin(); iter != _replaced_peer_backoff_by_node_id.end();)
+        iter = iter->second <= now ? _replaced_peer_backoff_by_node_id.erase(iter) : std::next(iter);
+      for (auto iter = _replaced_peer_backoff_by_endpoint.begin(); iter != _replaced_peer_backoff_by_endpoint.end();)
+        iter = iter->second <= now ? _replaced_peer_backoff_by_endpoint.erase(iter) : std::next(iter);
     }
 
-    // When the idle-peer backoff of the peer with @p node_id, or the one we dial at @p endpoint, ends; none if neither has one
-    fc::optional<fc::time_point> node_impl::idle_peer_backoff_end(const node_id_t& node_id, const fc::optional<fc::ip::endpoint>& endpoint)
+    // When the replaced-peer backoff of the peer with @p node_id, or the one we dial at @p endpoint, ends; none if neither has one
+    fc::optional<fc::time_point> node_impl::replaced_peer_backoff_end(const node_id_t& node_id, const fc::optional<fc::ip::endpoint>& endpoint)
     {
       VERIFY_CORRECT_THREAD();
       const fc::time_point now = fc::time_point::now();
       fc::optional<fc::time_point> end;
-      const auto by_node_id = _idle_peer_backoff_by_node_id.find(node_id);
-      if (by_node_id != _idle_peer_backoff_by_node_id.end() && by_node_id->second > now)
+      const auto by_node_id = _replaced_peer_backoff_by_node_id.find(node_id);
+      if (by_node_id != _replaced_peer_backoff_by_node_id.end() && by_node_id->second > now)
         end = by_node_id->second;
       if (endpoint)
       {
-        const auto by_endpoint = _idle_peer_backoff_by_endpoint.find(*endpoint);
-        if (by_endpoint != _idle_peer_backoff_by_endpoint.end() && by_endpoint->second > now && (!end || by_endpoint->second > *end))
+        const auto by_endpoint = _replaced_peer_backoff_by_endpoint.find(*endpoint);
+        if (by_endpoint != _replaced_peer_backoff_by_endpoint.end() && by_endpoint->second > now && (!end || by_endpoint->second > *end))
           end = by_endpoint->second;
       }
       return end;
@@ -7524,20 +7574,11 @@ namespace graphene { namespace net {
           }
 
           // node_config.json holds the whole configuration of the last run, so a value saved there may be a default of
-          // an older build rather than the operator's choice: replacing idle peers stays off unless this run's
-          // p2p-parameters (set_advanced_node_parameters(), called after this) asks for it
-          const uint32_t default_idle_peer_disconnect_timeout = node_configuration().idle_peer_disconnect_timeout;
-          if( _node_configuration.idle_peer_disconnect_timeout != default_idle_peer_disconnect_timeout )
-          {
-            wlog( "ignoring idle_peer_disconnect_timeout ${saved} saved in ${filename}, using ${default}; set it in p2p-parameters to replace idle peers",
-                  ("saved", _node_configuration.idle_peer_disconnect_timeout)("filename", configuration_file_name)
-                  ("default", default_idle_peer_disconnect_timeout) );
-            _node_configuration.idle_peer_disconnect_timeout = default_idle_peer_disconnect_timeout;
-          }
-          // the same for relax_per_host_limit and silent_peer_disconnect_timeout: they are chosen with each run's advanced
-          // node parameters
+          // an older build rather than the operator's choice: these are chosen with each run's p2p-parameters
+          // (set_advanced_node_parameters(), called after this)
           _node_configuration.relax_per_host_limit = node_configuration().relax_per_host_limit;
           _node_configuration.silent_peer_disconnect_timeout = node_configuration().silent_peer_disconnect_timeout;
+          _node_configuration.peer_expansion_timeout = node_configuration().peer_expansion_timeout;
 
           node_configuration_loaded = true;
         }
@@ -10021,7 +10062,7 @@ namespace graphene { namespace net {
                                                       const idle_peer_sweep& sweep)
   {
     std::vector<size_t> idle;
-    if (sweep.window.count() <= 0 || !sweep.block_source_seen)
+    if (sweep.window.count() <= 0)
       return idle;
     for (size_t i = 0; i < peers.size(); ++i)
       if (!peers[i].exempt && sweep.now - peers[i].last_useful_data_time > sweep.window)

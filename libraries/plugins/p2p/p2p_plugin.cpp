@@ -538,9 +538,10 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-host-limit-exempt", bpo::value<vector<string>>()->composing(), "An address or subnet (e.g. 172.17.0.1, 10.0.0.0/8, 2001:db8::/32) whose "
      "connections p2p-max-connections-per-host does not limit, such as a proxy that rewrites the source address of inbound peers. "
      "May be given more than once. Added to host_limit_exempt_subnets in p2p-parameters, which lists loopback by default.")
-    ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. idle_peer_disconnect_timeout is the seconds an active peer may deliver no block while "
-     "this node is behind and another peer delivers blocks, before it is replaced and kept out for as long; 0 disables replacing "
-     "idle peers, the default (180 enables it). silent_peer_disconnect_timeout is the seconds an active peer may relay no block "
+    ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. peer_expansion_timeout is the seconds this node may be behind with no peer delivering "
+     "blocks, before it dials up to " BOOST_PP_STRINGIZE(GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS) " more peers for as long; "
+     "peers it had that deliver nothing are closed only once a new one delivers blocks; 0 disables it, the default (90 enables "
+     "it). silent_peer_disconnect_timeout is the seconds an active peer may relay no block "
      "or inventory and ask for nothing while this node is not behind, before it is replaced if a candidate can take its slot; "
      "0 disables it. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
