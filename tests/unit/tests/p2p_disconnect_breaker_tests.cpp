@@ -4,16 +4,19 @@
 #include <graphene/net/node.hpp>
 #include <graphene/net/peer_connection.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
 using graphene::net::block_copy_grace;
+using graphene::net::block_download_holds_rerequest_until;
 using graphene::net::block_request_deadline;
 using graphene::net::block_source_candidate;
 using graphene::net::choose_block_source;
 using graphene::net::disconnect_breaker;
+using graphene::net::message_in_progress;
 using graphene::net::peer_connection;
 using graphene::net::unavailable_item_strikes;
 
@@ -234,20 +237,45 @@ BOOST_AUTO_TEST_CASE( unavailable_item_strikes_decay )
   unavailable_item_strikes spread;
   for( int minute : { 0, 15, 30 } )
   {
-    BOOST_CHECK( spread.record( start + fc::minutes( minute ) ) );
-    BOOST_CHECK( !spread.exhausted() );
+    const fc::time_point now = start + fc::minutes( minute );
+    BOOST_CHECK( spread.record( now ) );
+    BOOST_CHECK( !spread.exhausted( now ) );
   }
 
   unavailable_item_strikes close;
   BOOST_CHECK( close.record( start ) );
   BOOST_CHECK( close.record( start + fc::seconds( 25 ) ) );
-  BOOST_CHECK( !close.exhausted() );
+  BOOST_CHECK( !close.exhausted( start + fc::seconds( 25 ) ) );
   BOOST_CHECK( close.record( start + fc::seconds( 50 ) ) );
-  BOOST_CHECK( close.exhausted() );
+  BOOST_CHECK( close.exhausted( start + fc::seconds( 50 ) ) );
 }
 
-/// Answers within a demotion of the strike they follow are no new strike; one strike is forgotten per decay interval
-/// without a new one, and a delivery clears them all
+/// Each strike is forgotten a decay interval after it was made, whenever the next one comes: strikes just under an
+/// interval apart never add up to the limit, which they did when a new strike restarted the decay clock
+BOOST_AUTO_TEST_CASE( unavailable_item_strikes_decay_continuously )
+{
+  const fc::microseconds decay = fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC );
+  const fc::microseconds apart = decay - fc::seconds( 1 );
+  unavailable_item_strikes strikes;
+  for( int i = 0; i < 6; ++i )
+  {
+    const fc::time_point now = start + fc::microseconds( apart.count() * i );
+    BOOST_CHECK( strikes.record( now ) );
+    BOOST_CHECK_EQUAL( strikes.count( now ), uint32_t( std::min( i + 1, 2 ) ) );
+    BOOST_CHECK( !strikes.exhausted( now ) );
+  }
+
+  // and the count reported between strikes is the decayed one
+  unavailable_item_strikes reported;
+  BOOST_CHECK( reported.record( start ) );
+  BOOST_CHECK( reported.record( start + fc::minutes( 5 ) ) );
+  BOOST_CHECK_EQUAL( reported.count( start + decay - fc::seconds( 1 ) ), 2u );
+  BOOST_CHECK_EQUAL( reported.count( start + decay ), 1u );
+  BOOST_CHECK_EQUAL( reported.count( start + fc::minutes( 5 ) + decay ), 0u );
+}
+
+/// Answers within a demotion of the strike they follow are no new strike; each strike is forgotten a decay interval
+/// after it was made, and a delivery clears them all
 BOOST_AUTO_TEST_CASE( unavailable_item_strikes_counting )
 {
   const fc::microseconds demotion = fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC );
@@ -255,18 +283,46 @@ BOOST_AUTO_TEST_CASE( unavailable_item_strikes_counting )
   unavailable_item_strikes strikes;
   BOOST_CHECK( strikes.record( start ) );
   BOOST_CHECK( !strikes.record( start + demotion - fc::microseconds( 1 ) ) );
-  BOOST_CHECK_EQUAL( strikes.count(), 1u );
+  BOOST_CHECK_EQUAL( strikes.count( start + demotion - fc::microseconds( 1 ) ), 1u );
   BOOST_CHECK( strikes.record( start + demotion ) );
-  BOOST_CHECK_EQUAL( strikes.count(), 2u );
-  // one interval later: one forgotten, one new
-  BOOST_CHECK( strikes.record( start + demotion + decay ) );
-  BOOST_CHECK_EQUAL( strikes.count(), 2u );
-  // two intervals later: both forgotten
-  BOOST_CHECK( strikes.record( start + demotion + fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC * 3 ) ) );
-  BOOST_CHECK_EQUAL( strikes.count(), 1u );
+  BOOST_CHECK_EQUAL( strikes.count( start + demotion ), 2u );
+  // an interval after the first: that one forgotten, one new
+  BOOST_CHECK( strikes.record( start + decay ) );
+  BOOST_CHECK_EQUAL( strikes.count( start + decay ), 2u );
+  const fc::microseconds twice( decay.count() * 2 );
+  // an interval after the last: all forgotten, one new
+  BOOST_CHECK( strikes.record( start + twice ) );
+  BOOST_CHECK_EQUAL( strikes.count( start + twice ), 1u );
 
   strikes.clear();
-  BOOST_CHECK_EQUAL( strikes.count(), 0u );
+  BOOST_CHECK_EQUAL( strikes.count( start + twice ), 0u );
+}
+
+/// A block message arriving at a rate that completes it within the request timeout holds off asking another peer
+/// until a re-request deadline after its bytes last arrived; one arriving slower holds nothing
+BOOST_AUTO_TEST_CASE( block_download_holds_rerequest_while_on_time )
+{
+  const fc::microseconds request_timeout = fc::seconds( 6 );
+  const fc::microseconds rerequest = fc::milliseconds( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS );
+  const fc::time_point sent = start;
+  message_in_progress download;
+  download.msg_type = graphene::net::block_message_type;
+  download.bytes_total = 2 * 1024 * 1024;
+  download.started = sent + fc::milliseconds( 200 );
+
+  // a quarter in 1 s: all of it 4.2 s after the request
+  download.bytes_read = download.bytes_total / 4;
+  download.last_progress = download.started + fc::seconds( 1 );
+  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, request_timeout ) == download.last_progress + rerequest );
+
+  // a tenth in 1 s: 10.2 s, past the timeout
+  download.bytes_read = download.bytes_total / 10;
+  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, request_timeout ) == fc::time_point() );
+
+  // just the header so far
+  download.bytes_read = 16;
+  download.last_progress = download.started;
+  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, request_timeout ) == download.started + rerequest );
 }
 
 /// A peer kept despite a body mismatch is deprioritized until it delivers a block we accept.

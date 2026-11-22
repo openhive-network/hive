@@ -141,6 +141,8 @@ namespace graphene { namespace net
         /// a block or a block inventory, queued after the block traffic already queued but ahead of the transaction
         /// traffic queued behind that, so it does not wait for transactions queued before it
         bool is_block_traffic = false;
+        /// a request for blocks, whose write is recorded in items_requested_from_peer (see requested_items::record_block_requests_written())
+        bool is_block_request = false;
 
         queued_message(fc::time_point enqueue_time = fc::time_point::now()) :
           enqueue_time(enqueue_time)
@@ -496,6 +498,8 @@ namespace graphene { namespace net
 
       fc::time_point get_last_message_sent_time() const;
       fc::time_point get_last_message_received_time() const;
+      /// the block message (compressed or not) being read from the peer, if one is: see message_oriented_connection::get_message_in_progress()
+      const message_in_progress* get_block_message_in_progress() const;
 
       fc::optional<fc::ip::endpoint> get_remote_endpoint() const;
       fc::optional<fc::ip::endpoint> get_local_endpoint() const;
