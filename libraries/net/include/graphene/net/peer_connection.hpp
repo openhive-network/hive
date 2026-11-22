@@ -357,8 +357,7 @@ namespace graphene { namespace net
       // whether this peer delivered a block that we pushed on this connection: a proven block source, asked for a
       // block before peers that never delivered one (see choose_block_source())
       bool delivered_block = false;
-      // item_not_available answers to items this peer advertised and we asked it for, and blocks it delivered past
-      // their grace (see unavailable_item_strikes)
+      // item_not_available answers to items this peer advertised and we asked it for (see unavailable_item_strikes)
       graphene::net::unavailable_item_strikes unavailable_item_strikes;
       // "answered as not available" warnings about this peer's requests are logged at most once per
       // GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC; the requests answered so in between are counted in the next one
@@ -421,10 +420,7 @@ namespace graphene { namespace net
       bool transaction_replies_backlogged = false;
       // how long it kept transactions we asked for before answering busy, recently (see transaction_busy_time)
       graphene::net::transaction_busy_time transaction_busy_time;
-      // what the peer said in its hello: it queues the blocks we ask for ahead of the transaction traffic already
-      // queued to us (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST), and understands item_busy_message
-      // (GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY)
-      bool queues_blocks_first = false;
+      // what the peer said in its hello: it understands item_busy_message (GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY)
       bool understands_item_busy = false;
       // when this peer last advertised transactions to us while we were at live sync (see idle_block_source())
       fc::time_point last_transaction_advertisement_time;
@@ -532,9 +528,9 @@ namespace graphene { namespace net
       /// Whether we ask this peer for a block only if no other peer offered it (see choose_block_source()):
       /// it sent us a block copy whose body did not match its header and the block-body-mismatch circuit
       /// breaker kept it connected, or it answered item_not_available for a block it advertised, or kept us
-      /// waiting for one past its request's deadline (see block_request_deadline()).  Lasts until
-      /// restore_block_fetching_priority() (a block we pushed, or a copy of one we accepted already that arrived within
-      /// its grace, see block_copy_grace()) or, if the peer delivers neither, for GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC,
+      /// waiting for one past its request's deadline (see block_request_deadline()), or its copy completed past it.
+      /// Lasts until restore_block_fetching_priority() (a block we pushed, or a copy of one we accepted already, that
+      /// arrived within its deadline) or, if the peer delivers neither, for GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC,
       /// so a peer demoted once is not held back forever
       bool is_block_fetching_deprioritized() const;
       void deprioritize_block_fetching();
