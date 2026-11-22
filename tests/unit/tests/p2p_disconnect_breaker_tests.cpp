@@ -10,13 +10,10 @@
 #include <string>
 #include <vector>
 
-using graphene::net::block_copy_grace;
-using graphene::net::block_download_holds_rerequest_until;
 using graphene::net::block_request_deadline;
 using graphene::net::block_source_candidate;
 using graphene::net::choose_block_source;
 using graphene::net::disconnect_breaker;
-using graphene::net::message_in_progress;
 using graphene::net::peer_connection;
 using graphene::net::transaction_busy_time;
 using graphene::net::unavailable_item_strikes;
@@ -217,19 +214,6 @@ BOOST_AUTO_TEST_CASE( block_request_deadlines_double )
   BOOST_CHECK( block_request_deadline( 2 ) == fc::seconds( 4 ) );
 }
 
-/// A late copy restores priority up to two deadlines past its deadline, but not in the second half of the request
-/// timeout, and never less than within the deadline
-BOOST_AUTO_TEST_CASE( block_copy_grace_is_bounded_by_the_request_timeout )
-{
-  static_assert( GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES == 2 );
-  const fc::microseconds default_timeout = fc::seconds( 6 );
-  BOOST_CHECK( block_copy_grace( fc::seconds( 1 ), default_timeout ) == fc::seconds( 3 ) );
-  BOOST_CHECK( block_copy_grace( fc::seconds( 2 ), default_timeout ) == fc::seconds( 3 ) );
-  BOOST_CHECK( block_copy_grace( fc::seconds( 4 ), default_timeout ) == fc::seconds( 4 ) );
-  BOOST_CHECK( block_copy_grace( fc::seconds( 1 ), fc::seconds( 20 ) ) == fc::seconds( 3 ) );
-  BOOST_CHECK( block_copy_grace( fc::seconds( 1 ), fc::seconds( 2 ) ) == fc::seconds( 1 ) );
-}
-
 /// Not-available strikes decay: three answers spread over 30 minutes leave the peer short of the limit, three
 /// within a minute reach it
 BOOST_AUTO_TEST_CASE( unavailable_item_strikes_decay )
@@ -297,40 +281,6 @@ BOOST_AUTO_TEST_CASE( unavailable_item_strikes_counting )
 
   strikes.clear();
   BOOST_CHECK_EQUAL( strikes.count( start + twice ), 0u );
-}
-
-/// A block message arriving at a rate that completes it within its copy's grace (3 s for a first request) holds off
-/// asking another peer until a re-request deadline after its bytes last arrived; one arriving slower holds nothing,
-/// even if it would complete within the request timeout: a peer streaming a block to finish at 6 s can't hold it
-BOOST_AUTO_TEST_CASE( block_download_holds_rerequest_while_on_time )
-{
-  const fc::microseconds grace = block_copy_grace( block_request_deadline( 0 ), fc::seconds( 6 ) );
-  BOOST_REQUIRE( grace == fc::seconds( 3 ) );
-  const fc::microseconds rerequest = fc::milliseconds( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS );
-  const fc::time_point sent = start;
-  message_in_progress download;
-  download.msg_type = graphene::net::block_message_type;
-  download.bytes_total = 2 * 1024 * 1024;
-  download.started = sent + fc::milliseconds( 200 );
-
-  // half in 1 s: all of it 2.2 s after the request
-  download.bytes_read = download.bytes_total / 2;
-  download.last_progress = download.started + fc::seconds( 1 );
-  BOOST_CHECK( graphene::net::projected_block_download_completion( download ) == download.started + fc::seconds( 2 ) );
-  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, grace ) == download.last_progress + rerequest );
-
-  // a fifth in 1 s: 5.2 s, past the grace, though within the 6 s request timeout
-  download.bytes_read = download.bytes_total / 5;
-  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, grace ) == fc::time_point() );
-
-  // a tenth in 1 s: 10.2 s
-  download.bytes_read = download.bytes_total / 10;
-  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, grace ) == fc::time_point() );
-
-  // just the header so far
-  download.bytes_read = 16;
-  download.last_progress = download.started;
-  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, grace ) == download.started + rerequest );
 }
 
 /// A peer that answers busy is busy from the request it answered busy for until it delivers a transaction; busy for
