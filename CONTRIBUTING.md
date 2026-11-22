@@ -1,8 +1,8 @@
 # Hive
 
-[![GitLab](https://img.shields.io/badge/Development%20on-Community%20GitLab-orange)](https://gitlab.syncad.com/hive/hive)
+[![GitLab](https://img.shields.io/badge/Development%20on-Community%20GitLab-orange)](https://gitlab.syncad.com/hive/hive) [![GitHub](https://img.shields.io/badge/Mirror%20on-GitHub-black)](https://github.com/openhive-network/hive)
 
-This project is primarily developed on a community-hosted GitLab instance. Please visit the [community GitLab repository](https://gitlab.syncad.com/hive/hive) for the latest updates, issues, and contributions.
+Hive is developed on the [community-hosted GitLab](https://gitlab.syncad.com/hive/hive): issues, merge requests and CI are there. The same code is on GitHub at [openhive-network/hive](https://github.com/openhive-network/hive), the Hive community's GitHub organization, kept up to date as a push mirror of GitLab.
 
 # Please Read
 
@@ -32,7 +32,22 @@ Anybody in the community is welcome and encouraged to submit pull requests with 
 
 Requests to make changes that include working, tested pull requests jump to the top of the queue. There is not a guarantee that all functionality submitted as a PR will be accepted and merged, however. Please read through our [Git Guidelines](doc/git-guidelines.md) prior to submitting a PR.
 
-## How to create a merge request when you also need to update test-tools for your feature
-* Prepare changes for hive's develop and TestTools' master.
-* All changes must be rebased to target branches. the merge request in hive should have the TestTools submodule updated to point to your test tools merge request. Both CIs has to be green. (Note: nothing is merged to master/develop yet).
-* Create merge requests in hive and TestTools and wait for review. Write a note in the hive merge request mentioning that it needs the merge request from TestTools.
+## Changes spanning hive, wax and hive-local-tools
+
+The Python tests of hive use `tests/python/hive-local-tools`, which pins packages released by other repositories:
+`hiveio-wax` and `hiveio-test-tools` (built by [wax](https://gitlab.syncad.com/hive/wax) from its `hive` submodule)
+and `hiveio-beekeepy` ([beekeeper](https://gitlab.syncad.com/hive/beekeeper)). A change crossing these repositories
+goes through separate merge requests, each merged before the next one uses it, so that `develop` never pins
+development builds (`<version>.dev<timestamp>`) of another repository:
+
+1. **hive** - the changes wax needs (skipped when wax only updates its `hive` submodule). After the merge the `develop`
+   pipeline publishes the release of `hiveio-api` (`<version>.post<timestamp>`).
+2. **wax** - points the `hive` submodule and the ref of the hive CI include at that `develop` commit and pins the
+   releases of `hiveio-api` and `hiveio-beekeepy`. After the merge the `develop` pipeline of wax publishes the releases
+   of `hiveio-wax` and `hiveio-test-tools`.
+3. **hive** again - bumps `hive-local-tools` to the `develop` releases of wax and test-tools (and of beekeepy if it
+   changed).
+
+The merge request of step 1 is tested with the pins of `develop`, i.e. with the current releases of wax and test-tools:
+it must not break them, and tests needing the new wax come with step 3. Development builds may be pinned on a branch to
+try the whole chain out, but such a pin is never merged.

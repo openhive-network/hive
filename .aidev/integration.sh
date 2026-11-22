@@ -452,9 +452,9 @@ hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
     timed_out "$rc" && { out_of_time "the $net binaries' build"; return; }
     [ "$rc" -eq 0 ] || return "$rc"
     rm -rf "$stage"
-    mkdir -p "$stage/build/home/hived/bin" "$stage/build/home/hived/source/doc" "$stage/context/docker" \
+    mkdir -p "$stage/build/home/hived/bin" "$stage/build/home/hived/source/contrib" "$stage/context/docker" \
         "$stage/context/scripts" || return 1
-    cp "$built/bin/"* "$stage/build/home/hived/bin/" && cp doc/example_config.ini "$stage/build/home/hived/source/doc/" \
+    cp "$built/bin/"* "$stage/build/home/hived/bin/" && cp contrib/example-exchange-config.ini "$stage/build/home/hived/source/contrib/" \
         && cp -r scripts "$stage/build/home/hived/source/" && cp docker/docker_entrypoint.sh "$stage/context/docker/" \
         && cp scripts/setup_ubuntu.sh scripts/openssl.conf "$stage/context/scripts/" || return 1
     [ "$4" = 1 ] && base_arg=(--build-arg INSTANCE_BASE_IMAGE=minimal-runtime)

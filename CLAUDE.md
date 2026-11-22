@@ -241,7 +241,7 @@ Python test infrastructure is in `tests/python/hive-local-tools/test-tools/`. Th
 hived --dump-config  # Creates ~/.hived/config.ini
 ```
 
-**Docker config example:** `contrib/config-for-docker.ini`
+**Exchange config example:** `contrib/example-exchange-config.ini` (shipped in the image as `/home/hived/datadir/example-exchange-config.ini`)
 
 **Critical settings:**
 - `plugin` - Plugins to load (e.g., `p2p witness webserver condenser_api`)

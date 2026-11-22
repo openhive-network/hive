@@ -21,7 +21,7 @@ procedure, and a fresh volume bootstraps itself.
   few tens of GB: the state file ~5 GB in use (sparse, 8 GB nominal), the
   unpacked snapshot ~7 GB until deleted, and account history that depends on how
   many accounts you track. A node with a block log needs about 1 TB, since the
-  block log is ~550 GB and growing. Network-attached storage (for example AWS
+  block log is ~600 GB and growing. Network-attached storage (for example AWS
   EBS) is too slow for a replay; use an instance with physically attached NVMe.
 - Outbound internet access for the P2P network and the block log download.
   Accepting inbound connections on TCP 2001 helps the network but is optional.
@@ -31,10 +31,13 @@ procedure, and a fresh volume bootstraps itself.
 1. Copy `.env.example` to `.env` and set `HIVED_VERSION` to the release you want.
    Always pin a version; `latest` is deliberately not published because a new
    release may require a replay.
-2. Edit `config.ini`: replace `your-exchange` with your account name. Add one
-   `account-history-rocksdb-track-account-range` line per account. This must be
-   right before the first start, because changing it later means replaying or
-   starting over from a fresh snapshot.
+2. Check `config.ini`: its `account-history-rocksdb-track-account-range` lines
+   are the accounts the published exchange snapshot carries history for. If your
+   account is among them, keep the list as it is. If it is not, the snapshot
+   cannot provide its history: add your account (one line per account) and
+   bootstrap from the block log instead (in `.env`, clear `SNAPSHOT_URL` and set
+   `BLOCK_LOG_URL`). Decide before the first start, because changing the list
+   later means a replay from a block log.
 3. Start the node, and follow its log from another terminal:
 
    ```
@@ -75,7 +78,7 @@ starts leave the data alone, so the command never changes:
   `snapshot_load_pending.json` next to its state file; the file disappears
   once the node has caught up with its block log.
 - **Block log.** With `BLOCK_LOG_URL` set instead, the container downloads the
-  block log (~550 GB, resumable, safe to interrupt) into its data volume and
+  block log (~600 GB, resumable, safe to interrupt) into its data volume and
   replays it. A replay finishes in well under a day on fast NVMe and ends with
   `Done reindexing`; after that hived fetches the remaining blocks from the P2P
   network. The node then holds every block, has history for your accounts from
@@ -108,7 +111,7 @@ public internet.
 
 ```
 curl -s --data '{"jsonrpc":"2.0","method":"database_api.get_dynamic_global_properties","id":1}' http://127.0.0.1:8091/
-curl -s --data '{"jsonrpc":"2.0","method":"account_history_api.get_account_history","params":{"account":"your-exchange","start":-1,"limit":10},"id":1}' http://127.0.0.1:8091/
+curl -s --data '{"jsonrpc":"2.0","method":"account_history_api.get_account_history","params":{"account":"binance-hot2","start":-1,"limit":10},"id":1}' http://127.0.0.1:8091/
 ```
 
 Only trust results once the node is healthy: a node that is still syncing
