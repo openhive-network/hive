@@ -54,6 +54,22 @@ _HELP_WITH_IDLE_PEER_SENTENCE = """  --p2p-parameters arg
   --pacemaker-source arg
 """
 
+_HELP_WITH_PEER_EXPANSION_STEPS = """  --p2p-parameters arg
+          P2P network parameters. peer_expansion_timeout, N seconds, adds
+          peers when none delivers blocks: 1. It starts when this node's head
+          is more than 60 s old and no peer has delivered a block for N s. 2.
+          It keeps every current peer and dials up to 4 extra peers, preferring
+          new hosts; they get N s to deliver a block. 3. If a new peer
+          delivers, it is kept and old peers that delivered nothing are closed
+          down to the desired connection count; if none delivers, the extra
+          peers are closed and the originals kept. 4. The next trial starts no
+          sooner than N s after the previous one ended. 0 disables it.
+          (Default: {"listen_endpoint":"0.0.0.0:0","accept_incoming_connection
+          s":true,"wait_if_endpoint_is_busy":true,"peer_inactivity_timeout":5,"
+          peer_expansion_timeout":90} )
+  --pacemaker-source arg
+"""
+
 
 def test_only_given_parameters_known_to_the_binary_are_applied() -> None:
     new_build = p2p_parameters.defaults_from_help(_HELP_WITH_DELAYS)
@@ -76,7 +92,10 @@ def test_the_default_is_read_whatever_sentences_precede_it() -> None:
     before_idle_peer_sentence = p2p_parameters.defaults_from_help(_HELP_WITHOUT_DELAYS)
     with_idle_peer_sentence = p2p_parameters.defaults_from_help(_HELP_WITH_IDLE_PEER_SENTENCE)
 
+    with_peer_expansion_steps = p2p_parameters.defaults_from_help(_HELP_WITH_PEER_EXPANSION_STEPS)
+
     assert with_idle_peer_sentence == before_idle_peer_sentence
+    assert with_peer_expansion_steps == {**before_idle_peer_sentence, "peer_expansion_timeout": 90}
     assert with_idle_peer_sentence == {
         "listen_endpoint": "0.0.0.0:0",
         "accept_incoming_connections": True,

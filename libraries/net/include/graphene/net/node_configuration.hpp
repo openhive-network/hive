@@ -62,10 +62,17 @@ struct node_configuration
    /** how many seconds of inactivity are permitted before disconnecting a peer */
    uint32_t peer_inactivity_timeout = GRAPHENE_NET_PEER_HANDSHAKE_INACTIVITY_TIMEOUT;
    /**
-    * seconds our head may be behind with no peer delivering us a block that we push, before the node dials up to
-    * GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS peers past those it holds for as long; peers we had that deliver
-    * nothing are closed only once a new one delivers.  0 = never; default 90.  Keep it above
-    * GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC so sync is restarted with the peers we have first
+    * peer expansion, N seconds (default 90; 0 = never):
+    * 1. When it starts: our head is behind (older than GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC) and no peer has
+    *    delivered us a block that we push for N s.
+    * 2. The trial: every current peer is kept, and the node dials up to GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS
+    *    extra peers, preferring new hosts.  They get N s to deliver a block.
+    * 3. The outcome:
+    *    - a new peer delivers: it is kept, and old peers that delivered nothing are closed, down to
+    *      desired_number_of_connections;
+    *    - none delivers: the extra peers are closed and the original ones are kept.
+    * 4. Cooldown: the next trial starts no sooner than N s after the previous one ended.
+    * Keep it above GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC so sync is restarted with the peers we have first
     */
    uint32_t peer_expansion_timeout = GRAPHENE_NET_DEFAULT_PEER_EXPANSION_TIMEOUT_SEC;
    /**
