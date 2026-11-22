@@ -678,13 +678,18 @@
 // Basis: reasoned.
 #define GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC                       60
 
-// stall rule 3, peer expansion: default node_configuration::peer_expansion_timeout: once our head has been behind
-// (GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC) for this long with no peer delivering us a block that we pushed, the node
-// dials up to GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS peers past the connections it holds, for as long.  Nobody is
-// disconnected for it unless a peer taken up meanwhile delivers a block; then the peers we had that delivered none are
-// closed down to the desired number.  If none does, the peers taken up that delivered nothing are closed and the ones
-// we had are kept.  The next expansion comes no sooner than this long after one ends.  Longer than
-// GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restarting sync with the peers we have is tried first.  0 disables it.
+// stall rule 3, peer expansion: default node_configuration::peer_expansion_timeout, N seconds:
+//   1. When it starts: our head is behind (older than GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC) and no peer has
+//      delivered us a block that we pushed for N s.
+//   2. The trial: every current peer is kept, and the node dials up to GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS
+//      extra peers, preferring hosts it holds no connection to.  They get N s to deliver a block.
+//   3. The outcome:
+//      - a new peer delivers: it is kept, and the old peers that delivered nothing are closed, down to the desired
+//        number of connections;
+//      - none delivers: the extra peers are closed and the original ones are kept.
+//   4. Cooldown: the next trial starts no sooner than N s after the previous one ended.
+// 0 disables it.  Longer than GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restarting sync with the peers we have is
+// tried first.
 // Basis: measured (live check on loopback: a behind node whose peers delivered nothing dialed a serving candidate after
 // 90 s, synced from it and closed only peers that delivered nothing, down to the desired number; on a halted chain it
 // kept every peer and expanded once per 180 s; in sync it never expanded; no peer that delivered blocks was closed).

@@ -147,26 +147,30 @@ before.
 
 A node that is behind, with none of its peers delivering it blocks, holds its slots while nobody serves it, and the
 connect loop dials nobody while they are full. Peer expansion (`peer_expansion_timeout`) adds peers for that instead
-of dropping them:
+of dropping them. With `peer_expansion_timeout` N seconds (default 90):
 
-* **Trigger:** our head is older than `IDLE_PEERS_HEAD_BEHIND_SEC` (60 s), and no peer delivered a block that we pushed
-  onto our chain for `peer_expansion_timeout`, counted from when we fell behind, and not while blocks we handed the
-  chain wait on it. A head claimed in a hello, offered block ids, advertised blocks and requests count for nothing.
-* **Expansion:** for one more `peer_expansion_timeout`, the node takes up to `PEER_EXPANSION_EXTRA_CONNECTIONS` (4)
-  connections past those it holds (and past `desired_number_of_connections`), never past
-  `maximum_number_of_connections`. The connect loop dials candidates on hosts it holds no connection to first; the
-  per-host cap (relaxed or hard, as `relax_per_host_limit` says) and the reserved address family share hold as for
-  any dial, and peers dialing us are limited before hello as always. It is logged once (a warning with the
-  candidates it has to dial).
-* **Settle:** once a peer taken up meanwhile delivers a block, the peers we had that delivered no block since we were
-  starved of them are closed, the longest idle first, down to the desired number ("You gave me nothing I could use
-  while I was behind"); a peer we wait for sync blocks from is left to the request timeouts. They may not take a slot
-  again for one timeout. If no new peer delivers within the timeout, the peers taken up that delivered nothing are
-  closed ("I took you up to find blocks, and you gave me none") and every peer we had is kept: no net loss.
-* **Bounds:** the next expansion starts a whole `peer_expansion_timeout` after one ends at the soonest, so a halted
-  chain costs one expansion and one log line per two timeouts. A node in sync never expands.
+1. **When it starts:** our head is behind, older than `IDLE_PEERS_HEAD_BEHIND_SEC` (60 s), and no peer has delivered
+   a block that we pushed onto our chain for N s, counted from when we fell behind, and not while blocks we handed the
+   chain wait on it. A head claimed in a hello, offered block ids, advertised blocks and requests count for nothing.
+2. **The trial:** every current peer is kept, and the node dials up to `PEER_EXPANSION_EXTRA_CONNECTIONS` (4) extra
+   peers past those it holds (and past `desired_number_of_connections`), never past `maximum_number_of_connections`.
+   The connect loop prefers candidates on hosts it holds no connection to; the per-host cap (relaxed or hard, as
+   `relax_per_host_limit` says) and the reserved address family share hold as for any dial, and peers dialing us are
+   limited before hello as always. It is logged once (a warning with the candidates it has to dial). The extra peers
+   get N s to deliver a block.
+3. **The outcome:**
+   * a new peer delivers: it is kept, and the old peers that delivered no block since we were starved of them are
+     closed, the longest idle first, down to the desired connection count ("You gave me nothing I could use while I
+     was behind"); a peer we wait for sync blocks from is left to the request timeouts. They may not take a slot again
+     for N s;
+   * none delivers: the extra peers that delivered nothing are closed ("I took you up to find blocks, and you gave me
+     none") and every original peer is kept: no net loss.
+4. **Cooldown:** the next trial starts no sooner than N s after the previous one ended, so a halted chain costs one
+   trial and one log line per 2N s. A node in sync never expands.
 
-It is on by default (90 s); 0 disables it. A live check on loopback showed no node losing a peer that delivered it
+0 disables it.
+
+A live check on loopback showed no node losing a peer that delivered it
 blocks: behind with a serving candidate, it dialed the candidate after 90 s, synced and closed only peers that had
 delivered nothing, down to the desired number; on a halted chain it kept every peer and expanded once per 180 s; in
 sync it never expanded. It replaced the
@@ -208,7 +212,7 @@ host and must exempt the proxy's address or set the cap to 0.
 | - | `reserved_address_family_percent` | 25 | % of desired | share kept for each address family |
 | - | `peer_connection_retry_timeout` | 30 | s | redial backoff base |
 | - | `peer_inactivity_timeout` | 5 | s | handshake inactivity |
-| - | `peer_expansion_timeout` | 90 | s | peer expansion trigger and duration; 0 = off |
+| - | `peer_expansion_timeout` | 90 | s | peer expansion, N s: 1. starts when behind (60 s) and no peer delivered a block for N; 2. keeps every peer and dials up to 4 extra, preferring new hosts, for N; 3. a new peer delivers: close old peers that delivered nothing, down to desired; none: close the extras; 4. next trial N after; 0 = off |
 | - | `silent_peer_disconnect_timeout` | 1800 | s | silent-peer replacement window; 0 = off |
 | - | `active_ignored_request_timeout_microseconds` | 6,000,000 | us | request timeout |
 | `p2p-transaction-flush-delay-us` | `transaction_flush_delay_microseconds` | 1000 | us | how long transaction traffic waits to share a write |
