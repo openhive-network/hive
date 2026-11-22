@@ -31,13 +31,18 @@ struct node_configuration
    /** if we have _maximum_number_of_connections or more, we will refuse any inbound connections */
    uint32_t maximum_number_of_connections = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS;
    /**
-    * connections held to one host (an IPv4 address or an IPv6 /64) at most, counting active and accepted handshaking ones; 0 = no limit.
-    * A hard limit only when set in the advanced node parameters; otherwise, host_limit_relax_delay after start, it gives
-    * way to connections we dial while other hosts can't fill desired_number_of_connections, and to peers that dial us
-    * while we hold fewer than that, up to their host's share of it and half of it at most (a value saved in
-    * node_config.json doesn't count as set)
+    * connections held to one host (an IPv4 address or an IPv6 /64) at most, counting active and accepted handshaking
+    * ones; 0 = no limit.  Whether it gives way when other hosts can't fill the connections is relax_per_host_limit
     */
    uint32_t maximum_connections_per_host = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST;
+   /**
+    * whether maximum_connections_per_host gives way, host_limit_relax_delay after start, to connections we dial while
+    * other hosts can't fill desired_number_of_connections, and to peers that dial us while we hold fewer than that, up
+    * to their host's share of it and half of it at most; false keeps it a hard limit.  Defaults to true, except that
+    * advanced node parameters that set maximum_connections_per_host and not this make it false, so a limit the
+    * operator chose stays hard unless the operator relaxes it.  A value saved in node_config.json is not used
+    */
+   bool relax_per_host_limit = true;
    /**
     * addresses and subnets ("172.17.0.1", "10.0.0.0/8", "2001:db8::/32") whose connections maximum_connections_per_host
     * does not limit, e.g. a proxy that rewrites the source address of every inbound peer.  Setting it replaces the
@@ -87,6 +92,7 @@ FC_REFLECT(graphene::net::node_configuration,
    (desired_number_of_connections)
    (maximum_number_of_connections)
    (maximum_connections_per_host)
+   (relax_per_host_limit)
    (host_limit_exempt_subnets)
    (host_limit_relax_delay)
    (reserved_address_family_percent)

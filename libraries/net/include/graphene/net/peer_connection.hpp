@@ -253,8 +253,6 @@ namespace graphene { namespace net
       /// requested transactions waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES, oldest first
       std::deque<std::shared_ptr<full_transaction_type>> _deferred_transaction_replies;
       size_t _deferred_transaction_reply_bytes = 0;
-      /// when _deferred_transaction_replies last stopped being empty
-      fc::time_point _transaction_replies_deferred_since;
       /// set while the send task writes a batch it took off the queue
       bool _write_in_progress = false;
       /// when the queue last stopped being empty while no write was in progress
@@ -464,11 +462,10 @@ namespace graphene { namespace net
       bool send_transaction_reply(const std::shared_ptr<full_transaction_type>& full_transaction);
       /// the bytes of the transactions waiting to be queued by send_transaction_reply()
       size_t get_deferred_transaction_reply_bytes() const { return _deferred_transaction_reply_bytes; }
-      /// while transaction replies wait (see send_transaction_reply()), when they started waiting or the queue was
-      /// last written to the socket, whichever is later; fc::time_point::maximum() while none wait
-      fc::time_point get_transaction_reply_send_progress_time() const;
       /// while anything is queued or being written, when that started or bytes were last written to the socket,
-      /// whichever is later; fc::time_point::maximum() while nothing is
+      /// whichever is later; fc::time_point::maximum() while nothing is.  Replies and inventory waiting outside the
+      /// queue (send_transaction_reply(), send_transaction_inventory()) are queued whenever the queue empties, so
+      /// while any wait the queue is not empty and this is their progress too
       fc::time_point get_send_progress_time() const;
       /// queues the message; a transaction inventory is sent as send_transaction_inventory() sends its ids
       void send_message(const message& message_to_send, size_t message_send_time_field_offset = (size_t)-1);

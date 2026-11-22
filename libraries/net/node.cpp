@@ -342,11 +342,7 @@ namespace graphene { namespace net {
       /// inbound connections closed at accept (get_inbound_connection_refusal()) since the last warning about them
       uint32_t _refused_inbound_connections_since_warning = 0;
       fc::time_point _last_refused_inbound_connection_warning_time;
-      /// maximum_connections_per_host came with the advanced node parameters (p2p-max-connections-per-host or
-      /// p2p-parameters), not from its default or a saved node_config.json: a hard limit.  Otherwise
-      /// is_host_limit_relaxed() lets connections past it while no others fill the desired number
-      bool _maximum_connections_per_host_set = false;
-      /// until when the default per-host limit stays hard: host_limit_relax_delay after connect_to_p2p_network()
+      /// until when a relaxed per-host limit stays hard: host_limit_relax_delay after connect_to_p2p_network()
       fc::time_point _host_limit_hard_until = fc::time_point::maximum();
       fc::time_point _last_host_limit_relaxed_log_time;
 
@@ -563,8 +559,9 @@ namespace graphene { namespace net {
       /// filled by the delegate's validation callbacks on the chain's writer thread, applied on our thread
       std::shared_ptr<completion_queue<transaction_completion>> _transaction_completions;
       in_flight_limit _transactions_in_flight;
-      /// bytes of the transactions received from peers whose validation results have not been applied yet,
-      /// including those waiting for room under the in-flight limit
+      /// since when the transactions in flight have been at maximum_transactions_in_flight, while they are
+      std::optional<fc::time_point> _in_flight_cap_reached_since;
+      /// bytes of the transactions received from peers whose validation results have not been applied yet
       uint64_t _transaction_bytes_being_validated = 0;
       /// the mean size of the transactions peers sent us that validated, the size expected of a transaction
       /// requested from a peer that has not sent one yet (see expected_transaction_bytes())
@@ -599,7 +596,30 @@ namespace graphene { namespace net {
       void fetch_sync_items_loop();
       void trigger_fetch_sync_items_loop();
 
+      /// a peer listed in a fetch pass, and the items it is to be asked for
+      struct peer_and_items_to_fetch
+      {
+        peer_connection_ptr peer;
+        bool include_transactions;
+        size_t max_transactions;
+        size_t max_transactions_per_request;
+        size_t blocks = 0;
+        size_t transactions = 0;
+        bool done = false;
+        std::vector<item_id> item_ids;
+      };
+      /// the peers listed in a pass of fetch_items_loop()
+      struct fetch_pass
+      {
+        std::vector<peer_and_items_to_fetch> peers;
+        /// each listed peer, and whether it ranks as an idle block source (see judge_fetch_candidate())
+        std::unordered_map<const peer_connection*, bool> idle_block_sources;
+      };
       void fetch_items_loop();
+      fetch_pass list_peers_for_fetch_pass(fc::time_point pass_start, transaction_fetch_gate& gate,
+                                           fc::time_point& next_peer_unblocked_time);
+      void take_fetch_turns(fetch_pass& pass, transaction_fetch_gate& gate, fc::time_point& next_peer_unblocked_time);
+      void send_fetch_requests(const fetch_pass& pass);
       /// the oldest time an item we heard about can be queued at and still be worth fetching
       fc::time_point oldest_item_timestamp_to_fetch() const;
       /// drops the items to fetch we heard about too long ago, returning how many
@@ -649,7 +669,25 @@ namespace graphene { namespace net {
       void advertise_inventory_loop();
       void trigger_advertise_inventory_loop();
 
+      /// what a pass of terminate_inactive_connections_loop() decided to do with which connections
+      struct inactive_connection_actions
+      {
+        std::vector<peer_connection_ptr> to_disconnect_gently;
+        std::vector<peer_connection_ptr> to_disconnect_for_rejected_blocks;
+        std::vector<peer_connection_ptr> to_disconnect_forcibly;
+        std::vector<peer_connection_ptr> to_send_keepalive;
+        std::vector<peer_connection_ptr> to_terminate;
+        fc::microseconds inactivity_timeout; ///< the one active connections were judged by
+      };
       void terminate_inactive_connections_loop();
+      void find_peers_kept_by_stalled_breaker(fc::time_point now, inactive_connection_actions& actions);
+      void judge_handshaking_connections(fc::time_point now, inactive_connection_actions& actions);
+      active_connection_state get_active_connection_state(const peer_connection& peer, fc::time_point now,
+                                                          fc::microseconds request_timeout) const;
+      void judge_active_connections(fc::time_point now, inactive_connection_actions& actions);
+      void close_for_request_timeout(const peer_connection_ptr& peer, inactive_connection_actions& actions,
+                                     const fc::exception& reason);
+      void judge_closing_connections(fc::time_point now, inactive_connection_actions& actions);
 
       void fetch_updated_peer_lists_loop();
       void update_bandwidth_data(uint32_t bytes_read_this_second, uint32_t bytes_written_this_second);
@@ -1652,6 +1690,17 @@ namespace graphene { namespace net {
       return fetch_candidate_verdict::take;
     }
 
+    // A pass of the fetch items loop:
+    //  1. drops the expired items to fetch and asks other advertisers for overdue blocks (rerequest_overdue_blocks())
+    //  2. sets the transaction fetch gate for the pass: the pending pool, the bytes on their way and the minimum
+    //     (transaction_fetch_gate, fetch_minimum_schedule)
+    //  3. lists the peers that can take a request and each one's transaction window (list_peers_for_fetch_pass(),
+    //     transaction_fetch_window())
+    //  4. has the listed peers take turns, one item each, judging their candidates (take_fetch_turns(),
+    //     fetch_turn_order, judge_fetch_candidate())
+    //  5. records the pass, sends the requests (send_fetch_requests(), group_fetch_requests()) and waits for the
+    //     next one (next_fetch_pass())
+    // The items to request are chosen first and sent afterwards, so the pass doesn't yield while it iterates.
     void node_impl::fetch_items_loop()
     {
       while (!_fetch_item_loop_done.canceled())
@@ -1669,101 +1718,9 @@ namespace graphene { namespace net {
         // already on its way
         transaction_fetch_gate gate(_delegate->get_pending_transaction_pool_size(), transaction_bytes_on_their_way(),
                                     _fetch_minimum_schedule.minimum_for_pass(iteration_start));
-        // candidates as old as the expired items are dropped too, so that none the gate holds back outlives them
-        const fc::time_point oldest_candidate_to_keep = oldest_item_timestamp_to_fetch();
 
-        // we need to construct a list of items to request from each peer first,
-        // then send the messages (in two steps, to avoid yielding while iterating).
-        // Peers with no block or sync request outstanding are asked, each for items from its own fetch
-        // candidates: blocks one request at a time, transactions while the peer's window has room, so the
-        // next batch may go out before earlier replies have arrived.  They take turns, one item each, so
-        // items several of them advertised are spread evenly among them, except that a block goes to a
-        // peer that delivered us blocks before, and one with nothing outstanding, when one advertised it (see
-        // judge_fetch_candidate()); one asked and not delivering is replaced soon (rerequest_overdue_blocks()).  The turns
-        // start after the peer that took the last transaction before (see fetch_turn_order), so a headroom
-        // worth a few transactions per pass, or the gate's minimum, is spread over the peers from pass to pass
-        struct peer_and_items_to_fetch
-        {
-          peer_connection_ptr peer;
-          bool include_transactions;
-          size_t max_transactions;
-          size_t max_transactions_per_request;
-          size_t blocks = 0;
-          size_t transactions = 0;
-          bool done = false;
-          std::vector<item_id> item_ids;
-        };
-        std::vector<peer_and_items_to_fetch> items_by_peer;
-        // the listed peers: whether each ranks as an idle block source (see judge_fetch_candidate())
-        std::unordered_map<const peer_connection*, bool> pass_peers;
-        for (const peer_connection_ptr& peer : _active_connections)
-        {
-          _fetch_turn_order.visit(peer.get(), items_by_peer.size());
-          peer->fetch_candidates.trim(oldest_candidate_to_keep);
-          if (peer->can_take_item_request() && peer->fetch_candidates.size() > 0)
-          {
-            const bool transaction_fetching_inhibited = peer->is_transaction_fetching_inhibited();
-            // a busy peer is unblocked by its next delivery, which runs the loop again
-            if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions() &&
-                peer->transaction_fetching_inhibited_until > iteration_start)
-              next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
-            const size_t window = transaction_fetching_inhibited ? 0 :
-              peer->received_transaction_size.transactions_to_request(peer->items_requested_from_peer.transactions());
-            const size_t max_transactions = gate.transactions_to_request(window, [&]() { return has_transaction_to_fetch(peer); });
-            if (max_transactions == 0 && !peer->fetch_candidates.has_blocks())
-              continue;
-            peer->fetch_candidates.begin_pass();
-            pass_peers.emplace(peer.get(), peer->idle_block_source(iteration_start));
-            items_by_peer.push_back({peer, max_transactions > 0, max_transactions,
-                                     peer->received_transaction_size.max_transactions_per_request()});
-          }
-        }
-
-        _fetch_turn_order.take_turns(items_by_peer.size(), [&](size_t turn)
-        {
-          peer_and_items_to_fetch& peer_and_items = items_by_peer[turn];
-          if (peer_and_items.done)
-            return false;
-          const peer_connection_ptr& peer = peer_and_items.peer;
-          const bool include_transactions = peer_and_items.include_transactions &&
-                                            gate.may_request_more([&]() { return has_transaction_to_fetch(peer); });
-          const fetch_candidate_order order = include_transactions && gate.next_request_is_minimum() ? fetch_candidate_order::newest_first
-                                                                                                      : fetch_candidate_order::oldest_first;
-          const std::optional<item_id> item_id_to_fetch =
-            peer->fetch_candidates.take_next(include_transactions, order,
-                                             [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate, pass_peers); },
-                                             _statistics.fetch.candidates_examined);
-          if (!item_id_to_fetch)
-          {
-            peer_and_items.done = true;
-            return false;
-          }
-          const fc::time_point now = fc::time_point::now();
-          if (item_id_to_fetch->item_type == graphene::net::block_message_type)
-          {
-            const fc::microseconds deadline = block_request_deadline(outstanding_block_requests(*item_id_to_fetch));
-            peer->items_requested_from_peer.insert(*item_id_to_fetch, now, deadline);
-            // nothing else need wake the loop when the block doesn't come (see rerequest_overdue_blocks())
-            next_peer_unblocked_time = std::min(next_peer_unblocked_time, now + deadline);
-          }
-          else
-            peer->items_requested_from_peer.insert(*item_id_to_fetch, now);
-          // if the peer is dropped for not delivering it, the item is asked of the others that advertised it
-          if (item_id_to_fetch->item_type == trx_message_type)
-          {
-            _transaction_inventory.keep(item_id_to_fetch->item_hash, now);
-            gate.record_request(expected_transaction_bytes(*peer));
-            _fetch_turn_order.record_transaction(peer.get());
-          }
-          peer_and_items.item_ids.push_back(*item_id_to_fetch);
-          // the peer's blocks are all taken before its first transaction, so a peer that reaches
-          // its transaction limit has nothing more to give in this pass
-          if (item_id_to_fetch->item_type == graphene::net::block_message_type)
-            peer_and_items.done = ++peer_and_items.blocks >= GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION;
-          else
-            peer_and_items.done = ++peer_and_items.transactions >= peer_and_items.max_transactions;
-          return true;
-        });
+        fetch_pass pass = list_peers_for_fetch_pass(iteration_start, gate, next_peer_unblocked_time);
+        take_fetch_turns(pass, gate, next_peer_unblocked_time);
 
         const fc::time_point next_minimum_due = _fetch_minimum_schedule.record_pass(gate, iteration_start);
         ++_statistics.fetch.wakes;
@@ -1777,65 +1734,144 @@ namespace graphene { namespace net {
           wlog("Removed ${expired_items} items from the list to fetch due to expiration time.", ("expired_items", *expired_to_report));
         _statistics.fetch.scheduling_time += fc::time_point::now() - iteration_start;
 
-        // we've figured out which peer will be providing each item, now send the messages.
-        for (const peer_and_items_to_fetch& peer_and_items : items_by_peer)
-        {
-          _statistics.fetch.items_requested += peer_and_items.item_ids.size();
-          // the item lists are heterogenous and
-          // the fetch_items_message can only deal with one item type at a time.
-          // Blocks come first (they were taken first), then the transactions, in requests of at most
-          // max_transactions_per_request each
-          std::vector<std::pair<uint32_t, std::vector<item_hash_t>>> requests;
-          for (const item_id& item : peer_and_items.item_ids)
-          {
-            if (requests.empty() || requests.back().first != item.item_type ||
-                (item.item_type == core_message_type_enum::trx_message_type &&
-                 requests.back().second.size() >= peer_and_items.max_transactions_per_request))
-              requests.emplace_back(item.item_type, std::vector<item_hash_t>());
-            requests.back().second.push_back(item.item_hash);
-          }
-          for (const auto& items_by_type : requests)
-          {
-            if (items_by_type.first == core_message_type_enum::trx_message_type)
-            {
-              _statistics.record_transaction_request(items_by_type.second.size(), peer_and_items.max_transactions_per_request);
-              peer_and_items.peer->transactions_requested_since_report += items_by_type.second.size();
-            }
-            dlog("requesting ${count} items of type ${type} from peer ${endpoint}: ${hashes}",
-                 ("count", items_by_type.second.size())("type", (uint32_t)items_by_type.first)
-                 ("endpoint", peer_and_items.peer->get_remote_endpoint())
-                 ("hashes", items_by_type.second));
-            if (items_by_type.first == core_message_type_enum::block_message_type)
-            {
-              for (const item_hash_t& id : items_by_type.second)
-              {
-                fc_dlog(fc::logger::get("sync"),
-                        "requesting a block from peer ${endpoint} (message_id is ${id})",
-                        ("endpoint", peer_and_items.peer->get_remote_endpoint())("id", id));
-              }
-            }
-
-            peer_and_items.peer->send_message(fetch_items_message(items_by_type.first,
-                                                                  items_by_type.second));
-          }
-        }
-        items_by_peer.clear();
+        send_fetch_requests(pass);
 
         // next_peer_unblocked_time resumes the loop when a peer's transaction fetching is no longer inhibited.
         // Nothing tells the loop when the pending pool drains (by inclusion in blocks, expiry or drops at
         // max-mempool-size), so while live candidates wait for it the gate is checked again at an interval; once
-        // they have all expired (trimmed above) the loop waits for a trigger.  API submissions may keep the pool
+        // they have all expired (trimmed in list_peers_for_fetch_pass()) the loop waits for a trigger.  API submissions may keep the pool
         // over the threshold for as long as they last (see transaction_fetch_gate_threshold()).  Replies that free
-        // the headroom need not open a peer's window, so they may not wake the loop either.  The check is when the
-        // next minimum is due, which is what a closed gate could request then.  Until then inventory and replies
-        // don't wake a loop whose gate is closed: they could add nothing to fetch before it is due
-        if (gate.held_back() || gate.bounded())
-          next_peer_unblocked_time = std::min(next_peer_unblocked_time, next_minimum_due);
-        fc::microseconds minimum_interval(_node_configuration.fetch_items_minimum_interval_microseconds);
-        if (gate.closed())
-          minimum_interval = std::max(minimum_interval, next_minimum_due - iteration_start);
-        _fetch_items_loop_trigger.wait(minimum_interval, next_peer_unblocked_time);
+        // the headroom need not open a peer's window, so they may not wake the loop either
+        const fetch_loop_wait wait = next_fetch_pass(gate, iteration_start,
+                                                     fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
+                                                     next_peer_unblocked_time, next_minimum_due);
+        _fetch_items_loop_trigger.wait(wait.minimum_interval, wait.wake_time);
       } // while (!canceled)
+    }
+
+    // Peers with no block or sync request outstanding are asked, each for items from its own fetch candidates: blocks
+    // one request at a time, transactions while the peer's window has room, so the next batch may go out before
+    // earlier replies have arrived.  A peer is listed if it has blocks among its candidates or the gate lets it be
+    // asked for transactions
+    node_impl::fetch_pass node_impl::list_peers_for_fetch_pass(fc::time_point pass_start, transaction_fetch_gate& gate,
+                                                               fc::time_point& next_peer_unblocked_time)
+    {
+      // candidates as old as the expired items are dropped too, so that none the gate holds back outlives them
+      const fc::time_point oldest_candidate_to_keep = oldest_item_timestamp_to_fetch();
+      const uint32_t in_flight = _transactions_in_flight.in_flight();
+      fetch_pass pass;
+      for (const peer_connection_ptr& peer : _active_connections)
+      {
+        _fetch_turn_order.visit(peer.get(), pass.peers.size());
+        peer->fetch_candidates.trim(oldest_candidate_to_keep);
+        if (!peer->can_take_item_request() || peer->fetch_candidates.size() == 0)
+          continue;
+        const bool transaction_fetching_inhibited = peer->is_transaction_fetching_inhibited();
+        // a busy peer is unblocked by its next delivery, which runs the loop again
+        if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions() &&
+            peer->transaction_fetching_inhibited_until > pass_start)
+          next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
+        const size_t window = transaction_fetch_window(transaction_fetching_inhibited, in_flight,
+                                                       _node_configuration.maximum_transactions_in_flight,
+                                                       peer->received_transaction_size.transactions_to_request(peer->items_requested_from_peer.transactions()));
+        const size_t max_transactions = gate.transactions_to_request(window, [&]() { return has_transaction_to_fetch(peer); });
+        if (max_transactions == 0 && !peer->fetch_candidates.has_blocks())
+          continue;
+        peer->fetch_candidates.begin_pass();
+        pass.idle_block_sources.emplace(peer.get(), peer->idle_block_source(pass_start));
+        pass.peers.push_back({peer, max_transactions > 0, max_transactions,
+                              peer->received_transaction_size.max_transactions_per_request()});
+      }
+      return pass;
+    }
+
+    // The listed peers take turns, one item each, so items several of them advertised are spread evenly among them,
+    // except that a block goes to a peer that delivered us blocks before, and one with nothing outstanding, when one
+    // advertised it (see judge_fetch_candidate()); one asked and not delivering is replaced soon
+    // (rerequest_overdue_blocks()).  The turns start after the peer that took the last transaction before (see
+    // fetch_turn_order), so a headroom worth a few transactions per pass, or the gate's minimum, is spread over the
+    // peers from pass to pass
+    void node_impl::take_fetch_turns(fetch_pass& pass, transaction_fetch_gate& gate, fc::time_point& next_peer_unblocked_time)
+    {
+      _fetch_turn_order.take_turns(pass.peers.size(), [&](size_t turn)
+      {
+        peer_and_items_to_fetch& peer_and_items = pass.peers[turn];
+        if (peer_and_items.done)
+          return false;
+        const peer_connection_ptr& peer = peer_and_items.peer;
+        const bool include_transactions = peer_and_items.include_transactions &&
+                                          gate.may_request_more([&]() { return has_transaction_to_fetch(peer); });
+        const fetch_candidate_order order = include_transactions && gate.next_request_is_minimum() ? fetch_candidate_order::newest_first
+                                                                                                    : fetch_candidate_order::oldest_first;
+        const std::optional<item_id> item_id_to_fetch =
+          peer->fetch_candidates.take_next(include_transactions, order,
+                                           [&](const item_id& candidate) { return judge_fetch_candidate(peer, candidate, pass.idle_block_sources); },
+                                           _statistics.fetch.candidates_examined);
+        if (!item_id_to_fetch)
+        {
+          peer_and_items.done = true;
+          return false;
+        }
+        const fc::time_point now = fc::time_point::now();
+        if (item_id_to_fetch->item_type == graphene::net::block_message_type)
+        {
+          const fc::microseconds deadline = block_request_deadline(outstanding_block_requests(*item_id_to_fetch));
+          peer->items_requested_from_peer.insert(*item_id_to_fetch, now, deadline);
+          // nothing else need wake the loop when the block doesn't come (see rerequest_overdue_blocks())
+          next_peer_unblocked_time = std::min(next_peer_unblocked_time, now + deadline);
+        }
+        else
+          peer->items_requested_from_peer.insert(*item_id_to_fetch, now);
+        // if the peer is dropped for not delivering it, the item is asked of the others that advertised it
+        if (item_id_to_fetch->item_type == trx_message_type)
+        {
+          _transaction_inventory.keep(item_id_to_fetch->item_hash, now);
+          gate.record_request(expected_transaction_bytes(*peer));
+          _fetch_turn_order.record_transaction(peer.get());
+        }
+        peer_and_items.item_ids.push_back(*item_id_to_fetch);
+        // the peer's blocks are all taken before its first transaction, so a peer that reaches
+        // its transaction limit has nothing more to give in this pass
+        if (item_id_to_fetch->item_type == graphene::net::block_message_type)
+          peer_and_items.done = ++peer_and_items.blocks >= GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION;
+        else
+          peer_and_items.done = ++peer_and_items.transactions >= peer_and_items.max_transactions;
+        return true;
+      });
+    }
+
+    // Blocks come first (they were taken first), then the transactions, in requests of at most
+    // max_transactions_per_request each
+    void node_impl::send_fetch_requests(const fetch_pass& pass)
+    {
+      for (const peer_and_items_to_fetch& peer_and_items : pass.peers)
+      {
+        _statistics.fetch.items_requested += peer_and_items.item_ids.size();
+        for (const auto& items_by_type : group_fetch_requests(peer_and_items.item_ids, peer_and_items.max_transactions_per_request))
+        {
+          if (items_by_type.first == core_message_type_enum::trx_message_type)
+          {
+            _statistics.record_transaction_request(items_by_type.second.size(), peer_and_items.max_transactions_per_request);
+            peer_and_items.peer->transactions_requested_since_report += items_by_type.second.size();
+          }
+          dlog("requesting ${count} items of type ${type} from peer ${endpoint}: ${hashes}",
+               ("count", items_by_type.second.size())("type", (uint32_t)items_by_type.first)
+               ("endpoint", peer_and_items.peer->get_remote_endpoint())
+               ("hashes", items_by_type.second));
+          if (items_by_type.first == core_message_type_enum::block_message_type)
+          {
+            for (const item_hash_t& id : items_by_type.second)
+            {
+              fc_dlog(fc::logger::get("sync"),
+                      "requesting a block from peer ${endpoint} (message_id is ${id})",
+                      ("endpoint", peer_and_items.peer->get_remote_endpoint())("id", id));
+            }
+          }
+
+          peer_and_items.peer->send_message(fetch_items_message(items_by_type.first,
+                                                                items_by_type.second));
+        }
+      }
     }
 
     bool node_impl::is_transaction_candidate_wanted(const peer_connection* peer, const item_id& item) const
@@ -2103,289 +2139,65 @@ namespace graphene { namespace net {
     }
 
     //self-schedules every 1 second to look for peers that aren't responding well
+    // A pass of the inactive connections check acts on the connections in this order:
+    //  1. the breaker override (stall rule 1 in config.hpp): peers kept by the invalid-block breaker while our head stalls
+    //  2. handshaking connections past their deadline or inactive (judge_handshaking_connection())
+    //  3. active connections, by the highest ranked reason that holds (judge_active_connection())
+    //  4. connections we asked to close that didn't, and terminated connections that never finished closing
+    //  5. idle replacement (stall rule 3), after the disconnects above so the peers they closed don't count toward
+    //     its floor, and then the sync restart (stall rule 2)
+    // Steps 1-4 only sort the connections into the lists of an inactive_connection_actions without yielding; the
+    // closes that don't yield follow at once, the ones that send a reason (and so may yield) after that.
     void node_impl::terminate_inactive_connections_loop()
     {
       dlog("checking if we can terminate inactive connections");
-      std::list<peer_connection_ptr> peers_to_disconnect_gently;
-      std::list<peer_connection_ptr> peers_to_disconnect_for_rejected_blocks;
-      std::list<peer_connection_ptr> peers_to_disconnect_forcibly;
-      std::list<peer_connection_ptr> peers_to_send_keep_alive;
-      std::list<peer_connection_ptr> peers_to_terminate;
-      uint32_t active_disconnect_timeout = 10 * _recent_block_interval_in_seconds; //peer must have sent msg within 10 blocks
-
-      // Disconnect peers that haven't sent us any data recently
-      // These numbers are just guesses and we need to think through how this works better.
-      // If we and our peers get disconnected from the rest of the network, we will not
-      // receive any blocks or transactions from the rest of the world, and that will
-      // probably make us disconnect from our peers even though we have working connections to
-      // them (but they won't have sent us anything since they aren't getting blocks either).
-      // This might not be so bad because it could make us initiate more connections and
-      // reconnect with the rest of the network, or it might just futher isolate us.
+      inactive_connection_actions actions;
       {
-        // As usual, the first step is to walk through all our peers and figure out which
-        // peers need action (disconneting, sending keepalives, etc), then we walk through
-        // those lists yielding at our leisure later.
         ASSERT_TASK_NOT_PREEMPTED();
-
-        // The invalid-block circuit breaker keeps peers that would otherwise have been
-        // disconnected, on the theory that mass rejections indicate a systemic event rather
-        // than genuinely bad peers.  That theory holds only while the chain keeps advancing.
-        // If our head has stalled and we are still holding peers whose blocks we rejected,
-        // the breaker may be preserving a peer set that cannot feed us the chain (all slots
-        // occupied, connect loop satisfied, no progress) -- revoke the deferral for the
-        // flagged peers so their slots open up for replacements.
-        if (_cached_head_block_num > 0 &&
-            _last_head_advance_time != fc::time_point() &&
-            fc::time_point::now() - _last_head_advance_time > fc::seconds(GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC))
-        {
-          for (const peer_connection_ptr& active_peer : _active_connections)
-            if (active_peer->block_rejected_while_breaker_tripped)
-            {
-              wlog("disconnecting peer ${peer}: it delivered a block we rejected while the disconnect circuit breaker "
-                   "was active, and our chain has made no progress in the ${timeout} seconds since",
-                   ("peer", active_peer->get_remote_endpoint())("timeout", GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC));
-              peers_to_disconnect_for_rejected_blocks.push_back(active_peer);
-            }
-        }
-
-        uint32_t handshaking_timeout = _node_configuration.peer_inactivity_timeout;
-        fc::time_point handshaking_disconnect_threshold = fc::time_point::now() - fc::seconds(handshaking_timeout);
-        const fc::time_point handshake_deadline_threshold = fc::time_point::now() - fc::seconds(GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC);
-        for (const peer_connection_ptr& handshaking_peer : _handshaking_connections)
-          if (handshaking_peer->connection_initiation_time < handshake_deadline_threshold)
-          {
-            wlog("Forcibly disconnecting from peer ${peer}, still handshaking ${deadline} seconds after the connection started. "
-                 "Negotiating status: ${status}, bytes sent: ${sent}, bytes received: ${received}",
-                 ("peer", handshaking_peer->get_remote_endpoint())("deadline", GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC)
-                 ("status", handshaking_peer->negotiation_status)
-                 ("sent", handshaking_peer->get_total_bytes_sent())
-                 ("received", handshaking_peer->get_total_bytes_received()));
-            handshaking_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Terminating connection still handshaking ${deadline} seconds after it started.  Negotiating status: ${status}",
-                                                                                     ("deadline", GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC)
-                                                                                     ("status", handshaking_peer->negotiation_status)));
-            handshaking_peer->connection_closed_by_failure = true;
-            peers_to_disconnect_forcibly.push_back(handshaking_peer);
-          }
-          else if (handshaking_peer->connection_initiation_time < handshaking_disconnect_threshold &&
-                   handshaking_peer->get_last_message_received_time() < handshaking_disconnect_threshold &&
-                   handshaking_peer->get_last_message_sent_time() < handshaking_disconnect_threshold)
-          {
-            wlog("Forcibly disconnecting from handshaking peer ${peer} due to inactivity of at least ${handshaking_timeout} seconds",
-                 ("peer", handshaking_peer->get_remote_endpoint())(handshaking_timeout));
-            wlog("Peer's negotiating status: ${status}, bytes sent: ${sent}, bytes received: ${received}",
-                 ("status", handshaking_peer->negotiation_status)
-                 ("sent", handshaking_peer->get_total_bytes_sent())
-                 ("received", handshaking_peer->get_total_bytes_received()));
-            handshaking_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Terminating handshaking connection due to inactivity of ${timeout} seconds.  Negotiating status: ${status}, bytes sent: ${sent}, bytes received: ${received}",
-                                                                                     ("peer", handshaking_peer->get_remote_endpoint())
-                                                                                     ("timeout", handshaking_timeout)
-                                                                                     ("status", handshaking_peer->negotiation_status)
-                                                                                     ("sent", handshaking_peer->get_total_bytes_sent())
-                                                                                     ("received", handshaking_peer->get_total_bytes_received())));
-            handshaking_peer->connection_closed_by_failure = true;
-            peers_to_disconnect_forcibly.push_back(handshaking_peer);
-          }
-
-        uint32_t active_send_keepalive_timeout = active_disconnect_timeout / 2;
-
-        // set the ignored request time out to 6 second.  When we request a block
-        // or transaction from a peer, this timeout determines how long we wait for them
-        // to reply before we give up and ask another peer for the item.
-        // Ideally this should be significantly shorter than the block interval, because
-        // we'd like to realize the block isn't coming and fetch it from a different
-        // peer before the next block comes in.
-        // Increased to 6 from 1 in #1660 due to heavy load. May need to adjust further
-        fc::microseconds active_ignored_request_timeout = fc::microseconds( _node_configuration.active_ignored_request_timeout_microseconds );
-
-
         const fc::time_point now = fc::time_point::now();
-        fc::time_point active_disconnect_threshold = fc::time_point::now() - fc::seconds(active_disconnect_timeout);
-        fc::time_point active_send_keepalive_threshold = fc::time_point::now() - fc::seconds(active_send_keepalive_timeout);
-        fc::time_point active_ignored_request_threshold = fc::time_point::now() - active_ignored_request_timeout;
-        for( const peer_connection_ptr& active_peer : _active_connections )
-        {
-          if( active_peer->connection_initiation_time < active_disconnect_threshold &&
-              active_peer->get_last_message_received_time() < active_disconnect_threshold )
-          {
-            wlog("Closing connection with peer ${peer} due to inactivity of at least ${timeout} seconds",
-                 ("peer", active_peer->get_remote_endpoint())("timeout", active_disconnect_timeout));
-            peers_to_disconnect_gently.push_back(active_peer);
-          }
-          else
-          {
-            bool disconnect_due_to_request_timeout = false;
-            if (!active_peer->sync_items_requested_from_peer.empty() &&
-                active_peer->last_sync_item_received_time < active_ignored_request_threshold)
-            {
-              fc_wlog(fc::logger::get("sync"),
-                      "disconnecting peer ${peer} because they haven't made any progress on my remaining ${count} sync item requests",
-                      ("peer", active_peer->get_remote_endpoint())("count", active_peer->sync_items_requested_from_peer.size()));
-              wlog("Disconnecting peer ${peer} because they haven't made any progress on my remaining ${count} sync item requests",
-                   ("peer", active_peer->get_remote_endpoint())("count", active_peer->sync_items_requested_from_peer.size()));
+        find_peers_kept_by_stalled_breaker(now, actions);
+        judge_handshaking_connections(now, actions);
+        judge_active_connections(now, actions);
+        judge_closing_connections(now, actions);
 
-              active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they haven't made any progress on my remaining ${count} sync item requests", 
-                                                                                  ("count", active_peer->sync_items_requested_from_peer.size())));
-              active_peer->connection_closed_by_failure = true;
-              disconnect_due_to_request_timeout = true;
-            }
-            if (!disconnect_due_to_request_timeout &&
-                active_peer->item_ids_requested_from_peer &&
-                active_peer->item_ids_requested_from_peer->get<1>() < active_ignored_request_threshold)
-              {
-                fc_wlog(fc::logger::get("sync"), "Disconnecting peer ${peer} because they didn't respond to my request for sync item ids after ${synopsis}",
-                      ("peer", active_peer->get_remote_endpoint())
-                      ("synopsis", active_peer->item_ids_requested_from_peer->get<0>()));
-                wlog("Disconnecting peer ${peer} because they didn't respond to my request for sync item ids after ${synopsis}",
-                      ("peer", active_peer->get_remote_endpoint())
-                      ("synopsis", active_peer->item_ids_requested_from_peer->get<0>()));
-                active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for sync item ids after my synopsis"));
-                active_peer->connection_closed_by_failure = true;
-                disconnect_due_to_request_timeout = true;
-              }
-            const message_in_progress* block_download = active_peer->get_block_message_in_progress();
-            if (!disconnect_due_to_request_timeout)
-              if (const std::optional<item_id> ignored_item =
-                    active_peer->items_requested_from_peer.timed_out(now, active_ignored_request_timeout,
-                                                                     block_download ? block_download->last_progress : fc::time_point()))
-              {
-                fc_wlog(fc::logger::get("sync"), "Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
-                      ("peer", active_peer->get_remote_endpoint())("id", ignored_item->item_hash));
-                wlog("Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
-                      ("peer", active_peer->get_remote_endpoint())("id", ignored_item->item_hash));
-                active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for item ${id}", ("id", ignored_item->item_hash)));
-                active_peer->connection_closed_by_failure = true;
-                disconnect_due_to_request_timeout = true;
-              }
-            if (!disconnect_due_to_request_timeout &&
-                active_peer->get_send_progress_time() < now - fc::seconds(GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC))
-            {
-              // inventory waiting for its queue to drain neither closes the connection nor makes it look idle, so a
-              // peer that sends us messages and reads nothing would otherwise keep its slot and what we queued for it
-              wlog("Disconnecting peer ${peer} because nothing we had for it has been written to its socket in ${timeout} seconds",
-                   ("peer", active_peer->get_remote_endpoint())("timeout", GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC));
-              active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because nothing we had for it has been written to its socket in ${timeout} seconds",
-                                                                                  ("timeout", GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC)));
-              active_peer->connection_closed_by_failure = true;
-              disconnect_due_to_request_timeout = true;
-            }
-            if (!disconnect_due_to_request_timeout &&
-                active_peer->get_transaction_reply_send_progress_time() < active_disconnect_threshold)
-            {
-              // the peer asked us for transactions and hasn't read what we sent it for so long that we can't send it more
-              wlog("Disconnecting peer ${peer} because it hasn't read the transactions it asked for in ${timeout} seconds",
-                   ("peer", active_peer->get_remote_endpoint())("timeout", active_disconnect_timeout));
-              active_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because it hasn't read the transactions it asked for in ${timeout} seconds",
-                                                                                  ("timeout", active_disconnect_timeout)));
-              active_peer->connection_closed_by_failure = true;
-              disconnect_due_to_request_timeout = true;
-            }
-            if (disconnect_due_to_request_timeout)
-            {
-              // we should probably disconnect nicely and give them a reason, but right now the logic
-              // for rescheduling the requests only executes when the connection is fully closed,
-              // and we want to get those requests rescheduled as soon as possible
-              peers_to_disconnect_forcibly.push_back(active_peer);
-            }
-            else if (active_peer->connection_initiation_time < active_send_keepalive_threshold) //if we have been connected to this peer for a while
-            {
-              //if it hasn't sent us a message in a while, send it a keep alive message
-              if (active_peer->get_last_message_received_time() < active_send_keepalive_threshold)
-              {
-                wlog( "Sending a keepalive message to peer ${peer} who hasn't sent us any messages in the last ${timeout} seconds",
-                      ( "peer", active_peer->get_remote_endpoint() )("timeout", active_send_keepalive_timeout ) );
-                peers_to_send_keep_alive.push_back(active_peer);
-              }
-              else //it sent us a message recently, but we need sync data from it, yet we aren't processing or asking for new sync data, treat as stalled
-                if (active_peer->we_need_sync_items_from_peer &&
-                    active_peer->ids_of_items_being_processed.empty() && //we're not processing any blocks from this peer right now
-                    !active_peer->is_currently_handling_message() && //we're not processing a message it sent us
-                    !active_peer->item_ids_requested_from_peer && //not requesting any new ids
-                    active_peer->ids_of_items_to_get.empty()) //all received ids have been sent to the blockchain
-              {
-                // This is a state we should never get into this condition except in a race, but if we do, we should disconnect the peer
-                // to re-establish the connection.
-                fc_wlog(fc::logger::get("sync"), "Disconnecting peer ${peer} because we think we need blocks from them but sync has stalled.",
-                        ("peer", active_peer->get_remote_endpoint()));
-                wlog("Disconnecting peer ${peer} because we think we need blocks from them but sync has stalled.",
-                     ("peer", active_peer->get_remote_endpoint()));
-                peers_to_disconnect_forcibly.push_back(active_peer);
-              }
-            }
-          }
-        }
-
-        fc::time_point closing_disconnect_threshold = fc::time_point::now() - fc::seconds(GRAPHENE_NET_PEER_DISCONNECT_TIMEOUT);
-        for (const peer_connection_ptr& closing_peer : _closing_connections)
-          if (closing_peer->connection_closed_time < closing_disconnect_threshold)
-          {
-            // we asked this peer to close their connectoin to us at least GRAPHENE_NET_PEER_DISCONNECT_TIMEOUT
-            // seconds ago, but they haven't done it yet.  Terminate the connection now
-            wlog("Forcibly disconnecting peer ${peer} who failed to close their connection in a timely manner",
-                 ("peer", closing_peer->get_remote_endpoint()));
-            peers_to_disconnect_forcibly.push_back(closing_peer);
-          }
-
-        fc::time_point failed_terminate_threshold = fc::time_point::now() - fc::seconds(GRAPHENE_NET_FAILED_TERMINATE_TIMEOUT_SECONDS);
-        for (const peer_connection_ptr& peer : _terminating_connections )
-          if (peer->get_connection_terminated_time() != fc::time_point::min() &&
-              peer->get_connection_terminated_time() < failed_terminate_threshold)
-          {
-            wlog("Terminating connection with peer ${peer}, closing the connection didn't work", ("peer", peer->get_remote_endpoint()));
-            peers_to_terminate.push_back(peer);
-          }
-
-        // That's the end of the sorting step; now all peers that require further processing are now in one of the
-        // lists peers_to_disconnect_gently,  peers_to_disconnect_forcibly, peers_to_send_keep_alive, or peers_to_terminate
-
-        // if we've decided to delete any peers, do it now; in its current implementation this doesn't yield,
-        // and once we start yielding, we may find that we've moved that peer to another list (closed or active)
-        // and that triggers assertions, maybe even errors
-        for (const peer_connection_ptr& peer : peers_to_terminate )
+        // deleting doesn't yield in its current implementation, and once we start yielding, we may find that we've
+        // moved that peer to another list (closed or active), which triggers assertions, maybe even errors
+        for (const peer_connection_ptr& peer : actions.to_terminate)
         {
           assert(_terminating_connections.find(peer) != _terminating_connections.end());
           _terminating_connections.erase(peer);
           schedule_peer_for_deletion(peer);
         }
-        peers_to_terminate.clear();
-
-        // if we're going to abruptly disconnect anyone, do it here
-        // (it doesn't yield).  I don't think there would be any harm if this were
-        // moved to the yielding section
-        for( const peer_connection_ptr& peer : peers_to_disconnect_forcibly )
+        // closing abruptly doesn't yield either
+        for (const peer_connection_ptr& peer : actions.to_disconnect_forcibly)
         {
           move_peer_to_terminating_list(peer);
           peer->close_connection();
         }
-        peers_to_disconnect_forcibly.clear();
       } // end ASSERT_TASK_NOT_PREEMPTED()
 
-      // Now process the peers that we need to do yielding functions with (disconnect sends a message with the
-      // disconnect reason, so it may yield)
-      for( const peer_connection_ptr& peer : peers_to_disconnect_gently )
+      // disconnecting sends the reason, so it may yield
+      for (const peer_connection_ptr& peer : actions.to_disconnect_gently)
       {
         fc::exception detailed_error(FC_LOG_MESSAGE(warn, "Disconnecting due to inactivity",
                                                     ("last_message_received_seconds_ago", (peer->get_last_message_received_time() - fc::time_point::now()).count() / fc::seconds(1).count())
                                                     ("last_message_sent_seconds_ago", (peer->get_last_message_sent_time() - fc::time_point::now()).count() / fc::seconds(1).count())
-                                                    (active_disconnect_timeout)));
+                                                    ("active_disconnect_timeout", actions.inactivity_timeout.to_seconds())));
         disconnect_from_peer(peer.get(), "Disconnecting due to inactivity", false, detailed_error);
       }
-      peers_to_disconnect_gently.clear();
 
-      for( const peer_connection_ptr& peer : peers_to_disconnect_for_rejected_blocks )
+      for (const peer_connection_ptr& peer : actions.to_disconnect_for_rejected_blocks)
       {
         fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You delivered a block we rejected, and our chain has made no progress since"));
         disconnect_from_peer(peer.get(), "You delivered a block we rejected, and our chain has made no progress since", true, detailed_error);
       }
-      peers_to_disconnect_for_rejected_blocks.clear();
 
-      // judged after the disconnects above, so the peers they closed don't count toward the floor
-      for( const peer_connection_ptr& peer : find_idle_peers_to_replace() )
+      for (const peer_connection_ptr& peer : find_idle_peers_to_replace())
         disconnect_idle_peer(peer.get());
 
-      for( const peer_connection_ptr& peer : peers_to_send_keep_alive )
+      for (const peer_connection_ptr& peer : actions.to_send_keepalive)
         peer->send_message(current_time_request_message(),
                            offsetof(current_time_request_message, request_sent_time));
-      peers_to_send_keep_alive.clear();
 
       restart_sync_if_head_stalled();
 
@@ -2393,6 +2205,206 @@ namespace graphene { namespace net {
          _terminate_inactive_connections_loop_done = schedule_task( [this](){ terminate_inactive_connections_loop(); },
                                                                    fc::time_point::now() + fc::seconds(1),
                                                                    "terminate_inactive_connections_loop" );
+    }
+
+    // The invalid-block circuit breaker keeps peers that would otherwise have been disconnected, on the theory that
+    // mass rejections indicate a systemic event rather than genuinely bad peers.  That theory holds only while the
+    // chain keeps advancing.  If our head has stalled and we are still holding peers whose blocks we rejected, the
+    // breaker may be preserving a peer set that cannot feed us the chain (all slots occupied, connect loop satisfied,
+    // no progress) -- revoke the deferral for the flagged peers so their slots open up for replacements.
+    void node_impl::find_peers_kept_by_stalled_breaker(fc::time_point now, inactive_connection_actions& actions)
+    {
+      if (!breaker_stall_override_due(_cached_head_block_num, _last_head_advance_time, now))
+        return;
+      for (const peer_connection_ptr& active_peer : _active_connections)
+        if (active_peer->block_rejected_while_breaker_tripped)
+        {
+          wlog("disconnecting peer ${peer}: it delivered a block we rejected while the disconnect circuit breaker "
+               "was active, and our chain has made no progress in the ${timeout} seconds since",
+               ("peer", active_peer->get_remote_endpoint())("timeout", GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC));
+          actions.to_disconnect_for_rejected_blocks.push_back(active_peer);
+        }
+    }
+
+    void node_impl::judge_handshaking_connections(fc::time_point now, inactive_connection_actions& actions)
+    {
+      const uint32_t handshaking_timeout = _node_configuration.peer_inactivity_timeout;
+      for (const peer_connection_ptr& handshaking_peer : _handshaking_connections)
+      {
+        const handshaking_connection_state state{handshaking_peer->connection_initiation_time,
+                                                 handshaking_peer->get_last_message_received_time(),
+                                                 handshaking_peer->get_last_message_sent_time()};
+        switch (judge_handshaking_connection(state, now, fc::seconds(handshaking_timeout), fc::seconds(GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC)))
+        {
+        case handshaking_connection_verdict::keep:
+          continue;
+        case handshaking_connection_verdict::past_deadline:
+          wlog("Forcibly disconnecting from peer ${peer}, still handshaking ${deadline} seconds after the connection started. "
+               "Negotiating status: ${status}, bytes sent: ${sent}, bytes received: ${received}",
+               ("peer", handshaking_peer->get_remote_endpoint())("deadline", GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC)
+               ("status", handshaking_peer->negotiation_status)
+               ("sent", handshaking_peer->get_total_bytes_sent())
+               ("received", handshaking_peer->get_total_bytes_received()));
+          handshaking_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Terminating connection still handshaking ${deadline} seconds after it started.  Negotiating status: ${status}",
+                                                                                   ("deadline", GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC)
+                                                                                   ("status", handshaking_peer->negotiation_status)));
+          break;
+        case handshaking_connection_verdict::inactive:
+          wlog("Forcibly disconnecting from handshaking peer ${peer} due to inactivity of at least ${handshaking_timeout} seconds",
+               ("peer", handshaking_peer->get_remote_endpoint())(handshaking_timeout));
+          wlog("Peer's negotiating status: ${status}, bytes sent: ${sent}, bytes received: ${received}",
+               ("status", handshaking_peer->negotiation_status)
+               ("sent", handshaking_peer->get_total_bytes_sent())
+               ("received", handshaking_peer->get_total_bytes_received()));
+          handshaking_peer->connection_closed_error = fc::exception(FC_LOG_MESSAGE(warn, "Terminating handshaking connection due to inactivity of ${timeout} seconds.  Negotiating status: ${status}, bytes sent: ${sent}, bytes received: ${received}",
+                                                                                   ("peer", handshaking_peer->get_remote_endpoint())
+                                                                                   ("timeout", handshaking_timeout)
+                                                                                   ("status", handshaking_peer->negotiation_status)
+                                                                                   ("sent", handshaking_peer->get_total_bytes_sent())
+                                                                                   ("received", handshaking_peer->get_total_bytes_received())));
+          break;
+        }
+        handshaking_peer->connection_closed_by_failure = true;
+        actions.to_disconnect_forcibly.push_back(handshaking_peer);
+      }
+    }
+
+    active_connection_state node_impl::get_active_connection_state(const peer_connection& peer, fc::time_point now,
+                                                                   fc::microseconds request_timeout) const
+    {
+      active_connection_state state;
+      state.initiated = peer.connection_initiation_time;
+      state.last_message_received = peer.get_last_message_received_time();
+      if (!peer.sync_items_requested_from_peer.empty())
+        state.last_sync_item_received = peer.last_sync_item_received_time;
+      if (peer.item_ids_requested_from_peer)
+        state.sync_item_ids_requested = peer.item_ids_requested_from_peer->get<1>();
+      const message_in_progress* block_download = peer.get_block_message_in_progress();
+      state.ignored_item = peer.items_requested_from_peer.timed_out(now, request_timeout,
+                                                                    block_download ? block_download->last_progress : fc::time_point());
+      state.send_progress = peer.get_send_progress_time();
+      state.sync_idle = peer.we_need_sync_items_from_peer &&
+                        peer.ids_of_items_being_processed.empty() && // we're not processing any blocks from this peer right now
+                        !peer.is_currently_handling_message() &&     // we're not processing a message it sent us
+                        !peer.item_ids_requested_from_peer &&        // not requesting any new ids
+                        peer.ids_of_items_to_get.empty();            // all received ids have been sent to the blockchain
+      return state;
+    }
+
+    // These numbers are just guesses.  If we and our peers get disconnected from the rest of the network, we will
+    // not receive any blocks or transactions from the rest of the world, and that will probably make us disconnect
+    // from our peers even though we have working connections to them (but they won't have sent us anything since
+    // they aren't getting blocks either).  This might not be so bad because it could make us initiate more
+    // connections and reconnect with the rest of the network, or it might just further isolate us.
+    void node_impl::judge_active_connections(fc::time_point now, inactive_connection_actions& actions)
+    {
+      // the peer must have sent a message within 10 blocks
+      const uint32_t active_disconnect_timeout = 10 * _recent_block_interval_in_seconds;
+      actions.inactivity_timeout = fc::seconds(active_disconnect_timeout);
+      const active_connection_limits limits{now, actions.inactivity_timeout, fc::seconds(active_disconnect_timeout / 2),
+                                            fc::microseconds(_node_configuration.active_ignored_request_timeout_microseconds),
+                                            fc::seconds(GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC)};
+      for (const peer_connection_ptr& active_peer : _active_connections)
+      {
+        const active_connection_state state = get_active_connection_state(*active_peer, now, limits.request_timeout);
+        switch (judge_active_connection(state, limits))
+        {
+        case active_connection_verdict::keep:
+          break;
+        case active_connection_verdict::inactive:
+          wlog("Closing connection with peer ${peer} due to inactivity of at least ${timeout} seconds",
+               ("peer", active_peer->get_remote_endpoint())("timeout", active_disconnect_timeout));
+          actions.to_disconnect_gently.push_back(active_peer);
+          break;
+        case active_connection_verdict::sync_items_ignored:
+          fc_wlog(fc::logger::get("sync"),
+                  "disconnecting peer ${peer} because they haven't made any progress on my remaining ${count} sync item requests",
+                  ("peer", active_peer->get_remote_endpoint())("count", active_peer->sync_items_requested_from_peer.size()));
+          wlog("Disconnecting peer ${peer} because they haven't made any progress on my remaining ${count} sync item requests",
+               ("peer", active_peer->get_remote_endpoint())("count", active_peer->sync_items_requested_from_peer.size()));
+          close_for_request_timeout(active_peer, actions,
+                                    fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they haven't made any progress on my remaining ${count} sync item requests",
+                                                                 ("count", active_peer->sync_items_requested_from_peer.size()))));
+          break;
+        case active_connection_verdict::sync_item_ids_ignored:
+          fc_wlog(fc::logger::get("sync"), "Disconnecting peer ${peer} because they didn't respond to my request for sync item ids after ${synopsis}",
+                  ("peer", active_peer->get_remote_endpoint())
+                  ("synopsis", active_peer->item_ids_requested_from_peer->get<0>()));
+          wlog("Disconnecting peer ${peer} because they didn't respond to my request for sync item ids after ${synopsis}",
+               ("peer", active_peer->get_remote_endpoint())
+               ("synopsis", active_peer->item_ids_requested_from_peer->get<0>()));
+          close_for_request_timeout(active_peer, actions,
+                                    fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for sync item ids after my synopsis")));
+          break;
+        case active_connection_verdict::item_request_ignored:
+          fc_wlog(fc::logger::get("sync"), "Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
+                  ("peer", active_peer->get_remote_endpoint())("id", state.ignored_item->item_hash));
+          wlog("Disconnecting peer ${peer} because they didn't respond to my request for item ${id}",
+               ("peer", active_peer->get_remote_endpoint())("id", state.ignored_item->item_hash));
+          close_for_request_timeout(active_peer, actions,
+                                    fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because they didn't respond to my request for item ${id}",
+                                                                 ("id", state.ignored_item->item_hash))));
+          break;
+        case active_connection_verdict::send_stalled:
+          // inventory and replies waiting for its queue to drain neither close the connection nor make it look idle,
+          // so a peer that sends us messages and reads nothing would otherwise keep its slot and what we hold for it
+          wlog("Disconnecting peer ${peer} because nothing we had for it has been written to its socket in ${timeout} seconds",
+               ("peer", active_peer->get_remote_endpoint())("timeout", GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC));
+          close_for_request_timeout(active_peer, actions,
+                                    fc::exception(FC_LOG_MESSAGE(warn, "Disconnecting peer because nothing we had for it has been written to its socket in ${timeout} seconds",
+                                                                 ("timeout", GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC))));
+          break;
+        case active_connection_verdict::send_keepalive:
+          wlog("Sending a keepalive message to peer ${peer} who hasn't sent us any messages in the last ${timeout} seconds",
+               ("peer", active_peer->get_remote_endpoint())("timeout", limits.keepalive_timeout.to_seconds()));
+          actions.to_send_keepalive.push_back(active_peer);
+          break;
+        case active_connection_verdict::sync_stalled:
+          // it sent us a message recently and we need sync data from it, yet we aren't processing or asking for new
+          // sync data.  We should get into this state only in a race, but if we do, we disconnect the peer to
+          // re-establish the connection
+          fc_wlog(fc::logger::get("sync"), "Disconnecting peer ${peer} because we think we need blocks from them but sync has stalled.",
+                  ("peer", active_peer->get_remote_endpoint()));
+          wlog("Disconnecting peer ${peer} because we think we need blocks from them but sync has stalled.",
+               ("peer", active_peer->get_remote_endpoint()));
+          actions.to_disconnect_forcibly.push_back(active_peer);
+          break;
+        }
+      }
+    }
+
+    // we should probably disconnect nicely and give them a reason, but right now the logic for rescheduling the
+    // requests only executes when the connection is fully closed, and we want to get those requests rescheduled as
+    // soon as possible
+    void node_impl::close_for_request_timeout(const peer_connection_ptr& peer, inactive_connection_actions& actions,
+                                              const fc::exception& reason)
+    {
+      peer->connection_closed_error = reason;
+      peer->connection_closed_by_failure = true;
+      actions.to_disconnect_forcibly.push_back(peer);
+    }
+
+    void node_impl::judge_closing_connections(fc::time_point now, inactive_connection_actions& actions)
+    {
+      const fc::time_point closing_disconnect_threshold = now - fc::seconds(GRAPHENE_NET_PEER_DISCONNECT_TIMEOUT);
+      for (const peer_connection_ptr& closing_peer : _closing_connections)
+        if (closing_peer->connection_closed_time < closing_disconnect_threshold)
+        {
+          // we asked this peer to close their connection to us at least GRAPHENE_NET_PEER_DISCONNECT_TIMEOUT
+          // seconds ago, but they haven't done it yet.  Terminate the connection now
+          wlog("Forcibly disconnecting peer ${peer} who failed to close their connection in a timely manner",
+               ("peer", closing_peer->get_remote_endpoint()));
+          actions.to_disconnect_forcibly.push_back(closing_peer);
+        }
+
+      const fc::time_point failed_terminate_threshold = now - fc::seconds(GRAPHENE_NET_FAILED_TERMINATE_TIMEOUT_SECONDS);
+      for (const peer_connection_ptr& peer : _terminating_connections)
+        if (peer->get_connection_terminated_time() != fc::time_point::min() &&
+            peer->get_connection_terminated_time() < failed_terminate_threshold)
+        {
+          wlog("Terminating connection with peer ${peer}, closing the connection didn't work", ("peer", peer->get_remote_endpoint()));
+          actions.to_terminate.push_back(peer);
+        }
     }
 
     void node_impl::fetch_updated_peer_lists_loop()
@@ -2717,14 +2729,14 @@ namespace graphene { namespace net {
              _host_limit_exempt_endpoints.count(*remote_endpoint) != 0;
     }
 
-    // The default per-host limit spreads connections over hosts while other hosts can fill the slots, and gives way
+    // A relaxed per-host limit (relax_per_host_limit) spreads connections over hosts while other hosts can fill the slots, and gives way
     // when none can: with candidates on few hosts (a testnet, a private network) it would leave the node short of
     // connections without saying why.  Not right after start, while the connect loop knows few hosts yet: the first
     // one it reaches would take most of the slots.  For peers that dial us it gives way less (see
-    // accept_hello_over_host_limit()).  A limit the operator set is kept whatever it costs
+    // accept_hello_over_host_limit()).  A hard limit is kept whatever it costs
     bool node_impl::is_host_limit_relaxed() const
     {
-      return !_maximum_connections_per_host_set && _node_configuration.maximum_connections_per_host != 0 &&
+      return _node_configuration.relax_per_host_limit && _node_configuration.maximum_connections_per_host != 0 &&
              fc::time_point::now() >= _host_limit_hard_until;
     }
 
@@ -2736,8 +2748,8 @@ namespace graphene { namespace net {
           now - _last_host_limit_relaxed_log_time < fc::seconds(GRAPHENE_NET_HOST_LIMIT_RELAXED_LOG_INTERVAL_SEC))
         return;
       _last_host_limit_relaxed_log_time = now;
-      ilog("per-host cap relaxed: ${peers} peers on ${hosts} hosts, desired ${desired}; the default limit of ${limit} per host "
-           "gives way while no other hosts fill the slots (set p2p-max-connections-per-host to make it a hard limit)",
+      ilog("per-host cap relaxed: ${peers} peers on ${hosts} hosts, desired ${desired}; the limit of ${limit} per host "
+           "gives way while no other hosts fill the slots (set p2p-relax-per-host-limit = false to make it a hard limit)",
            ("peers", addresses.size())("hosts", get_connection_spread(addresses).hosts)
            ("desired", _node_configuration.desired_number_of_connections)("limit", _node_configuration.maximum_connections_per_host));
     }
@@ -6217,18 +6229,18 @@ namespace graphene { namespace net {
           trigger_fetch_items_loop(false);
 
         // Next: have the delegate validate the transaction; apply_transaction_completion() applies the outcome.
-        // It counts as being processed while we wait for room to submit it, so no other peer is asked for it meanwhile
+        // It counts as being processed until then, so no other peer is asked for it meanwhile
         _message_ids_currently_being_processed.insert(message_hash);
         try
         {
-          // the clock is read only when we wait; otherwise submitting follows receiving at once
-          const uint32_t in_flight_limit = _node_configuration.maximum_transactions_in_flight;
-          const bool waits = in_flight_limit != 0 && _transactions_in_flight.in_flight() >= in_flight_limit;
-          const fc::time_point wait_start = waits ? fc::time_point::now() : message_receive_time;
-          _transactions_in_flight.acquire(in_flight_limit);
-          const fc::time_point submitted_time = waits ? fc::time_point::now() : message_receive_time;
-          if (waits)
-            _statistics.record_limit_wait(submitted_time - wait_start);
+          // a transaction we asked for is submitted at once, whatever is in flight, so the peer's read loop never
+          // waits for validation and its blocks are read as they come.  maximum_transactions_in_flight instead stops
+          // the fetch passes from requesting more (transaction_fetch_window()) until enough have been validated
+          _transactions_in_flight.acquire(0);
+          const fc::time_point submitted_time = message_receive_time;
+          const uint32_t in_flight_cap = _node_configuration.maximum_transactions_in_flight;
+          if (in_flight_cap != 0 && _transactions_in_flight.in_flight() >= in_flight_cap && !_in_flight_cap_reached_since)
+            _in_flight_cap_reached_since = message_receive_time;
           _statistics.record_submission(_transactions_in_flight.in_flight());
           try
           {
@@ -6301,6 +6313,13 @@ namespace graphene { namespace net {
         }
       }
       _transactions_in_flight.release(completions.size());
+      const uint32_t in_flight_cap = _node_configuration.maximum_transactions_in_flight;
+      if (_in_flight_cap_reached_since && (in_flight_cap == 0 || _transactions_in_flight.in_flight() < in_flight_cap))
+      {
+        _statistics.record_limit_wait(fc::time_point::now() - *_in_flight_cap_reached_since);
+        _in_flight_cap_reached_since.reset();
+        trigger_fetch_items_loop(false);
+      }
     }
 
     void node_impl::apply_transaction_completion(const transaction_completion& completion)
@@ -7360,6 +7379,8 @@ namespace graphene { namespace net {
                   ("default", default_idle_peer_disconnect_timeout) );
             _node_configuration.idle_peer_disconnect_timeout = default_idle_peer_disconnect_timeout;
           }
+          // the same for relax_per_host_limit: it is chosen with each run's advanced node parameters
+          _node_configuration.relax_per_host_limit = node_configuration().relax_per_host_limit;
 
           node_configuration_loaded = true;
         }
@@ -8232,9 +8253,9 @@ namespace graphene { namespace net {
       ilog( "set_advanced_node_parameters ${params}", ("params", params) );
 
       fc::from_variant( params, _node_configuration );
-      // fc::from_variant assigns only the fields params has
-      if( params.contains( "maximum_connections_per_host" ) )
-        _maximum_connections_per_host_set = true;
+      // fc::from_variant assigns only the fields params has: a limit set without saying whether it relaxes is hard
+      if( params.contains( "maximum_connections_per_host" ) && !params.contains( "relax_per_host_limit" ) )
+        _node_configuration.relax_per_host_limit = false;
 
       std::vector<address_subnet> exempt_subnets;
       for (const std::string& subnet : _node_configuration.host_limit_exempt_subnets)
@@ -9350,7 +9371,7 @@ namespace graphene { namespace net {
   uint64_t transaction_fetch_gate_threshold(uint64_t max_bytes)
   {
     // a max-mempool-size of 1 or 2 bytes still gates
-    return max_bytes == 0 ? 0 : std::max<uint64_t>(max_bytes / 3, 1);
+    return max_bytes == 0 ? 0 : std::max<uint64_t>(max_bytes / GRAPHENE_NET_TRANSACTION_FETCH_GATE_POOL_DIVISOR, 1);
   }
 
   bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool)
@@ -9833,6 +9854,119 @@ namespace graphene { namespace net {
     if (idle.size() > most)
       idle.resize(most);
     return idle;
+  }
+
+  handshaking_connection_verdict judge_handshaking_connection(const handshaking_connection_state& connection, fc::time_point now,
+                                                             fc::microseconds inactivity_timeout, fc::microseconds deadline)
+  {
+    if (connection.initiated < now - deadline)
+      return handshaking_connection_verdict::past_deadline;
+    const fc::time_point inactive_before = now - inactivity_timeout;
+    if (connection.initiated < inactive_before && connection.last_message_received < inactive_before &&
+        connection.last_message_sent < inactive_before)
+      return handshaking_connection_verdict::inactive;
+    return handshaking_connection_verdict::keep;
+  }
+
+  namespace
+  {
+    // the disconnect reasons for an active connection, one each, in the order judge_active_connection() ranks them
+
+    bool is_inactive(const active_connection_state& connection, const active_connection_limits& limits)
+    {
+      const fc::time_point inactive_before = limits.now - limits.inactivity_timeout;
+      return connection.initiated < inactive_before && connection.last_message_received < inactive_before;
+    }
+
+    bool ignores_sync_item_requests(const active_connection_state& connection, const active_connection_limits& limits)
+    {
+      return connection.last_sync_item_received && *connection.last_sync_item_received < limits.now - limits.request_timeout;
+    }
+
+    bool ignores_sync_item_ids_request(const active_connection_state& connection, const active_connection_limits& limits)
+    {
+      return connection.sync_item_ids_requested && *connection.sync_item_ids_requested < limits.now - limits.request_timeout;
+    }
+
+    bool ignores_item_request(const active_connection_state& connection, const active_connection_limits&)
+    {
+      return connection.ignored_item.has_value();
+    }
+
+    bool stalls_sending(const active_connection_state& connection, const active_connection_limits& limits)
+    {
+      return connection.send_progress < limits.now - limits.send_stall_timeout;
+    }
+
+    // the last two apply only to a connection older than the keepalive timeout
+    bool is_quiet(const active_connection_state& connection, const active_connection_limits& limits)
+    {
+      const fc::time_point quiet_before = limits.now - limits.keepalive_timeout;
+      return connection.initiated < quiet_before && connection.last_message_received < quiet_before;
+    }
+
+    bool stalls_sync(const active_connection_state& connection, const active_connection_limits& limits)
+    {
+      return connection.initiated < limits.now - limits.keepalive_timeout && connection.sync_idle;
+    }
+  }
+
+  active_connection_verdict judge_active_connection(const active_connection_state& connection,
+                                                    const active_connection_limits& limits)
+  {
+    using rule = bool (*)(const active_connection_state&, const active_connection_limits&);
+    static const std::pair<rule, active_connection_verdict> ranked_rules[] = {
+      {is_inactive, active_connection_verdict::inactive},
+      {ignores_sync_item_requests, active_connection_verdict::sync_items_ignored},
+      {ignores_sync_item_ids_request, active_connection_verdict::sync_item_ids_ignored},
+      {ignores_item_request, active_connection_verdict::item_request_ignored},
+      {stalls_sending, active_connection_verdict::send_stalled},
+      {is_quiet, active_connection_verdict::send_keepalive},
+      {stalls_sync, active_connection_verdict::sync_stalled}};
+    for (const auto& [applies, verdict] : ranked_rules)
+      if (applies(connection, limits))
+        return verdict;
+    return active_connection_verdict::keep;
+  }
+
+  bool breaker_stall_override_due(uint32_t head_block_number, fc::time_point last_head_advance, fc::time_point now)
+  {
+    return head_block_number > 0 && last_head_advance != fc::time_point() &&
+           now - last_head_advance > fc::seconds(GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC);
+  }
+
+  size_t transaction_fetch_window(bool inhibited, uint32_t in_flight, uint32_t in_flight_cap, size_t window_room)
+  {
+    if (inhibited || (in_flight_cap != 0 && in_flight >= in_flight_cap))
+      return 0;
+    return window_room;
+  }
+
+  std::vector<std::pair<uint32_t, std::vector<item_hash_t>>> group_fetch_requests(const std::vector<item_id>& items,
+                                                                                  size_t max_transactions_per_request)
+  {
+    std::vector<std::pair<uint32_t, std::vector<item_hash_t>>> requests;
+    for (const item_id& item : items)
+    {
+      if (requests.empty() || requests.back().first != item.item_type ||
+          (item.item_type == core_message_type_enum::trx_message_type &&
+           requests.back().second.size() >= max_transactions_per_request))
+        requests.emplace_back(item.item_type, std::vector<item_hash_t>());
+      requests.back().second.push_back(item.item_hash);
+    }
+    return requests;
+  }
+
+  fetch_loop_wait next_fetch_pass(const transaction_fetch_gate& gate, fc::time_point pass_start,
+                                  fc::microseconds configured_minimum_interval, fc::time_point next_peer_unblocked,
+                                  fc::time_point next_minimum_due)
+  {
+    fetch_loop_wait wait{configured_minimum_interval, next_peer_unblocked};
+    if (gate.held_back() || gate.bounded())
+      wait.wake_time = std::min(wait.wake_time, next_minimum_due);
+    if (gate.closed())
+      wait.minimum_interval = std::max(wait.minimum_interval, next_minimum_due - pass_start);
+    return wait;
   }
 
 } } // end namespace graphene::net

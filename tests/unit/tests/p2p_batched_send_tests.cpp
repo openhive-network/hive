@@ -782,8 +782,9 @@ BOOST_AUTO_TEST_CASE( transaction_replies_over_the_queue_limit_wait_for_it_to_dr
 }
 
 /// Replies wait for the queue in a bounded number of bytes, whatever the size of the transactions: past it, and past
-/// the count bound for small ones, the rest are refused.  While they wait, the connection reports when the queue last
-/// made progress towards the peer, which is what a peer that stops reading is dropped on.
+/// the count bound for small ones, the rest are refused.  While they wait the send queue is never empty, so the
+/// connection reports when the queue last made progress towards the peer, which is what a peer that stops reading is
+/// dropped on (the slow-reader rule).
 BOOST_AUTO_TEST_CASE( waiting_transaction_replies_are_bounded_in_bytes )
 {
   const size_t byte_bound = GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER;
@@ -793,7 +794,7 @@ BOOST_AUTO_TEST_CASE( waiting_transaction_replies_are_bounded_in_bytes )
     const std::shared_ptr<hive::chain::full_transaction_type> transaction = make_full_transaction( json_size );
     const size_t transaction_size = transaction->get_transaction_size();
     BOOST_REQUIRE_LE( transaction_size, size_t( HIVE_MAX_TRANSACTION_SIZE ) );
-    BOOST_CHECK( pair.sender->get_transaction_reply_send_progress_time() == fc::time_point::maximum() );
+    BOOST_CHECK( pair.sender->get_send_progress_time() == fc::time_point::maximum() );
 
     const fc::time_point before = fc::time_point::now();
     size_t accepted = 0;
@@ -809,14 +810,17 @@ BOOST_AUTO_TEST_CASE( waiting_transaction_replies_are_bounded_in_bytes )
       BOOST_CHECK_EQUAL( waiting, byte_bound / transaction_size );
     else
       BOOST_CHECK_EQUAL( waiting, size_t( GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER ) );
-    const fc::time_point progress = pair.sender->get_transaction_reply_send_progress_time();
+    const fc::time_point progress = pair.sender->get_send_progress_time();
     BOOST_CHECK( progress >= before && progress <= fc::time_point::now() );
 
     pair.wait_for_messages( accepted );
     BOOST_CHECK( !pair.receiver_delegate.closed );
     BOOST_CHECK_EQUAL( pair.receiver_delegate.received.size(), accepted );
     BOOST_CHECK_EQUAL( pair.sender->get_deferred_transaction_reply_bytes(), 0u );
-    BOOST_CHECK( pair.sender->get_transaction_reply_send_progress_time() == fc::time_point::maximum() );
+    const fc::time_point deadline = fc::time_point::now() + fc::seconds( 5 );
+    while( pair.sender->get_send_progress_time() != fc::time_point::maximum() && fc::time_point::now() < deadline )
+      fc::usleep( fc::milliseconds( 1 ) );
+    BOOST_CHECK( pair.sender->get_send_progress_time() == fc::time_point::maximum() );
   }
 }
 

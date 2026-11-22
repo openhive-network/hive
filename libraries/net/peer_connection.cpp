@@ -711,20 +711,10 @@ namespace graphene { namespace net
       if (_deferred_transaction_replies.size() >= GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER ||
           _deferred_transaction_reply_bytes + transaction_size > GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER)
         return false;
-      if (_deferred_transaction_replies.empty())
-        _transaction_replies_deferred_since = fc::time_point::now();
       _deferred_transaction_replies.push_back(full_transaction);
       _deferred_transaction_reply_bytes += transaction_size;
       queue_deferred_transaction_replies();
       return true;
-    }
-
-    fc::time_point peer_connection::get_transaction_reply_send_progress_time() const
-    {
-      VERIFY_CORRECT_THREAD();
-      if (_deferred_transaction_replies.empty())
-        return fc::time_point::maximum();
-      return std::max(_transaction_replies_deferred_since, get_last_message_sent_time());
     }
 
     fc::time_point peer_connection::get_send_progress_time() const
