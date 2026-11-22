@@ -131,6 +131,7 @@ public:
   fc::optional<uint32_t> fetch_items_minimum_interval_us;
   fc::optional<uint32_t> max_transactions_in_flight;
   fc::optional<uint32_t> max_connections_per_host;
+  fc::optional<bool> relax_per_host_limit;
   vector<string> host_limit_exempt;
   bool force_validate = false;
   bool block_producer = false;
@@ -519,18 +520,21 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
      "Transaction advertisements arriving within it are handled together in the next pass; a block to fetch starts a pass at once. "
      "Default 5000 (5 ms); 0 starts a pass on every advertisement. Overrides fetch_items_minimum_interval_microseconds in p2p-parameters.")
     ("p2p-max-transactions-in-flight", bpo::value<uint32_t>(), "Maximum number of transactions received from peers that may wait for validation at once. "
-     "At the limit, the next transaction a peer sends waits until one is validated, and so does reading anything further from that peer. "
-     "Default 10000; 0 for no limit. Overrides maximum_transactions_in_flight in p2p-parameters.")
+     "A safety cap: at it, the node requests no more transactions from peers until some are validated; transactions already requested, "
+     "and blocks, are still read and processed as they arrive. Default 10000; 0 for no limit. Overrides maximum_transactions_in_flight in p2p-parameters.")
     ("p2p-max-connections-per-host", bpo::value<uint32_t>(), "Maximum number of connections held to one host, an IPv4 address or an IPv6 /64, inbound and outbound together. "
      "A hello beyond it is rejected, and the peer counts that as a failed attempt and backs off. Loopback addresses and p2p-host-limit-exempt "
      "ones are not limited, and neither are the seed nodes and add_node targets this node dials (they still count against their host's limit). "
      "Behind a proxy that rewrites the source address of inbound peers (docker-proxy, rootless Docker) every inbound peer is on the proxy's "
      "host: exempt the proxy's address or set 0. "
-     "Left unset (here and as maximum_connections_per_host in p2p-parameters), the default of " BOOST_PP_STRINGIZE(GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST)
-     " gives way, from host_limit_relax_delay seconds after start, to peers this node dials while peers on other hosts can't fill the "
-     "desired connections, and to peers that dial this node while it holds fewer than the desired connections, up to their host's even "
-     "share of them and half of them at most; the connections past it give way to "
-     "peers on new hosts. A value set here or in p2p-parameters is a hard limit. 0 for no limit. Overrides maximum_connections_per_host in p2p-parameters.")
+     "Default " BOOST_PP_STRINGIZE(GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST) "; whether it gives way when other hosts can't fill "
+     "the desired connections is p2p-relax-per-host-limit. 0 for no limit. Overrides maximum_connections_per_host in p2p-parameters.")
+    ("p2p-relax-per-host-limit", bpo::value<bool>(), "Whether the per-host connection limit gives way, from host_limit_relax_delay seconds after "
+     "start, to peers this node dials while peers on other hosts can't fill the desired connections, and to peers that dial this node while "
+     "it holds fewer than the desired connections, up to their host's even share of them and half of them at most; the connections past "
+     "the limit give way to peers on new hosts. false keeps the limit hard. Default true, "
+     "but false when p2p-max-connections-per-host or maximum_connections_per_host in p2p-parameters is set and this is not. "
+     "Overrides relax_per_host_limit in p2p-parameters.")
     ("p2p-host-limit-exempt", bpo::value<vector<string>>()->composing(), "An address or subnet (e.g. 172.17.0.1, 10.0.0.0/8, 2001:db8::/32) whose "
      "connections p2p-max-connections-per-host does not limit, such as a proxy that rewrites the source address of inbound peers. "
      "May be given more than once. Added to host_limit_exempt_subnets in p2p-parameters, which lists loopback by default.")
@@ -566,6 +570,9 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count( "p2p-max-connections-per-host" ) )
     my->max_connections_per_host = options.at( "p2p-max-connections-per-host" ).as< uint32_t >();
+
+  if( options.count( "p2p-relax-per-host-limit" ) )
+    my->relax_per_host_limit = options.at( "p2p-relax-per-host-limit" ).as< bool >();
 
   if( options.count( "p2p-host-limit-exempt" ) )
   {
@@ -703,6 +710,14 @@ void p2p_plugin::plugin_finalize_startup()
         ilog( "Overriding advanded_node_parameters[ \"maximum_connections_per_host\" ] with ${count}", ("count", *my->max_connections_per_host) );
 
       my->config.set( "maximum_connections_per_host", fc::variant( *my->max_connections_per_host ) );
+    }
+
+    if( my->relax_per_host_limit )
+    {
+      if( my->config.find( "relax_per_host_limit" ) != my->config.end() )
+        ilog( "Overriding advanded_node_parameters[ \"relax_per_host_limit\" ] with ${relax}", ("relax", *my->relax_per_host_limit) );
+
+      my->config.set( "relax_per_host_limit", fc::variant( *my->relax_per_host_limit ) );
     }
 
     if( !my->host_limit_exempt.empty() )
