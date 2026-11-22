@@ -617,12 +617,12 @@ namespace graphene { namespace net {
   };
 
   /**
-   * The strikes a peer holds for answering item_not_available (not item_busy_message) for items it advertised and we
-   * asked it for, or, if it queues blocks ahead of its transaction traffic (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST), for
-   * delivering a block we asked it for past its grace (see block_copy_grace()).  Answers
-   * within GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC of the last one that counted are no new strike, each strike is
-   * forgotten GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC after it was made, and any requested delivery (a transaction,
-   * or a block within its grace) clears them all.
+   * The strikes a peer holds for answering item_not_available (or item_busy_message without deferring its replies)
+   * for items it advertised and we asked it for, or for delivering a block we asked it for past its grace (see
+   * block_copy_grace() and node_impl::record_late_block_copy()).  Answers within GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC
+   * of the last one that counted are no new strike, each strike is forgotten GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC
+   * after it was made, and any requested delivery that passed validation (a transaction the chain accepted, or a block
+   * pushed onto the chain we follow) clears them all.
    * At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES the peer is disconnected.
    */
   class unavailable_item_strikes
@@ -639,6 +639,35 @@ namespace graphene { namespace net {
   private:
     /// when each strike not yet forgotten was made, oldest first; strikes are a demotion apart, so few are kept
     std::deque<fc::time_point> _strike_times;
+  };
+
+  /**
+   * How long a peer kept transactions we asked it for and then answered busy for them (item_busy_message), within
+   * consecutive windows of GRAPHENE_NET_TRANSACTION_BUSY_WINDOW_SEC.  It is busy from the earliest request it answered
+   * busy for (time already counted aside) until it delivers a transaction again, so a peer that holds requests and only
+   * then answers busy is busy all the while, whether it delivers one of them before its busy answers or after.  A peer busy for more than half a window is demoted for
+   * transactions (node_impl::on_item_busy_message()): busy answers can't hold our requests, and the fetch gate's
+   * headroom, for most of the time with no strike or demotion.  All calls in time order, from one thread.
+   */
+  class transaction_busy_time
+  {
+  public:
+    /// The peer answered busy at @p now for a transaction we asked it for at @p requested
+    void record_busy(fc::time_point requested, fc::time_point now);
+    /// The peer delivered a transaction we asked it for at @p now
+    void record_delivery(fc::time_point now);
+    /// whether the peer was busy for more than half of the window that holds @p now, so far
+    bool mostly_busy(fc::time_point now);
+
+  private:
+    void advance_window(fc::time_point now);
+
+    fc::time_point _window_start;
+    fc::microseconds _busy_in_window;
+    /// since when the peer has been busy, while it is
+    std::optional<fc::time_point> _busy_since;
+    /// the end of the last busy spell counted
+    fc::time_point _counted_until;
   };
 
   /**
@@ -998,8 +1027,10 @@ namespace graphene { namespace net {
    * time it was requested.  Counts the transactions among them, so the fetch loop sees at once how much of the
    * peer's transaction window is taken and whether a block is outstanding, and keeps when the peer last delivered
    * a transaction we asked for, which is what an outstanding transaction's timeout is measured from (see timed_out()).
-   * A block request also has a deadline (see block_request_deadline()), and the time the request was written to the
-   * peer's socket, once it was (see record_block_requests_written()).
+   * A block request also has a deadline (see block_request_deadline()), the time the request was written to the
+   * peer's socket, once it was (see record_block_requests_written()), whether transactions requested from the peer were
+   * outstanding when it was made, and whether a download from the peer held off asking another peer for the block
+   * (see record_block_request_held()).
    */
   class requested_items
   {
@@ -1021,6 +1052,13 @@ namespace graphene { namespace net {
      * the time the request waited in our own send queue doesn't count against the peer
      */
     fc::time_point block_request_sent(const item_id& item) const;
+    /// whether transactions requested from the peer were outstanding when @p item, a block requested and not yet
+    /// erased, was requested: on a peer that queues each reply at once, their replies may be ahead of the block
+    bool block_requested_behind_transactions(const item_id& item) const;
+    /// a block message arriving from the peer held off asking another peer for @p item, a block requested and not yet
+    /// erased, past the request's deadline (see block_download_holds_rerequest_until())
+    void record_block_request_held(const item_id& item);
+    bool block_request_held(const item_id& item) const;
     const_iterator find(const item_id& item) const { return _items.find(item); }
     const_iterator begin() const { return _items.begin(); }
     const_iterator end() const { return _items.end(); }
@@ -1036,13 +1074,15 @@ namespace graphene { namespace net {
      * waits from when it was requested or the peer last delivered one (record_transaction_delivery()), whichever is
      * later, so a peer delivering a large window at link speed is not taken for one that ignores us, but no longer
      * than GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING timeouts from its request.  A block waits
-     * from when it was requested or bytes of a block message from the peer last arrived (@p block_download_progress,
-     * see peer_connection::get_block_message_in_progress()), whichever is later, but no longer than
-     * GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING timeouts from its request: a large block on a slow link
-     * of ours is not the peer ignoring us.  Other messages from the peer don't extend it.
+     * from when it was requested or bytes of @p block_download, the block message arriving from the peer if one is
+     * (see peer_connection::get_block_message_in_progress()), last arrived, whichever is later, but no longer than
+     * GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING timeouts from its request, and only while the message,
+     * at the rate its bytes arrived so far, completes within that ceiling (see projected_block_download_completion()):
+     * a large block on a slow link of ours is not the peer ignoring us, but a peer that sends a few bytes at a time
+     * is.  Other messages from the peer don't extend it.
      */
     std::optional<item_id> timed_out(fc::time_point now, fc::microseconds timeout,
-                                     fc::time_point block_download_progress = fc::time_point()) const;
+                                     const message_in_progress* block_download = nullptr) const;
 
   private:
     struct block_request
@@ -1050,6 +1090,8 @@ namespace graphene { namespace net {
       fc::microseconds deadline;
       /// when the request was written to the socket; fc::time_point() until it is
       fc::time_point written;
+      bool behind_transactions = false;
+      bool held = false;
     };
     map_type _items;
     std::unordered_map<item_id, block_request, p2p_item_hash> _block_requests;
@@ -1298,15 +1340,20 @@ namespace graphene { namespace net {
    */
   fc::microseconds block_copy_grace(fc::microseconds deadline, fc::microseconds request_timeout);
 
+  /// When @p download, a message being read, completes if the rest of its bytes arrive at the rate they did so far
+  fc::time_point projected_block_download_completion(const message_in_progress& download);
+
   /**
    * Until when @p download, a block message being read from a peer we sent a block request at @p sent, holds off
    * asking another peer for the block: GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS after bytes of it last arrived, as long
-   * as, at the rate they arrived so far, the whole message arrives within @p request_timeout of @p sent.  A copy that
-   * is visibly arriving would only share our download link with another one.  fc::time_point() when the download is
-   * too slow to wait for: then a peer that sends a block a few bytes at a time can't hold it
+   * as, at the rate they arrived so far, the whole message arrives within @p grace of @p sent (the request's
+   * block_copy_grace()).  A copy that is visibly arriving in time would only share our download link with another
+   * one.  fc::time_point() when the download is too slow to wait for: a peer that streams a block to finish only later
+   * than a copy may come and still count as on time can't hold it, whether it sends a few bytes at a time or the
+   * whole block slowly
    */
   fc::time_point block_download_holds_rerequest_until(const message_in_progress& download, fc::time_point sent,
-                                                      fc::microseconds request_timeout);
+                                                      fc::microseconds grace);
 
   /// What we know about an item a peer just advertised to us; the peer is recorded as having it in any case
   struct advertised_item_status

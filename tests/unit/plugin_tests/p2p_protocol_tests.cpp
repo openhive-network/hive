@@ -232,6 +232,34 @@ struct p2p_protocol_fixture : public witness_fixture
   }
 
   /**
+   * Connects through @p link a peer that delivers the blocks of @p chain it is asked for, and has it deliver block
+   * @p delivered_num, so the node asks it for blocks before peers that never delivered one
+   */
+  std::unique_ptr< test_peer > connect_proven_peer_through( throttling_relay& link, const std::string& name,
+                                                            const std::vector< block_ptr >& chain, uint32_t delivered_num )
+  {
+    auto peer = make_peer( name );
+    peer->provide_blocks( chain );
+    peer->connect( link.listen() );
+    BOOST_REQUIRE_MESSAGE( peer->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ), "the node did not take up the peer" );
+    peer->advertise( block_message_type, { item_hash_t( chain[ delivered_num - 1 ]->get_block_id() ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( delivered_num ), "head is " << get_block_num() );
+    return peer;
+  }
+
+  /**
+   * Throttles @p link so that a message carrying @p block reaches the node one AES block at a time, spread over @p time.
+   * The read the relay already waits on is not throttled: the next message the peer sends (an advertisement) passes
+   * at once, and the ones after it, the block, are throttled
+   */
+  static void stream_through( throttling_relay& link, const block_ptr& block, fc::microseconds time )
+  {
+    const message delivery{ block_message( block ) };
+    const size_t aes_blocks = ( sizeof( message_header ) + delivery.size + 15 ) / 16;
+    link.throttle( 16, fc::microseconds( time.count() / int64_t( aes_blocks ) ) );
+  }
+
+  /**
    * Stops a producing node's block production for the rest of the case, so that what the case puts in the pending
    * pool stays there however long its checks take. The node stays at live sync for a minute after its last block.
    * A block the witness plugin began producing before the stop can still land after this returns (it waits a block
@@ -2797,13 +2825,14 @@ BOOST_AUTO_TEST_CASE( late_withholders_rerequested_and_struck_test )
   } );
 }
 
-/// A block that arrives slowly over the node's own download link, its bytes coming steadily for about 4 s as a large
-/// block's do on a slow link, is not asked of the other advertisers while it arrives: another copy would only share
-/// that link. The peer sending it is neither deprioritized, struck nor timed out
+/// A block that arrives slowly over the node's own download link, its bytes coming steadily for about 2 s as a large
+/// block's do on a slow link, so that it completes within its grace (3 s, see block_copy_grace()), is not asked of the
+/// other advertisers while it arrives: another copy would only share that link. The peer sending it is neither
+/// deprioritized, struck nor timed out
 BOOST_AUTO_TEST_CASE( slow_block_download_not_rerequested_test )
 {
   const std::vector< block_ptr > chain = generate_chain( 7 );
-  const fc::microseconds download_time = fc::seconds( 4 );
+  const fc::microseconds download_time = fc::seconds( 2 );
   start_node();
   run( [&]()
   {
@@ -2831,7 +2860,7 @@ BOOST_AUTO_TEST_CASE( slow_block_download_not_rerequested_test )
     BOOST_REQUIRE_MESSAGE( head_reaches( 7 ), "head is " << get_block_num() );
 
     const fc::microseconds took = fc::time_point::now() - first_request_time( *slow, id( 7 ) );
-    BOOST_CHECK_MESSAGE( took > download_time - fc::seconds( 1 ), "the block arrived " << took.count() / 1000 << " ms after the request" );
+    BOOST_CHECK_MESSAGE( took > download_time - fc::milliseconds( 500 ), "the block arrived " << took.count() / 1000 << " ms after the request" );
     for( const auto& other : others )
       BOOST_CHECK_EQUAL( times_requested( *other, id( 7 ) ), 0u );
     BOOST_CHECK_EQUAL( times_requested( *slow, id( 7 ) ), 1u );
@@ -2882,25 +2911,28 @@ BOOST_AUTO_TEST_CASE( silent_withholders_rerequested_within_cap_test )
   } );
 }
 
-/// A peer whose block copies wait behind its transaction replies, as on a node that predates queueing blocks first (no
-/// GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST in its hello), is not struck for copies past their grace, however often: of
-/// two peers that each send three blocks 4.5 s after their requests, a demotion apart, past their grace (3 s), the one
-/// that says it queues blocks first is disconnected at its third strike, and the old one is kept with none. Both are
-/// deprioritized, so they are asked for a block only while no other peer has it
-BOOST_AUTO_TEST_CASE( late_block_copies_struck_only_for_peers_queueing_blocks_first_test )
+/// A peer whose block copies may wait behind its replies to the node's transaction requests, as on a node that predates
+/// queueing blocks first (no GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST in its hello), is not struck for copies past their
+/// grace while such requests were outstanding when the node asked it for the block, however often. Without them
+/// nothing of the node's was ahead of the copy, whatever the hello says. Of two such peers that each send three blocks
+/// 4.5 s after their requests, a demotion apart, past their grace (3 s), the one asked for a transaction just before
+/// each block is kept with no strike, and the one asked for nothing else is disconnected at its third strike. Both are
+/// deprioritized, so they are asked for a block only while no other peer has it. The node is put at live sync
+/// (force-live-sync) so that it fetches transactions
+BOOST_AUTO_TEST_CASE( late_block_copies_spared_only_behind_transaction_requests_test )
 {
   const std::vector< block_ptr > chain = generate_chain( 8 );
   const fc::microseconds withheld_for = fc::milliseconds( 4500 );
-  start_node();
+  start_node( "", false, { config_line_t( { "force-live-sync", { "true" } } ) } );
   run( [&]()
   {
     sync_node( chain, 5 );
     const auto id = [&]( uint32_t num ) { return item_hash_t( chain[ num - 1 ]->get_block_id() ); };
     auto old_peer = connect_live_peer( "peer queueing blocks behind transactions", chain );
-    auto withholder = connect_live_peer( "withholder queueing blocks first", chain, true );
+    auto pretender = connect_live_peer( "peer with nothing queued ahead of blocks", chain );
     auto honest = connect_live_peer( "honest advertiser", chain );
     old_peer->answer_after( fetch_items_message_type, withheld_for );
-    withholder->answer_after( fetch_items_message_type, withheld_for );
+    pretender->answer_after( fetch_items_message_type, withheld_for );
 
     fc::time_point last_round = fc::time_point();
     for( uint32_t num = 6; num <= 8; ++num )
@@ -2911,26 +2943,32 @@ BOOST_AUTO_TEST_CASE( late_block_copies_struck_only_for_peers_queueing_blocks_fi
         if( last_round != fc::time_point() )
           fc::usleep( last_round + fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC + 1 ) - fc::time_point::now() );
         last_round = fc::time_point::now();
+        // the old peer is asked for a transaction first; its reply comes with the block's
+        const full_transaction_ptr transaction = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                                "ahead of block " + std::to_string( num ), get_default_expiration() );
+        old_peer->provide( { transaction } );
+        old_peer->advertise( { transaction->get_legacy_transaction_message_hash() } );
+        BOOST_REQUIRE( wait_until( [&]() { return times_requested( *old_peer, transaction->get_legacy_transaction_message_hash() ) != 0; }, reply_timeout ) );
         old_peer->advertise( block_message_type, { id( num ) } );
         BOOST_REQUIRE( wait_until( [&]() { return times_requested( *old_peer, id( num ) ) != 0; }, reply_timeout ) );
-        withholder->advertise( block_message_type, { id( num ) } );
-        BOOST_REQUIRE( wait_until( [&]() { return times_requested( *withholder, id( num ) ) != 0; }, reply_timeout ) );
+        pretender->advertise( block_message_type, { id( num ) } );
+        BOOST_REQUIRE( wait_until( [&]() { return times_requested( *pretender, id( num ) ) != 0; }, reply_timeout ) );
         honest->advertise( block_message_type, { id( num ) } );
         BOOST_REQUIRE_MESSAGE( head_reaches( num ), "head is " << get_block_num() );
         // both late copies have come
-        fc::usleep( first_request_time( *withholder, id( num ) ) + withheld_for + fc::milliseconds( 500 ) - fc::time_point::now() );
+        fc::usleep( first_request_time( *pretender, id( num ) ) + withheld_for + fc::milliseconds( 500 ) - fc::time_point::now() );
         const fc::variant_object old_info = peer_info( *old_peer );
         BOOST_CHECK( old_info[ "block_fetching_deprioritized" ].as_bool() );
         BOOST_CHECK_EQUAL( old_info[ "withholding_strikes" ].as_uint64(), 0u );
         if( num < 8 )
         {
-          const fc::variant_object withholder_info = peer_info( *withholder );
-          BOOST_CHECK( withholder_info[ "block_fetching_deprioritized" ].as_bool() );
-          BOOST_CHECK_EQUAL( withholder_info[ "withholding_strikes" ].as_uint64(), num - 5 );
+          const fc::variant_object pretender_info = peer_info( *pretender );
+          BOOST_CHECK( pretender_info[ "block_fetching_deprioritized" ].as_bool() );
+          BOOST_CHECK_EQUAL( pretender_info[ "withholding_strikes" ].as_uint64(), num - 5 );
         }
       }
     }
-    require_closed_with( *withholder, "advertising items you don't have" );
+    require_closed_with( *pretender, "advertising items you don't have" );
     require_kept( *old_peer );
     BOOST_CHECK_EQUAL( peer_info( *old_peer )[ "withholding_strikes" ].as_uint64(), 0u );
     require_kept( *honest );
@@ -3121,6 +3159,316 @@ BOOST_AUTO_TEST_CASE( busy_answered_to_a_reader_that_stops_test )
     BOOST_CHECK_GE( reader->count( trx_message_type ), size_t( GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER ) );
     BOOST_CHECK_EQUAL( reader->count( item_not_available_message_type ), 0u );
     require_kept( *reader );
+  } );
+}
+
+/// A peer that starts sending a block it was asked for at once and streams it to finish only about 6 s later doesn't
+/// hold the block: at the rate its bytes come it would complete past its grace (3 s), so the node asks the next
+/// advertiser at the first request's deadline, 1 s, and the streamer's copy, completed past its grace, is a strike
+BOOST_AUTO_TEST_CASE( steady_block_streamer_rerequested_and_struck_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 7 );
+  const fc::microseconds stream_time = fc::seconds( 6 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    const auto id = [&]( uint32_t num ) { return item_hash_t( chain[ num - 1 ]->get_block_id() ); };
+    throttling_relay link( peer_thread, node_endpoint() );
+    auto streamer = connect_proven_peer_through( link, "peer streaming blocks slowly", chain, 6 );
+    auto honest = connect_live_peer( "honest advertiser", chain );
+
+    stream_through( link, chain[ 6 ], stream_time );
+    streamer->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *streamer, id( 7 ) ) != 0; }, reply_timeout ) );
+    honest->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 7 ), "head is " << get_block_num() );
+    const fc::time_point streamer_asked = first_request_time( *streamer, id( 7 ) );
+    const fc::microseconds honest_asked_after = first_request_time( *honest, id( 7 ) ) - streamer_asked;
+    BOOST_CHECK_GE( honest_asked_after.count(), fc::milliseconds( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS - 100 ).count() );
+    BOOST_CHECK_MESSAGE( honest_asked_after < fc::seconds( 2 ),
+                         "the honest peer was asked " << honest_asked_after.count() / 1000 << " ms after the streamer" );
+
+    // its copy completes about stream_time after the request
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return peer_info( link.node_side_endpoint() )[ "withholding_strikes" ].as_uint64() != 0; },
+                                       stream_time + fc::seconds( 3 ) - ( fc::time_point::now() - streamer_asked ) ),
+                           "the streamer was not struck" );
+    BOOST_CHECK_GE( ( fc::time_point::now() - streamer_asked ).count(), ( stream_time - fc::milliseconds( 1500 ) ).count() );
+    const fc::variant_object info = peer_info( link.node_side_endpoint() );
+    BOOST_CHECK( info[ "block_fetching_deprioritized" ].as_bool() );
+    BOOST_CHECK_EQUAL( info[ "withholding_strikes" ].as_uint64(), 1u );
+    const fc::variant_object honest_info = peer_info( *honest );
+    BOOST_CHECK( !honest_info[ "block_fetching_deprioritized" ].as_bool() );
+    BOOST_CHECK_EQUAL( honest_info[ "withholding_strikes" ].as_uint64(), 0u );
+  } );
+}
+
+/// (T) A peer that sends a block it was asked for a few bytes at a time, so slowly that it would take about 24 s, is
+/// disconnected when its request times out (active_ignored_request_timeout, 6 s), though its bytes keep coming every
+/// few seconds: only a download that completes within the ceiling (12 s) keeps a block request alive
+BOOST_AUTO_TEST_CASE( dripping_block_peer_times_out_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 7 );
+  const fc::microseconds drip_time = fc::seconds( 24 );
+  const fc::microseconds timeout = fc::seconds( GRAPHENE_NET_ACTIVE_IGNORED_REQUEST_TIMEOUT_SECONDS );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    const auto id = [&]( uint32_t num ) { return item_hash_t( chain[ num - 1 ]->get_block_id() ); };
+    throttling_relay link( peer_thread, node_endpoint() );
+    auto dripper = connect_proven_peer_through( link, "peer dripping blocks", chain, 6 );
+    auto honest = connect_live_peer( "honest advertiser", chain );
+
+    const message delivery{ block_message( chain[ 6 ] ) };
+    // its bytes come more often than the timeout, so arrival alone would keep the request alive
+    BOOST_REQUIRE_LT( drip_time.count() / int64_t( ( sizeof( message_header ) + delivery.size + 15 ) / 16 ), timeout.count() / 2 );
+    stream_through( link, chain[ 6 ], drip_time );
+    dripper->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *dripper, id( 7 ) ) != 0; }, reply_timeout ) );
+    honest->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 7 ), "head is " << get_block_num() );
+
+    const fc::time_point asked = first_request_time( *dripper, id( 7 ) );
+    BOOST_REQUIRE_MESSAGE( dripper->wait_closed( fc::seconds( 15 ) ), "the node kept the dripping peer" );
+    const fc::microseconds closed_after = fc::time_point::now() - asked;
+    BOOST_CHECK_GE( closed_after.count(), ( timeout - fc::milliseconds( 100 ) ).count() );
+    BOOST_CHECK_MESSAGE( closed_after < timeout + fc::milliseconds( 2500 ),
+                         "the dripping peer was disconnected " << closed_after.count() / 1000 << " ms after the request" );
+    require_kept( *honest );
+  } );
+}
+
+/// Three peers that stream a block to finish within the 12 s ceiling, about 10 s after their requests, asked for it first, hold it only for their
+/// deadlines in a row, 1 + 2 + 4 s, as silent withholders do: the honest advertiser is asked 7 s after the first
+/// request, as the first one's request, 6 s old by then, no longer takes one of the three places a block's requests
+/// may hold. Their copies come past their grace, so each takes a strike
+BOOST_AUTO_TEST_CASE( colluding_block_streamers_rerequested_within_cap_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 9 );
+  const fc::microseconds stream_time = fc::seconds( 10 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    const auto id = [&]( uint32_t num ) { return item_hash_t( chain[ num - 1 ]->get_block_id() ); };
+    // each delivers a block, so all are asked before the honest peer, which never did
+    std::vector< std::unique_ptr< throttling_relay > > links;
+    std::vector< std::unique_ptr< test_peer > > streamers;
+    for( uint32_t i = 0; i < 3; ++i )
+    {
+      links.push_back( std::make_unique< throttling_relay >( peer_thread, node_endpoint() ) );
+      streamers.push_back( connect_proven_peer_through( *links.back(), "streamer " + std::to_string( i ), chain, 6 + i ) );
+    }
+    auto honest = connect_live_peer( "honest advertiser", chain );
+    for( const auto& link : links )
+      stream_through( *link, chain[ 8 ], stream_time );
+
+    streamers.front()->advertise( block_message_type, { id( 9 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *streamers.front(), id( 9 ) ) != 0; }, reply_timeout ) );
+    for( size_t i = 1; i < streamers.size(); ++i )
+      streamers[ i ]->advertise( block_message_type, { id( 9 ) } );
+    honest->advertise( block_message_type, { id( 9 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 9 ), "head is " << get_block_num() );
+
+    const fc::time_point first_asked = first_request_time( *streamers.front(), id( 9 ) );
+    const fc::microseconds cap_total = fc::milliseconds( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS * ( 1 + 2 + 4 ) );
+    const fc::microseconds honest_asked_after = first_request_time( *honest, id( 9 ) ) - first_asked;
+    BOOST_CHECK_GE( honest_asked_after.count(), ( cap_total - fc::milliseconds( 100 ) ).count() );
+    BOOST_CHECK_MESSAGE( honest_asked_after < cap_total + fc::milliseconds( 1500 ),
+                         "the honest peer was asked " << honest_asked_after.count() / 1000 << " ms after the first streamer" );
+    for( const auto& streamer : streamers )
+      BOOST_CHECK_EQUAL( times_requested( *streamer, id( 9 ) ), 1u );
+
+    // all three copies have come
+    fc::usleep( first_request_time( *streamers.back(), id( 9 ) ) + stream_time + fc::seconds( 2 ) - fc::time_point::now() );
+    for( size_t i = 0; i < links.size(); ++i )
+    {
+      BOOST_TEST_CONTEXT( "streamer " << i )
+      {
+        const fc::variant_object info = peer_info( links[ i ]->node_side_endpoint() );
+        BOOST_CHECK( info[ "block_fetching_deprioritized" ].as_bool() );
+        BOOST_CHECK_EQUAL( info[ "withholding_strikes" ].as_uint64(), 1u );
+      }
+    }
+    BOOST_CHECK_EQUAL( peer_info( *honest )[ "withholding_strikes" ].as_uint64(), 0u );
+  } );
+}
+
+/// A busy answer (item_busy_message) from a peer that doesn't defer its replies (no
+/// GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES in its hello) can't mean its replies to the node are backed up: it is
+/// taken as item_not_available, a strike and a demotion, and the transaction is asked of the other advertiser
+BOOST_AUTO_TEST_CASE( busy_from_peer_not_deferring_replies_counts_as_not_available_test )
+{
+  start_node( "", true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto busy = make_peer( "peer answering busy that doesn't defer its replies" );
+    busy->hello().understands_item_busy = true;
+    busy->on( fetch_items_message_type, []( test_peer& self, const message& m )
+    {
+      const fetch_items_message request = m.as< fetch_items_message >();
+      for( const item_hash_t& hash : request.items_to_fetch )
+        self.send( item_busy_message( item_id( request.item_type, hash ) ) );
+    } );
+    connect_active( *busy );
+    auto holder = make_peer( "other advertiser" );
+    connect_active( *holder );
+
+    const full_transaction_ptr transaction = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ), "busy",
+                                                            get_default_expiration() );
+    const item_hash_t hash = transaction->get_legacy_transaction_message_hash();
+    holder->provide( { transaction } );
+    busy->advertise( { hash } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *busy, hash ) != 0; }, reply_timeout ) );
+    holder->advertise( { hash } );
+    BOOST_REQUIRE( wait_until( [&]() { return holder->was_requested( hash ); }, reply_timeout ) );
+    const fc::variant_object info = peer_info( *busy );
+    BOOST_CHECK_EQUAL( info[ "withholding_strikes" ].as_uint64(), 1u );
+    BOOST_CHECK( info[ "transaction_fetching_demoted" ].as_bool() );
+    BOOST_CHECK( !info[ "transaction_replies_backlogged" ].as_bool() );
+    BOOST_CHECK_EQUAL( times_requested( *busy, hash ), 1u );
+    require_kept( *busy );
+  } );
+}
+
+/// A peer that defers its replies and holds the requests for 4 s before answering busy for all but one transaction
+/// of them, which it delivers 100 ms later to be asked again, is busy all the while: once that is more than half of
+/// GRAPHENE_NET_TRANSACTION_BUSY_WINDOW_SEC (30 s), after four such rounds, it is demoted for transactions, though not
+/// struck
+BOOST_AUTO_TEST_CASE( repeated_busy_answers_demoted_test )
+{
+  start_node( "", true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    const fc::microseconds held_for = fc::seconds( 4 );
+    // more than it delivers before it is demoted, so that each request it is asked holds one it can deliver
+    std::vector< full_transaction_ptr > transactions;
+    std::vector< item_hash_t > held;
+    for( int i = 0; i < 16; ++i )
+    {
+      transactions.push_back( build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                              "held " + std::to_string( i ), get_default_expiration() ) );
+      held.push_back( transactions.back()->get_legacy_transaction_message_hash() );
+    }
+
+    auto busy = make_peer( "peer holding requests and answering busy" );
+    busy->hello().understands_item_busy = true;
+    busy->hello().defers_transaction_replies = true;
+    busy->provide( transactions );
+    // what it holds, answered together held_for after the first of them came; on the peer's thread only
+    struct held_requests
+    {
+      std::vector< item_hash_t > hashes;
+      bool answer_scheduled = false;
+    };
+    auto holding = std::make_shared< held_requests >();
+    busy->on( fetch_items_message_type, [holding, held_for]( test_peer& self, const message& m )
+    {
+      const fetch_items_message request = m.as< fetch_items_message >();
+      holding->hashes.insert( holding->hashes.end(), request.items_to_fetch.begin(), request.items_to_fetch.end() );
+      if( std::exchange( holding->answer_scheduled, true ) )
+        return;
+      self.later( held_for, [&self, holding]()
+      {
+        const std::vector< item_hash_t > hashes = std::exchange( holding->hashes, {} );
+        holding->answer_scheduled = false;
+        for( size_t i = 1; i < hashes.size(); ++i )
+          self.send( item_busy_message( item_id( trx_message_type, hashes[ i ] ) ) );
+        // after the busy answers, which the node is to see first
+        if( !hashes.empty() )
+          self.later( fc::milliseconds( 100 ), [&self, rest = message( fetch_items_message( trx_message_type, { hashes.front() } ) )]()
+          {
+            self.answer( rest );
+          } );
+      } );
+    } );
+    connect_active( *busy );
+
+    busy->advertise( held );
+    BOOST_REQUIRE( wait_until( [&]() { return busy->count( fetch_items_message_type ) != 0; }, reply_timeout ) );
+    const fc::time_point first_asked = busy->received( fetch_items_message_type ).front().time;
+    BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return peer_info( *busy )[ "transaction_fetching_demoted" ].as_bool(); }, fc::seconds( 40 ) ),
+                           "the busy peer was not demoted after " << busy->count( fetch_items_message_type ) << " requests" );
+    const fc::microseconds demoted_after = fc::time_point::now() - first_asked;
+    BOOST_CHECK_MESSAGE( demoted_after > fc::seconds( GRAPHENE_NET_TRANSACTION_BUSY_WINDOW_SEC / 2 - 1 ),
+                         "the busy peer was demoted " << demoted_after.count() / 1000 << " ms after its first request" );
+    BOOST_CHECK_GE( busy->count( fetch_items_message_type ), 4u );
+    BOOST_CHECK_EQUAL( peer_info( *busy )[ "withholding_strikes" ].as_uint64(), 0u );
+    require_kept( *busy );
+  } );
+}
+
+/// A transaction the chain rejects, delivered under the id the peer advertised, is no delivery: it doesn't clear the
+/// strike the peer took for answering item_not_available. A valid one does, once the chain accepted it
+BOOST_AUTO_TEST_CASE( rejected_transaction_does_not_clear_strikes_test )
+{
+  start_node( "", true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto peer = make_peer( "peer with a strike" );
+    peer->stop_withholding();
+    connect_active( *peer );
+    const item_hash_t missed = fc::ripemd160::hash( std::string( "missed" ) );
+    peer->advertise( { missed } );
+    BOOST_REQUIRE( wait_until( [&]() { return peer_info( *peer )[ "withholding_strikes" ].as_uint64() == 1; }, reply_timeout ) );
+    // demoted for transactions meanwhile
+    fc::usleep( fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC + 1 ) );
+
+    // from an account that doesn't exist
+    const full_transaction_ptr fabricated = build_transfer( "nobody", HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ), "fabricated",
+                                                           get_default_expiration() );
+    peer->provide( { fabricated } );
+    peer->advertise( { fabricated->get_legacy_transaction_message_hash() } );
+    BOOST_REQUIRE( wait_until( [&]() { return peer->was_requested( fabricated->get_legacy_transaction_message_hash() ); }, reply_timeout ) );
+    fc::usleep( fc::seconds( 1 ) );
+    BOOST_CHECK_EQUAL( peer_info( *peer )[ "withholding_strikes" ].as_uint64(), 1u );
+
+    const full_transaction_ptr valid = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ), "valid",
+                                                      get_default_expiration() );
+    peer->provide( { valid } );
+    peer->advertise( { valid->get_legacy_transaction_message_hash() } );
+    BOOST_REQUIRE( wait_until( [&]() { return peer->was_requested( valid->get_legacy_transaction_message_hash() ); }, reply_timeout ) );
+    BOOST_CHECK( wait_until( [&]() { return peer_info( *peer )[ "withholding_strikes" ].as_uint64() == 0; }, reply_timeout ) );
+    require_kept( *peer );
+  } );
+}
+
+/// A block the node only stores on a shorter fork, delivered by a peer that has a strike, is no delivery to the node:
+/// it doesn't clear the strike
+BOOST_AUTO_TEST_CASE( fork_only_block_does_not_clear_strikes_test )
+{
+  const std::vector< block_ptr > fork = generate_chain( 7, 6 );
+  const std::vector< block_ptr > chain = generate_chain( 7 );
+  BOOST_REQUIRE( fork[ 4 ]->get_block_id() == chain[ 4 ]->get_block_id() );
+  BOOST_REQUIRE( fork[ 5 ]->get_block_id() != chain[ 5 ]->get_block_id() );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 7 );
+    // it has the fork up to its block 6, not its block 7
+    auto peer = connect_live_peer( "peer on a shorter fork", std::vector< block_ptr >( fork.begin(), fork.begin() + 6 ) );
+    peer->stop_withholding();
+    const item_hash_t missing( fork[ 6 ]->get_block_id() );
+    peer->advertise( block_message_type, { missing } );
+    BOOST_REQUIRE( wait_until( [&]() { return peer_info( *peer )[ "withholding_strikes" ].as_uint64() == 1; }, reply_timeout ) );
+
+    const item_hash_t fork_block( fork[ 5 ]->get_block_id() );
+    peer->advertise( block_message_type, { fork_block } );
+    BOOST_REQUIRE( wait_until( [&]() { return peer->was_requested( fork_block ); }, reply_timeout ) );
+    fc::usleep( fc::seconds( 1 ) );
+    BOOST_REQUIRE( head_block_id() == chain[ 6 ]->get_block_id() );
+    BOOST_CHECK_EQUAL( peer_info( *peer )[ "withholding_strikes" ].as_uint64(), 1u );
+    require_kept( *peer );
   } );
 }
 

@@ -18,6 +18,7 @@ using graphene::net::choose_block_source;
 using graphene::net::disconnect_breaker;
 using graphene::net::message_in_progress;
 using graphene::net::peer_connection;
+using graphene::net::transaction_busy_time;
 using graphene::net::unavailable_item_strikes;
 
 namespace {
@@ -298,11 +299,13 @@ BOOST_AUTO_TEST_CASE( unavailable_item_strikes_counting )
   BOOST_CHECK_EQUAL( strikes.count( start + twice ), 0u );
 }
 
-/// A block message arriving at a rate that completes it within the request timeout holds off asking another peer
-/// until a re-request deadline after its bytes last arrived; one arriving slower holds nothing
+/// A block message arriving at a rate that completes it within its copy's grace (3 s for a first request) holds off
+/// asking another peer until a re-request deadline after its bytes last arrived; one arriving slower holds nothing,
+/// even if it would complete within the request timeout: a peer streaming a block to finish at 6 s can't hold it
 BOOST_AUTO_TEST_CASE( block_download_holds_rerequest_while_on_time )
 {
-  const fc::microseconds request_timeout = fc::seconds( 6 );
+  const fc::microseconds grace = block_copy_grace( block_request_deadline( 0 ), fc::seconds( 6 ) );
+  BOOST_REQUIRE( grace == fc::seconds( 3 ) );
   const fc::microseconds rerequest = fc::milliseconds( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS );
   const fc::time_point sent = start;
   message_in_progress download;
@@ -310,19 +313,71 @@ BOOST_AUTO_TEST_CASE( block_download_holds_rerequest_while_on_time )
   download.bytes_total = 2 * 1024 * 1024;
   download.started = sent + fc::milliseconds( 200 );
 
-  // a quarter in 1 s: all of it 4.2 s after the request
-  download.bytes_read = download.bytes_total / 4;
+  // half in 1 s: all of it 2.2 s after the request
+  download.bytes_read = download.bytes_total / 2;
   download.last_progress = download.started + fc::seconds( 1 );
-  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, request_timeout ) == download.last_progress + rerequest );
+  BOOST_CHECK( graphene::net::projected_block_download_completion( download ) == download.started + fc::seconds( 2 ) );
+  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, grace ) == download.last_progress + rerequest );
 
-  // a tenth in 1 s: 10.2 s, past the timeout
+  // a fifth in 1 s: 5.2 s, past the grace, though within the 6 s request timeout
+  download.bytes_read = download.bytes_total / 5;
+  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, grace ) == fc::time_point() );
+
+  // a tenth in 1 s: 10.2 s
   download.bytes_read = download.bytes_total / 10;
-  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, request_timeout ) == fc::time_point() );
+  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, grace ) == fc::time_point() );
 
   // just the header so far
   download.bytes_read = 16;
   download.last_progress = download.started;
-  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, request_timeout ) == download.started + rerequest );
+  BOOST_CHECK( block_download_holds_rerequest_until( download, sent, grace ) == download.started + rerequest );
+}
+
+/// A peer that answers busy is busy from the request it answered busy for until it delivers a transaction; busy for
+/// more than half of a window, it is mostly busy. Time it held requests before answering busy counts, also when it
+/// delivered one of them first; time already counted doesn't count twice, and a new window starts afresh
+BOOST_AUTO_TEST_CASE( transaction_busy_time_counts_from_the_held_request )
+{
+  const auto at = [&]( double seconds ) { return start + fc::microseconds( int64_t( seconds * 1000000 ) ); };
+  const double window = GRAPHENE_NET_TRANSACTION_BUSY_WINDOW_SEC;
+
+  // brief busy spells, each ended by a delivery 2 s after the request: a fifth of the time
+  transaction_busy_time honest;
+  for( double t = 0; t + 10 < window; t += 10 )
+  {
+    honest.record_busy( at( t ), at( t + 0.1 ) );
+    honest.record_delivery( at( t + 2 ) );
+    BOOST_CHECK( !honest.mostly_busy( at( t + 2 ) ) );
+  }
+
+  // requests held 0.6 of the window before the busy answer, then one delivery: mostly busy at the answer
+  transaction_busy_time holder;
+  holder.record_busy( at( 0 ), at( 0.6 * window ) );
+  BOOST_CHECK( holder.mostly_busy( at( 0.6 * window ) ) );
+  holder.record_delivery( at( 0.6 * window ) );
+  BOOST_CHECK( holder.mostly_busy( at( 0.6 * window ) ) );
+  // a request made before that busy spell ended counts only from its end
+  holder.record_busy( at( 0.5 * window ), at( 0.7 * window ) );
+  holder.record_delivery( at( 0.7 * window ) );
+  BOOST_CHECK( holder.mostly_busy( at( 0.7 * window ) ) );
+  // the next window starts afresh
+  BOOST_CHECK( !holder.mostly_busy( at( window + 1 ) ) );
+
+  // a peer that delivers one of the requests it held before answering busy for the rest is busy from the request
+  transaction_busy_time delivering_first;
+  delivering_first.record_delivery( at( 0.6 * window ) );
+  delivering_first.record_busy( at( 0 ), at( 0.6 * window ) );
+  BOOST_CHECK( delivering_first.mostly_busy( at( 0.6 * window ) ) );
+
+  // spells of 0.2 of the window add up: mostly busy at the third
+  transaction_busy_time repeated;
+  for( int i = 0; i < 3; ++i )
+  {
+    const double requested = 0.25 * window * i;
+    repeated.record_busy( at( requested ), at( requested + 0.2 * window ) );
+    BOOST_CHECK_EQUAL( repeated.mostly_busy( at( requested + 0.2 * window ) ), i == 2 );
+    repeated.record_delivery( at( requested + 0.2 * window ) );
+  }
 }
 
 /// A peer kept despite a body mismatch is deprioritized until it delivers a block we accept.
