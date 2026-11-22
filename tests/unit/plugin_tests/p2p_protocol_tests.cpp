@@ -4589,6 +4589,176 @@ BOOST_AUTO_TEST_CASE( idle_peers_kept_in_sync_test )
   } );
 }
 
+/// F7 (T): a node in sync (it produces blocks) replaces a peer that for silent_peer_disconnect_timeout (5 s here) relays
+/// it nothing and asks it for nothing, only answering keepalives, once it has a candidate to dial in its place: with no
+/// candidate it keeps the peer for three windows; once a relaying peer names one, the silent peer is disconnected and the
+/// candidate dialed. Never replaced, with the candidate there too, are a peer that advertises the node's blocks back to
+/// it, a peer behind the node that syncs from it (asks for block ids and blocks) and a downstream peer that only fetches
+/// the blocks the node advertises. Five desired connections leave a floor of two
+BOOST_AUTO_TEST_CASE( silent_peer_replaced_in_sync_test )
+{
+  const uint32_t silent_timeout = 5;
+  start_node( R"("silent_peer_disconnect_timeout":)" + std::to_string( silent_timeout ) + R"(,"desired_number_of_connections":5)", true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto relaying = make_peer( "peer advertising the node's blocks back" );
+    connect_in_sync( *relaying );
+    auto syncing = make_peer( "peer behind the node syncing from it" );
+    syncing->hello().last_known_block_number = 1;
+    connect_active( *syncing );
+    auto downstream = make_peer( "downstream peer fetching what the node advertises" );
+    downstream->on( item_ids_inventory_message_type, []( test_peer& self, const message& m )
+    {
+      const item_ids_inventory_message inventory = m.as< item_ids_inventory_message >();
+      if( inventory.item_type == block_message_type )
+        self.send( fetch_items_message( block_message_type, inventory.item_hashes_available ) );
+    } );
+    connect_in_sync( *downstream );
+    auto bystander = make_peer( "peer advertising the node's blocks back too" );
+    connect_in_sync( *bystander );
+    auto silent = make_peer( "peer answering only keepalives" );
+    connect_active( *silent );
+    const fc::time_point silent_taken_up = fc::time_point::now();
+
+    // once a second: the relaying peers advertise the node's head, the syncing peer asks for block ids and a block
+    const auto exchange = [&]()
+    {
+      const block_id_type head = head_block_id();
+      relaying->advertise( block_message_type, { head } );
+      bystander->advertise( block_message_type, { head } );
+      syncing->send( fetch_blockchain_item_ids_message( block_message_type, { block_id( 1 ) } ) );
+      syncing->request_blocks( { head } );
+      fc::usleep( fc::seconds( 1 ) );
+    };
+    const fc::time_point kept_until = silent_taken_up + fc::seconds( 3 * silent_timeout );
+    while( fc::time_point::now() < kept_until )
+      exchange();
+    BOOST_REQUIRE_MESSAGE( !silent->closed(), "the node disconnected the silent peer with no candidate to replace it" );
+
+    auto candidate = make_peer( "candidate" );
+    const fc::ip::endpoint candidate_endpoint = candidate->listen();
+    address_message addresses;
+    addresses.addresses.emplace_back( candidate_endpoint, fc::time_point_sec( fc::time_point::now() ), fc::microseconds(), candidate->node_id(),
+                                      peer_connection_direction::outbound, firewalled_state::not_firewalled );
+    relaying->send( addresses );
+    const fc::time_point deadline = fc::time_point::now() + reply_timeout;
+    while( !silent->closed() && fc::time_point::now() < deadline )
+      exchange();
+    require_closed_with( *silent, "relayed me nothing" );
+    BOOST_REQUIRE_MESSAGE( candidate->wait_for( fetch_blockchain_item_ids_message_type, fc::seconds( 30 ) ), "the node did not dial the candidate" );
+
+    // a window more with the candidate taken up: the floor is two, so only the rule keeps the others
+    const fc::time_point watched_until = fc::time_point::now() + fc::seconds( silent_timeout + 2 );
+    while( fc::time_point::now() < watched_until )
+      exchange();
+    for( test_peer* kept : { relaying.get(), syncing.get(), downstream.get(), bystander.get() } )
+    {
+      BOOST_CHECK_MESSAGE( !kept->closed(), "the node closed the connection to " << kept->hello().user_agent );
+      BOOST_CHECK( node_lists( *kept ) );
+    }
+    BOOST_CHECK( syncing->count( blockchain_item_ids_inventory_message_type ) != 0 );
+    BOOST_CHECK( !downstream->blocks_received().empty() );
+  } );
+}
+
+/// F8: a node connected to node id X (here an inbound peer from 127.0.0.1) dials X's other address (127.0.0.2, as an
+/// IPv6 address of a dual-stack seed would be) once, when a peer names it; the duplicate connection is rejected as
+/// already_connected, by the node when X orders after its id and by X when X orders before it. While X stays connected
+/// the node doesn't dial that address again, although a peer keeps naming it and the retry delay of such a rejection
+/// is peer_connection_retry_timeout (1 s here); once X's connection is gone, the node dials it again
+BOOST_AUTO_TEST_CASE( connected_node_address_not_redialed_test )
+{
+  start_node( R"("peer_connection_retry_timeout":1)" );
+  run( [&]()
+  {
+    node_id_t node_id;
+    {
+      auto probe = make_peer( "probe" );
+      connect_active( *probe );
+      node_id = probe->node_hello()->user_data[ "node_id" ].as< node_id_t >();
+    }
+    BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
+    // ids compare bytewise: the next and the previous number order after and before the node's id
+    node_id_t higher = node_id;
+    for( size_t i = sizeof( higher.data ); i-- > 0 && ++reinterpret_cast< unsigned char& >( higher.data[ i ] ) == 0; )
+      ;
+    node_id_t lower = node_id;
+    for( size_t i = sizeof( lower.data ); i-- > 0 && reinterpret_cast< unsigned char& >( lower.data[ i ] )-- == 0; )
+      ;
+    BOOST_REQUIRE( lower < node_id && node_id < higher );
+
+    auto relay = make_peer( "relay" );
+    connect_active( *relay );
+    uint16_t port = 0;
+    for( const node_id_t& id : { higher, lower } )
+      BOOST_TEST_CONTEXT( ( id < node_id ? "lower" : "higher" ) << " id than the node's" )
+      {
+        const bool peer_rejects = id < node_id;
+        const auto other_address = [&]( const std::string& name, bool rejects )
+        {
+          auto peer = make_peer( name );
+          peer->hello().node_id = id;
+          if( rejects )
+            peer->on( hello_message_type, []( test_peer& self, const message& )
+            {
+              self.send( connection_rejected_message( "test peer", GRAPHENE_NET_PROTOCOL_VERSION, self.endpoint(),
+                                                      rejection_reason_code::already_connected, "already connected" ) );
+            } );
+          port = peer->listen( port, "127.0.0.2" ).port();
+          return peer;
+        };
+        auto connected = make_peer( "node X" );
+        connected->hello().node_id = id;
+        connect_active( *connected );
+
+        auto alias = other_address( "node X at its other address", peer_rejects );
+        const fc::ip::endpoint alias_endpoint( fc::ip::address( "127.0.0.2" ), port );
+        const auto name_alias = [&]()
+        {
+          address_message relayed;
+          relayed.addresses.emplace_back( alias_endpoint, fc::time_point_sec( fc::time_point::now() ), fc::microseconds( 0 ), id,
+                                          peer_connection_direction::inbound, firewalled_state::not_firewalled );
+          relay->send( relayed );
+          fc::usleep( fc::milliseconds( 250 ) );
+        };
+        fc::time_point deadline = fc::time_point::now() + fc::seconds( 30 );
+        while( !alias->connected() && fc::time_point::now() < deadline )
+          name_alias();
+        BOOST_REQUIRE_MESSAGE( alias->connected(), "the node did not dial the other address" );
+        BOOST_REQUIRE( alias->wait_closed( reply_timeout ) );
+        if( peer_rejects )
+          require_closed_with( *alias, "You rejected my connection request" );
+        else
+          BOOST_CHECK( alias->rejection() && alias->rejection()->reason_code == rejection_reason_code::already_connected );
+        alias.reset();
+
+        // the old code redialed within a retry delay and a connect loop pass, about 2 s
+        auto again = other_address( "node X at its other address again", peer_rejects );
+        const fc::time_point watched_until = fc::time_point::now() + fc::seconds( 8 );
+        while( fc::time_point::now() < watched_until )
+          name_alias();
+        BOOST_CHECK_MESSAGE( !again->connected(), "the node dialed the other address of a connected node again" );
+        BOOST_CHECK( node_lists( *connected ) );
+        again.reset();
+
+        auto after = other_address( "node X at its other address after its connection closed", false );
+        connected->close();
+        BOOST_REQUIRE( wait_until( [&]() { return !node_lists( *connected ); }, reply_timeout ) );
+        deadline = fc::time_point::now() + fc::seconds( GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC + 10 );
+        while( !after->connected() && fc::time_point::now() < deadline )
+          name_alias();
+        BOOST_REQUIRE_MESSAGE( after->connected(), "the node did not dial the other address once the node's connection closed" );
+        BOOST_CHECK( after->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ) );
+        after->close();
+        BOOST_REQUIRE( wait_until( [&]() { return !node_lists( *after ); }, reply_timeout ) );
+      }
+    require_kept( *relay );
+  } );
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif

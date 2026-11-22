@@ -67,6 +67,11 @@ struct node_configuration
     * take a slot again for as long.  0 = never, the default.  Keep it above GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC so sync is restarted with the peers we have first
     */
    uint32_t idle_peer_disconnect_timeout = GRAPHENE_NET_DEFAULT_IDLE_PEER_DISCONNECT_TIMEOUT_SEC;
+   /**
+    * seconds an active peer may relay us no block or inventory and ask us for nothing while our head is not behind,
+    * before it is disconnected, if a candidate can take its slot; it may not take a slot again for as long.  0 = never
+    */
+   uint32_t silent_peer_disconnect_timeout = GRAPHENE_NET_DEFAULT_SILENT_PEER_DISCONNECT_TIMEOUT_SEC;
 
    bool peer_advertising_disabled = false;
 
@@ -99,6 +104,7 @@ FC_REFLECT(graphene::net::node_configuration,
    (peer_connection_retry_timeout)
    (peer_inactivity_timeout)
    (idle_peer_disconnect_timeout)
+   (silent_peer_disconnect_timeout)
    (peer_advertising_disabled)
    (maximum_number_of_blocks_to_handle_at_one_time)
    (maximum_number_of_sync_blocks_to_prefetch)

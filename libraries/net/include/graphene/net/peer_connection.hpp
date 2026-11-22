@@ -350,6 +350,10 @@ namespace graphene { namespace net
       // became active if it hasn't yet.  Requests and advertisements cost a peer nothing, so they don't count.  A peer
       // idle for idle_peer_disconnect_timeout while it should have contributed is replaced
       fc::time_point last_useful_data_time;
+      // when this peer last relayed us a block or block or transaction inventory, or asked us for block ids or items;
+      // when it became active if it hasn't yet.  Keepalives and addresses don't count.  A peer that exchanged nothing
+      // for silent_peer_disconnect_timeout while our head is not behind is replaced
+      fc::time_point last_item_exchange_time;
       // whether this peer delivered a block that we pushed on this connection: a proven block source, asked for a
       // block before peers that never delivered one (see choose_block_source())
       bool delivered_block = false;
