@@ -957,7 +957,7 @@ namespace graphene { namespace net
     bool peer_connection::is_transaction_fetching_inhibited() const
     {
       VERIFY_CORRECT_THREAD();
-      return transaction_fetching_inhibited_until > fc::time_point::now();
+      return transaction_replies_backlogged || transaction_fetching_inhibited_until > fc::time_point::now();
     }
 
     bool peer_connection::is_block_fetching_deprioritized() const
@@ -969,7 +969,7 @@ namespace graphene { namespace net
     void peer_connection::deprioritize_block_fetching()
     {
       VERIFY_CORRECT_THREAD();
-      block_fetching_deprioritized_until = fc::time_point::now() + fc::seconds(GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_WINDOW_SEC);
+      block_fetching_deprioritized_until = fc::time_point::now() + fc::seconds(GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC);
     }
 
     void peer_connection::restore_block_fetching_priority()

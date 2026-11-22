@@ -108,6 +108,19 @@ def _format_counters(role: str, counters: dict[str, Any] | None) -> list[str]:
             f"{_fmt(requests['transactions_per_request'], 1)} tx/request, byte cap hit "
             f"{requests['byte_cap_bound']:.0f} ({_fmt(requests['byte_cap_bound_pct'], 1)}%)"
         ),
+        *_format_withholding(counters.get("withholding"), indent),
+    ]
+
+
+def _format_withholding(withholding: dict[str, float] | None, indent: str) -> list[str]:
+    if withholding is None:
+        return []
+    return [
+        (
+            f"{indent}withholding {withholding['not_available_answers']:.0f} not available, "
+            f"{withholding['busy_answers']:.0f} busy, {withholding['late_block_copies']:.0f} late block copies, "
+            f"{withholding['strikes']:.0f} strikes, {withholding['disconnects']:.0f} disconnects for strikes"
+        )
     ]
 
 

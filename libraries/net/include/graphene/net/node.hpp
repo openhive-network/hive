@@ -617,10 +617,12 @@ namespace graphene { namespace net {
   };
 
   /**
-   * The strikes a peer holds for answering item_not_available for items it advertised and we asked it for, or for
+   * The strikes a peer holds for answering item_not_available (not item_busy_message) for items it advertised and we
+   * asked it for, or, if it queues blocks ahead of its transaction traffic (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST), for
    * delivering a block we asked it for past its grace (see block_copy_grace()).  Answers
    * within GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC of the last one that counted are no new strike, each strike is
-   * forgotten GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC after it was made, and a delivery clears them all.
+   * forgotten GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC after it was made, and any requested delivery (a transaction,
+   * or a block within its grace) clears them all.
    * At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES the peer is disconnected.
    */
   class unavailable_item_strikes
@@ -1207,7 +1209,18 @@ namespace graphene { namespace net {
       uint64_t byte_cap_bound = 0; ///< requests cut short by GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH
     };
 
+    /// answers and copies that may count as withholding an advertised item (see unavailable_item_strikes)
+    struct withholding_counts
+    {
+      uint64_t not_available_answers = 0; ///< item_not_available for items the peer advertised and we asked it for
+      uint64_t busy_answers = 0;          ///< item_busy_message for transactions we asked for: no strike
+      uint64_t late_block_copies = 0;     ///< block copies past their grace (block_copy_grace()), struck or not
+      uint64_t strikes = 0;
+      uint64_t disconnects = 0;           ///< peers disconnected for reaching GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES
+    };
+
     fetch_scheduling fetch;
+    withholding_counts withholding;
 
     /// @p in_flight counts the submitted transaction
     void record_submission(uint32_t in_flight);

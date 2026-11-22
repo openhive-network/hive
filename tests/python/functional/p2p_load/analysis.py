@@ -362,6 +362,9 @@ def _loaded_period(run: Run, role: str) -> tuple[float, float] | None:
     return (logged[nums[0]], logged[nums[-1]]) if len(nums) >= 2 else None
 
 
+_WITHHOLDING_COUNTS = ("not_available_answers", "busy_answers", "late_block_copies", "strikes", "disconnects")
+
+
 def _counter_totals(reports: list[dict[str, Any]]) -> dict[str, Any]:
     secs = sum(float(r["seconds"]) for r in reports)
 
@@ -380,6 +383,8 @@ def _counter_totals(reports: list[dict[str, Any]]) -> dict[str, Any]:
     }
     completions = total("handoff", "completions")
     requests = total("transaction_requests", "requests")
+    # binaries that predate the group log none
+    withholding_reports = [r for r in reports if "withholding" in r]
     return {
         "reports": len(reports),
         "seconds": secs,
@@ -414,6 +419,11 @@ def _counter_totals(reports: list[dict[str, Any]]) -> dict[str, Any]:
             "byte_cap_bound": total("transaction_requests", "byte_cap_bound"),
             "byte_cap_bound_pct": per(total("transaction_requests", "byte_cap_bound") * 100, requests),
         },
+        "withholding": (
+            {key: sum(float(r["withholding"][key]) for r in withholding_reports) for key in _WITHHOLDING_COUNTS}
+            if withholding_reports
+            else None
+        ),
     }
 
 
