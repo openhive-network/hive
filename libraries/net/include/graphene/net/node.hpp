@@ -616,7 +616,8 @@ namespace graphene { namespace net {
   };
 
   /**
-   * The strikes a peer holds for answering item_not_available for items it advertised and we asked it for.  Answers
+   * The strikes a peer holds for answering item_not_available for items it advertised and we asked it for, or for
+   * delivering a block we asked it for past its grace (see block_copy_grace()).  Answers
    * within GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC of the last one that counted are no new strike, one strike is
    * forgotten per GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC without a new one, and a delivery clears them all.
    * At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES the peer is disconnected.
@@ -993,6 +994,7 @@ namespace graphene { namespace net {
    * time it was requested.  Counts the transactions among them, so the fetch loop sees at once how much of the
    * peer's transaction window is taken and whether a block is outstanding, and keeps when the peer last delivered
    * a transaction we asked for, which is what an outstanding transaction's timeout is measured from (see timed_out()).
+   * A block request also has a deadline (see block_request_deadline()).
    */
   class requested_items
   {
@@ -1000,8 +1002,11 @@ namespace graphene { namespace net {
     using map_type = std::unordered_map<item_id, fc::time_point, p2p_item_hash>;
     using const_iterator = map_type::const_iterator;
 
-    void insert(const item_id& item, fc::time_point requested);
+    /// @p block_deadline is that of a block request, measured from @p requested
+    void insert(const item_id& item, fc::time_point requested, fc::microseconds block_deadline = fc::microseconds());
     void erase(const_iterator iter);
+    /// the deadline @p item, a block requested and not yet erased, was requested with
+    fc::microseconds block_deadline(const item_id& item) const;
     const_iterator find(const item_id& item) const { return _items.find(item); }
     const_iterator begin() const { return _items.begin(); }
     const_iterator end() const { return _items.end(); }
@@ -1023,6 +1028,7 @@ namespace graphene { namespace net {
 
   private:
     map_type _items;
+    std::unordered_map<item_id, fc::microseconds, p2p_item_hash> _block_deadlines;
     size_t _transactions = 0;
     fc::time_point _last_transaction_delivery;
   };
@@ -1224,7 +1230,7 @@ namespace graphene { namespace net {
   {
     bool deprioritized = false;    ///< peer_connection::is_block_fetching_deprioritized()
     bool can_take_request = false; ///< we may send the peer another request now
-    bool idle = false;             ///< nothing is outstanding with the peer, not even transactions
+    bool idle = false;             ///< peer_connection::idle_block_source()
     bool delivered = false;        ///< peer_connection::delivered_block
   };
 
@@ -1234,10 +1240,28 @@ namespace graphene { namespace net {
    * asked only when no other peer advertised the block: while one did but cannot take a request yet, the
    * block waits for it.  Among the others that can take a request, a peer that delivered us a block before is asked
    * first: one that never did may advertise blocks only to be asked for them and withhold them.  Then an idle one is
-   * asked before one with transactions outstanding, whose replies the peer would send ahead of the block.  The first
+   * asked before a busy one, whose replies to our transaction requests the peer would send ahead of the block; a peer
+   * that doesn't advertise transactions to us counts as busy (see peer_connection::idle_block_source()).  The first
    * one ranked so wins.  The returned index is always that of a candidate that can take a request.
    */
   std::optional<size_t> choose_block_source(const std::vector<block_source_candidate>& candidates);
+
+  /**
+   * The deadline of a request for a block during normal operation when @p earlier_requests requests for it are
+   * outstanding with other peers: GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS for the first, doubled for each later one.
+   * Once every outstanding request is past its deadline, measured from when it was sent, the block is asked of
+   * another advertiser (up to GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK requests)
+   */
+  fc::microseconds block_request_deadline(uint32_t earlier_requests);
+
+  /**
+   * How long after its request, with deadline @p deadline, a peer's copy of a block another peer delivered first may
+   * arrive and still restore the peer's block-fetching priority: GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES deadlines
+   * past the deadline, but no more than half of @p request_timeout (active_ignored_request_timeout), so a copy sent
+   * just before the request would time out restores nothing.  Never less than the deadline: a copy within it is no
+   * withholding
+   */
+  fc::microseconds block_copy_grace(fc::microseconds deadline, fc::microseconds request_timeout);
 
   /// What we know about an item a peer just advertised to us; the peer is recorded as having it in any case
   struct advertised_item_status

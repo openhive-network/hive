@@ -353,7 +353,8 @@ namespace graphene { namespace net
       // whether this peer delivered a block that we pushed on this connection: a proven block source, asked for a
       // block before peers that never delivered one (see choose_block_source())
       bool delivered_block = false;
-      // item_not_available answers to items this peer advertised and we asked it for (see unavailable_item_strikes)
+      // item_not_available answers to items this peer advertised and we asked it for, and blocks it delivered past
+      // their grace (see unavailable_item_strikes)
       graphene::net::unavailable_item_strikes unavailable_item_strikes;
       // "answered as not available" warnings about this peer's requests are logged at most once per
       // GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC; the requests answered so in between are counted in the next one
@@ -411,6 +412,8 @@ namespace graphene { namespace net
       // until when we ask this peer for no transactions: it answered item_not_available for transactions it
       // advertised (see unavailable_item_strikes)
       fc::time_point transaction_fetching_inhibited_until;
+      // when this peer last advertised transactions to us while we were at live sync (see idle_block_source())
+      fc::time_point last_transaction_advertisement_time;
 
       uint32_t last_known_fork_block_number = 0;
 
@@ -500,6 +503,11 @@ namespace graphene { namespace net
 
       bool busy() const;
       bool idle() const;
+      /// Whether the peer ranks as idle when we choose whom to ask for a block (see choose_block_source()): nothing is
+      /// outstanding with it, and it advertised transactions to us within the last GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES
+      /// before @p now.  A peer that advertises only blocks is never asked for transactions, so having nothing
+      /// outstanding says nothing about it, and it would otherwise outrank the relays we keep busy
+      bool idle_block_source(fc::time_point now) const;
       /// Whether the fetch loop may send the peer another request: nothing but transactions is outstanding with it.
       /// Transactions are then requested only as far as received_transaction_size.transactions_to_request() allows
       bool can_take_item_request() const;
@@ -509,12 +517,13 @@ namespace graphene { namespace net
       /// Whether we ask this peer for a block only if no other peer offered it (see choose_block_source()):
       /// it sent us a block copy whose body did not match its header and the block-body-mismatch circuit
       /// breaker kept it connected, or it answered item_not_available for a block it advertised, or kept us
-      /// waiting for one past GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS.  Lasts until restore_block_fetching_priority()
-      /// (a block we pushed, or a late copy of one we accepted already) or, if the peer delivers neither, for the
-      /// breaker's window, so a peer demoted once is not held back forever
+      /// waiting for one past its request's deadline (see block_request_deadline()).  Lasts until
+      /// restore_block_fetching_priority() (a block we pushed, or a copy of one we accepted already that arrived within
+      /// its grace, see block_copy_grace()) or, if the peer delivers neither, for the breaker's window, so a peer
+      /// demoted once is not held back forever
       bool is_block_fetching_deprioritized() const;
       void deprioritize_block_fetching();
-      /// called once the peer delivered a block we accepted, or a copy of one we accepted from another peer
+      /// called once the peer delivered a block we accepted, or a copy of one we accepted from another peer in time
       void restore_block_fetching_priority();
       fc::sha512 get_shared_secret() const;
       /// expires the peer's block inventory and deferred transaction advertisements

@@ -918,6 +918,12 @@ namespace graphene { namespace net
       return !busy();
     }
 
+    bool peer_connection::idle_block_source(fc::time_point now) const
+    {
+      VERIFY_CORRECT_THREAD();
+      return idle() && now - last_transaction_advertisement_time < fc::minutes(GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES);
+    }
+
     bool peer_connection::can_take_item_request() const
     {
       VERIFY_CORRECT_THREAD();

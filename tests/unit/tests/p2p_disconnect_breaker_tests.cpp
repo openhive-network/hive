@@ -6,8 +6,11 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <vector>
 
+using graphene::net::block_copy_grace;
+using graphene::net::block_request_deadline;
 using graphene::net::block_source_candidate;
 using graphene::net::choose_block_source;
 using graphene::net::disconnect_breaker;
@@ -165,6 +168,62 @@ BOOST_AUTO_TEST_CASE( block_source_ranks_delivered_then_idle )
   BOOST_CHECK( choose_block_source( { unproven_busy, unproven_idle, proven_busy } ) == std::optional<size_t>( 2 ) );
   BOOST_CHECK( choose_block_source( { unproven_busy, unproven_idle } ) == std::optional<size_t>( 1 ) );
   BOOST_CHECK( choose_block_source( { unproven_busy } ) == std::optional<size_t>( 0 ) );
+}
+
+/// A peer that advertises only blocks is never asked for transactions, so it has nothing outstanding; it ranks as busy,
+/// so it doesn't outrank a proven relay we keep busy with transaction requests, while an idle relay outranks it
+BOOST_AUTO_TEST_CASE( block_only_advertiser_does_not_outrank_busy_relay )
+{
+  auto block_only = peer_connection::make_shared( nullptr );
+  BOOST_REQUIRE( block_only->idle() );
+  const fc::time_point now = fc::time_point::now();
+  const block_source_candidate proven_block_only{ false, true, block_only->idle_block_source( now ), true };
+  const block_source_candidate proven_busy_relay{ false, true, false, true };
+  const block_source_candidate proven_idle_relay{ false, true, true, true };
+  BOOST_CHECK( choose_block_source( { proven_busy_relay, proven_block_only } ) == std::optional<size_t>( 0 ) );
+  BOOST_CHECK( choose_block_source( { proven_block_only, proven_idle_relay } ) == std::optional<size_t>( 1 ) );
+}
+
+/// A peer ranks as an idle block source only while nothing is outstanding with it and it advertised transactions to
+/// us within the inventory window
+BOOST_AUTO_TEST_CASE( idle_block_source_needs_recent_transaction_advertisements )
+{
+  auto peer = peer_connection::make_shared( nullptr );
+  const fc::time_point now = fc::time_point::now();
+  BOOST_CHECK( !peer->idle_block_source( now ) );
+
+  peer->last_transaction_advertisement_time = now;
+  BOOST_CHECK( peer->idle_block_source( now ) );
+  const fc::microseconds window = fc::minutes( GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES );
+  BOOST_CHECK( peer->idle_block_source( now + window - fc::microseconds( 1 ) ) );
+  BOOST_CHECK( !peer->idle_block_source( now + window ) );
+
+  peer->items_requested_from_peer.insert( graphene::net::item_id( graphene::net::trx_message_type, fc::ripemd160::hash( std::string( "t" ) ) ), now );
+  BOOST_CHECK( !peer->idle_block_source( now ) );
+}
+
+/// A block's first request has 1 s to deliver, each later one twice the one before: three withholders in a row cost
+/// 1 + 2 + 4 s
+BOOST_AUTO_TEST_CASE( block_request_deadlines_double )
+{
+  static_assert( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS == 1000 );
+  static_assert( GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK == 3 );
+  BOOST_CHECK( block_request_deadline( 0 ) == fc::seconds( 1 ) );
+  BOOST_CHECK( block_request_deadline( 1 ) == fc::seconds( 2 ) );
+  BOOST_CHECK( block_request_deadline( 2 ) == fc::seconds( 4 ) );
+}
+
+/// A late copy restores priority up to two deadlines past its deadline, but not in the second half of the request
+/// timeout, and never less than within the deadline
+BOOST_AUTO_TEST_CASE( block_copy_grace_is_bounded_by_the_request_timeout )
+{
+  static_assert( GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES == 2 );
+  const fc::microseconds default_timeout = fc::seconds( 6 );
+  BOOST_CHECK( block_copy_grace( fc::seconds( 1 ), default_timeout ) == fc::seconds( 3 ) );
+  BOOST_CHECK( block_copy_grace( fc::seconds( 2 ), default_timeout ) == fc::seconds( 3 ) );
+  BOOST_CHECK( block_copy_grace( fc::seconds( 4 ), default_timeout ) == fc::seconds( 4 ) );
+  BOOST_CHECK( block_copy_grace( fc::seconds( 1 ), fc::seconds( 20 ) ) == fc::seconds( 3 ) );
+  BOOST_CHECK( block_copy_grace( fc::seconds( 1 ), fc::seconds( 2 ) ) == fc::seconds( 1 ) );
 }
 
 /// Not-available strikes decay: three answers spread over 30 minutes leave the peer short of the limit, three
