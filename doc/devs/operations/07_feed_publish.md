@@ -4,7 +4,7 @@
 
 This is an operation for witnesses. 
 
-The witnesses publish the exchange rate between Hive and HBD. Only the exchange rate published by the top 20 witnesses is used to define the exchange rate.
+The witnesses publish the exchange rate between Hive and HBD. Only the feeds of the witnesses scheduled in the current round (up to 21, see [witness\_parameters.md](../../witness_parameters.md)) that were updated within the last 7 days are used to define the exchange rate.
 
 
 ## 2. Parameters
@@ -32,6 +32,6 @@ You need:
 
 After the operation:
 
-\- the exchange rate is published, if the { publisher } is the top 20 witness, then the {exchange\_rate} is used to define blockchain exchange rate.
+\- the exchange rate is published; it is counted in the hourly median if the { publisher } is among the scheduled witnesses when the median is taken and the feed is less than 7 days old.
 
 \- RC cost is paid by { publisher }.
