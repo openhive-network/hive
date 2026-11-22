@@ -414,6 +414,14 @@ namespace graphene { namespace net
       // until when we ask this peer for no transactions: it answered item_not_available for transactions it
       // advertised (see unavailable_item_strikes)
       fc::time_point transaction_fetching_inhibited_until;
+      // it answered item_busy_message for a transaction we asked it for: we ask it for no more transactions until it
+      // delivers one, as its replies to us are backed up
+      bool transaction_replies_backlogged = false;
+      // what the peer said in its hello: it queues the blocks we ask for ahead of the transaction traffic already
+      // queued to us (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST), and understands item_busy_message
+      // (GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY)
+      bool queues_blocks_first = false;
+      bool understands_item_busy = false;
       // when this peer last advertised transactions to us while we were at live sync (see idle_block_source())
       fc::time_point last_transaction_advertisement_time;
 
@@ -523,8 +531,8 @@ namespace graphene { namespace net
       /// breaker kept it connected, or it answered item_not_available for a block it advertised, or kept us
       /// waiting for one past its request's deadline (see block_request_deadline()).  Lasts until
       /// restore_block_fetching_priority() (a block we pushed, or a copy of one we accepted already that arrived within
-      /// its grace, see block_copy_grace()) or, if the peer delivers neither, for the breaker's window, so a peer
-      /// demoted once is not held back forever
+      /// its grace, see block_copy_grace()) or, if the peer delivers neither, for GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC,
+      /// so a peer demoted once is not held back forever
       bool is_block_fetching_deprioritized() const;
       void deprioritize_block_fetching();
       /// called once the peer delivered a block we accepted, or a copy of one we accepted from another peer in time

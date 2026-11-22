@@ -160,6 +160,12 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   statistics.fetch.transactions_bounded = 4;
   statistics.fetch.scheduling_time = fc::microseconds( 70 );
 
+  statistics.withholding.not_available_answers = 5;
+  statistics.withholding.busy_answers = 6;
+  statistics.withholding.late_block_copies = 2;
+  statistics.withholding.strikes = 3;
+  statistics.withholding.disconnects = 1;
+
   statistics.record_submission( 1 );
   statistics.record_submission( 2 );
   statistics.record_submission( 6 );
@@ -216,6 +222,12 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
                      double( 10 + 4 + limit ) / 3, 0.001 );
   BOOST_CHECK_EQUAL( report_uint( report, "transaction_requests", "byte_cap_bound" ), 1u );
 
+  BOOST_CHECK_EQUAL( report_uint( report, "withholding", "not_available_answers" ), 5u );
+  BOOST_CHECK_EQUAL( report_uint( report, "withholding", "busy_answers" ), 6u );
+  BOOST_CHECK_EQUAL( report_uint( report, "withholding", "late_block_copies" ), 2u );
+  BOOST_CHECK_EQUAL( report_uint( report, "withholding", "strikes" ), 3u );
+  BOOST_CHECK_EQUAL( report_uint( report, "withholding", "disconnects" ), 1u );
+
   // the next period starts empty, from the time of the last report
   const fc::variant_object next = statistics.take_report( start + fc::seconds( 60 ), 0, 0, { 20000, 90000 }, {} );
   BOOST_CHECK_EQUAL( next["seconds"].as_int64(), 30 );
@@ -234,6 +246,8 @@ BOOST_AUTO_TEST_CASE( report_covers_one_period_and_resets_the_counters )
   BOOST_CHECK_EQUAL( report_double( next, "send", "messages_per_write" ), 0.0 );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_requests", "requests" ), 0u );
   BOOST_CHECK_EQUAL( report_uint( next, "transaction_requests", "byte_cap_bound" ), 0u );
+  for( const char* key : { "not_available_answers", "busy_answers", "late_block_copies", "strikes", "disconnects" } )
+    BOOST_CHECK_EQUAL( report_uint( next, "withholding", key ), 0u );
 }
 
 /// The report gives how the period's transaction requests were spread over the active peers, counting those

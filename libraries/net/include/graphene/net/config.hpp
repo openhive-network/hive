@@ -130,23 +130,41 @@
 // the peer's block-fetching priority only if it starts arriving (its first bytes, see
 // message_oriented_connection::get_message_in_progress()) within this many deadlines after the deadline, and never
 // later than half of active_ignored_request_timeout after the request was written (unless that is before the deadline): see
-// block_copy_grace().  A later copy counts as withholding the block (an unavailable item strike).  So a slow link
+// block_copy_grace().  A later copy counts as withholding the block (an unavailable item strike, from a peer that says
+// in its hello that it queues blocks ahead of its transaction traffic, GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST).  So a slow link
 // keeps its standing, but a peer can't withhold a block until just before its request times out and then have
 // its copy reset its standing
 #define GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES                    2
 
-// a peer that answers item_not_available for an item it advertised to us is asked for no transactions,
-// and for blocks only when no other peer has them, for this long; such answers count as one strike per
-// this interval.  At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes with no item delivered in between
-// it is disconnected.  Each strike is forgotten GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC after it was
-// made: a peer in sync is rarely the first to advertise an item, so it rarely delivers one to clear them.
-// An honest peer says so only when an item left its cache or its send queue to us is backed up, so the
-// strikes cost it little; a peer advertising items it doesn't have would otherwise hold requests (and the
-// fetch gate's headroom) for nothing as often as it likes.  A block copy that arrives past its grace
-// (GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES) counts as such an answer
+// a peer that answers item_not_available for an item it advertised to us is asked for no transactions for
+// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC, and for blocks only when no other peer has them for
+// GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC; such answers count as one strike per
+// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC, so a peer demoted for transactions earns at most one strike per
+// demotion.  At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes with no requested item (block or transaction)
+// delivered in between it is disconnected.  Each strike is forgotten GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC
+// after it was made: a peer in sync is rarely the first to advertise an item, so it rarely delivers one to clear them.
+// An honest peer says so only when an item left its cache, so the strikes cost it little; one whose replies to us
+// are backed up says it is busy instead (item_busy_message, to a peer that says in its hello it understands it), which
+// is no strike.  A peer advertising items it doesn't have would otherwise hold requests (and the fetch gate's
+// headroom) for nothing as often as it likes.  A block copy that arrives past its grace
+// (GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES) counts as such an answer, from a peer that queues blocks ahead of
+// transactions (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST) only
 #define GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC                 10
 #define GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES                  3
 #define GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC             600
+
+// how long a peer that kept us waiting for a block (past its deadline, an item_not_available answer, a copy past its
+// grace, or a block whose body didn't match its header while the breaker kept it) is asked for blocks only when no
+// other peer has them (see peer_connection::is_block_fetching_deprioritized()).  It is longer than the transaction
+// demotion (GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC) because it only orders the sources of a block, which costs an
+// honest peer little, while block withholding delays the chain; strikes for blocks are still spaced
+// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC apart, so a demotion spans several of them
+#define GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC                   60
+
+// how often, at most, a node warns that it struck a peer for withholding items or disconnected one for its strikes;
+// the strikes and disconnects in between are counted in the next warning (all of them are counted in the p2p
+// statistics' "withholding" report)
+#define GRAPHENE_NET_WITHHOLDING_WARNING_INTERVAL_SEC              60
 
 // how often, at most, a node warns that it answered a peer's transaction requests as not available
 // because the replies already waiting for that peer's send queue are at their limit; the requests
@@ -479,6 +497,22 @@
  * (GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER).  Older nodes ignore keys they don't know.
  */
 #define GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES        "defers_transaction_replies"
+
+/**
+ * The key of the hello's user_data by which a node says it queues the blocks a peer asks for ahead of the transaction
+ * traffic already queued to it, so a block we ask it for doesn't wait behind its replies to our transaction requests.
+ * A block copy from a peer that doesn't say so is not struck for arriving past its grace (see block_copy_grace()):
+ * on a busy link it can wait behind GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER of replies for seconds.
+ */
+#define GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST               "queues_blocks_first"
+
+/**
+ * The key of the hello's user_data by which a node says it understands item_busy_message: a transaction it asks for
+ * that the peer has but won't queue now, because the replies already waiting for its send queue are at their limit
+ * (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER), is answered so rather than with item_not_available, which
+ * counts as withholding.  Older nodes ignore keys they don't know, and are answered item_not_available as before.
+ */
+#define GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY             "understands_item_busy"
 
 /**
  * A requested transaction times out (and the peer is dropped) once active_ignored_request_timeout_microseconds have

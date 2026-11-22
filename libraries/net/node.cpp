@@ -518,6 +518,11 @@ namespace graphene { namespace net {
       p2p_statistics _statistics;
       fc::future<void> _statistics_report_loop_done;
       fetch_expiry_warning_limiter _fetch_expiry_warnings{fc::seconds(GRAPHENE_NET_GATED_FETCH_EXPIRY_WARNING_INTERVAL_SEC)};
+      // strike and disconnect-by-strikes warnings are logged at most once per GRAPHENE_NET_WITHHOLDING_WARNING_INTERVAL_SEC;
+      // those in between are counted in the next one
+      fc::time_point _last_withholding_warning_time;
+      uint32_t _strikes_since_withholding_warning = 0;
+      uint32_t _strike_disconnects_since_withholding_warning = 0;
 
       /* We have two alternate paths through the schedule_peer_for_deletion code -- one that
        * uses a mutex to prevent one fiber from adding items to the queue while another is deleting
@@ -714,6 +719,7 @@ namespace graphene { namespace net {
 
       void on_item_not_available_message( peer_connection* originating_peer,
                                           const item_not_available_message& item_not_available_message_received );
+      void on_item_busy_message( peer_connection* originating_peer, const item_busy_message& item_busy_message_received );
 
       void on_item_ids_inventory_message( peer_connection* originating_peer,
                                           const item_ids_inventory_message& item_ids_inventory_message_received );
@@ -772,9 +778,10 @@ namespace graphene { namespace net {
       uint32_t highest_block_number_known_for_peer(const peer_connection& peer);
       void restart_sync_if_head_stalled();
       void record_block_delivered_by(peer_connection* peer);
+      void record_requested_delivery(peer_connection* peer);
       void record_unavailable_advertised_item(peer_connection* peer, const item_id& item);
       void record_late_block_copy(peer_connection* peer, const item_id& item);
-      void record_withholding_strike(peer_connection* peer, const item_id& item);
+      void record_withholding_strike(peer_connection* peer, const item_id& item, const char* reason);
       std::vector<peer_connection_ptr> find_idle_peers_to_replace();
       void disconnect_idle_peer(peer_connection* peer);
       void forget_expired_idle_peer_backoffs(fc::time_point now);
@@ -1696,7 +1703,9 @@ namespace graphene { namespace net {
           if (peer->can_take_item_request() && peer->fetch_candidates.size() > 0)
           {
             const bool transaction_fetching_inhibited = peer->is_transaction_fetching_inhibited();
-            if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions())
+            // a busy peer is unblocked by its next delivery, which runs the loop again
+            if (transaction_fetching_inhibited && peer->fetch_candidates.has_transactions() &&
+                peer->transaction_fetching_inhibited_until > iteration_start)
               next_peer_unblocked_time = std::min(peer->transaction_fetching_inhibited_until, next_peer_unblocked_time);
             const size_t window = transaction_fetching_inhibited ? 0 :
               peer->received_transaction_size.transactions_to_request(peer->items_requested_from_peer.transactions());
@@ -3009,6 +3018,9 @@ namespace graphene { namespace net {
       case core_message_type_enum::item_not_available_message_type:
         on_item_not_available_message(originating_peer, received_message.as<item_not_available_message>());
         break;
+      case core_message_type_enum::item_busy_message_type:
+        on_item_busy_message(originating_peer, received_message.as<item_busy_message>());
+        break;
       case core_message_type_enum::item_ids_inventory_message_type:
         on_item_ids_inventory_message(originating_peer, received_message.as<item_ids_inventory_message>());
         break;
@@ -3107,6 +3119,8 @@ namespace graphene { namespace net {
       user_data["chain_id"] = _delegate->get_new_chain_id();
       user_data["last_available_zstd_compression_dictionary_number"] = hive::chain::get_last_available_zstd_compression_dictionary_number();
       user_data[GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES] = true;
+      user_data[GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST] = true;
+      user_data[GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY] = true;
 
       return user_data;
     }
@@ -3136,8 +3150,10 @@ namespace graphene { namespace net {
         originating_peer->last_available_zstd_compression_dictionary_number = user_data["last_available_zstd_compression_dictionary_number"].as<uint8_t>();
       if (user_data.contains("last_known_block_number"))
         originating_peer->last_known_block_number = user_data["last_known_block_number"].as<uint32_t>();
-      originating_peer->received_transaction_size.set_peer_defers_replies(
-        user_data.contains(GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES) && user_data[GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES].as_bool());
+      const auto says = [&](const char* key) { return user_data.contains(key) && user_data[key].as_bool(); };
+      originating_peer->received_transaction_size.set_peer_defers_replies(says(GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES));
+      originating_peer->queues_blocks_first = says(GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST);
+      originating_peer->understands_item_busy = says(GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY);
     }
 
     void node_impl::on_hello_message( peer_connection* originating_peer, const hello_message& hello_message_received )
@@ -4329,14 +4345,19 @@ namespace graphene { namespace net {
         // replies that would take the send queue over its reply budget wait for it to drain rather than close the
         // connection (send_transaction_reply()), so the requester gets every transaction we have, however much
         // larger they are than it expected; only a peer with far more replies (or bytes of them) waiting than any
-        // window is told no
+        // window is told no.  We have those, so a peer that understands it is told we are busy, which it doesn't
+        // count as withholding
         size_t refused = 0;
         for (unsigned i = 0; i < reply_transactions.size() && !connection_is_closing(); ++i)
           if (!reply_transactions[i] || !originating_peer->send_transaction_reply(reply_transactions[i]))
           {
+            const item_id item(trx_message_type, ids_to_answer[i]);
             if (reply_transactions[i])
               ++refused;
-            originating_peer->send_message(item_not_available_message(item_id(trx_message_type, ids_to_answer[i])));
+            if (reply_transactions[i] && originating_peer->understands_item_busy)
+              originating_peer->send_message(item_busy_message(item));
+            else
+              originating_peer->send_message(item_not_available_message(item));
           }
         // a peer that asks for more than it reads gets this answer to every request, so the warning is per interval
         if (refused > 0)
@@ -4346,7 +4367,7 @@ namespace graphene { namespace net {
           if (originating_peer->last_not_available_warning_time == fc::time_point() ||
               now - originating_peer->last_not_available_warning_time >= fc::seconds(GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC))
           {
-            wlog("answered ${refused} requested transactions as not available to peer ${endpoint} since the last such warning (${count} "
+            wlog("answered ${refused} requested transactions as not available (or busy) to peer ${endpoint} since the last such warning (${count} "
                  "in its last request): ${max} replies or ${max_bytes} bytes of them are already waiting for its send queue to drain",
                  ("refused", originating_peer->not_available_answers_since_warning)("count", reply_transactions.size())
                  ("max", GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER)
@@ -4411,6 +4432,29 @@ namespace graphene { namespace net {
       }
 
       dlog("Peer doesn't have an item we're looking for, which is fine because we weren't looking for it");
+    }
+
+    // The peer has the transaction we asked it for, but its replies to us are backed up: no withholding, so it isn't
+    // demoted or struck, and still counts as an advertiser.  The transaction is asked of the next advertiser that can
+    // take a request, and this peer is asked for no more transactions until it delivers one.  A block (which is never
+    // answered so) is taken as not available
+    void node_impl::on_item_busy_message(peer_connection* originating_peer, const item_busy_message& item_busy_message_received)
+    {
+      VERIFY_CORRECT_THREAD();
+      const item_id& requested_item = item_busy_message_received.requested_item;
+      auto item_iter = originating_peer->items_requested_from_peer.find(requested_item);
+      if (requested_item.item_type != trx_message_type || item_iter == originating_peer->items_requested_from_peer.end())
+      {
+        on_item_not_available_message(originating_peer, item_not_available_message(requested_item));
+        return;
+      }
+      ++_statistics.withholding.busy_answers;
+      originating_peer->items_requested_from_peer.erase(item_iter);
+      originating_peer->transaction_replies_backlogged = true;
+      dlog("peer ${peer} is busy: its replies to us are backed up, so transaction ${item} is asked of another advertiser",
+           ("peer", originating_peer->get_remote_endpoint())("item", requested_item.item_hash));
+      if (queue_item_to_fetch_from_advertisers(requested_item))
+        trigger_fetch_items_loop(false);
     }
 
     void node_impl::on_item_ids_inventory_message(peer_connection* originating_peer, const item_ids_inventory_message& item_ids_inventory_message_received)
@@ -4976,8 +5020,17 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       peer->last_useful_data_time = fc::time_point::now();
       peer->delivered_block = true;
-      peer->unavailable_item_strikes.clear();
+      record_requested_delivery(peer);
       _last_block_from_any_peer_time = peer->last_useful_data_time;
+    }
+
+    // The peer delivered an item we asked it for: a transaction, a block we pushed, or a copy of a block that came
+    // within its grace (block_copy_grace()), however we had it already or only stored it on a shorter fork.  It
+    // withholds nothing, so its strikes (unavailable_item_strikes) are cleared
+    void node_impl::record_requested_delivery(peer_connection* peer)
+    {
+      VERIFY_CORRECT_THREAD();
+      peer->unavailable_item_strikes.clear();
     }
 
     // A node can hold a full set of peers that answer keepalives and give it nothing else, and the connect
@@ -5035,9 +5088,10 @@ namespace graphene { namespace net {
       return idle_peers;
     }
 
-    // The peer answered item_not_available for @p item, which it advertised and we asked it for.  It is demoted for
-    // GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC (no transactions are asked of it, and a block only if no other peer
-    // has it), which counts as a strike; at GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes it is disconnected (see
+    // The peer answered item_not_available for @p item, which it advertised and we asked it for.  It is demoted (no
+    // transactions are asked of it for GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC, or a block only if no other peer has
+    // it for GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC), which counts as a strike; a peer that is only busy says so
+    // instead (on_item_busy_message()); at GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes it is disconnected (see
     // unavailable_item_strikes: answers while it is demoted, the rest of one request say, are no new strike, and
     // strikes decay).  Advertising items it doesn't have and answering just before the request timeout would otherwise
     // let a peer hold our requests, and the fetch gate's headroom, for nothing, again and again
@@ -5046,42 +5100,67 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       const fc::time_point now = fc::time_point::now();
       const fc::microseconds demotion = fc::seconds(GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC);
+      ++_statistics.withholding.not_available_answers;
       if (item.item_type == block_message_type)
         peer->deprioritize_block_fetching();
       else
         peer->transaction_fetching_inhibited_until = std::max(peer->transaction_fetching_inhibited_until, now + demotion);
-      record_withholding_strike(peer, item);
+      record_withholding_strike(peer, item, "answered item_not_available");
     }
 
     // The peer delivered @p item, a block we asked it for and have from another peer meanwhile, later after our request
     // than block_copy_grace() allows: it withheld the block, so the copy restores nothing.  It is deprioritized for
     // block fetching and takes a strike, as if it had answered item_not_available.  A peer could otherwise withhold
-    // each block it is asked for until just before its request times out, and then have its copy reset its standing
+    // each block it is asked for until just before its request times out, and then have its copy reset its standing.
+    // A peer that doesn't queue blocks ahead of its transaction traffic (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST) takes
+    // no strike: its copy may have waited behind its replies to our transaction requests.  It still restores nothing,
+    // and its requests still time out as any peer's do
     void node_impl::record_late_block_copy(peer_connection* peer, const item_id& item)
     {
       VERIFY_CORRECT_THREAD();
+      ++_statistics.withholding.late_block_copies;
       peer->deprioritize_block_fetching();
       dlog("peer ${peer} sent block ${item} past its grace", ("peer", peer->get_remote_endpoint())("item", item.item_hash));
-      record_withholding_strike(peer, item);
+      if (peer->queues_blocks_first)
+        record_withholding_strike(peer, item, "sent a block past its grace");
     }
 
-    // Counts a strike against @p peer for withholding @p item, which it advertised (see unavailable_item_strikes):
-    // at GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES it is disconnected
-    void node_impl::record_withholding_strike(peer_connection* peer, const item_id& item)
+    // Counts a strike against @p peer for withholding @p item, which it advertised (see unavailable_item_strikes), as
+    // @p reason says: at GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES it is disconnected.  Every strike is logged at debug
+    // level and counted in the p2p statistics; a warning names one at most once per
+    // GRAPHENE_NET_WITHHOLDING_WARNING_INTERVAL_SEC, with how many strikes and disconnects came since the last one
+    void node_impl::record_withholding_strike(peer_connection* peer, const item_id& item, const char* reason)
     {
       VERIFY_CORRECT_THREAD();
       const fc::time_point now = fc::time_point::now();
       if (!peer->unavailable_item_strikes.record(now))
         return;
+      ++_statistics.withholding.strikes;
+      ++_strikes_since_withholding_warning;
       const uint32_t strikes = peer->unavailable_item_strikes.count(now);
-      if (!peer->unavailable_item_strikes.exhausted(now))
+      const bool disconnecting = peer->unavailable_item_strikes.exhausted(now);
+      if (disconnecting)
       {
-        dlog("peer ${peer} withheld item ${item} it advertised (strike ${strikes} of ${max}): demoted for ${seconds}s",
-             ("peer", peer->get_remote_endpoint())("item", item.item_hash)(strikes)
-             ("max", GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES)("seconds", GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC));
-        return;
+        ++_statistics.withholding.disconnects;
+        ++_strike_disconnects_since_withholding_warning;
       }
-      wlog("disconnecting peer ${peer}: it withheld items it advertised (answered item_not_available, or sent a block past its "
+      dlog("peer ${peer} withheld item ${item} it advertised: it ${reason} (strike ${strikes} of ${max})",
+           ("peer", peer->get_remote_endpoint())("item", item.item_hash)(reason)(strikes)("max", GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES));
+      if (_last_withholding_warning_time == fc::time_point() ||
+          now - _last_withholding_warning_time >= fc::seconds(GRAPHENE_NET_WITHHOLDING_WARNING_INTERVAL_SEC))
+      {
+        wlog("struck peer ${peer} for withholding an item it advertised: it ${reason} (strike ${strikes} of ${max}${disconnected}); "
+             "${all_strikes} strikes and ${disconnects} disconnects for strikes since the last such warning",
+             ("peer", peer->get_remote_endpoint())(reason)(strikes)("max", GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES)
+             ("disconnected", disconnecting ? ", disconnecting it" : "")
+             ("all_strikes", _strikes_since_withholding_warning)("disconnects", _strike_disconnects_since_withholding_warning));
+        _last_withholding_warning_time = now;
+        _strikes_since_withholding_warning = 0;
+        _strike_disconnects_since_withholding_warning = 0;
+      }
+      if (!disconnecting)
+        return;
+      dlog("disconnecting peer ${peer}: it withheld items it advertised (answered item_not_available, or sent a block past its "
            "grace) ${strikes} times, ${seconds}s apart or more, and delivered none we asked for in between",
            ("peer", peer->get_remote_endpoint())(strikes)("seconds", GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC));
       fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You withheld items you advertised ${strikes} times (said you didn't have them, "
@@ -5786,6 +5865,8 @@ namespace graphene { namespace net {
             originating_peer->restore_block_fetching_priority();
             record_block_delivered_by(originating_peer);
           }
+          else if (!past_grace)
+            record_requested_delivery(originating_peer);
           ilog("Successfully pushed block ${block_num} (id:${block_id})", (block_num)(block_id));
           // a block only stored on a shorter fork was not validated, so it isn't recorded as accepted
           // (later copies are still recognized as known through has_item())
@@ -5814,6 +5895,8 @@ namespace graphene { namespace net {
           // a copy past its grace was withheld, however the one we have came
           if (past_grace)
             record_late_block_copy(originating_peer, item_id(block_message_type, block_id));
+          else
+            record_requested_delivery(originating_peer);
           if (!block_has_been_accepted) //if we haven't finished processing this block yet, don't talk to peers about it
             return;
           // the peer answered our request within its grace, only later than another peer: that is no withholding, so a
@@ -6122,10 +6205,12 @@ namespace graphene { namespace net {
         const bool window_had_room = window.transactions_to_request(originating_peer->items_requested_from_peer.transactions()) > 0;
         originating_peer->items_requested_from_peer.erase(iter);
         originating_peer->items_requested_from_peer.record_transaction_delivery(message_receive_time);
-        originating_peer->unavailable_item_strikes.clear();
+        record_requested_delivery(originating_peer);
         originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
         _transaction_bytes_being_validated += full_transaction->get_transaction_size();
-        if (originating_peer->idle())
+        // a busy peer's replies to us are draining
+        const bool backlog_drained = std::exchange(originating_peer->transaction_replies_backlogged, false);
+        if (originating_peer->idle() || backlog_drained)
           trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
         else if (!window_had_room && originating_peer->can_take_item_request() &&
                  window.transactions_to_request(originating_peer->items_requested_from_peer.transactions()) > 0)
@@ -8025,6 +8110,8 @@ namespace graphene { namespace net {
         peer_details["last_useful_data_time"] = peer->last_useful_data_time;
         peer_details["withholding_strikes"] = peer->unavailable_item_strikes.count(fc::time_point::now());
         peer_details["block_fetching_deprioritized"] = peer->is_block_fetching_deprioritized();
+        peer_details["transaction_replies_backlogged"] = peer->transaction_replies_backlogged;
+        peer_details["queues_blocks_first"] = peer->queues_blocks_first;
 
         this_peer_status.info = peer_details;
         statuses.push_back(this_peer_status);
@@ -9243,9 +9330,16 @@ namespace graphene { namespace net {
         ("requests", _requests.transaction_requests)
         ("transactions_per_request", mean(_requests.transactions_requested, _requests.transaction_requests))
         ("byte_cap_bound", _requests.byte_cap_bound)
-        ("per_peer", std::move(spread)));
+        ("per_peer", std::move(spread)))
+      ("withholding", fc::mutable_variant_object()
+        ("not_available_answers", withholding.not_available_answers)
+        ("busy_answers", withholding.busy_answers)
+        ("late_block_copies", withholding.late_block_copies)
+        ("strikes", withholding.strikes)
+        ("disconnects", withholding.disconnects));
 
     fetch = fetch_scheduling();
+    withholding = withholding_counts();
     _handoff = transaction_handoff();
     _sending = send_batching();
     _requests = request_sizing();

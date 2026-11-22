@@ -118,6 +118,7 @@ namespace graphene { namespace net {
   const core_message_type_enum fetch_blockchain_item_ids_message::type       = core_message_type_enum::fetch_blockchain_item_ids_message_type;
   const core_message_type_enum fetch_items_message::type                     = core_message_type_enum::fetch_items_message_type;
   const core_message_type_enum item_not_available_message::type              = core_message_type_enum::item_not_available_message_type;
+  const core_message_type_enum item_busy_message::type                       = core_message_type_enum::item_busy_message_type;
   // Legacy message types (IPv4-only wire format)
   const core_message_type_enum legacy_hello_message::type                    = core_message_type_enum::legacy_hello_message_type;
   const core_message_type_enum legacy_connection_rejected_message::type      = core_message_type_enum::legacy_connection_rejected_message_type;

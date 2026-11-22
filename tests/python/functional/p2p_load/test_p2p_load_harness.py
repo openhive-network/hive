@@ -237,6 +237,13 @@ def _p2p_statistics(logged_at: int, requested: int, examined: int, completions: 
             "transactions_per_request": "60.00000000000000000",
             "byte_cap_bound": 10,
         },
+        "withholding": {
+            "not_available_answers": 4,
+            "busy_answers": 3,
+            "late_block_copies": 2,
+            "strikes": 1,
+            "disconnects": 0,
+        },
     }
     prefix = f"{_log_time(logged_at, 3)} node.cpp:2190                  statistics_report_loop ] "
     return f"{prefix}p2p statistics: {json.dumps(report)}\n"
@@ -356,7 +363,15 @@ def test_report_of_a_finished_run(tmp_path: Path, relay_format: str) -> None:
     assert witness["send"]["bytes_per_write"] == pytest.approx(1000)
     assert witness["transaction_requests"]["transactions_per_request"] == pytest.approx(60)
     assert witness["transaction_requests"]["byte_cap_bound_pct"] == pytest.approx(5)
+    assert witness["withholding"] == {
+        "not_available_answers": 8,
+        "busy_answers": 6,
+        "late_block_copies": 4,
+        "strikes": 2,
+        "disconnects": 0,
+    }
     assert "p2p stats witness" in report.format_summary(summary)
+    assert "2 strikes, 0 disconnects for strikes" in report.format_summary(summary)
 
 
 def test_a_report_names_the_colonies_with_their_own_mix_or_start(tmp_path: Path) -> None:

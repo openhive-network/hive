@@ -110,6 +110,7 @@ namespace graphene { namespace net {
     address_message_type                                = 5020,
     check_firewall_message_type                         = 5021,
     check_firewall_reply_message_type                   = 5022,
+    item_busy_message_type                              = 5023,
     core_message_type_last                              = 5099
   };
 
@@ -233,6 +234,23 @@ namespace graphene { namespace net {
 
     item_not_available_message() {}
     item_not_available_message(const item_id& requested_item) :
+      requested_item(requested_item)
+    {}
+  };
+
+  /**
+   * The answer to a request for a transaction the peer has but won't queue now, because the replies already waiting
+   * for its send queue to us are at their limit: ask again later.  Sent only to a node that says in its hello that it
+   * understands it (GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY); others are answered item_not_available
+   */
+  struct item_busy_message
+  {
+    static const core_message_type_enum type;
+
+    item_id requested_item;
+
+    item_busy_message() {}
+    item_busy_message(const item_id& requested_item) :
       requested_item(requested_item)
     {}
   };
@@ -589,6 +607,7 @@ FC_REFLECT_ENUM( graphene::net::core_message_type_enum,
                  (address_message_type)
                  (check_firewall_message_type)
                  (check_firewall_reply_message_type)
+                 (item_busy_message_type)
                  (core_message_type_last) )
 
 //FC_REFLECT( graphene::net::trx_message, (full_transaction) )        // explicit serialization
@@ -605,6 +624,7 @@ FC_REFLECT( graphene::net::fetch_blockchain_item_ids_message, (item_type)
 FC_REFLECT( graphene::net::fetch_items_message, (item_type)
                                            (items_to_fetch) )
 FC_REFLECT( graphene::net::item_not_available_message, (requested_item) )
+FC_REFLECT( graphene::net::item_busy_message, (requested_item) )
 
 // Legacy messages (IPv4-only wire format)
 FC_REFLECT( graphene::net::legacy_hello_message, (user_agent)
