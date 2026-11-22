@@ -464,6 +464,9 @@ namespace graphene { namespace net {
       std::unordered_set<peer_connection_ptr>                     _terminating_connections;
 
       boost::circular_buffer<item_hash_t> _most_recent_blocks_accepted; // the /n/ most recent blocks we've accepted (currently tuned to the max number of connections)
+      /// of the blocks pushed from a copy we requested during normal operation, the most recent whose copy came past its
+      /// grace (see record_late_block_copy())
+      boost::circular_buffer<item_hash_t> _recent_blocks_accepted_late;
       disconnect_breaker _invalid_block_disconnect_breaker{GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT,
                                                            fc::seconds(GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_WINDOW_SEC)};
       disconnect_breaker _block_body_mismatch_disconnect_breaker{GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_COUNT,
@@ -818,10 +821,20 @@ namespace graphene { namespace net {
       bool stalled_head_resync_due(peer_connection* peer);
       uint32_t highest_block_number_known_for_peer(const peer_connection& peer);
       void restart_sync_if_head_stalled();
+      /// how a block we asked a peer for during normal operation came (see process_block_message())
+      struct requested_block_copy
+      {
+        /// its last bytes arrived later after our request was written than block_copy_grace() allows
+        bool past_grace = false;
+        /// its download held off asking another peer for it (see block_download_holds_rerequest_until())
+        bool held = false;
+        /// transactions requested from the peer were outstanding when we asked for it
+        bool behind_transactions = false;
+      };
       void record_block_delivered_by(peer_connection* peer);
       void record_requested_delivery(peer_connection* peer);
       void record_unavailable_advertised_item(peer_connection* peer, const item_id& item);
-      void record_late_block_copy(peer_connection* peer, const item_id& item);
+      void record_late_block_copy(peer_connection* peer, const item_id& item, const requested_block_copy& copy, bool accepted_copy_late);
       void record_withholding_strike(peer_connection* peer, const item_id& item, const char* reason);
       std::vector<peer_connection_ptr> find_idle_peers_to_replace();
       void disconnect_idle_peer(peer_connection* peer);
@@ -843,12 +856,11 @@ namespace graphene { namespace net {
       void process_backlog_of_sync_blocks();
       void trigger_process_backlog_of_sync_blocks();
       void process_block_during_sync(peer_connection* originating_peer, const std::shared_ptr<full_block_type>& full_block);
-      /// @p past_grace: the peer sent the block later after our request than block_copy_grace() allows
       void process_block_during_normal_operation(peer_connection* originating_peer, const std::shared_ptr<full_block_type>& full_block,
-                                                 bool past_grace);
-      /// @p arrival_started: when the message's first bytes arrived
+                                                 const requested_block_copy& copy);
+      /// @p arrival_completed: when the message's last bytes arrived
       void process_block_message(peer_connection* originating_peer, const message& message_to_process, const message_hash_type& message_hash,
-                                 fc::time_point arrival_started);
+                                 fc::time_point arrival_completed);
       void process_trx_message(peer_connection* originating_peer, const trx_message& transaction_message_to_process);
       void apply_transaction_completions();
       void apply_transaction_completion(const transaction_completion& completion);
@@ -1033,6 +1045,7 @@ namespace graphene { namespace net {
       _recent_block_interval_in_seconds(HIVE_BLOCK_INTERVAL),
       _user_agent_string(user_agent),
       _most_recent_blocks_accepted(GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS),
+      _recent_blocks_accepted_late(GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS),
       _total_number_of_unfetched_items(0),
       _rate_limiter(0, 0),
       _last_reported_number_of_connections(0),
@@ -1915,9 +1928,12 @@ namespace graphene { namespace net {
     // compete for that link.  And a block is asked of no more than GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK
     // peers at a time, so several withholders in a row cost seconds, while a slow peer costs at most two more copies.
     // Deadlines run from when a request was written to the socket, and a block message visibly arriving from the peer
-    // holds them off (block_download_holds_rerequest_until()): on a slow link of ours, another copy would only slow
-    // the one arriving.  The message can't be told apart from another block's before it is complete, so it holds every
-    // block requested from that peer
+    // in time to count as on time (within its block_copy_grace()) holds them off (block_download_holds_rerequest_until()):
+    // on a slow link of ours, another copy would only slow the one arriving.  A copy so held is then judged by when it
+    // completes (see process_block_message()).  The message can't be told apart from another block's before it is
+    // complete, so it holds every block requested from that peer.  A request older than active_ignored_request_timeout
+    // is kept only by a download still arriving (requested_items::timed_out()) and takes no place among the outstanding
+    // ones: requests that would have timed out can't keep the block from being asked of another advertiser
     void node_impl::rerequest_overdue_blocks(fc::time_point now, fc::time_point& next_check)
     {
       VERIFY_CORRECT_THREAD();
@@ -1925,6 +1941,7 @@ namespace graphene { namespace net {
       {
         fc::time_point all_overdue; // when the last of the outstanding requests passes its deadline
         uint32_t outstanding = 0;
+        fc::time_point first_leaves_outstanding = fc::time_point::maximum();
       };
       const fc::microseconds request_timeout(_node_configuration.active_ignored_request_timeout_microseconds);
       std::unordered_map<item_id, block_requests, p2p_item_hash> requested_blocks;
@@ -1936,12 +1953,22 @@ namespace graphene { namespace net {
             if (const item_id& item = item_and_time.first; item.item_type == block_message_type)
             {
               const fc::time_point sent = peer->items_requested_from_peer.block_request_sent(item);
-              fc::time_point overdue = sent + peer->items_requested_from_peer.block_deadline(item);
+              const fc::microseconds deadline = peer->items_requested_from_peer.block_deadline(item);
+              fc::time_point overdue = sent + deadline;
               if (download)
-                overdue = std::max(overdue, block_download_holds_rerequest_until(*download, sent, request_timeout));
+              {
+                const fc::time_point held_until = block_download_holds_rerequest_until(*download, sent, block_copy_grace(deadline, request_timeout));
+                if (now >= overdue && now < held_until)
+                  peer->items_requested_from_peer.record_block_request_held(item);
+                overdue = std::max(overdue, held_until);
+              }
               block_requests& requests = requested_blocks[item];
               requests.all_overdue = std::max(requests.all_overdue, overdue);
-              ++requests.outstanding;
+              if (now - item_and_time.second < request_timeout)
+              {
+                ++requests.outstanding;
+                requests.first_leaves_outstanding = std::min(requests.first_leaves_outstanding, item_and_time.second + request_timeout);
+              }
             }
         }
       const auto& items_by_id = _items_to_fetch.get<item_id_index>();
@@ -1949,7 +1976,10 @@ namespace graphene { namespace net {
       {
         // a request ending (a copy, an answer or a timeout) runs the fetch loop again
         if (requests.outstanding >= GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK)
+        {
+          next_check = std::min(next_check, requests.first_leaves_outstanding);
           continue;
+        }
         if (now < requests.all_overdue)
         {
           next_check = std::min(next_check, requests.all_overdue);
@@ -2291,8 +2321,7 @@ namespace graphene { namespace net {
       if (peer.item_ids_requested_from_peer)
         state.sync_item_ids_requested = peer.item_ids_requested_from_peer->get<1>();
       const message_in_progress* block_download = peer.get_block_message_in_progress();
-      state.ignored_item = peer.items_requested_from_peer.timed_out(now, request_timeout,
-                                                                    block_download ? block_download->last_progress : fc::time_point());
+      state.ignored_item = peer.items_requested_from_peer.timed_out(now, request_timeout, block_download);
       state.send_progress = peer.get_send_progress_time();
       state.sync_idle = peer.we_need_sync_items_from_peer &&
                         peer.ids_of_items_being_processed.empty() && // we're not processing any blocks from this peer right now
@@ -3091,8 +3120,8 @@ namespace graphene { namespace net {
       {
         // the read loop goes on to the next message before the block is processed
         const message_in_progress* in_progress = originating_peer->get_block_message_in_progress();
-        const fc::time_point arrival_started = in_progress ? in_progress->started : fc::time_point::now();
-        fc::async( [=, this]() { process_block_message(originating_peer, received_message, message_hash, arrival_started); }, "process_block_msg");
+        const fc::time_point arrival_completed = in_progress ? in_progress->last_progress : fc::time_point::now();
+        fc::async( [=, this]() { process_block_message(originating_peer, received_message, message_hash, arrival_completed); }, "process_block_msg");
         break;
       }
       case core_message_type_enum::trx_message_type:
@@ -4480,22 +4509,36 @@ namespace graphene { namespace net {
     }
 
     // The peer has the transaction we asked it for, but its replies to us are backed up: no withholding, so it isn't
-    // demoted or struck, and still counts as an advertiser.  The transaction is asked of the next advertiser that can
-    // take a request, and this peer is asked for no more transactions until it delivers one.  A block (which is never
-    // answered so) is taken as not available
+    // struck, and still counts as an advertiser.  The transaction is asked of the next advertiser that can take a
+    // request, and this peer is asked for no more transactions until it delivers one.  Only a peer that defers its
+    // replies (GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES) has replies to us backed up, so from any other, and for a
+    // block (which is never answered so), the answer is taken as not available.  A peer busy for most of the time
+    // (transaction_busy_time) is demoted for transactions as if it had answered not available, but not struck: busy
+    // answers would otherwise let a peer hold a window of our requests until just before they time out, again and
+    // again, for one delivery each time
     void node_impl::on_item_busy_message(peer_connection* originating_peer, const item_busy_message& item_busy_message_received)
     {
       VERIFY_CORRECT_THREAD();
       const item_id& requested_item = item_busy_message_received.requested_item;
       auto item_iter = originating_peer->items_requested_from_peer.find(requested_item);
-      if (requested_item.item_type != trx_message_type || item_iter == originating_peer->items_requested_from_peer.end())
+      if (requested_item.item_type != trx_message_type || item_iter == originating_peer->items_requested_from_peer.end() ||
+          !originating_peer->received_transaction_size.peer_defers_replies())
       {
         on_item_not_available_message(originating_peer, item_not_available_message(requested_item));
         return;
       }
       ++_statistics.withholding.busy_answers;
+      const fc::time_point now = fc::time_point::now();
+      originating_peer->transaction_busy_time.record_busy(item_iter->second, now);
       originating_peer->items_requested_from_peer.erase(item_iter);
       originating_peer->transaction_replies_backlogged = true;
+      if (originating_peer->transaction_busy_time.mostly_busy(now) && originating_peer->transaction_fetching_inhibited_until <= now)
+      {
+        dlog("peer ${peer} was busy for most of the last ${window} s: asking it for no transactions for ${demotion} s",
+             ("peer", originating_peer->get_remote_endpoint())("window", GRAPHENE_NET_TRANSACTION_BUSY_WINDOW_SEC)
+             ("demotion", GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC));
+        originating_peer->transaction_fetching_inhibited_until = now + fc::seconds(GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC);
+      }
       dlog("peer ${peer} is busy: its replies to us are backed up, so transaction ${item} is asked of another advertiser",
            ("peer", originating_peer->get_remote_endpoint())("item", requested_item.item_hash));
       if (queue_item_to_fetch_from_advertisers(requested_item))
@@ -5065,13 +5108,14 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       peer->last_useful_data_time = fc::time_point::now();
       peer->delivered_block = true;
-      record_requested_delivery(peer);
       _last_block_from_any_peer_time = peer->last_useful_data_time;
     }
 
-    // The peer delivered an item we asked it for: a transaction, a block we pushed, or a copy of a block that came
-    // within its grace (block_copy_grace()), however we had it already or only stored it on a shorter fork.  It
-    // withholds nothing, so its strikes (unavailable_item_strikes) are cleared
+    // The peer delivered an item we asked it for and it passed validation: a transaction the chain accepted
+    // (apply_transaction_completion()), or a block we pushed onto the chain we follow, in time if its download held off
+    // asking another peer.  It withholds nothing, so its strikes (unavailable_item_strikes) are cleared.  Receiving an
+    // item doesn't: a peer could otherwise clear its strikes with a fabricated transaction under an id it advertised.
+    // Nor does a copy of a block we have already, or only store on a shorter fork: it gives us nothing
     void node_impl::record_requested_delivery(peer_connection* peer)
     {
       VERIFY_CORRECT_THREAD();
@@ -5153,21 +5197,26 @@ namespace graphene { namespace net {
       record_withholding_strike(peer, item, "answered item_not_available");
     }
 
-    // The peer delivered @p item, a block we asked it for and have from another peer meanwhile, later after our request
-    // than block_copy_grace() allows: it withheld the block, so the copy restores nothing.  It is deprioritized for
-    // block fetching and takes a strike, as if it had answered item_not_available.  A peer could otherwise withhold
-    // each block it is asked for until just before its request times out, and then have its copy reset its standing.
-    // A peer that doesn't queue blocks ahead of its transaction traffic (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST) takes
-    // no strike: its copy may have waited behind its replies to our transaction requests.  It still restores nothing,
-    // and its requests still time out as any peer's do
-    void node_impl::record_late_block_copy(peer_connection* peer, const item_id& item)
+    // The peer completed @p copy of @p item, a block we asked it for, later after our request than block_copy_grace()
+    // allows, and either we have the block from another peer meanwhile or the copy's download held off asking another
+    // peer for it: it withheld the block, so the copy restores nothing.  It is deprioritized for block fetching and
+    // takes a strike, as if it had answered item_not_available.  A peer could otherwise withhold each block it is asked
+    // for until just before its request times out, or stream it to finish then, and have its copy reset its standing.
+    // It takes no strike when the copy we took came past its own grace too (@p accepted_copy_late): our own link was
+    // slow for every copy.  Nor when it doesn't queue blocks ahead of its transaction traffic
+    // (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST) and transactions we asked it for were outstanding when we asked for the
+    // block: the copy may have waited behind its replies to them.  Without such requests nothing of ours was ahead of
+    // the block, whatever its hello says.  It still restores nothing, and its requests still time out as any peer's do
+    void node_impl::record_late_block_copy(peer_connection* peer, const item_id& item, const requested_block_copy& copy,
+                                           bool accepted_copy_late)
     {
       VERIFY_CORRECT_THREAD();
       ++_statistics.withholding.late_block_copies;
       peer->deprioritize_block_fetching();
       dlog("peer ${peer} sent block ${item} past its grace", ("peer", peer->get_remote_endpoint())("item", item.item_hash));
-      if (peer->queues_blocks_first)
-        record_withholding_strike(peer, item, "sent a block past its grace");
+      if (accepted_copy_late || (!peer->queues_blocks_first && copy.behind_transactions))
+        return;
+      record_withholding_strike(peer, item, copy.held ? "streamed a block past its grace" : "sent a block past its grace");
     }
 
     // Counts a strike against @p peer for withholding @p item, which it advertised (see unavailable_item_strikes), as
@@ -5487,6 +5536,7 @@ namespace graphene { namespace net {
           {
             delivering_peer->restore_block_fetching_priority();
             record_block_delivered_by(delivering_peer.get());
+            record_requested_delivery(delivering_peer.get());
           }
       }
       catch (const block_older_than_undo_history& e)
@@ -5965,7 +6015,7 @@ namespace graphene { namespace net {
     }
 
     void node_impl::process_block_during_normal_operation(peer_connection *originating_peer, const std::shared_ptr<full_block_type>& full_block,
-                                                          bool past_grace)
+                                                          const requested_block_copy& copy)
     {
       // we'll probably want to refer to these a lot
       const uint32_t block_num = full_block->get_block_num();
@@ -6018,11 +6068,18 @@ namespace graphene { namespace net {
           // demotion nor makes the peer a source
           if (result != block_handling_result::ignored)
           {
-            originating_peer->restore_block_fetching_priority();
             record_block_delivered_by(originating_peer);
+            if (copy.past_grace)
+              _recent_blocks_accepted_late.push_back(block_id);
+            // a download that held off the other copies and still came late withheld the block as much as a late copy
+            if (copy.held && copy.past_grace)
+              record_late_block_copy(originating_peer, item_id(block_message_type, block_id), copy, false);
+            else
+            {
+              originating_peer->restore_block_fetching_priority();
+              record_requested_delivery(originating_peer);
+            }
           }
-          else if (!past_grace)
-            record_requested_delivery(originating_peer);
           ilog("Successfully pushed block ${block_num} (id:${block_id})", (block_num)(block_id));
           // a block only stored on a shorter fork was not validated, so it isn't recorded as accepted
           // (later copies are still recognized as known through has_item())
@@ -6048,11 +6105,12 @@ namespace graphene { namespace net {
                   ("block_num", block_num)("block_hash", block_id)
                   ("peer", originating_peer->get_remote_endpoint())("id", legacy_block_message_hash));
           dlog("Already received and accepted this block (presumably through sync mechanism), treating it as accepted");
-          // a copy past its grace was withheld, however the one we have came
-          if (past_grace)
-            record_late_block_copy(originating_peer, item_id(block_message_type, block_id));
-          else
-            record_requested_delivery(originating_peer);
+          // a copy past its grace was withheld, however the one we have came; one within it gives us nothing either, so
+          // it restores the peer's priority below but doesn't clear its strikes
+          if (copy.past_grace)
+            record_late_block_copy(originating_peer, item_id(block_message_type, block_id), copy,
+                                   std::find(_recent_blocks_accepted_late.begin(), _recent_blocks_accepted_late.end(), block_id) !=
+                                     _recent_blocks_accepted_late.end());
           if (!block_has_been_accepted) //if we haven't finished processing this block yet, don't talk to peers about it
             return;
           // the peer answered our request within its grace, only later than another peer: that is no withholding, so a
@@ -6060,7 +6118,7 @@ namespace graphene { namespace net {
           // late.  Not for a block only stored on a shorter fork (has_item() knows it, but it isn't recorded as
           // accepted), nor for a peer that sent us a block whose body didn't match its header before: this copy isn't
           // validated
-          if (!past_grace && block_recently_accepted && !originating_peer->block_rejected_while_breaker_tripped)
+          if (!copy.past_grace && block_recently_accepted && !originating_peer->block_rejected_while_breaker_tripped)
             originating_peer->restore_block_fetching_priority();
         }
 
@@ -6206,7 +6264,7 @@ namespace graphene { namespace net {
     void node_impl::process_block_message(peer_connection* originating_peer,
                                           const message& message_to_process,
                                           const message_hash_type& actual_message_hash,
-                                          fc::time_point arrival_started)
+                                          fc::time_point arrival_completed)
     {
       VERIFY_CORRECT_THREAD();
       // keep the peer from being deleted until we're done processing this message
@@ -6304,13 +6362,18 @@ namespace graphene { namespace net {
         auto item_iter = originating_peer->items_requested_from_peer.find(requested_item);
         if (item_iter != originating_peer->items_requested_from_peer.end())
         {
-          const fc::microseconds grace = block_copy_grace(originating_peer->items_requested_from_peer.block_deadline(requested_item),
+          const requested_items& requested = originating_peer->items_requested_from_peer;
+          const fc::microseconds grace = block_copy_grace(requested.block_deadline(requested_item),
                                                           fc::microseconds(_node_configuration.active_ignored_request_timeout_microseconds));
-          // judged by when the copy started arriving after the request left us: how long the copy, or the request in
-          // our send queue, took to cross our own link is not the peer withholding it
-          const bool past_grace = arrival_started - originating_peer->items_requested_from_peer.block_request_sent(requested_item) > grace;
+          // judged by when the copy completed after the request left us (the request's time in our send queue is not
+          // the peer withholding it): a copy that starts in time and then streams slowly is as late as one sent late.
+          // A slow link of ours slows every copy, the one we take as well (see record_late_block_copy())
+          requested_block_copy copy;
+          copy.past_grace = arrival_completed - requested.block_request_sent(requested_item) > grace;
+          copy.held = requested.block_request_held(requested_item);
+          copy.behind_transactions = requested.block_requested_behind_transactions(requested_item);
           originating_peer->items_requested_from_peer.erase(item_iter);
-          process_block_during_normal_operation(originating_peer, full_block, past_grace);
+          process_block_during_normal_operation(originating_peer, full_block, copy);
           if (originating_peer->can_take_item_request())
             trigger_fetch_items_loop(peer_advertised_a_queued_block(originating_peer));
           return;
@@ -6361,7 +6424,7 @@ namespace graphene { namespace net {
         const bool window_had_room = window.transactions_to_request(originating_peer->items_requested_from_peer.transactions()) > 0;
         originating_peer->items_requested_from_peer.erase(iter);
         originating_peer->items_requested_from_peer.record_transaction_delivery(message_receive_time);
-        record_requested_delivery(originating_peer);
+        originating_peer->transaction_busy_time.record_delivery(message_receive_time);
         originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
         _transaction_bytes_being_validated += full_transaction->get_transaction_size();
         // a busy peer's replies to us are draining
@@ -6483,6 +6546,8 @@ namespace graphene { namespace net {
 
       _validated_transaction_size.record(completion.full_transaction->get_transaction_size());
       _transaction_inventory.mark_received(completion.message_hash);
+      if (const peer_connection_ptr originating_peer = get_peer_by_node_id(completion.originating_peer))
+        record_requested_delivery(originating_peer.get());
       for (const peer_connection_ptr& active_peer : _active_connections)
       {
         ASSERT_TASK_NOT_PREEMPTED(); // don't yield while iterating over _active_connections
@@ -8280,6 +8345,7 @@ namespace graphene { namespace net {
         peer_details["withholding_strikes"] = peer->unavailable_item_strikes.count(fc::time_point::now());
         peer_details["block_fetching_deprioritized"] = peer->is_block_fetching_deprioritized();
         peer_details["transaction_replies_backlogged"] = peer->transaction_replies_backlogged;
+        peer_details["transaction_fetching_demoted"] = peer->transaction_fetching_inhibited_until > fc::time_point::now();
         peer_details["queues_blocks_first"] = peer->queues_blocks_first;
 
         this_peer_status.info = peer_details;
@@ -9037,6 +9103,44 @@ namespace graphene { namespace net {
                                                [&](fc::time_point strike) { return strike > forgotten_before; }));
   }
 
+  void transaction_busy_time::advance_window(fc::time_point now)
+  {
+    const fc::microseconds window = fc::seconds(GRAPHENE_NET_TRANSACTION_BUSY_WINDOW_SEC);
+    if (now - _window_start < window)
+      return;
+    _window_start += fc::microseconds(window.count() * ((now - _window_start).count() / window.count()));
+    _busy_in_window = fc::microseconds();
+    if (_busy_since)
+      _busy_since = std::max(*_busy_since, _window_start);
+  }
+
+  void transaction_busy_time::record_busy(fc::time_point requested, fc::time_point now)
+  {
+    if (_window_start == fc::time_point())
+      _window_start = requested;
+    advance_window(now);
+    const fc::time_point since = std::max({requested, _counted_until, _window_start});
+    if (!_busy_since || since < *_busy_since)
+      _busy_since = since;
+  }
+
+  void transaction_busy_time::record_delivery(fc::time_point now)
+  {
+    advance_window(now);
+    if (!_busy_since)
+      return;
+    _busy_in_window += now - *_busy_since;
+    _busy_since.reset();
+    _counted_until = now;
+  }
+
+  bool transaction_busy_time::mostly_busy(fc::time_point now)
+  {
+    advance_window(now);
+    const fc::microseconds busy = _busy_in_window + (_busy_since ? now - *_busy_since : fc::microseconds());
+    return 2 * busy.count() > fc::seconds(GRAPHENE_NET_TRANSACTION_BUSY_WINDOW_SEC).count();
+  }
+
   void coalescing_loop_trigger::begin_iteration()
   {
     _iteration_start = fc::time_point::now();
@@ -9198,7 +9302,7 @@ namespace graphene { namespace net {
     if (item.item_type == trx_message_type)
       ++_transactions;
     else
-      _block_requests.emplace(item, block_request{block_deadline, fc::time_point()});
+      _block_requests.emplace(item, block_request{block_deadline, fc::time_point(), _transactions != 0});
   }
 
   void requested_items::erase(const_iterator iter)
@@ -9232,18 +9336,41 @@ namespace graphene { namespace net {
     return requested != _items.end() ? requested->second : fc::time_point();
   }
 
+  bool requested_items::block_requested_behind_transactions(const item_id& item) const
+  {
+    const auto iter = _block_requests.find(item);
+    return iter != _block_requests.end() && iter->second.behind_transactions;
+  }
+
+  void requested_items::record_block_request_held(const item_id& item)
+  {
+    const auto iter = _block_requests.find(item);
+    if (iter != _block_requests.end())
+      iter->second.held = true;
+  }
+
+  bool requested_items::block_request_held(const item_id& item) const
+  {
+    const auto iter = _block_requests.find(item);
+    return iter != _block_requests.end() && iter->second.held;
+  }
+
   std::optional<item_id> requested_items::timed_out(fc::time_point now, fc::microseconds timeout,
-                                                    fc::time_point block_download_progress) const
+                                                    const message_in_progress* block_download) const
   {
     const fc::time_point threshold = now - timeout;
     const bool no_recent_transaction_delivery = _last_transaction_delivery < threshold;
-    const bool no_recent_block_download_progress = block_download_progress < threshold;
+    const fc::microseconds block_ceiling_timeout(timeout.count() * GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING);
+    const bool no_recent_block_download_progress = !block_download || block_download->last_progress < threshold;
+    const fc::time_point block_download_completion = block_download ? projected_block_download_completion(*block_download) : fc::time_point();
     const fc::time_point ceiling = now - fc::microseconds(timeout.count() * GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING);
-    const fc::time_point block_ceiling = now - fc::microseconds(timeout.count() * GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING);
+    const fc::time_point block_ceiling = now - block_ceiling_timeout;
     for (const map_type::value_type& item_and_time : _items)
       if (item_and_time.second < threshold &&
-          (item_and_time.first.item_type != trx_message_type ? no_recent_block_download_progress || item_and_time.second < block_ceiling
-                                                              : no_recent_transaction_delivery || item_and_time.second < ceiling))
+          (item_and_time.first.item_type != trx_message_type
+             ? no_recent_block_download_progress || item_and_time.second < block_ceiling ||
+               block_download_completion > item_and_time.second + block_ceiling_timeout
+             : no_recent_transaction_delivery || item_and_time.second < ceiling))
         return item_and_time.first;
     return std::nullopt;
   }
@@ -9633,14 +9760,17 @@ namespace graphene { namespace net {
     return std::max(deadline, grace);
   }
 
-  fc::time_point block_download_holds_rerequest_until(const message_in_progress& download, fc::time_point sent,
-                                                      fc::microseconds request_timeout)
+  fc::time_point projected_block_download_completion(const message_in_progress& download)
   {
     // bytes_total is at most a message's maximum size and the time a few seconds, so the product fits
     const int64_t elapsed = (download.last_progress - download.started).count();
-    const fc::time_point arrives_at = download.started +
-      fc::microseconds(elapsed * int64_t(download.bytes_total) / int64_t(std::max<uint64_t>(download.bytes_read, 1)));
-    if (arrives_at > sent + request_timeout)
+    return download.started + fc::microseconds(elapsed * int64_t(download.bytes_total) / int64_t(std::max<uint64_t>(download.bytes_read, 1)));
+  }
+
+  fc::time_point block_download_holds_rerequest_until(const message_in_progress& download, fc::time_point sent,
+                                                      fc::microseconds grace)
+  {
+    if (projected_block_download_completion(download) > sent + grace)
       return fc::time_point();
     return download.last_progress + fc::milliseconds(GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS);
   }

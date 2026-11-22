@@ -56,7 +56,10 @@ delegate.
 ```
 
 Blocks are also advertised by id and fetched the same way; a block is asked of an idle, proven advertiser first and
-re-asked of another advertiser when its request passes its deadline (`rerequest_overdue_blocks()`). During sync,
+re-asked of another advertiser when its request passes its deadline (`rerequest_overdue_blocks()`), unless its copy is
+arriving at a rate that completes it within its grace. A copy that completes past its grace is a withholding strike;
+strikes are cleared only by a delivery that passed validation (a transaction the chain accepted, or a block pushed onto
+the chain we follow). During sync,
 `fetch_sync_items_loop` requests ranges of blocks by id from peers ahead of us instead.
 
 ## What is held back, and where
@@ -315,6 +318,7 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 | `GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES` | `3` | strikes | disconnect at this many | reasoned |
 | `GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC` | `600` | s | a strike is forgotten after it | reasoned |
 | `GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC` | `60` | s | demotion pair: blocks | reasoned |
+| `GRAPHENE_NET_TRANSACTION_BUSY_WINDOW_SEC` | `30` | s | a peer busy (item_busy) for more than half of it is demoted for transactions | reasoned |
 | `GRAPHENE_NET_WITHHOLDING_WARNING_INTERVAL_SEC` | `60` | s | log rate | n/a |
 | `GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC` | `60` | s | log rate | n/a |
 
