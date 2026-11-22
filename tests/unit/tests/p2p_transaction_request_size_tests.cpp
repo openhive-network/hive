@@ -331,4 +331,21 @@ BOOST_AUTO_TEST_CASE( requested_items_count_transactions_and_blocks )
   BOOST_CHECK_EQUAL( requested.transactions(), 0u );
 }
 
+/// A block request keeps the deadline it was made with until it is erased; a request made again for a block still
+/// outstanding keeps the first one
+BOOST_AUTO_TEST_CASE( requested_items_keep_block_deadlines )
+{
+  requested_items requested;
+  const item_id block( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "1" ) ) );
+  const fc::time_point now = fc::time_point::now();
+
+  requested.insert( block, now, fc::seconds( 2 ) );
+  requested.insert( block, now, fc::seconds( 4 ) );
+  BOOST_CHECK( requested.block_deadline( block ) == fc::seconds( 2 ) );
+  requested.erase( requested.find( block ) );
+  BOOST_CHECK( requested.block_deadline( block ) == fc::microseconds() );
+  requested.insert( block, now, fc::seconds( 1 ) );
+  BOOST_CHECK( requested.block_deadline( block ) == fc::seconds( 1 ) );
+}
+
 BOOST_AUTO_TEST_SUITE_END()
