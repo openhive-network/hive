@@ -578,13 +578,13 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // Liveness: request timeouts, the slow-reader rule, stall recovery, and the disconnect breakers.
 // Owner: node_impl::terminate_inactive_connections_loop() (judge_handshaking_connection(), judge_active_connection()),
-// node_impl::restart_sync_if_head_stalled(), node_impl::find_idle_peers_to_replace()
+// node_impl::restart_sync_if_head_stalled(), node_impl::expand_peers_while_starved()
 //
 // Three rules act when our head has not advanced for 60 s, and don't overlap.  In every pass of
 // terminate_inactive_connections_loop() the breaker override comes first and drops only peers whose blocks were
-// rejected while a breaker held them; idle replacement (off by default) comes last but one and drops peers that
-// delivered no block while another did, with a window that must be longer than the restart's; the sync restart comes
-// last and asks the peers we keep.
+// rejected while a breaker held them; peer expansion (off by default) comes last but one and adds peers when none
+// delivers blocks, with a window that must be longer than the restart's; the sync restart comes last and asks the
+// peers we keep.
 // ---------------------------------------------------------------------------------------------------------------------
 
 /**
@@ -678,35 +678,36 @@
 // Basis: reasoned.
 #define GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC                       60
 
-// stall rule 3, idle replacement: default node_configuration::idle_peer_disconnect_timeout: a peer that delivered us
-// no block that we pushed for this long while our head is behind and another peer delivered blocks (asking us
-// for blocks or advertising them doesn't count), is disconnected so its slot goes to another candidate, and may not take a
-// slot again, inbound or outbound, for as long.  Longer than GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC,
-// so restarting sync with the peers we have is tried first.  0 disables it, and it is off by
-// default: live checks of the feature found it problematic, and it stays an operator opt-in; 180 is the value to set
-// to enable it.
+// stall rule 3, peer expansion: default node_configuration::peer_expansion_timeout: once our head has been behind
+// (GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC) for this long with no peer delivering us a block that we pushed, the node
+// dials up to GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS peers past the connections it holds, for as long.  Nobody is
+// disconnected for it unless a peer taken up meanwhile delivers a block; then the peers we had that delivered none are
+// closed down to the desired number.  If none does, the peers taken up that delivered nothing are closed and the ones
+// we had are kept.  The next expansion comes no sooner than this long after one ends.  Longer than
+// GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC, so restarting sync with the peers we have is tried first.  0 disables it, and
+// it is off by default until a live check shows it costs no node an honest peer; 90 is the value to set to enable it.
 // Basis: unvalidated (off by default).
-#define GRAPHENE_NET_DEFAULT_IDLE_PEER_DISCONNECT_TIMEOUT_SEC      0
+#define GRAPHENE_NET_DEFAULT_PEER_EXPANSION_TIMEOUT_SEC            0
 
-// idle peers are only replaced while our head block is older than this (the gap at which the
-// chain plugin leaves live sync): a node in sync gets its blocks, and most of its peers never
-// deliver or advertise one first, so their silence says nothing about them
+// how many connections past those it holds (and past desired_number_of_connections) a peer expansion dials at most;
+// maximum_number_of_connections and the per-host limit still hold
+// Basis: reasoned.
+#define GRAPHENE_NET_PEER_EXPANSION_EXTRA_CONNECTIONS              4
+
+// a peer expansion starts only while our head block is older than this, and silent-peer replacement runs only
+// while it is not (the gap at which the chain plugin leaves live sync): a node in sync gets its blocks, and most
+// of its peers never deliver or advertise one first, so their silence says nothing about them
 #define GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC                    60
 
-// replacing idle peers leaves at least this many active connections, idle or not, and at least
-// half of node_configuration::desired_number_of_connections
+// silent-peer replacement leaves at least this many active connections, idle or not, and at least half of
+// node_configuration::desired_number_of_connections
 #define GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST                      2
 
-// idle-peer disconnects logged at warn level per interval; the rest go to the debug log and are
-// counted in the next warning
-#define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNINGS_PER_INTERVAL    10
-#define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNING_INTERVAL_SEC     60
-
 // stall rule 4, silent-peer replacement: default node_configuration::silent_peer_disconnect_timeout: while our head is
-// not behind (the opposite of idle replacement's condition), a peer that for this long relayed us no block and no block
+// not behind (the opposite of peer expansion's condition), a peer that for this long relayed us no block and no block
 // or transaction inventory, and asked us for no block ids and no items, is disconnected if a candidate can take its slot,
 // and may not take a slot again for as long.  A peer syncing from us or downstream of us only asks, so asking counts;
-// keepalives and addresses don't.  It leaves as many peers as idle replacement does (GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST).
+// keepalives and addresses don't.  It leaves GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST peers, or half the desired ones.
 // 0 disables it.
 // Basis: unvalidated.
 #define GRAPHENE_NET_DEFAULT_SILENT_PEER_DISCONNECT_TIMEOUT_SEC    (30 * 60)
