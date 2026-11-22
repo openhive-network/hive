@@ -1514,26 +1514,26 @@ namespace graphene { namespace net {
   /// What the idle-peer sweep knows about one active peer
   struct idle_peer_candidate
   {
-    /// peer_connection::last_useful_data_time, or since when our head is behind if that is later
+    /// when the peer last gave us what the sweep counts (an exchange of items, a delivered block); earlier the longer idle
     fc::time_point last_useful_data_time;
-    bool exempt = false; ///< sync blocks we asked it for are still pending (asking us for blocks exempts nobody)
+    bool exempt = false; ///< never picked
   };
 
-  /// The node-wide state the idle-peer sweep judges peers in; it runs only while our head is behind
+  /// The node-wide state the idle-peer sweep judges peers in
   struct idle_peer_sweep
   {
     fc::time_point now;
-    fc::microseconds window;  ///< idle_peer_disconnect_timeout; 0 replaces nobody
+    fc::microseconds window;  ///< how long a peer may give nothing; 0 picks nobody
     size_t kept_at_least = 0; ///< active connections, idle or not, left after the sweep at least
-    bool block_source_seen = false; ///< within the window a peer delivered us a block that we pushed; a claimed head doesn't count
   };
 
   /**
    * Which of @p peers (their indices) to disconnect as idle, the longest idle first.  A peer is idle when it is not
-   * exempt and delivered us no block for longer than the window.  Nobody is idle unless some peer delivered us a block
-   * within the window (on a halted chain nobody has anything new, and nobody is replaced), and no more are picked than
-   * leave sweep.kept_at_least of all @p peers.  The silent-peer sweep of a node in sync picks its peers with it too,
-   * passing peer_connection::last_item_exchange_time as last_useful_data_time and the silent window.
+   * exempt and gave us nothing for longer than the window, and no more are picked than leave sweep.kept_at_least of
+   * all @p peers.  The silent-peer sweep of a node in sync passes peer_connection::last_item_exchange_time as
+   * last_useful_data_time; ending a peer expansion passes the last block each peer delivered (none for a peer that
+   * delivered none), and exempts the peers it doesn't close: those taken up for it once one of them delivered, the
+   * peers we had otherwise.
    */
   std::vector<size_t> select_idle_peers_to_disconnect(const std::vector<idle_peer_candidate>& peers,
                                                       const idle_peer_sweep& sweep);

@@ -348,7 +348,7 @@ namespace graphene { namespace net
       fc::time_point last_stalled_head_resync_time;
       // when this peer last delivered a block that we pushed (not one stored unvalidated on a shorter fork); when it
       // became active if it hasn't yet.  Requests and advertisements cost a peer nothing, so they don't count.  A peer
-      // idle for idle_peer_disconnect_timeout while it should have contributed is replaced
+      // we had that delivered none while a peer expansion found one that does is replaced
       fc::time_point last_useful_data_time;
       // when this peer last relayed us a block or block or transaction inventory, or asked us for block ids or items;
       // when it became active if it hasn't yet.  Keepalives and addresses don't count.  A peer that exchanged nothing
