@@ -109,17 +109,30 @@ report counts the times the cap was reached and for how long (`handoff.limit_wai
    7. sync stalled: we need sync blocks from the peer and nothing from it is processed, requested or queued
 4. **Closing connections** that didn't close within `PEER_DISCONNECT_TIMEOUT`, and terminated ones that didn't finish
    within `FAILED_TERMINATE_TIMEOUT_SECONDS`.
-5. **Idle replacement** (stall rule 3, off by default) and then the **sync restart** (stall rule 2), after the
-   disconnects above.
+5. **Idle replacement** (stall rule 3, off by default, only while our head is behind), **silent-peer replacement**
+   (stall rule 4, only while our head is not behind) and then the **sync restart** (stall rule 2), after the
+   disconnects above. Silent-peer replacement drops a peer that for `silent_peer_disconnect_timeout` (30 min) relayed
+   us no block and no block or transaction inventory and asked us for no block ids and no items, only while a
+   candidate can take its slot and never below the idle floor (`IDLE_PEERS_KEPT_AT_LEAST`, or half the desired
+   connections); keepalives and addresses don't count, requests do, so a peer syncing from us or downstream of us is
+   kept. Like an idle one, a replaced silent peer may not take a slot again for one window.
 
 Other disconnects happen where the cause is seen, not in this loop: the send queue passing its 1 MiB limit closes
 the connection at once; withholding strikes (`MAX_UNAVAILABLE_ITEM_STRIKES`), invalid blocks and blocks whose body
 doesn't match their header (each behind its breaker), unrequested items, oversized inventory or requests, and the
 per-host limit at hello.
 
-The three stall rules share a 60 s interval but don't overlap: the breaker override only drops peers flagged by the
-breaker; the sync restart only asks the peers we keep; idle replacement only runs when enabled, with a window that
-must be longer than the restart's so the restart is tried first.
+The first three stall rules share a 60 s interval but don't overlap: the breaker override only drops peers flagged by
+the breaker; the sync restart only asks the peers we keep; idle replacement only runs when enabled, with a window that
+must be longer than the restart's so the restart is tried first. Silent-peer replacement and idle replacement split on
+the same 60 s head age (`IDLE_PEERS_HEAD_BEHIND_SEC`), so at most one of them applies at a time.
+
+The connect loop doesn't dial an address whose node is connected: the node id that answers our hello at each address
+we dial is remembered (for as many addresses as the peer database holds), and while that node is connected, active or
+handshaking, over another address, the address is skipped. So a node reachable over IPv4 and IPv6 is dialed at its
+other address at most once while it stays connected, instead of every `peer_connection_retry_timeout` (an
+already_connected rejection is no failure and grows no backoff); once its connection is gone the address is dialed as
+before.
 
 ## Idle replacement and the per-host cap
 
@@ -162,6 +175,7 @@ host and must exempt the proxy's address or set the cap to 0.
 | - | `peer_connection_retry_timeout` | 30 | s | redial backoff base |
 | - | `peer_inactivity_timeout` | 5 | s | handshake inactivity |
 | - | `idle_peer_disconnect_timeout` | 0 (off) | s | idle replacement window |
+| - | `silent_peer_disconnect_timeout` | 1800 | s | silent-peer replacement window; 0 = off |
 | - | `active_ignored_request_timeout_microseconds` | 6,000,000 | us | request timeout |
 | `p2p-transaction-flush-delay-us` | `transaction_flush_delay_microseconds` | 1000 | us | how long transaction traffic waits to share a write |
 | `p2p-fetch-items-minimum-interval-us` | `fetch_items_minimum_interval_microseconds` | 5000 | us | minimum time between transaction-triggered fetch passes |
@@ -174,7 +188,8 @@ host and must exempt the proxy's address or set the cap to 0.
 | `max-mempool-size` (chain) | - | chain default | bytes | the fetch gate closes above a third of it |
 
 `node_config.json` in the p2p data directory saves the whole configuration of the last run and is read at start,
-before `p2p-parameters`; `idle_peer_disconnect_timeout` and `relax_per_host_limit` saved there are ignored.
+before `p2p-parameters`; `idle_peer_disconnect_timeout`, `silent_peer_disconnect_timeout` and `relax_per_host_limit`
+saved there are ignored.
 
 ## Pending measurement: the flush delay
 
@@ -215,7 +230,7 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 | `GRAPHENE_NET_DEFAULT_DESIRED_CONNECTIONS` | `20` | connections | default desired_number_of_connections | inherited/reasoned |
 | `GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS` | `200` | connections | default maximum_number_of_connections | inherited/reasoned |
 | `GRAPHENE_NET_DEFAULT_PEER_CONNECTION_RETRY_TIME` | `30` | s | default peer_connection_retry_timeout | inherited/reasoned |
-| `GRAPHENE_NET_MAX_PEERDB_SIZE` | `1000` | records | peer database size | inherited/reasoned |
+| `GRAPHENE_NET_MAX_PEERDB_SIZE` | `1000` | records | peer database size; also bounds the node ids remembered per dialed address | inherited/reasoned |
 | `GRAPHENE_NET_FETCH_UPDATED_PEER_LISTS_INTERVAL_MINUTES` | `15` | min | address request interval | inherited/reasoned |
 | `GRAPHENE_NET_FIREWALL_CHECK_MESSAGE_INTERVAL_MINUTES` | `5` | min | firewall check interval | inherited/reasoned |
 | `GRAPHENE_NET_PORT_WAIT_DELAY_SECONDS` | `5` | s | wait for a busy listen port | inherited/reasoned |
@@ -324,6 +339,7 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 | `GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST` | `2` | connections | idle replacement floor | inherited/reasoned |
 | `GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNINGS_PER_INTERVAL` | `10` | warnings | log rate | n/a |
 | `GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNING_INTERVAL_SEC` | `60` | s | log rate | n/a |
+| `GRAPHENE_NET_DEFAULT_SILENT_PEER_DISCONNECT_TIMEOUT_SEC` | `(30 * 60)` | s | stall rule 4: default silent_peer_disconnect_timeout | unvalidated |
 
 #### Caches
 

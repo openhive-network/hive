@@ -540,7 +540,9 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
      "May be given more than once. Added to host_limit_exempt_subnets in p2p-parameters, which lists loopback by default.")
     ("p2p-parameters", bpo::value<string>(), ("P2P network parameters. idle_peer_disconnect_timeout is the seconds an active peer may deliver no block while "
      "this node is behind and another peer delivers blocks, before it is replaced and kept out for as long; 0 disables replacing "
-     "idle peers, the default (180 enables it). (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
+     "idle peers, the default (180 enables it). silent_peer_disconnect_timeout is the seconds an active peer may relay no block "
+     "or inventory and ask for nothing while this node is not behind, before it is replaced if a candidate can take its slot; "
+     "0 disables it. (Default: " + fc::json::to_string(graphene::net::node_configuration()) + " )").c_str() )
     ;
   cli.add_options()
     ("p2p-force-validate", bpo::bool_switch()->default_value(false), "Force validation of all transactions." )
