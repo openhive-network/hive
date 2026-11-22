@@ -419,6 +419,8 @@ namespace graphene { namespace net
       // it answered item_busy_message for a transaction we asked it for: we ask it for no more transactions until it
       // delivers one, as its replies to us are backed up
       bool transaction_replies_backlogged = false;
+      // how long it kept transactions we asked for before answering busy, recently (see transaction_busy_time)
+      graphene::net::transaction_busy_time transaction_busy_time;
       // what the peer said in its hello: it queues the blocks we ask for ahead of the transaction traffic already
       // queued to us (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST), and understands item_busy_message
       // (GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY)
@@ -564,6 +566,8 @@ namespace graphene { namespace net
       /// appends the message's bytes to messages_to_write and returns true, or logs and returns false if it cannot be built
       bool build_queued_message(queued_message& message_to_build, size_t queue_position,
                                 std::vector<message_to_write>& messages_to_write, std::deque<message>& built_messages);
+      /// the block requests among the first @p written_count messages of @p batch were written to the socket just now
+      void record_block_requests_written(const std::vector<std::unique_ptr<queued_message>>& batch, size_t written_count);
       void accept_connection_task();
       void connect_to_task(const fc::ip::endpoint& remote_endpoint);
     };

@@ -475,16 +475,26 @@ namespace graphene { namespace net
         {
           _write_in_progress = true;
           BOOST_SCOPE_EXIT(this_) { this_->_write_in_progress = false; } BOOST_SCOPE_EXIT_END
-          _message_connection.send_messages(messages_to_send);
-          if (!messages_to_send.empty())
+          // the messages up to the last block request go out in a write of their own, so a block request counts as
+          // written when its own bytes are, not when a peer that reads slowly took the rest of the batch.  A message
+          // that wasn't built (the batch ended before it) is the last one, and isn't sent
+          size_t block_requests_end = 0;
+          for (size_t i = 0; i < messages_to_send.size(); ++i)
+            if (batch[i]->is_block_request)
+              block_requests_end = i + 1;
+          if (block_requests_end != 0 && block_requests_end < messages_to_send.size())
           {
-            const fc::time_point written = fc::time_point::now();
-            // a message that wasn't built (the batch ended before it) is the last one, and wasn't written
-            for (size_t i = 0; i < messages_to_send.size(); ++i)
-              if (batch[i]->is_block_request)
-                items_requested_from_peer.record_block_requests_written(batch[i]->enqueue_time, written);
-            _node->on_messages_written(messages_to_send.size(), batch_size);
+            _message_connection.send_messages(std::vector<message_to_write>(messages_to_send.begin(), messages_to_send.begin() + block_requests_end));
+            record_block_requests_written(batch, block_requests_end);
+            _message_connection.send_messages(std::vector<message_to_write>(messages_to_send.begin() + block_requests_end, messages_to_send.end()));
           }
+          else
+          {
+            _message_connection.send_messages(messages_to_send);
+            record_block_requests_written(batch, block_requests_end);
+          }
+          if (!messages_to_send.empty())
+            _node->on_messages_written(messages_to_send.size(), batch_size);
         }
         catch (const fc::canceled_exception&)
         {
@@ -517,6 +527,14 @@ namespace graphene { namespace net
           sent_message->transmission_finish_time = transmission_finish_time;
       }
       //dlog("leaving peer_connection::send_queued_messages_task() due to queue exhaustion");
+    }
+
+    void peer_connection::record_block_requests_written(const std::vector<std::unique_ptr<queued_message>>& batch, size_t written_count)
+    {
+      const fc::time_point written = fc::time_point::now();
+      for (size_t i = 0; i < written_count; ++i)
+        if (batch[i]->is_block_request)
+          items_requested_from_peer.record_block_requests_written(batch[i]->enqueue_time, written);
     }
 
     bool peer_connection::build_queued_message(queued_message& message_to_build, size_t queue_position,
