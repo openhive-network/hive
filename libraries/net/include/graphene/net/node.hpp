@@ -1521,7 +1521,8 @@ namespace graphene { namespace net {
    * Which of @p peers (their indices) to disconnect as idle, the longest idle first.  A peer is idle when it is not
    * exempt and delivered us no block for longer than the window.  Nobody is idle unless some peer delivered us a block
    * within the window (on a halted chain nobody has anything new, and nobody is replaced), and no more are picked than
-   * leave sweep.kept_at_least of all @p peers.
+   * leave sweep.kept_at_least of all @p peers.  The silent-peer sweep of a node in sync picks its peers with it too,
+   * passing peer_connection::last_item_exchange_time as last_useful_data_time and the silent window.
    */
   std::vector<size_t> select_idle_peers_to_disconnect(const std::vector<idle_peer_candidate>& peers,
                                                       const idle_peer_sweep& sweep);

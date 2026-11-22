@@ -707,6 +707,15 @@
 #define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNINGS_PER_INTERVAL    10
 #define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNING_INTERVAL_SEC     60
 
+// stall rule 4, silent-peer replacement: default node_configuration::silent_peer_disconnect_timeout: while our head is
+// not behind (the opposite of idle replacement's condition), a peer that for this long relayed us no block and no block
+// or transaction inventory, and asked us for no block ids and no items, is disconnected if a candidate can take its slot,
+// and may not take a slot again for as long.  A peer syncing from us or downstream of us only asks, so asking counts;
+// keepalives and addresses don't.  It leaves as many peers as idle replacement does (GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST).
+// 0 disables it.
+// Basis: unvalidated.
+#define GRAPHENE_NET_DEFAULT_SILENT_PEER_DISCONNECT_TIMEOUT_SEC    (30 * 60)
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Caches, monitoring and logging.  Owner: node_impl (message cache, statistics_report_loop(), bandwidth_monitor_loop())
 // ---------------------------------------------------------------------------------------------------------------------
