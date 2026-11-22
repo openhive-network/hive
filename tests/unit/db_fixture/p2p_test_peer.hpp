@@ -75,6 +75,12 @@ struct hello_options
   /// user_data.defers_transaction_replies (GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES); left out when false, as by
   /// a node that queues each reply at once
   bool defers_transaction_replies = false;
+  /// user_data.queues_blocks_first (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST); left out when false, as by a node that
+  /// queues blocks behind the transaction traffic already queued
+  bool queues_blocks_first = false;
+  /// user_data.understands_item_busy (GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY); left out when false, as by a node that
+  /// is told item_not_available instead
+  bool understands_item_busy = false;
   /// 0 says the peer doesn't listen; when it listens (test_peer::listen()) its listening port is used instead
   uint16_t inbound_port = 0;
   /// the local port of the connection when empty
@@ -602,6 +608,10 @@ private:
       user_data[ "last_available_zstd_compression_dictionary_number" ] = *_hello.last_available_zstd_compression_dictionary_number;
     if( _hello.defers_transaction_replies )
       user_data[ GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES ] = true;
+    if( _hello.queues_blocks_first )
+      user_data[ GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST ] = true;
+    if( _hello.understands_item_busy )
+      user_data[ GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY ] = true;
 
     const fc::ip::endpoint local_endpoint = *_connection->get_local_endpoint();
     const uint16_t outbound_port = _hello.outbound_port ? *_hello.outbound_port : local_endpoint.port();
