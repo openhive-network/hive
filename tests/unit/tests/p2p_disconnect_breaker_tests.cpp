@@ -12,6 +12,7 @@ using graphene::net::block_source_candidate;
 using graphene::net::choose_block_source;
 using graphene::net::disconnect_breaker;
 using graphene::net::peer_connection;
+using graphene::net::unavailable_item_strikes;
 
 namespace {
 
@@ -150,6 +151,63 @@ BOOST_AUTO_TEST_CASE( block_source_prefers_peer_that_delivered_a_block )
   // a proven peer that can't take a request now doesn't hold the block back from one that can
   BOOST_CHECK( choose_block_source( { proven_blocked, unproven_idle } ) == std::optional<size_t>( 1 ) );
   BOOST_CHECK( choose_block_source( { proven_deprioritized, unproven_idle } ) == std::optional<size_t>( 1 ) );
+}
+
+/// The ranking in full: delivered and idle, delivered with transactions outstanding, never delivered and idle, never
+/// delivered with transactions outstanding, whichever order they come in
+BOOST_AUTO_TEST_CASE( block_source_ranks_delivered_then_idle )
+{
+  const block_source_candidate proven_idle{ false, true, true, true };
+  const block_source_candidate proven_busy{ false, true, false, true };
+  const block_source_candidate unproven_idle{ false, true, true, false };
+  const block_source_candidate unproven_busy{ false, true, false, false };
+  BOOST_CHECK( choose_block_source( { unproven_busy, unproven_idle, proven_busy, proven_idle } ) == std::optional<size_t>( 3 ) );
+  BOOST_CHECK( choose_block_source( { unproven_busy, unproven_idle, proven_busy } ) == std::optional<size_t>( 2 ) );
+  BOOST_CHECK( choose_block_source( { unproven_busy, unproven_idle } ) == std::optional<size_t>( 1 ) );
+  BOOST_CHECK( choose_block_source( { unproven_busy } ) == std::optional<size_t>( 0 ) );
+}
+
+/// Not-available strikes decay: three answers spread over 30 minutes leave the peer short of the limit, three
+/// within a minute reach it
+BOOST_AUTO_TEST_CASE( unavailable_item_strikes_decay )
+{
+  static_assert( GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES == 3 );
+  unavailable_item_strikes spread;
+  for( int minute : { 0, 15, 30 } )
+  {
+    BOOST_CHECK( spread.record( start + fc::minutes( minute ) ) );
+    BOOST_CHECK( !spread.exhausted() );
+  }
+
+  unavailable_item_strikes close;
+  BOOST_CHECK( close.record( start ) );
+  BOOST_CHECK( close.record( start + fc::seconds( 25 ) ) );
+  BOOST_CHECK( !close.exhausted() );
+  BOOST_CHECK( close.record( start + fc::seconds( 50 ) ) );
+  BOOST_CHECK( close.exhausted() );
+}
+
+/// Answers within a demotion of the strike they follow are no new strike; one strike is forgotten per decay interval
+/// without a new one, and a delivery clears them all
+BOOST_AUTO_TEST_CASE( unavailable_item_strikes_counting )
+{
+  const fc::microseconds demotion = fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC );
+  const fc::microseconds decay = fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC );
+  unavailable_item_strikes strikes;
+  BOOST_CHECK( strikes.record( start ) );
+  BOOST_CHECK( !strikes.record( start + demotion - fc::microseconds( 1 ) ) );
+  BOOST_CHECK_EQUAL( strikes.count(), 1u );
+  BOOST_CHECK( strikes.record( start + demotion ) );
+  BOOST_CHECK_EQUAL( strikes.count(), 2u );
+  // one interval later: one forgotten, one new
+  BOOST_CHECK( strikes.record( start + demotion + decay ) );
+  BOOST_CHECK_EQUAL( strikes.count(), 2u );
+  // two intervals later: both forgotten
+  BOOST_CHECK( strikes.record( start + demotion + fc::seconds( GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC * 3 ) ) );
+  BOOST_CHECK_EQUAL( strikes.count(), 1u );
+
+  strikes.clear();
+  BOOST_CHECK_EQUAL( strikes.count(), 0u );
 }
 
 /// A peer kept despite a body mismatch is deprioritized until it delivers a block we accept.

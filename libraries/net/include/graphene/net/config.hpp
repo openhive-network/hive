@@ -114,18 +114,24 @@
 // a block we asked a peer for during normal operation and haven't received after this long is asked
 // of another peer that advertised it too, and the peer that kept us waiting is asked for blocks only
 // when no other peer has them (see peer_connection::is_block_fetching_deprioritized()).  Its request
-// stays outstanding, so it may still deliver, and is judged by active_ignored_request_timeout as before.
-// A block is propagated in well under a second, so a peer that withholds one costs us about this long
+// stays outstanding, so it may still deliver, and is judged by active_ignored_request_timeout as before;
+// a copy it delivers late restores its priority.  A block is asked of one other peer so at most once:
+// while two requests for it are outstanding we wait for either copy or a request timeout, so a large
+// block on a slow link is not downloaded again every second.  A block is propagated in well under a
+// second, so a peer that withholds one costs us about this long
 #define GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS                    1000
 
 // a peer that answers item_not_available for an item it advertised to us is asked for no transactions,
 // and for blocks only when no other peer has them, for this long; such answers count as one strike per
 // this interval.  At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes with no item delivered in between
-// it is disconnected.  An honest peer says so only when an item left its cache or its send queue to us is
-// backed up, so the strikes cost it little; a peer advertising items it doesn't have would otherwise hold
-// requests (and the fetch gate's headroom) for nothing as often as it likes
+// it is disconnected.  One strike is forgotten per GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC without a
+// new one: a peer in sync is rarely the first to advertise an item, so it rarely delivers one to clear them.
+// An honest peer says so only when an item left its cache or its send queue to us is backed up, so the
+// strikes cost it little; a peer advertising items it doesn't have would otherwise hold requests (and the
+// fetch gate's headroom) for nothing as often as it likes
 #define GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC                 10
 #define GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES                  3
+#define GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC             600
 
 // how often, at most, a node warns that it answered a peer's transaction requests as not available
 // because the replies already waiting for that peer's send queue are at their limit; the requests

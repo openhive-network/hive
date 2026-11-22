@@ -616,6 +616,27 @@ namespace graphene { namespace net {
   };
 
   /**
+   * The strikes a peer holds for answering item_not_available for items it advertised and we asked it for.  Answers
+   * within GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC of the last one that counted are no new strike, one strike is
+   * forgotten per GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC without a new one, and a delivery clears them all.
+   * At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES the peer is disconnected.
+   */
+  class unavailable_item_strikes
+  {
+  public:
+    /// Records an answer at @p now; returns whether it was a new strike
+    bool record(fc::time_point now);
+    /// the peer delivered an item we asked it for
+    void clear();
+    uint32_t count() const { return _count; }
+    bool exhausted() const { return _count >= GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES; }
+
+  private:
+    uint32_t _count = 0;
+    fc::time_point _last_strike_time;
+  };
+
+  /**
    * Wakes a loop that is triggered by events, letting the triggers that arrive within a minimum interval
    * of the start of its last iteration share one later iteration.  An urgent trigger never waits.
    * All calls must come from the loop's thread.
@@ -1363,6 +1384,17 @@ namespace graphene { namespace net {
    */
   uint32_t get_relaxed_connections_per_host(const std::vector<uint32_t>& available_per_host, uint32_t maximum_connections_per_host,
                                             uint32_t desired_connections);
+
+  /**
+   * Whether a hello from a peer at @p address that dialed us is accepted over the default per-host limit while it is
+   * relaxed.  @p accepted_addresses are the remote addresses of the connections whose hello we accepted.  Only while
+   * they are fewer than @p desired_connections, and only while the peer's host, counting the hello, holds no more
+   * than its share of them, ceil(@p desired_connections / hosts with accepted connections, the hello's included),
+   * nor more than half of them.  So a node behind a NAT or on a shared /64 can reach us with more than the limit,
+   * but one host dialing a restarted node first doesn't fill its slots.
+   */
+  bool accepts_inbound_hello_over_host_limit(const fc::ip::address& address, const std::vector<fc::ip::address>& accepted_addresses,
+                                             uint32_t desired_connections);
 
   /**
    * Whether an address a peer at @p relayed_from sent us in an address message goes into the peer database.  A public

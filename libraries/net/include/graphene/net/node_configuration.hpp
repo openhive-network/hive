@@ -33,7 +33,8 @@ struct node_configuration
    /**
     * connections held to one host (an IPv4 address or an IPv6 /64) at most, counting active and accepted handshaking ones; 0 = no limit.
     * A hard limit only when set in the advanced node parameters; otherwise, host_limit_relax_delay after start, it gives
-    * way to connections we dial while other hosts can't fill desired_number_of_connections (a value saved in
+    * way to connections we dial while other hosts can't fill desired_number_of_connections, and to peers that dial us
+    * while we hold fewer than that, up to their host's share of it and half of it at most (a value saved in
     * node_config.json doesn't count as set)
     */
    uint32_t maximum_connections_per_host = GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST;
@@ -45,8 +46,8 @@ struct node_configuration
    std::vector<std::string> host_limit_exempt_subnets = { "127.0.0.0/8", "::1/128" };
    /**
     * seconds after the node starts during which maximum_connections_per_host stays hard even when not set; after that
-    * the default limit gives way to connections we dial while other hosts can't fill desired_number_of_connections.
-    * A hello from a peer that dialed us is held to the limit always
+    * the default limit gives way to connections we dial while other hosts can't fill desired_number_of_connections,
+    * and to peers that dial us while we hold fewer than that (see maximum_connections_per_host)
     */
    uint32_t host_limit_relax_delay = GRAPHENE_NET_DEFAULT_HOST_LIMIT_RELAX_DELAY_SEC;
    /** percent of `desired_number_of_connections` the connect loop keeps for each address family that has candidates (at most 50) */
