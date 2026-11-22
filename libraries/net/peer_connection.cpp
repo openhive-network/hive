@@ -477,7 +477,14 @@ namespace graphene { namespace net
           BOOST_SCOPE_EXIT(this_) { this_->_write_in_progress = false; } BOOST_SCOPE_EXIT_END
           _message_connection.send_messages(messages_to_send);
           if (!messages_to_send.empty())
+          {
+            const fc::time_point written = fc::time_point::now();
+            // a message that wasn't built (the batch ended before it) is the last one, and wasn't written
+            for (size_t i = 0; i < messages_to_send.size(); ++i)
+              if (batch[i]->is_block_request)
+                items_requested_from_peer.record_block_requests_written(batch[i]->enqueue_time, written);
             _node->on_messages_written(messages_to_send.size(), batch_size);
+          }
         }
         catch (const fc::canceled_exception&)
         {
@@ -644,6 +651,8 @@ namespace graphene { namespace net
       std::unique_ptr<queued_message> message_to_enqueue(new real_queued_message(message_to_send, message_send_time_field_offset));
       message_to_enqueue->may_wait_for_batch = is_transaction_traffic(message_to_send);
       message_to_enqueue->is_block_traffic = is_block_traffic(message_to_send);
+      message_to_enqueue->is_block_request = message_to_send.msg_type == fetch_items_message_type &&
+                                             lists_items_of_type(message_to_send, block_message_type);
       send_queueable_message(std::move(message_to_enqueue));
     }
 
@@ -887,6 +896,15 @@ namespace graphene { namespace net
     {
       VERIFY_CORRECT_THREAD();
       return _message_connection.get_last_message_received_time();
+    }
+
+    const message_in_progress* peer_connection::get_block_message_in_progress() const
+    {
+      VERIFY_CORRECT_THREAD();
+      const std::optional<message_in_progress>& in_progress = _message_connection.get_message_in_progress();
+      if (in_progress && (in_progress->msg_type == block_message_type || in_progress->msg_type == compressed_block_message_type))
+        return &*in_progress;
+      return nullptr;
     }
 
     fc::optional<fc::ip::endpoint> peer_connection::get_remote_endpoint() const

@@ -25,6 +25,8 @@
 #include <fc/network/tcp_socket.hpp>
 #include <graphene/net/message.hpp>
 
+#include <optional>
+
 namespace graphene { namespace net {
 
   namespace detail { class message_oriented_connection_impl; }
@@ -37,6 +39,22 @@ namespace graphene { namespace net {
   {
     message_header header;
     const char* payload = nullptr;
+  };
+
+  /** the message the read loop is reading: its header has arrived, and the delegate has not finished handling it */
+  struct message_in_progress
+  {
+    uint32_t msg_type = 0;
+    /// the size of the payload, from the header
+    uint32_t size = 0;
+    /// the bytes of the message read so far, header and padding included
+    uint64_t bytes_read = 0;
+    /// the size of the message on the wire, header and padding included
+    uint64_t bytes_total = 0;
+    /// when the read that brought the message's header returned
+    fc::time_point started;
+    /// when a read last brought bytes of the message
+    fc::time_point last_progress;
   };
 
   /** receives incoming messages from a message_oriented_connection object */
@@ -76,6 +94,9 @@ namespace graphene { namespace net {
        fc::time_point get_last_message_received_time() const;
        /// when a write last put bytes into the socket, which a write of many bytes does several times before it completes
        fc::time_point get_last_write_progress_time() const;
+       /** the message being read, if its header has arrived: while its payload arrives, and while the delegate's
+        *  on_message() handles it */
+       const std::optional<message_in_progress>& get_message_in_progress() const;
        fc::time_point get_connection_time() const;
        fc::sha512     get_shared_secret() const;
      private:

@@ -120,13 +120,16 @@
 // GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK requests for a block are outstanding: then we wait for a copy
 // or until one of them ends.  A block is propagated in well under a second, so k peers that withhold one in a
 // row cost us 1 s, 3 s, 7 s for k = 1, 2, 3; with three, the next is asked once the third one's deadline passes
-// (7 s after the first request) or, if later, when the first one's request times out
+// (7 s after the first request) or, if later, when the first one's request times out.  Deadlines run from when a
+// request was written to the socket, and none passes while the block is visibly arriving from a peer asked for it
+// (see block_download_holds_rerequest_until())
 #define GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS                    1000
 #define GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK            3
 
 // a copy of a block that arrives after its request's deadline, once we have the block from another peer, restores
-// the peer's block-fetching priority only if it arrives within this many deadlines after the deadline, and never
-// later than half of active_ignored_request_timeout after the request (unless that is before the deadline): see
+// the peer's block-fetching priority only if it starts arriving (its first bytes, see
+// message_oriented_connection::get_message_in_progress()) within this many deadlines after the deadline, and never
+// later than half of active_ignored_request_timeout after the request was written (unless that is before the deadline): see
 // block_copy_grace().  A later copy counts as withholding the block (an unavailable item strike).  So a slow link
 // keeps its standing, but a peer can't withhold a block until just before its request times out and then have
 // its copy reset its standing
@@ -135,8 +138,8 @@
 // a peer that answers item_not_available for an item it advertised to us is asked for no transactions,
 // and for blocks only when no other peer has them, for this long; such answers count as one strike per
 // this interval.  At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes with no item delivered in between
-// it is disconnected.  One strike is forgotten per GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC without a
-// new one: a peer in sync is rarely the first to advertise an item, so it rarely delivers one to clear them.
+// it is disconnected.  Each strike is forgotten GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC after it was
+// made: a peer in sync is rarely the first to advertise an item, so it rarely delivers one to clear them.
 // An honest peer says so only when an item left its cache or its send queue to us is backed up, so the
 // strikes cost it little; a peer advertising items it doesn't have would otherwise hold requests (and the
 // fetch gate's headroom) for nothing as often as it likes.  A block copy that arrives past its grace
@@ -490,6 +493,15 @@
  * slower link is dropped and what it held is fetched from the others.
  */
 #define GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING 3
+
+/**
+ * A block request during normal operation times out active_ignored_request_timeout after it was made or after bytes
+ * of a block message from the peer last arrived, whichever is later (see requested_items::timed_out()): a large
+ * block downloading over a slow link of ours is not the peer ignoring us.  But a block still outstanding this many
+ * timeouts after we asked for it times out however it arrives (12 s with the default 6 s timeout, four blocks late),
+ * so a peer sending a few bytes at a time can't hold the request forever.
+ */
+#define GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING 2
 
 /**
  * How many bytes of transactions we expect a single transaction request to bring back, at most.
