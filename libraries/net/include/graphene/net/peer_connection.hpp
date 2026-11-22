@@ -353,11 +353,8 @@ namespace graphene { namespace net
       // whether this peer delivered a block that we pushed on this connection: a proven block source, asked for a
       // block before peers that never delivered one (see choose_block_source())
       bool delivered_block = false;
-      // item_not_available answers to items this peer advertised and we asked it for, counted at most once per
-      // GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC (when the last one counted), since it last delivered an item we
-      // asked for; at GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES it is disconnected
-      uint32_t unavailable_item_strikes = 0;
-      fc::time_point last_unavailable_item_strike_time;
+      // item_not_available answers to items this peer advertised and we asked it for (see unavailable_item_strikes)
+      graphene::net::unavailable_item_strikes unavailable_item_strikes;
       // "answered as not available" warnings about this peer's requests are logged at most once per
       // GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC; the requests answered so in between are counted in the next one
       fc::time_point last_not_available_warning_time;
@@ -513,11 +510,11 @@ namespace graphene { namespace net
       /// it sent us a block copy whose body did not match its header and the block-body-mismatch circuit
       /// breaker kept it connected, or it answered item_not_available for a block it advertised, or kept us
       /// waiting for one past GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS.  Lasts until restore_block_fetching_priority()
-      /// or, if the peer delivers no block we accept, for the breaker's window, so a peer demoted once is not held
-      /// back forever
+      /// (a block we pushed, or a late copy of one we accepted already) or, if the peer delivers neither, for the
+      /// breaker's window, so a peer demoted once is not held back forever
       bool is_block_fetching_deprioritized() const;
       void deprioritize_block_fetching();
-      /// called once the peer delivered a block we accepted: its copies match their headers again
+      /// called once the peer delivered a block we accepted, or a copy of one we accepted from another peer
       void restore_block_fetching_priority();
       fc::sha512 get_shared_secret() const;
       /// expires the peer's block inventory and deferred transaction advertisements

@@ -2636,6 +2636,88 @@ BOOST_AUTO_TEST_CASE( withholding_block_advertisers_test )
   } );
 }
 
+/// A peer that delivers a block late, after the node asked another advertiser for it at
+/// GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS (1 s), is not withholding it: its late copy restores its priority. With a
+/// third peer holding a block request (so the node would wait for it rather than ask a deprioritized peer), the slow
+/// peer is asked for the next block it advertises at once, not when the third one's request is a second old
+BOOST_AUTO_TEST_CASE( late_block_copy_keeps_priority_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 9 );
+  const fc::microseconds lateness = fc::milliseconds( 1500 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    const auto id = [&]( uint32_t num ) { return item_hash_t( chain[ num - 1 ]->get_block_id() ); };
+    auto slow = connect_live_peer( "slow peer", chain );
+    slow->advertise( block_message_type, { id( 6 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 6 ), "head is " << get_block_num() );
+
+    auto prompt = connect_live_peer( "prompt peer", chain );
+    slow->answer_after( fetch_items_message_type, lateness );
+    slow->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *slow, id( 7 ) ) != 0; }, reply_timeout ) );
+    prompt->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 7 ), "head is " << get_block_num() );
+    BOOST_REQUIRE_EQUAL( times_requested( *prompt, id( 7 ) ), 1u );
+    // the slow peer's copy arrives half a second after the node asked the prompt one
+    fc::usleep( first_request_time( *slow, id( 7 ) ) + lateness + fc::milliseconds( 500 ) - fc::time_point::now() );
+
+    // it has none of the blocks, so it withholds block 9
+    auto holding = make_peer( "peer holding a block request" );
+    connect_active( *holding );
+    const item_hash_t withheld = id( 9 );
+    holding->advertise( block_message_type, { withheld } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *holding, withheld ) != 0; }, reply_timeout ) );
+    holding->advertise( block_message_type, { id( 8 ) } );
+    slow->advertise( block_message_type, { id( 8 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *slow, id( 8 ) ) != 0; }, reply_timeout ) );
+    const fc::microseconds asked_after = first_request_time( *slow, id( 8 ) ) - first_request_time( *holding, withheld );
+    BOOST_CHECK_MESSAGE( asked_after < fc::milliseconds( GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS - 200 ),
+                         "the slow peer was asked " << asked_after.count() / 1000 << " ms after the holding peer" );
+    BOOST_CHECK_EQUAL( times_requested( *holding, id( 8 ) ), 0u );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 8 ), "head is " << get_block_num() );
+    require_kept( *slow );
+  } );
+}
+
+/// A block that takes a slow peer about 3 s to deliver (a large block on a slow link) is asked of one other advertiser
+/// once, at GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS, not again every second: with that one not delivering either, the
+/// node waits for either copy. The other advertisers are never asked
+BOOST_AUTO_TEST_CASE( slow_block_rerequested_once_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 7 );
+  const fc::microseconds transfer_time = fc::seconds( 3 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    const auto id = [&]( uint32_t num ) { return item_hash_t( chain[ num - 1 ]->get_block_id() ); };
+    auto slow = connect_live_peer( "slow peer", chain );
+    slow->advertise( block_message_type, { id( 6 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 6 ), "head is " << get_block_num() );
+
+    std::vector< std::unique_ptr< test_peer > > others;
+    for( int i = 0; i < 3; ++i )
+    {
+      others.push_back( make_peer( "other advertiser " + std::to_string( i ) ) );
+      connect_active( *others.back() );
+    }
+    slow->answer_after( fetch_items_message_type, transfer_time );
+    slow->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *slow, id( 7 ) ) != 0; }, reply_timeout ) );
+    for( const auto& other : others )
+      other->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 7 ), "head is " << get_block_num() );
+    size_t rerequests = 0;
+    for( const auto& other : others )
+      rerequests += times_requested( *other, id( 7 ) );
+    BOOST_CHECK_EQUAL( rerequests, 1u );
+    BOOST_CHECK_EQUAL( times_requested( *slow, id( 7 ) ), 1u );
+    BOOST_CHECK_GE( ( fc::time_point::now() - first_request_time( *slow, id( 7 ) ) ).count(), transfer_time.count() );
+  } );
+}
+
 /// Connection limit (category 2): with maximum_number_of_connections connections, the next peer's hello is
 /// rejected with not_accepting_connections
 BOOST_AUTO_TEST_CASE( connection_limit_test )
@@ -2778,10 +2860,10 @@ BOOST_AUTO_TEST_CASE( per_host_rejection_backs_off_test )
   } );
 }
 
-/// Left at its default, the per-host limit (2) gives way only to peers the node dials: a peer dialing it is held to the
-/// limit, also once the relax delay is over (0 here) and while the node holds fewer than its desired connections (3).
-/// With loopback not exempt, the third peer from 127.0.0.1 is rejected with too_many_connections_from_host, so one host
-/// dialing a restarted node first can't fill its slots
+/// Left at its default, the per-host limit (2) gives way to a peer dialing the node only up to half its desired
+/// connections from one host: with a desired 3, none, also once the relax delay is over (0 here) and while the node
+/// holds fewer than its desired connections. With loopback not exempt, the third peer from 127.0.0.1 is rejected with
+/// too_many_connections_from_host, so one host dialing a restarted node first can't fill its slots
 BOOST_AUTO_TEST_CASE( default_per_host_limit_holds_for_hellos_test )
 {
   start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[],)"
@@ -2802,12 +2884,47 @@ BOOST_AUTO_TEST_CASE( default_per_host_limit_holds_for_hellos_test )
   } );
 }
 
-/// A per-host limit set with p2p-max-connections-per-host is a hard limit: in the setup above, the third peer from
-/// 127.0.0.1 is rejected although the node holds fewer than its desired connections. (One set in p2p-parameters is
-/// one too, see hello_over_per_host_limit_rejected_test.)
+/// Left at its default, the per-host limit (2) gives way to peers dialing the node while it holds fewer than its desired
+/// connections (8), up to their host's share of them (all 8 with one host) and half of them: nodes behind a NAT or on
+/// a shared /64 reach it past the limit. So the third peer from 127.0.0.1 is accepted. Once 5 peers from 127.0.0.2
+/// (exempt, so not limited) make up the desired 8, the fourth from 127.0.0.1 is rejected, though its host would still
+/// be within its share (4 of 8 on 2 hosts) and half
+BOOST_AUTO_TEST_CASE( default_per_host_limit_relaxed_for_hellos_test )
+{
+  start_node( R"("desired_number_of_connections":8,"maximum_number_of_connections":12,"host_limit_exempt_subnets":["127.0.0.2"],)"
+              R"("host_limit_relax_delay":0)" );
+  run( [&]()
+  {
+    std::vector< std::unique_ptr< test_peer > > peers;
+    for( int i = 0; i < 3; ++i )
+    {
+      peers.push_back( make_peer( "peer " + std::to_string( i ) + " on the host" ) );
+      connect_active( *peers.back() );
+    }
+    std::vector< std::unique_ptr< test_peer > > others;
+    for( int i = 0; i < 5; ++i )
+    {
+      others.push_back( make_peer( "peer " + std::to_string( i ) + " on the exempt host" ) );
+      others.back()->connect( node_endpoint(), "127.0.0.2" );
+      BOOST_REQUIRE_MESSAGE( others.back()->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ), "the node did not take up the peer" );
+    }
+    auto fourth = make_peer( "fourth on the host" );
+    fourth->connect( node_endpoint() );
+    require_rejected( *fourth, rejection_reason_code::too_many_connections_from_host );
+    for( const auto& peer : peers )
+      require_kept( *peer );
+    BOOST_CHECK_EQUAL( number_of_connections(), 8u );
+  } );
+}
+
+/// A per-host limit set with p2p-max-connections-per-host is a hard limit: in the setup of
+/// default_per_host_limit_relaxed_for_hellos_test, the third peer from 127.0.0.1 is rejected although the node holds
+/// fewer than its desired connections and the host is under its share. (One set in p2p-parameters is one too, see
+/// hello_over_per_host_limit_rejected_test.)
 BOOST_AUTO_TEST_CASE( explicit_per_host_limit_not_relaxed_test )
 {
-  start_node( R"("desired_number_of_connections":3,"maximum_number_of_connections":5,"host_limit_exempt_subnets":[])", false,
+  start_node( R"("desired_number_of_connections":8,"maximum_number_of_connections":12,"host_limit_exempt_subnets":[],)"
+              R"("host_limit_relax_delay":0)", false,
               { config_line_t( { "p2p-max-connections-per-host", { "2" } } ) } );
   run( [&]()
   {

@@ -1841,24 +1841,34 @@ namespace graphene { namespace net {
 
     // A peer that withholds a block it advertised (it was asked because it was idle, or proven, when the block came)
     // would otherwise delay it until active_ignored_request_timeout ends its connection, and then the next such peer
-    // could do the same
+    // could do the same.  A block outstanding with two peers is not asked of a third: a large block on a slow link
+    // takes seconds to arrive, and asking for it every second would only have the copies compete for that link.  So
+    // one re-request is all a block gets until one of the requests ends (with a copy, an answer or a timeout)
     void node_impl::rerequest_overdue_blocks(fc::time_point now, fc::time_point& next_check)
     {
       VERIFY_CORRECT_THREAD();
       const fc::microseconds timeout = fc::milliseconds(GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS);
-      // each block requested, with when it was last requested from any peer
-      std::unordered_map<item_id, fc::time_point, p2p_item_hash> last_requested;
+      struct block_requests
+      {
+        fc::time_point last_requested; // from any peer
+        uint32_t outstanding = 0;
+      };
+      std::unordered_map<item_id, block_requests, p2p_item_hash> requested_blocks;
       for (const peer_connection_ptr& peer : _active_connections)
         if (peer->items_requested_from_peer.blocks() != 0)
           for (const auto& [item, requested] : peer->items_requested_from_peer)
             if (item.item_type == block_message_type)
             {
-              fc::time_point& last = last_requested[item];
-              last = std::max(last, requested);
+              block_requests& requests = requested_blocks[item];
+              requests.last_requested = std::max(requests.last_requested, requested);
+              ++requests.outstanding;
             }
       const auto& items_by_id = _items_to_fetch.get<item_id_index>();
-      for (const auto& [item, requested] : last_requested)
+      for (const auto& [item, requests] : requested_blocks)
       {
+        const fc::time_point requested = requests.last_requested;
+        if (requests.outstanding > 1)
+          continue;
         if (now - requested < timeout)
         {
           next_check = std::min(next_check, requested + timeout);
@@ -2557,8 +2567,8 @@ namespace graphene { namespace net {
         return "too many inbound connections are handshaking";
       if (_node_configuration.maximum_connections_per_host == 0 || is_in_any_subnet(address, _host_limit_exempt_subnets))
         return nullptr;
-      // a host at the per-host limit gets one at a time, which hears the limit in the rejection of its hello (the
-      // limit gives way to connections we dial only, so for an inbound one it is always hard)
+      // a host at the per-host limit gets one at a time, which hears the limit in the rejection of its hello or is
+      // let past it there (accept_hello_over_host_limit())
       const bool host_at_hard_limit =
         exceeds_connections_per_host(address, get_connection_addresses(true), _node_configuration.maximum_connections_per_host);
       if (exceeds_connections_per_host(address, handshaking_addresses,
@@ -2662,8 +2672,8 @@ namespace graphene { namespace net {
     // The default per-host limit spreads connections over hosts while other hosts can fill the slots, and gives way
     // when none can: with candidates on few hosts (a testnet, a private network) it would leave the node short of
     // connections without saying why.  Not right after start, while the connect loop knows few hosts yet: the first
-    // one it reaches would take most of the slots.  And only for connections we dial (see accept_hello_over_host_limit()).
-    // A limit the operator set is kept whatever it costs
+    // one it reaches would take most of the slots.  For peers that dial us it gives way less (see
+    // accept_hello_over_host_limit()).  A limit the operator set is kept whatever it costs
     bool node_impl::is_host_limit_relaxed() const
     {
       return !_maximum_connections_per_host_set && _node_configuration.maximum_connections_per_host != 0 &&
@@ -2728,18 +2738,22 @@ namespace graphene { namespace net {
       disconnect_from_peer(over_limit.get(), "I'm making room for a peer on another host than yours");
     }
 
-    // Whether a hello over the per-host limit is accepted all the same: on a connection the connect loop dialed past
-    // the limit, while the limit is relaxed and we hold fewer than the desired number of connections (counting those
-    // whose hello we accepted, as the limit does).  The connect loop picked it one step at a time already
-    // (select_connection_candidates).  A peer that dials us is held to the limit: one host dialing us first, right
-    // after a restart say, would otherwise fill the slots, and the connect loop would then dial nobody
+    // Whether a hello over the per-host limit is accepted all the same, while the limit is relaxed and we hold fewer
+    // than the desired number of connections (counting those whose hello we accepted, as the limit does).  On a
+    // connection the connect loop dialed past the limit, it picked it one step at a time already
+    // (select_connection_candidates).  A peer that dials us gets no more than its host's share of the desired
+    // connections, and half of them at most (accepts_inbound_hello_over_host_limit()): nodes behind a NAT or on a
+    // shared /64 reach us past the limit, but one host dialing us first, right after a restart say, doesn't fill the
+    // slots so that the connect loop would then dial nobody
     bool node_impl::accept_hello_over_host_limit(const peer_connection* peer, const fc::ip::address& address)
     {
       VERIFY_CORRECT_THREAD();
-      if (!is_host_limit_relaxed() || peer->direction != peer_connection_direction::outbound)
+      if (!is_host_limit_relaxed())
         return false;
       std::vector<fc::ip::address> addresses = get_connection_addresses(true, peer);
-      if (addresses.size() >= _node_configuration.desired_number_of_connections)
+      if (peer->direction == peer_connection_direction::outbound
+            ? addresses.size() >= _node_configuration.desired_number_of_connections
+            : !accepts_inbound_hello_over_host_limit(address, addresses, _node_configuration.desired_number_of_connections))
         return false;
       addresses.push_back(address);
       log_host_limit_relaxed(addresses);
@@ -4916,7 +4930,7 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       peer->last_useful_data_time = fc::time_point::now();
       peer->delivered_block = true;
-      peer->unavailable_item_strikes = 0;
+      peer->unavailable_item_strikes.clear();
       _last_block_from_any_peer_time = peer->last_useful_data_time;
     }
 
@@ -4977,10 +4991,10 @@ namespace graphene { namespace net {
 
     // The peer answered item_not_available for @p item, which it advertised and we asked it for.  It is demoted for
     // GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC (no transactions are asked of it, and a block only if no other peer
-    // has it), which counts as a strike; at GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes with no item delivered in
-    // between it is disconnected.  Answers that arrive while it is demoted (the rest of one request, say) are no new
-    // strike.  Advertising items it doesn't have and answering just before the request timeout would otherwise let a
-    // peer hold our requests, and the fetch gate's headroom, for nothing, again and again
+    // has it), which counts as a strike; at GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes it is disconnected (see
+    // unavailable_item_strikes: answers while it is demoted, the rest of one request say, are no new strike, and
+    // strikes decay).  Advertising items it doesn't have and answering just before the request timeout would otherwise
+    // let a peer hold our requests, and the fetch gate's headroom, for nothing, again and again
     void node_impl::record_unavailable_advertised_item(peer_connection* peer, const item_id& item)
     {
       VERIFY_CORRECT_THREAD();
@@ -4990,21 +5004,21 @@ namespace graphene { namespace net {
         peer->deprioritize_block_fetching();
       else
         peer->transaction_fetching_inhibited_until = std::max(peer->transaction_fetching_inhibited_until, now + demotion);
-      if (peer->last_unavailable_item_strike_time != fc::time_point() && now - peer->last_unavailable_item_strike_time < demotion)
+      if (!peer->unavailable_item_strikes.record(now))
         return;
-      peer->last_unavailable_item_strike_time = now;
-      if (++peer->unavailable_item_strikes < GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES)
+      const uint32_t strikes = peer->unavailable_item_strikes.count();
+      if (!peer->unavailable_item_strikes.exhausted())
       {
         dlog("peer ${peer} doesn't have item ${item} it advertised (strike ${strikes} of ${max}): demoted for ${seconds}s",
-             ("peer", peer->get_remote_endpoint())("item", item.item_hash)("strikes", peer->unavailable_item_strikes)
+             ("peer", peer->get_remote_endpoint())("item", item.item_hash)(strikes)
              ("max", GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES)("seconds", GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC));
         return;
       }
       wlog("disconnecting peer ${peer}: it answered item_not_available for items it advertised ${strikes} times, ${seconds}s apart "
            "or more, and delivered none we asked for in between",
-           ("peer", peer->get_remote_endpoint())("strikes", peer->unavailable_item_strikes)("seconds", GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC));
+           ("peer", peer->get_remote_endpoint())(strikes)("seconds", GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC));
       fc::exception detailed_error(FC_LOG_MESSAGE(warn, "You said you didn't have items you advertised ${strikes} times and delivered none in between",
-                                                  ("strikes", peer->unavailable_item_strikes)));
+                                                  (strikes)));
       disconnect_from_peer(peer, "You keep advertising items you don't have", true, detailed_error);
     }
 
@@ -5164,13 +5178,14 @@ namespace graphene { namespace net {
         refresh_cached_chain_state();
 
         client_accepted_block = true;
-        // as in process_block_during_normal_operation(): the delivering peer's copy matched its header
+        // as in process_block_during_normal_operation(): the delivering peer's copy matched its header, but a block
+        // only stored on a shorter fork was not validated, so it says nothing about the peer
         if (const peer_connection_ptr delivering_peer = item.delivering_peer.lock())
-        {
-          delivering_peer->restore_block_fetching_priority();
           if (result != block_handling_result::ignored)
+          {
+            delivering_peer->restore_block_fetching_priority();
             record_block_delivered_by(delivering_peer.get());
-        }
+          }
       }
       catch (const block_older_than_undo_history& e)
       {
@@ -5679,8 +5694,8 @@ namespace graphene { namespace net {
         // 2026-07-09 forensics recorded nodes re-pushing blocks they had accepted less than a
         // minute earlier after exactly such a miss.  Fall back to asking the chain itself --
         // one fork-db/block-log lookup per delivered block is trivial next to a push
-        bool block_has_been_accepted = std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), block_id) != _most_recent_blocks_accepted.end() ||
-                                       _delegate->has_item(item_id(block_message_type, block_id));
+        const bool block_recently_accepted = std::find(_most_recent_blocks_accepted.begin(), _most_recent_blocks_accepted.end(), block_id) != _most_recent_blocks_accepted.end();
+        bool block_has_been_accepted = block_recently_accepted || _delegate->has_item(item_id(block_message_type, block_id));
         if (!block_has_been_accepted &&
             _message_ids_currently_being_processed.find(block_id) == _message_ids_currently_being_processed.end())
         {
@@ -5695,11 +5710,14 @@ namespace graphene { namespace net {
                   (block_num)(block_id)("peer", originating_peer->get_remote_endpoint())(legacy_block_message_hash));
           const block_handling_result result = _delegate->handle_block(full_block, false);
           message_validated_time = fc::time_point::now();
-          // the peer's copy matched its header, so its earlier bad copy no longer makes it a source of last resort
-          originating_peer->restore_block_fetching_priority();
-          // a block only stored on a shorter fork is no block we could use: it doesn't make the peer a source
+          // the peer's copy matched its header, so its earlier bad copy no longer makes it a source of last resort.  A
+          // block only stored on a shorter fork was not validated, and is no block we could use: it neither lifts a
+          // demotion nor makes the peer a source
           if (result != block_handling_result::ignored)
+          {
+            originating_peer->restore_block_fetching_priority();
             record_block_delivered_by(originating_peer);
+          }
           ilog("Successfully pushed block ${block_num} (id:${block_id})", (block_num)(block_id));
           // a block only stored on a shorter fork was not validated, so it isn't recorded as accepted
           // (later copies are still recognized as known through has_item())
@@ -5727,6 +5745,12 @@ namespace graphene { namespace net {
           dlog("Already received and accepted this block (presumably through sync mechanism), treating it as accepted");
           if (!block_has_been_accepted) //if we haven't finished processing this block yet, don't talk to peers about it
             return;
+          // the peer answered our request, only later than another peer: that is no withholding, so a slow but good
+          // source is not left out of block fetching for the breaker's window, again each time it is late.  Not for a
+          // block only stored on a shorter fork (has_item() knows it, but it isn't recorded as accepted), nor for a
+          // peer that sent us a block whose body didn't match its header before: this copy isn't validated
+          if (block_recently_accepted && !originating_peer->block_rejected_while_breaker_tripped)
+            originating_peer->restore_block_fetching_priority();
         }
 
         dlog("client validated the block, advertising it to other peers");
@@ -6019,7 +6043,7 @@ namespace graphene { namespace net {
         const bool window_had_room = window.transactions_to_request(originating_peer->items_requested_from_peer.transactions()) > 0;
         originating_peer->items_requested_from_peer.erase(iter);
         originating_peer->items_requested_from_peer.record_transaction_delivery(message_receive_time);
-        originating_peer->unavailable_item_strikes = 0;
+        originating_peer->unavailable_item_strikes.clear();
         originating_peer->received_transaction_size.record(full_transaction->get_transaction_size());
         _transaction_bytes_being_validated += full_transaction->get_transaction_size();
         if (originating_peer->idle())
@@ -8653,6 +8677,25 @@ namespace graphene { namespace net {
     return false;
   }
 
+  bool unavailable_item_strikes::record(fc::time_point now)
+  {
+    if (_last_strike_time != fc::time_point())
+    {
+      if (now - _last_strike_time < fc::seconds(GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC))
+        return false;
+      const int64_t forgotten = (now - _last_strike_time).count() / fc::seconds(GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC).count();
+      _count -= static_cast<uint32_t>(std::min<int64_t>(_count, forgotten));
+    }
+    _last_strike_time = now;
+    ++_count;
+    return true;
+  }
+
+  void unavailable_item_strikes::clear()
+  {
+    _count = 0;
+  }
+
   void coalescing_loop_trigger::begin_iteration()
   {
     _iteration_start = fc::time_point::now();
@@ -9197,6 +9240,22 @@ namespace graphene { namespace net {
     if (preferred_source_exists)
       return best_preferred_available;
     return first_deprioritized_available;
+  }
+
+  bool accepts_inbound_hello_over_host_limit(const fc::ip::address& address, const std::vector<fc::ip::address>& accepted_addresses,
+                                             uint32_t desired_connections)
+  {
+    if (accepted_addresses.size() >= desired_connections)
+      return false;
+    std::vector<fc::ip::address> addresses = accepted_addresses;
+    addresses.push_back(address);
+    const uint32_t hosts = get_connection_spread(addresses).hosts;
+    const uint32_t share = (desired_connections + hosts - 1) / hosts;
+    const fc::ip::address host = connection_host_of(address);
+    const auto on_host = static_cast<uint32_t>(std::count_if(addresses.begin(), addresses.end(), [&](const fc::ip::address& held) {
+      return connection_host_of(held) == host;
+    }));
+    return on_host <= share && on_host <= desired_connections / 2;
   }
 
   advertised_item_fetch_decision decide_advertised_item_fetch(const advertised_item_status& status)

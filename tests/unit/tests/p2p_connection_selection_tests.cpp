@@ -8,6 +8,7 @@
 #include <vector>
 
 using graphene::net::accepts_exchanged_address;
+using graphene::net::accepts_inbound_hello_over_host_limit;
 using graphene::net::address_subnet;
 using graphene::net::connection_candidate;
 using graphene::net::connection_host_of;
@@ -519,6 +520,39 @@ BOOST_AUTO_TEST_CASE( spread_of_connections )
   BOOST_CHECK_EQUAL( spread.hosts, 4u );
   BOOST_CHECK_EQUAL( spread.ipv6, 3u );
   BOOST_CHECK_EQUAL( spread.ipv4, 3u );
+}
+
+/// A hello from a peer that dialed us, over the relaxed default limit: taken while we hold fewer than the desired
+/// connections and its host, counting the hello, holds no more than its share of them, ceil(desired / hosts), nor
+/// more than half of them
+BOOST_AUTO_TEST_CASE( inbound_hello_over_relaxed_limit )
+{
+  const fc::ip::address a = address( "10.0.0.1" );
+  const fc::ip::address b = address( "10.0.0.2" );
+  const fc::ip::address c = address( "10.0.0.3" );
+
+  // one host only: its share is all 8, so the third and the fourth are taken, the fifth is over half
+  BOOST_CHECK( accepts_inbound_hello_over_host_limit( a, { a, a }, 8 ) );
+  BOOST_CHECK( accepts_inbound_hello_over_host_limit( a, { a, a, a }, 8 ) );
+  BOOST_CHECK( !accepts_inbound_hello_over_host_limit( a, { a, a, a, a }, 8 ) );
+
+  // desired met: refused, whatever the host holds
+  BOOST_CHECK( !accepts_inbound_hello_over_host_limit( a, { a, a, a, b, b, b, b, b }, 8 ) );
+  BOOST_CHECK( accepts_inbound_hello_over_host_limit( a, { a, a, a, b, b, b, b }, 8 ) );
+
+  // three hosts: a share of ceil(8 / 3) = 3, so a host with 2 gets a third, one with 3 no fourth
+  BOOST_CHECK( accepts_inbound_hello_over_host_limit( a, { a, a, b, c }, 8 ) );
+  BOOST_CHECK( !accepts_inbound_hello_over_host_limit( a, { a, a, a, b, c }, 8 ) );
+  // four hosts: a share of 2, which the third from a host exceeds
+  BOOST_CHECK( !accepts_inbound_hello_over_host_limit( a, { a, a, b, c, address( "10.0.0.4" ) }, 8 ) );
+
+  // a node desiring 3 takes at most 1 from a host past the limit, so never a third
+  BOOST_CHECK( !accepts_inbound_hello_over_host_limit( a, { a, a }, 3 ) );
+
+  // a host is its IPv6 /64
+  BOOST_CHECK( accepts_inbound_hello_over_host_limit( address( "2001:db8::3" ), { address( "2001:db8::1" ), address( "2001:db8::2" ) }, 8 ) );
+  BOOST_CHECK( !accepts_inbound_hello_over_host_limit( address( "2001:db8::5" ),
+    { address( "2001:db8::1" ), address( "2001:db8::2" ), address( "2001:db8::3" ), address( "2001:db8::4" ) }, 8 ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
