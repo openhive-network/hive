@@ -4711,14 +4711,14 @@ BOOST_AUTO_TEST_CASE( peer_expansion_keeps_peers_on_halted_chain_test )
   } );
 }
 
-/// F5a (T): with no configuration the node never expands: behind, with three peers that deliver it nothing over more
-/// than two desired connections, it doesn't dial a candidate one of them names
-BOOST_AUTO_TEST_CASE( peer_expansion_off_by_default_test )
+/// F5a (T): peer expansion is on by default (90 s), and peer_expansion_timeout 0 disables it: behind, with three peers
+/// that deliver it nothing over more than two desired connections, the node doesn't dial a candidate one of them names
+BOOST_AUTO_TEST_CASE( peer_expansion_disabled_by_zero_test )
 {
-  BOOST_REQUIRE_EQUAL( graphene::net::node_configuration().peer_expansion_timeout, 0u );
+  BOOST_REQUIRE_EQUAL( graphene::net::node_configuration().peer_expansion_timeout, 90u );
   const uint32_t synced = 5;
   const std::vector< block_ptr > chain = generate_chain( synced + 5 );
-  start_node( R"("desired_number_of_connections":2)" );
+  start_node( R"("peer_expansion_timeout":0,"desired_number_of_connections":2)" );
   run( [&]()
   {
     sync_node( chain, synced );
