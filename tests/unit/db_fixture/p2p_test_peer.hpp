@@ -11,6 +11,8 @@
   * raw_connection goes below peer_connection, for cases that have to break the key exchange or the
   * message framing itself.
   *
+  * throttling_relay stands between a test_peer and the node for a slow download link of the node's.
+  *
   * Both live on an fc::thread the test gives them, like a node's connections live on the p2p thread;
   * the test thread calls them and reads what they recorded.
   */
@@ -941,6 +943,112 @@ private:
   fc::time_point _closed_at;
   std::atomic< bool > _closed = false;
   std::atomic< uint64_t > _bytes_received = 0;
+};
+
+/**
+ * A TCP relay between one test_peer and the node, standing in for a slow download link of the node's: once throttle()
+ * is called, what the peer sends reaches the node at most `chunk` bytes per `interval`, steadily, while what the node
+ * sends passes at once. The test_peer connects to listen()'s endpoint; the node sees the connection come from
+ * node_side_endpoint(). Lives on the test peers' thread.
+ */
+class throttling_relay final
+{
+public:
+  throttling_relay( fc::thread& thread, const fc::ip::endpoint& node ) : _thread( thread ), _node( node ) {}
+
+  ~throttling_relay()
+  {
+    _thread.async( [this]()
+    {
+      _server.close();
+      _peer_side.close();
+      _node_side.close();
+      for( fc::future< void >* task : { &_accept_task, &_to_node_task, &_to_peer_task } )
+        if( task->valid() && !task->ready() )
+          task->cancel_and_wait( __FUNCTION__ );
+    } ).wait();
+  }
+
+  /// Listens for the peer's connection on a loopback port, and returns that endpoint
+  fc::ip::endpoint listen()
+  {
+    return _thread.async( [this]()
+    {
+      _server.listen( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), 0 ) );
+      _accept_task = fc::async( [this]()
+      {
+        _server.accept( _peer_side );
+        _node_side.connect_to( _node );
+        {
+          std::lock_guard< std::mutex > guard( _mutex );
+          _node_side_endpoint = _node_side.local_endpoint();
+        }
+        _to_node_task = fc::async( [this]() { forward( _peer_side, _node_side, true ); }, "throttling_relay to node" );
+        _to_peer_task = fc::async( [this]() { forward( _node_side, _peer_side, false ); }, "throttling_relay to peer" );
+      }, "throttling_relay accept" );
+      return _server.get_local_endpoint();
+    } ).wait();
+  }
+
+  /// The endpoint the node sees the peer's connection come from; once the peer connected
+  fc::ip::endpoint node_side_endpoint() const
+  {
+    std::lock_guard< std::mutex > guard( _mutex );
+    return _node_side_endpoint;
+  }
+
+  /// From now on, the peer's bytes reach the node @p chunk at a time, one chunk per @p interval
+  void throttle( size_t chunk, fc::microseconds interval )
+  {
+    _interval_us = interval.count();
+    _chunk = chunk;
+  }
+
+private:
+  void forward( fc::tcp_socket& from, fc::tcp_socket& to, bool throttled )
+  {
+    char buffer[ 4096 ];
+    bool ended = false;
+    while( !ended )
+    {
+      const size_t chunk = throttled ? _chunk.load() : 0;
+      try
+      {
+        const size_t bytes = from.readsome( buffer, chunk != 0 ? std::min( chunk, sizeof( buffer ) ) : sizeof( buffer ) );
+        to.write( buffer, bytes );
+        to.flush();
+      }
+      catch( const fc::canceled_exception& )
+      {
+        throw;
+      }
+      catch( const fc::exception& )
+      {
+        ended = true;
+      }
+      // not in the catch block: fc can't yield while it handles an exception
+      if( ended )
+      {
+        from.close();
+        to.close();
+      }
+      else if( chunk != 0 )
+        fc::usleep( fc::microseconds( _interval_us.load() ) );
+    }
+  }
+
+  fc::thread& _thread;
+  const fc::ip::endpoint _node;
+  fc::tcp_server _server;
+  fc::tcp_socket _peer_side;
+  fc::tcp_socket _node_side;
+  fc::future< void > _accept_task;
+  fc::future< void > _to_node_task;
+  fc::future< void > _to_peer_task;
+  mutable std::mutex _mutex;
+  fc::ip::endpoint _node_side_endpoint;
+  std::atomic< size_t > _chunk = 0;
+  std::atomic< int64_t > _interval_us = 0;
 };
 
 } // namespace p2p_tests

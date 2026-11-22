@@ -64,6 +64,7 @@ namespace graphene { namespace net {
       fc::time_point _connected_time;
       fc::time_point _last_message_received_time;
       fc::time_point _last_message_sent_time;
+      std::optional<message_in_progress> _message_in_progress;
 
       bool _send_message_in_progress;
       /// set once we close the socket ourselves, after which the read loop failing is expected
@@ -100,6 +101,7 @@ namespace graphene { namespace net {
       fc::time_point get_last_message_sent_time() const;
       fc::time_point get_last_message_received_time() const;
       fc::time_point get_last_write_progress_time() const { return _sock.get_last_write_time(); }
+      const std::optional<message_in_progress>& get_message_in_progress() const { return _message_in_progress; }
       fc::time_point get_connection_time() const { return _connected_time; }
       fc::sha512 get_shared_secret() const;
     };
@@ -181,6 +183,18 @@ namespace graphene { namespace net {
         size_t buffer_begin = 0;
         size_t buffer_end = 0;
         size_t messages_since_last_yield = 0;
+        // when the last read returned; a message's header came with the last read when the header is parsed
+        fc::time_point last_read_time;
+        auto read_into = [&](char* destination, size_t max_bytes) {
+          const size_t bytes = _sock.readsome(destination, max_bytes);
+          last_read_time = fc::time_point::now();
+          if (_message_in_progress)
+          {
+            _message_in_progress->bytes_read = std::min(_message_in_progress->bytes_read + bytes, _message_in_progress->bytes_total);
+            _message_in_progress->last_progress = last_read_time;
+          }
+          return bytes;
+        };
         auto grow_buffer = [&]() {
           std::unique_ptr<char[]> grown(new char[_buffer_size]);
           memcpy(grown.get(), buffer.get() + buffer_begin, buffer_end - buffer_begin);
@@ -196,7 +210,7 @@ namespace graphene { namespace net {
           buffer_end -= buffer_begin;
           buffer_begin = 0;
           while (buffer_end < byte_count)
-            buffer_end += _sock.readsome(buffer.get() + buffer_end, read_buffer_size - buffer_end);
+            buffer_end += read_into(buffer.get() + buffer_end, read_buffer_size - buffer_end);
         };
 
         message m;
@@ -211,6 +225,9 @@ namespace graphene { namespace net {
           FC_ASSERT( m.size <= _maximum_message_size, "", ("m.size",m.size)("maximum_message_size",_maximum_message_size) );
 
           const size_t size_with_padding = 16 * ((sizeof(message_header) + m.size + 15) / 16);
+          // the bytes buffered past the header may already hold part of the message, or all of it
+          _message_in_progress = message_in_progress{m.msg_type, m.size, std::min<uint64_t>(buffer_end - buffer_begin, size_with_padding),
+                                                     size_with_padding, last_read_time, last_read_time};
           if (size_with_padding <= read_buffer_size)
           {
             buffer_at_least(size_with_padding);
@@ -226,7 +243,9 @@ namespace graphene { namespace net {
             std::copy(buffer.get() + buffer_begin + sizeof(message_header), buffer.get() + buffer_end, m.data.begin());
             buffer_begin = buffer_end = 0;
             fc::time_point read_first_bytes_time = fc::time_point::now();
-            _sock.read(&m.data[buffered_bytes - sizeof(message_header)], size_with_padding - buffered_bytes);
+            // read as it comes, so the progress of a large message (a block on a slow link) can be seen
+            for (size_t read_bytes = buffered_bytes; read_bytes < size_with_padding; )
+              read_bytes += read_into(&m.data[read_bytes - sizeof(message_header)], size_with_padding - read_bytes);
             dlog("read the last ${bytes} bytes of a ${type} message from ${peer} in ${read_duration}us",
                  ("bytes", size_with_padding - buffered_bytes)("type", (core_message_type_enum)m.msg_type)
                  ("peer", remote_endpoint)("read_duration", fc::time_point::now() - read_first_bytes_time));
@@ -254,6 +273,7 @@ namespace graphene { namespace net {
               wlog( "message transmission failed ${er}", ("er", e.to_detail_string() ) );
             throw;
           }
+          _message_in_progress.reset();
 
           if (!_closed_locally && ++messages_since_last_yield >= messages_between_yields)
           {
@@ -302,6 +322,7 @@ namespace graphene { namespace net {
         exception_to_rethrow = fc::unhandled_exception(FC_LOG_MESSAGE(warn, "disconnected: ${e}", ("e", fc::except_str())));
       }
 
+      _message_in_progress.reset();
       if (call_on_connection_closed)
         _delegate->on_connection_closed(_self);
 
@@ -522,6 +543,10 @@ namespace graphene { namespace net {
   fc::time_point message_oriented_connection::get_last_write_progress_time() const
   {
     return my->get_last_write_progress_time();
+  }
+  const std::optional<message_in_progress>& message_oriented_connection::get_message_in_progress() const
+  {
+    return my->get_message_in_progress();
   }
   fc::time_point message_oriented_connection::get_connection_time() const
   {

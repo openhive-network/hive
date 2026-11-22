@@ -301,6 +301,59 @@ BOOST_AUTO_TEST_CASE( block_request_times_out_from_its_request_whatever_the_peer
   BOOST_CHECK( with_transactions.timed_out( at( 6.1 ), timeout ) == block );
 }
 
+/// A block whose message is arriving from the peer doesn't time out while its bytes keep coming, up to the ceiling from
+/// its request; once they stop for the timeout, it does
+BOOST_AUTO_TEST_CASE( block_request_waits_while_its_message_arrives )
+{
+  const fc::microseconds timeout = fc::seconds( 6 );
+  const fc::time_point start = fc::time_point::now();
+  const auto at = [&]( double seconds ) { return start + fc::microseconds( int64_t( seconds * 1000000 ) ); };
+  const item_id block( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "downloading" ) ) );
+  const double ceiling = 6.0 * GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING;
+
+  requested_items requested;
+  requested.insert( block, start, fc::seconds( 1 ) );
+  BOOST_CHECK( requested.timed_out( at( 6.1 ), timeout ) == block ); // nothing arriving: as before
+  // bytes arriving every half second keep it waiting past the timeout
+  for( double now = 0.5; now < ceiling; now += 0.5 )
+    BOOST_CHECK( !requested.timed_out( at( now ), timeout, at( now - 0.25 ) ) );
+  // until they stop for the timeout
+  BOOST_CHECK( !requested.timed_out( at( 9.9 ), timeout, at( 4 ) ) );
+  BOOST_CHECK( requested.timed_out( at( 10.1 ), timeout, at( 4 ) ) == block );
+  // or the ceiling passes since it was requested
+  BOOST_CHECK( requested.timed_out( at( ceiling + 0.1 ), timeout, at( ceiling + 0.05 ) ) == block );
+
+  // a transaction is not held by a block arriving
+  const item_id transaction( graphene::net::trx_message_type, fc::ripemd160::hash( std::string( "beside" ) ) );
+  requested_items with_transaction;
+  with_transaction.insert( transaction, start );
+  BOOST_CHECK( with_transaction.timed_out( at( 6.1 ), timeout, at( 6 ) ) == transaction );
+}
+
+/// A block request counts as sent from when the request for it was written to the socket, once it was; a request
+/// queued later is not marked written by an earlier one's write
+BOOST_AUTO_TEST_CASE( block_requests_sent_when_written )
+{
+  const fc::time_point start = fc::time_point::now();
+  const auto at = [&]( double seconds ) { return start + fc::microseconds( int64_t( seconds * 1000000 ) ); };
+  const item_id first( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "first" ) ) );
+  const item_id second( graphene::net::block_message_type, fc::ripemd160::hash( std::string( "second" ) ) );
+
+  requested_items requested;
+  requested.insert( first, at( 0 ), fc::seconds( 1 ) );
+  BOOST_CHECK( requested.block_request_sent( first ) == at( 0 ) ); // still queued
+  requested.insert( second, at( 1 ), fc::seconds( 1 ) );
+  // the request for the first, queued at once, is written after half a second in the queue
+  requested.record_block_requests_written( at( 0.01 ), at( 0.5 ) );
+  BOOST_CHECK( requested.block_request_sent( first ) == at( 0.5 ) );
+  BOOST_CHECK( requested.block_request_sent( second ) == at( 1 ) );
+  requested.record_block_requests_written( at( 1.01 ), at( 2 ) );
+  BOOST_CHECK( requested.block_request_sent( first ) == at( 0.5 ) );
+  BOOST_CHECK( requested.block_request_sent( second ) == at( 2 ) );
+  requested.erase( requested.find( first ) );
+  BOOST_CHECK( requested.block_request_sent( first ) == fc::time_point() );
+}
+
 /// The requested items count their transactions, which is what the window is judged on, and the blocks apart.
 BOOST_AUTO_TEST_CASE( requested_items_count_transactions_and_blocks )
 {

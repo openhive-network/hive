@@ -197,9 +197,11 @@ struct p2p_protocol_fixture : public witness_fixture
   size_t number_of_connections() { return p2p().get_connected_peers().size(); }
 
   /// What the node reports of its connection to @p peer; requires that it lists it
-  fc::variant_object peer_info( const test_peer& peer )
+  fc::variant_object peer_info( const test_peer& peer ) { return peer_info( peer.endpoint() ); }
+
+  /// What the node reports of its connection from @p endpoint; requires that it lists it
+  fc::variant_object peer_info( const fc::ip::endpoint& endpoint )
   {
-    const fc::ip::endpoint endpoint = peer.endpoint();
     for( const hive::plugins::p2p::api_peer_status& status : p2p().get_connected_peers() )
       if( status.host == endpoint )
         return status.info;
@@ -2649,13 +2651,13 @@ BOOST_AUTO_TEST_CASE( withholding_block_advertisers_test )
 
 /// A peer that delivers a block late, after the node asked another advertiser for it at its deadline,
 /// GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS (1 s), but within its grace (3 s, see block_copy_grace()), is not withholding
-/// it: its late copy restores its priority. With a third peer holding a block request (so the node would wait for it
+/// it: its late copy, 1.5 s after the request (well inside the grace, whatever the scheduling delays), restores its priority. With a third peer holding a block request (so the node would wait for it
 /// rather than ask a deprioritized peer), the slow peer is asked for the next block it advertises at once, not when the
 /// third one's request is a second old
 BOOST_AUTO_TEST_CASE( late_block_copy_keeps_priority_test )
 {
   const std::vector< block_ptr > chain = generate_chain( 9 );
-  const fc::microseconds lateness = fc::milliseconds( 2500 );
+  const fc::microseconds lateness = fc::milliseconds( 1500 );
   start_node();
   run( [&]()
   {
@@ -2737,14 +2739,14 @@ BOOST_AUTO_TEST_CASE( slow_block_rerequested_at_most_twice_test )
   } );
 }
 
-/// Two peers that withhold a block and deliver it just before their requests would time out
+/// Two peers that withhold a block and deliver it 4.5 s after their requests, before they would time out
 /// (active_ignored_request_timeout, 6 s), asked for it first and second, hold it only for their deadlines, 1 s and 2 s:
 /// the advertiser asked third, 3 s after the first one, delivers it. Their copies come past their grace (3 s, see
 /// block_copy_grace()), so they restore nothing: both stay deprioritized, with a strike
 BOOST_AUTO_TEST_CASE( late_withholders_rerequested_and_struck_test )
 {
   const std::vector< block_ptr > chain = generate_chain( 8 );
-  const fc::microseconds withheld_for = fc::seconds( 5 );
+  const fc::microseconds withheld_for = fc::milliseconds( 4500 );
   start_node();
   run( [&]()
   {
@@ -2788,6 +2790,51 @@ BOOST_AUTO_TEST_CASE( late_withholders_rerequested_and_struck_test )
     const fc::variant_object honest_info = peer_info( *honest );
     BOOST_CHECK( !honest_info[ "block_fetching_deprioritized" ].as_bool() );
     BOOST_CHECK_EQUAL( honest_info[ "withholding_strikes" ].as_uint64(), 0u );
+  } );
+}
+
+/// A block that arrives slowly over the node's own download link, its bytes coming steadily for about 4 s as a large
+/// block's do on a slow link, is not asked of the other advertisers while it arrives: another copy would only share
+/// that link. The peer sending it is neither deprioritized, struck nor timed out
+BOOST_AUTO_TEST_CASE( slow_block_download_not_rerequested_test )
+{
+  const std::vector< block_ptr > chain = generate_chain( 7 );
+  const fc::microseconds download_time = fc::seconds( 4 );
+  start_node();
+  run( [&]()
+  {
+    sync_node( chain, 5 );
+    const auto id = [&]( uint32_t num ) { return item_hash_t( chain[ num - 1 ]->get_block_id() ); };
+    throttling_relay link( peer_thread, node_endpoint() );
+    auto slow = make_peer( "peer on the node's slow link" );
+    slow->provide_blocks( chain );
+    slow->connect( link.listen() );
+    BOOST_REQUIRE_MESSAGE( slow->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ), "the node did not take up the peer" );
+    slow->advertise( block_message_type, { id( 6 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 6 ), "head is " << get_block_num() );
+
+    std::vector< std::unique_ptr< test_peer > > others;
+    for( int i = 0; i < 2; ++i )
+      others.push_back( connect_live_peer( "other advertiser " + std::to_string( i ), chain ) );
+    // the block message reaches the node one AES block at a time, spread over the download time
+    const message delivery{ block_message( chain[ 6 ] ) };
+    const size_t aes_blocks = ( sizeof( message_header ) + delivery.size + 15 ) / 16;
+    link.throttle( 16, fc::microseconds( download_time.count() / int64_t( aes_blocks ) ) );
+    slow->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE( wait_until( [&]() { return times_requested( *slow, id( 7 ) ) != 0; }, reply_timeout ) );
+    for( const auto& other : others )
+      other->advertise( block_message_type, { id( 7 ) } );
+    BOOST_REQUIRE_MESSAGE( head_reaches( 7 ), "head is " << get_block_num() );
+
+    const fc::microseconds took = fc::time_point::now() - first_request_time( *slow, id( 7 ) );
+    BOOST_CHECK_MESSAGE( took > download_time - fc::seconds( 1 ), "the block arrived " << took.count() / 1000 << " ms after the request" );
+    for( const auto& other : others )
+      BOOST_CHECK_EQUAL( times_requested( *other, id( 7 ) ), 0u );
+    BOOST_CHECK_EQUAL( times_requested( *slow, id( 7 ) ), 1u );
+    const fc::variant_object info = peer_info( link.node_side_endpoint() );
+    BOOST_CHECK( !info[ "block_fetching_deprioritized" ].as_bool() );
+    BOOST_CHECK_EQUAL( info[ "withholding_strikes" ].as_uint64(), 0u );
+    require_kept( *slow );
   } );
 }
 
