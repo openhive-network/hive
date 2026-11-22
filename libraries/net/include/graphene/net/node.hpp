@@ -1189,8 +1189,8 @@ namespace graphene { namespace net {
       uint32_t max_in_flight = 0;
       uint64_t in_flight_sum = 0; ///< in flight after each submission, for the mean
       std::array<uint64_t, completion_latency_bounds_us.size() + 1> completion_latency{}; ///< submit -> client result
-      uint64_t limit_waits = 0;   ///< submissions that waited for the in-flight limit
-      fc::microseconds limit_wait_time;
+      uint64_t limit_waits = 0;   ///< times the transactions in flight reached maximum_transactions_in_flight, so fetching stopped
+      fc::microseconds limit_wait_time; ///< how long fetching stayed stopped so, all those times together
     };
 
     /// peer_connection socket writes
@@ -1525,6 +1525,113 @@ namespace graphene { namespace net {
    */
   std::vector<size_t> select_idle_peers_to_disconnect(const std::vector<idle_peer_candidate>& peers,
                                                       const idle_peer_sweep& sweep);
+
+  /// What the inactive connections check does with a connection still handshaking
+  enum class handshaking_connection_verdict
+  {
+    keep,
+    past_deadline, ///< still handshaking GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC after it started, whatever it sent: closed
+    inactive       ///< neither side sent a message for peer_inactivity_timeout: closed
+  };
+
+  /// What the inactive connections check knows about a connection still handshaking
+  struct handshaking_connection_state
+  {
+    fc::time_point initiated;
+    fc::time_point last_message_received;
+    fc::time_point last_message_sent;
+  };
+
+  /// The verdict on @p connection at @p now; the deadline is checked first
+  handshaking_connection_verdict judge_handshaking_connection(const handshaking_connection_state& connection, fc::time_point now,
+                                                             fc::microseconds inactivity_timeout, fc::microseconds deadline);
+
+  /**
+   * What the inactive connections check does with an active connection.  The reasons are ranked: they are checked in
+   * this order, and the first that holds is the verdict (judge_active_connection())
+   */
+  enum class active_connection_verdict
+  {
+    keep,
+    inactive,              ///< sent us no message for the inactivity timeout: disconnected with a reason
+    sync_items_ignored,    ///< made no progress on the sync blocks we asked for within the request timeout: closed
+    sync_item_ids_ignored, ///< didn't answer our request for sync item ids within the request timeout: closed
+    item_request_ignored,  ///< kept us waiting for an item we asked for (requested_items::timed_out()): closed
+    send_stalled,          ///< the slow-reader rule: nothing written to its socket for GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC: closed
+    send_keepalive,        ///< sent us no message for half the inactivity timeout: asked for the time
+    sync_stalled           ///< we need sync blocks from it, and nothing from it is processed, requested or queued: closed
+  };
+
+  /// What the inactive connections check knows about an active connection
+  struct active_connection_state
+  {
+    fc::time_point initiated;
+    fc::time_point last_message_received;
+    /// when the peer last delivered a sync block we asked for, while we wait for some; nothing while we don't
+    std::optional<fc::time_point> last_sync_item_received;
+    /// when we asked the peer for sync item ids, while we wait for them
+    std::optional<fc::time_point> sync_item_ids_requested;
+    /// an item the peer kept us waiting for too long (requested_items::timed_out())
+    std::optional<item_id> ignored_item;
+    /// peer_connection::get_send_progress_time()
+    fc::time_point send_progress = fc::time_point::maximum();
+    /// we need sync items from the peer, and none of its blocks or messages are being processed, no item ids are
+    /// requested from it and none it sent wait to be fetched
+    bool sync_idle = false;
+  };
+
+  /// The node-wide times the inactive connections check judges active connections by
+  struct active_connection_limits
+  {
+    fc::time_point now;
+    fc::microseconds inactivity_timeout; ///< ten block intervals
+    fc::microseconds keepalive_timeout;  ///< half the inactivity timeout
+    fc::microseconds request_timeout;    ///< active_ignored_request_timeout_microseconds
+    fc::microseconds send_stall_timeout; ///< GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC
+  };
+
+  /// The highest ranked verdict that holds for @p connection (see active_connection_verdict)
+  active_connection_verdict judge_active_connection(const active_connection_state& connection,
+                                                    const active_connection_limits& limits);
+
+  /**
+   * Whether the invalid-block disconnect breaker's deferral is revoked: our head, block @p head_block_number, last
+   * advanced at @p last_head_advance, more than GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC before @p now.  Never before
+   * the head is known to have advanced
+   */
+  bool breaker_stall_override_due(uint32_t head_block_number, fc::time_point last_head_advance, fc::time_point now);
+
+  /**
+   * How many transactions a fetch pass may ask a peer for: the room in its window (@p window_room,
+   * transaction_size_estimate::transactions_to_request()), or none while the peer's transaction fetching is
+   * inhibited (it said it was busy, or it withheld an item) or @p in_flight transactions received from peers wait for
+   * validation, at least @p in_flight_cap of them (node_configuration::maximum_transactions_in_flight, 0 for no cap).
+   * At the cap only the replies already requested still arrive, so the cap bounds the transactions waiting for
+   * validation by itself and the peers' windows, and never stops a peer's blocks
+   */
+  size_t transaction_fetch_window(bool inhibited, uint32_t in_flight, uint32_t in_flight_cap, size_t window_room);
+
+  /// The fetch_items messages to send a peer for @p items: one per run of items of the same type, in order, and none with more than @p max_transactions_per_request transactions
+  std::vector<std::pair<uint32_t, std::vector<item_hash_t>>> group_fetch_requests(const std::vector<item_id>& items,
+                                                                                  size_t max_transactions_per_request);
+
+  /// When the fetch items loop runs next: not before @p minimum_interval after the pass began, and at @p wake_time at the latest
+  struct fetch_loop_wait
+  {
+    fc::microseconds minimum_interval;
+    fc::time_point wake_time;
+  };
+
+  /**
+   * When the fetch items loop runs after the pass that began at @p pass_start with @p gate: when a peer is unblocked
+   * (@p next_peer_unblocked) or a trigger arrives, not sooner than @p configured_minimum_interval
+   * (fetch_items_minimum_interval_microseconds).  While the gate withheld transactions it runs again when the next
+   * minimum is due (@p next_minimum_due), since nothing tells it when the pending pool drains; while the gate is
+   * closed, triggers don't wake it before then either, since nothing could be requested sooner
+   */
+  fetch_loop_wait next_fetch_pass(const transaction_fetch_gate& gate, fc::time_point pass_start,
+                                  fc::microseconds configured_minimum_interval, fc::time_point next_peer_unblocked,
+                                  fc::time_point next_minimum_due);
 
 } } // graphene::net
 

@@ -253,7 +253,7 @@ work on any finished run directory and need no node and no test-tools.
   on the node's own clock by the log times of its Block stats lines), taken together: fetch candidates examined per
   item requested, items requested and loop wakes per second and the share of time spent scheduling; handoff
   submissions and completions per second (compare completions with received tx/s), in-flight maximum and mean,
-  completion latency buckets and in-flight limit waits; socket writes per second with messages and bytes per write;
+  completion latency buckets and in-flight cap waits (times transaction fetching stopped at the cap, and for how long); socket writes per second with messages and bytes per write;
   transaction requests per second, transactions per request and how many hit the byte cap. `compare` shows them for
   the witness and the relays, and the witness's p2p CPU per received transaction.
 - **fast-confirms**: per node, how many of the fast-confirms the witness produced for loaded-window blocks it accepted,

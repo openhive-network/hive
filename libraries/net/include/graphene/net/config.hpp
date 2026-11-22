@@ -23,6 +23,21 @@
  */
 #pragma once
 
+/*
+ * The p2p layer's limits, grouped by the subsystem that owns them.  libraries/net/README.md lists every one of them
+ * (and every node_configuration option) in one table with its unit, owner, derivation and whether it was measured.
+ *
+ * Each value says what it is based on, in a "Basis:" line:
+ *   derived      - computed from other constants here; change those instead
+ *   measured     - set from a recorded measurement
+ *   reasoned     - argued in its comment, not measured
+ *   unvalidated  - a plausible guess nobody has measured or argued from data yet; a candidate for the next live check
+ */
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Protocol versions and hello capabilities.  Owner: node_impl::on_hello_message(), generate_hello_user_data()
+// ---------------------------------------------------------------------------------------------------------------------
+
 #define GRAPHENE_NET_PROTOCOL_VERSION                              107
 #define GRAPHENE_NET_PROTOCOL_COMPRESSED_BLOCKS_VERSION            107 // support for compressed blocks added in 107
 #define GRAPHENE_NET_PROTOCOL_ADVERTISE_BLOCKS_BY_BLOCK_ID_VERSION 107 // share blocks by block_id instead of by block_message hash added in 107
@@ -33,463 +48,6 @@
 // known hardfork block, so requiring them costs nothing and closes the loophole where a peer
 // reporting none of them silently bypassed every compatibility check
 #define GRAPHENE_NET_MINIMUM_PROTOCOL_VERSION                      106
-
-// circuit breaker for invalid-block punitive disconnects: if we find ourselves kicking more
-// than COUNT peers within WINDOW seconds for offering "invalid" blocks, the far more likely
-// explanation is a systemic event (fork storm, local latency, a bug of ours) than that many
-// simultaneous attackers -- stop disconnecting and fall back to reconciliation until the
-// window drains.  The 2026-07-09 incident was exactly this signature: hundreds of honest
-// peers punished in minutes, every rejection a false positive.
-#define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT        5
-#define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_WINDOW_SEC   60
-
-// a separate breaker with the same semantics for disconnects over a block whose body doesn't
-// match its header's merkle root.  Such a copy says nothing about the block itself, only about
-// the peer that sent it, so it doesn't count toward the breaker above; and a burst of them
-// (which could be a local decoding bug) stops these disconnects instead of isolating the node
-#define GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_COUNT        5
-#define GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_WINDOW_SEC   60
-
-// how far past our current head an advertised block id may claim to be and still be worth
-// fetching.  Legitimate live adverts are at most a block or two ahead; this allows for
-// generous clock skew and momentary head lag while rejecting fabricated far-future ids
-#define GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS                 20
-
-// how far a peer's head may lag behind the oldest block we still have (our tail block, above 1
-// only when we prune our block log) and still be treated as a peer we can serve.  A node that
-// keeps no block log (block-log-split = 0) has its last irreversible block as the tail, and with
-// one-block irreversibility that is its head block or close to it, so peers in live sync are
-// often momentarily behind it; they get the missing blocks through normal block propagation.
-// Peers further behind are rejected at the handshake or disconnected with an explanation,
-// instead of being sent block ids we don't have
-#define GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS                      20
-
-// if the invalid-block disconnect breaker has been keeping peers whose blocks we rejected,
-// but our head hasn't advanced for this long, the breaker's systemic-blip assumption is
-// falsified -- those peers may be all that's occupying our slots while none of them can
-// feed us the chain.  Revoke the deferral and disconnect them so the connect loop can
-// find replacements
-#define GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC                    60
-
-// how long the connect loop trusts a route-lookup result for a peer address before probing
-// again, so that interface/route changes (link coming up, a default route appearing) are
-// picked up without re-probing every candidate on every pass
-#define GRAPHENE_NET_ROUTE_PROBE_CACHE_SEC                         60
-
-// the far-future filter above assumes head lag is momentary.  If our head has not advanced
-// for this long while an established peer keeps advertising blocks past the grace window,
-// the likelier explanation is that we fell behind (e.g. the chain thread stalled long enough
-// for the network to get more than GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS ahead) than
-// that the peer is fabricating ids.  Since adverts are dropped before they are recorded and
-// sync otherwise only restarts on a new connection, such a node would stay behind until its
-// next new peer.  Instead we restart sync with the advertising peer, at most once per this
-// interval per peer.  Also the minimum spacing between such restarts for one peer.
-// A peer that knows we are behind advertises nothing to us, so the same interval also
-// restarts sync with every active peer that may be ahead of us once our head has not
-// advanced for it and nothing we asked for is outstanding, advertisement or not.
-#define GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC                       60
-
-// default node_configuration::idle_peer_disconnect_timeout: a peer that delivered us no block that
-// we pushed for this long while our head is behind and another peer delivered blocks (asking us
-// for blocks or advertising them doesn't count), is disconnected so its slot goes to another candidate, and may not take a
-// slot again, inbound or outbound, for as long.  Longer than GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC,
-// so restarting sync with the peers we have is tried first.  0 disables it, and it is off by
-// default until a live check of the fixed feature decides otherwise; 180 is the value to set to enable it
-#define GRAPHENE_NET_DEFAULT_IDLE_PEER_DISCONNECT_TIMEOUT_SEC      0
-
-// idle peers are only replaced while our head block is older than this (the gap at which the
-// chain plugin leaves live sync): a node in sync gets its blocks, and most of its peers never
-// deliver or advertise one first, so their silence says nothing about them
-#define GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC                    60
-
-// replacing idle peers leaves at least this many active connections, idle or not, and at least
-// half of node_configuration::desired_number_of_connections
-#define GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST                      2
-
-// idle-peer disconnects logged at warn level per interval; the rest go to the debug log and are
-// counted in the next warning
-#define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNINGS_PER_INTERVAL    10
-#define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNING_INTERVAL_SEC     60
-
-// a block we asked a peer for during normal operation is asked of another peer that advertised it too once
-// every request for it outstanding is past its deadline, and the peers that kept us waiting are asked for blocks
-// only when no other peer has them (see peer_connection::is_block_fetching_deprioritized()).  Their requests stay
-// outstanding, so they may still deliver, and are judged by active_ignored_request_timeout as before.  The first
-// request for a block has this deadline, and each later one twice that of the one before (1 s, 2 s, 4 s, see
-// block_request_deadline()), so a large block on a slow link is not downloaded again every second.  At most
-// GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK requests for a block are outstanding: then we wait for a copy
-// or until one of them ends.  A block is propagated in well under a second, so k peers that withhold one in a
-// row cost us 1 s, 3 s, 7 s for k = 1, 2, 3; with three, the next is asked once the third one's deadline passes
-// (7 s after the first request) or, if later, when the first one's request times out.  Deadlines run from when a
-// request was written to the socket, and none passes while the block is visibly arriving from a peer asked for it
-// (see block_download_holds_rerequest_until())
-#define GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS                    1000
-#define GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK            3
-
-// a copy of a block that arrives after its request's deadline, once we have the block from another peer, restores
-// the peer's block-fetching priority only if it starts arriving (its first bytes, see
-// message_oriented_connection::get_message_in_progress()) within this many deadlines after the deadline, and never
-// later than half of active_ignored_request_timeout after the request was written (unless that is before the deadline): see
-// block_copy_grace().  A later copy counts as withholding the block (an unavailable item strike, from a peer that says
-// in its hello that it queues blocks ahead of its transaction traffic, GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST).  So a slow link
-// keeps its standing, but a peer can't withhold a block until just before its request times out and then have
-// its copy reset its standing
-#define GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES                    2
-
-// a peer that answers item_not_available for an item it advertised to us is asked for no transactions for
-// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC, and for blocks only when no other peer has them for
-// GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC; such answers count as one strike per
-// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC, so a peer demoted for transactions earns at most one strike per
-// demotion.  At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes with no requested item (block or transaction)
-// delivered in between it is disconnected.  Each strike is forgotten GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC
-// after it was made: a peer in sync is rarely the first to advertise an item, so it rarely delivers one to clear them.
-// An honest peer says so only when an item left its cache, so the strikes cost it little; one whose replies to us
-// are backed up says it is busy instead (item_busy_message, to a peer that says in its hello it understands it), which
-// is no strike.  A peer advertising items it doesn't have would otherwise hold requests (and the fetch gate's
-// headroom) for nothing as often as it likes.  A block copy that arrives past its grace
-// (GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES) counts as such an answer, from a peer that queues blocks ahead of
-// transactions (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST) only
-#define GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC                 10
-#define GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES                  3
-#define GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC             600
-
-// how long a peer that kept us waiting for a block (past its deadline, an item_not_available answer, a copy past its
-// grace, or a block whose body didn't match its header while the breaker kept it) is asked for blocks only when no
-// other peer has them (see peer_connection::is_block_fetching_deprioritized()).  It is longer than the transaction
-// demotion (GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC) because it only orders the sources of a block, which costs an
-// honest peer little, while block withholding delays the chain; strikes for blocks are still spaced
-// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC apart, so a demotion spans several of them
-#define GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC                   60
-
-// how often, at most, a node warns that it struck a peer for withholding items or disconnected one for its strikes;
-// the strikes and disconnects in between are counted in the next warning (all of them are counted in the p2p
-// statistics' "withholding" report)
-#define GRAPHENE_NET_WITHHOLDING_WARNING_INTERVAL_SEC              60
-
-// how often, at most, a node warns that it answered a peer's transaction requests as not available
-// because the replies already waiting for that peer's send queue are at their limit; the requests
-// answered so in between are counted in the next warning
-#define GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC            60
-
-/**
- * Define this to enable debugging code in the p2p network interface.
- * This is code that would never be executed in normal operation, but is
- * used for automated testing (creating artificial net splits,
- * tracking where messages came from and when)
- */
-#define ENABLE_P2P_DEBUGGING_API                             1
-
-/**
- * 2MiB
- */
-#define MAX_MESSAGE_SIZE                                     (1024*1024*2 + 20) //20 for block_type_id size
-#define GRAPHENE_NET_DEFAULT_PEER_CONNECTION_RETRY_TIME      30 // seconds
-
-/**
- * The connect loop runs again when it is triggered (a peer was added or learned, a connection closed or
- * failed), but at most once per GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS: a peer that accepts the
- * handshake and drops us, or whose address pair is still held by our previous connection, is due again
- * at once and triggers the loop each time, so the interval bounds how often such a peer is redialed.
- * Without a trigger it runs again GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC after an iteration, for
- * state changes that do not trigger it (a peer's retry delay expiring).
- */
-#define GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS        1000
-#define GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC           10
-
-#define GRAPHENE_NET_PEER_HANDSHAKE_INACTIVITY_TIMEOUT       5
-
-/**
- * A connection still handshaking (key exchange, hellos, address exchange) this many seconds after it was accepted
- * or dialed is closed, whatever it sends meanwhile: the inactivity timeout above counts any message as activity, and
- * a peer may send time and address requests before its hello.  An honest handshake takes a few round trips.
- */
-#define GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC                  15
-/**
- * How many inbound connections whose hello we haven't accepted the node holds at once; one accepted past it is
- * closed at once.  Such connections hold no connection slot (they don't count toward the desired or maximum number
- * of connections), so peers that never send a hello can't keep the node from dialing or from accepting hellos.
- */
-#define GRAPHENE_NET_MAXIMUM_HANDSHAKING_INBOUND_CONNECTIONS 32
-/**
- * How many of those may come from one host (connection_host_of()) at once, unless its address is exempt from the
- * per-host limit or the limit is 0.  A host that already holds as many connections whose hello we accepted as a
- * per-host limit set by the operator allows (a hard limit) may have one, to be told so in the rejection of its hello.
- */
-#define GRAPHENE_NET_MAXIMUM_HANDSHAKING_CONNECTIONS_PER_HOST 2
-/**
- * How often, at most, a node closing inbound connections at accept (see above) warns that it does, with their count
- */
-#define GRAPHENE_NET_REFUSED_HANDSHAKE_WARNING_INTERVAL_SEC  60
-/**
- * Until we accept a peer's hello, a message it announces as larger than this ends the connection before anything is
- * allocated for it.  The messages allowed before a hello are small; an address message is the largest, about 70 bytes
- * an address.
- */
-#define GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE          (64 * 1024)
-/**
- * The size of a connection's read buffer and of the stcp_socket read and write buffers until we accept the peer's
- * hello (GRAPHENE_NET_CONNECTION_BUFFER_SIZE after that), so a connection that never gets there costs little memory
- */
-#define GRAPHENE_NET_HANDSHAKE_BUFFER_SIZE                   (2 * 1024)
-/**
- * The size of those buffers once we have accepted the peer's hello: each read takes whatever the kernel holds, up to
- * this much, so a busy connection is read in few reads
- */
-#define GRAPHENE_NET_CONNECTION_BUFFER_SIZE                  (64 * 1024)
-/**
- * An active peer to which we have had something to send, and of which nothing has been written to its socket, for
- * this many seconds is disconnected: it doesn't read what we send.  Progress is seen one socket write (at most
- * GRAPHENE_NET_CONNECTION_BUFFER_SIZE) at a time, not one message, so a slow link carrying a large block keeps the
- * connection, and so does a peer back from a brief stall.
- */
-#define GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC               60
-
-#define GRAPHENE_NET_PEER_DISCONNECT_TIMEOUT                 20
-
-#define GRAPHENE_NET_TEST_SEED_IP                            "104.236.44.210" // autogenerated
-#define GRAPHENE_NET_TEST_P2P_PORT                           1700
-#define GRAPHENE_NET_DEFAULT_P2P_PORT                        1776
-#define GRAPHENE_NET_DEFAULT_DESIRED_CONNECTIONS             20
-#define GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS                 200
-/**
- * How many connections, at most, are held to one host: an IPv4 address or an IPv6 /64.  Several nodes run on one
- * machine have node ids of their own, so without it a host offering many ports can take most of the connection
- * slots.  0 for no limit.  Addresses in node_configuration::host_limit_exempt_subnets (loopback by default) are
- * never limited, and neither are seed and add-node targets.  Left at its default (not set in the advanced node
- * parameters), the limit gives way while candidates on other hosts can't fill the desired connections.
- */
-#define GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST        2
-/**
- * The share, in percent of the desired connections, that the connect loop reserves for each address family while
- * that family has candidates to dial; the rest go IPv6 first.  At most 50.
- */
-#define GRAPHENE_NET_DEFAULT_RESERVED_ADDRESS_FAMILY_PERCENT 25
-/**
- * How often, at most, a node refusing hellos for the per-host limit warns that most of its inbound connections come
- * from the refused peer's host, which is what a proxy rewriting source addresses looks like.
- */
-#define GRAPHENE_NET_SHARED_INBOUND_HOST_WARNING_INTERVAL_SEC 600
-/**
- * How often, at most, a node says that it let connections past the default per-host limit, which it does while no
- * candidates on other hosts fill its desired connections.
- */
-#define GRAPHENE_NET_HOST_LIMIT_RELAXED_LOG_INTERVAL_SEC     600
-/**
- * Default node_configuration::host_limit_relax_delay: for how many seconds after the node starts the default per-host
- * limit stays hard.  Right after a restart the connect loop knows few hosts, and relaxing at once would let the first
- * host it reaches take most of the slots before peer exchange names others.
- */
-#define GRAPHENE_NET_DEFAULT_HOST_LIMIT_RELAX_DELAY_SEC      60
-/**
- * How many of the candidates the per-host limit left out the connect loop considers per pass while the limit is
- * relaxed (the first ones, in the peer database's order: most recently seen first).  Each relaxed step looks at each
- * of them, so this bounds a pass however many candidates one host offers.
- */
-#define GRAPHENE_NET_MAX_RELAXED_CANDIDATES_PER_PASS         64
-/**
- * How many failed attempts a rejection with too_many_connections_from_host counts toward a peer's retry backoff at
- * most: such a rejection says the peer's host is full now, maybe because another node shares our address (a NAT or
- * a shared /64), not that the peer is gone, so the redial delay stops growing at (this + 1) * peer_connection_retry_timeout.
- */
-#define GRAPHENE_NET_MAX_HOST_LIMIT_REJECTIONS_COUNTED       2
-
-#define GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES        (1024 * 1024)
-/**
- * The transactions a peer asks for are queued for it only while its send queue holds at most this many bytes;
- * the rest of the reply waits outside the queue and is queued, in order, as the queue drains.  However large
- * the transactions it asked for turn out to be, a reply never takes the queue over
- * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, and the other half stays free for blocks and other traffic.
- */
-#define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES  (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2)
-/**
- * A transaction inventory we advertise to a peer is queued only if the peer's send queue holds at most this many
- * bytes with it; otherwise its ids wait outside the queue and are queued, newest first, as the queue drains (see
- * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER).  Inventories are queued for every peer as fast as
- * transactions arrive, whatever the peer reads, so a burst of new transactions toward a slow reader would otherwise
- * take its queue over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES and close the connection.  The budget is the one
- * replies get, so inventory and replies together leave the other half of the queue to blocks and other traffic.
- */
-#define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES
-/**
- * The most transaction ids one inventory message we advertise carries: a quarter of
- * GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES, so a queue holding other traffic still has room for one
- * and the next can be queued before the previous one has been written out
- */
-#define GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 4 / 20)
-/**
- * How many transaction ids to advertise may wait, per peer, for its send queue to drain below
- * GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES: as many as that budget holds.  Past it the oldest are
- * dropped, and the peer learns of those transactions from another peer or from a block.  Stale ids are dropped
- * sooner (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS).
- */
-#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 20)
-/**
- * How long, at most, a transaction id to advertise waits for the peer's send queue to drain
- * (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES) before it is dropped as stale: two block intervals.  By
- * then the transaction is probably in a block or the peer has it from another peer, and a fast-confirm that late
- * no longer helps its block become irreversible sooner.
- */
-#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS 6000
-/**
- * How often (at most) we log, per peer, the transaction ids to advertise that were dropped because too many waited
- * for its send queue (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER) or they had waited too long
- * (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS) or were no longer cached
- */
-#define GRAPHENE_NET_DROPPED_TRANSACTION_INVENTORY_REPORT_INTERVAL_SEC 10
-/**
- * How many requested transactions may wait for room in one peer's send queue
- * (see GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES); a peer asking for more than that while they wait
- * is told the rest are not available.  Twice what we ourselves keep outstanding with a peer
- * (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER), so a peer requesting as we do never gets there.
- */
-#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER (2 * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER)
-/**
- * How many bytes of requested transactions may wait for room in one peer's send queue, as
- * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER bounds their count: past it, further transactions the peer
- * asks for are not available.  Our own full item window after a jump to 8 KB transactions (6.4 MB) still waits in
- * full, while a peer that stops reading holds this much at most rather than its count of the largest transactions.
- */
-#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER (8 * 1024 * 1024)
-/**
- * A block a peer asks for is queued for sending as its id, and looked up only once it is one of
- * this many messages at the front of the peer's send queue: the lookups (and the compression the
- * worker threads may do for that peer) run ahead of the message being sent, while the blocks held
- * for one peer stay this few however many it asks for
- */
-#define GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD           4
-
-/**
- * A peer's queued messages are written to its socket together until the batch reaches this many
- * bytes; the message that crosses the bound is still part of the batch.
- */
-#define GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES              (64 * 1024)
-
-/**
- * When we receive a message from the network, we advertise it to
- * our peers and save a copy in a cache were we will find it if
- * a peer requests it.  We expire out old items out of the cache
- * after this number of blocks go by.
- *
- * Recently lowered from 30 to match the default expiration time
- * the web wallet imposes on transactions.
- */
-#define GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS        20
-
-/**
- * Number of transactions the transaction message cache's message hash index is sized for
- * when the node starts, so it does not rehash on the p2p thread while the cache fills.
- * It covers GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS blocks of about 13k
- * transactions each (over 4k tx/s); a busier network still works, the index just
- * grows once more.  Costs one bucket pointer per item, 2 MB.
- */
-#define GRAPHENE_NET_TRANSACTION_MESSAGE_CACHE_EXPECTED_SIZE (256 * 1024)
-
-/**
- * We prevent a peer from offering us a list of blocks which, if we fetched them
- * all, would result in a blockchain that extended into the future.
- * This parameter gives us some wiggle room, allowing a peer to give us blocks
- * that would put our blockchain up to an hour in the future, just in case
- * our clock is a bit off.
- */
-#define GRAPHENE_NET_FUTURE_SYNC_BLOCKS_GRACE_PERIOD_SEC     (60 * 60)
-
-/* recently lowered from 2 minutes -> 1 minute, to match the cache
- * duration/default wallet expiration time */
-#define GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES           1
-
-#define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING      200
-
-/**
- * How often (at most) we log, per peer, that advertisements were deferred or
- * dropped because the peer exceeded our inventory limit
- */
-#define GRAPHENE_NET_INVENTORY_LIMIT_REPORT_INTERVAL_SEC     10
-
-/**
- * How often the node writes its p2p statistics (fetch scheduling, transaction handoff, send batching,
- * request sizing) to the GRAPHENE_NET_STATISTICS_LOGGER logger, when that logger is enabled for info
- */
-#define GRAPHENE_NET_STATISTICS_REPORT_INTERVAL_SEC          30
-#define GRAPHENE_NET_STATISTICS_LOGGER                       "p2p_stats"
-
-/**
- * One in this many transactions, chosen by message hash so every node picks the same ones, is logged with
- * a real-clock timestamp when received and when broadcast, to the GRAPHENE_NET_RELAY_SAMPLE_LOGGER logger
- * when that logger is enabled for info
- */
-#define GRAPHENE_NET_RELAY_SAMPLE_ONE_IN                     64
-#define GRAPHENE_NET_RELAY_SAMPLE_LOGGER                     "p2p_relay_sample"
-
-/**
- * During normal operation, how many blocks will be fetched from each
- * peer at a time.  A request that reaches this many blocks asks for
- * no transactions.
- */
-#define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION  100
-
-/**
- * During normal operation, how many transactions one request will fetch
- * from a peer (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER bounds all
- * those outstanding with it).  This will only come into play when the network
- * is being flooded -- typically transactions will be fetched as soon
- * as we find out about them, so only one item will be requested
- * at a time.  GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH lowers it for
- * a peer sending large transactions.
- */
-#define GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION  400
-
-/**
- * How many transactions may be outstanding with one peer during normal operation, over all the requests
- * in flight with it.  The next request may go out before earlier replies have fully arrived, so a
- * high-latency link carries up to this many transactions per round trip rather than one request's worth.
- * It also bounds what a stalled peer holds back until its requests time out or it disconnects.
- */
-#define GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER  (2 * GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION)
-
-/**
- * How many bytes of transactions we expect all the requests outstanding with one peer to bring back, at
- * most, unless one full request (see GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH) expects more.  The
- * expectation is the peer's mean transaction size, which learns of larger transactions only as their replies
- * arrive, so the peer may owe us several times this after a jump in transaction size.  The peer does not drop
- * us for it: it queues our replies only up to GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES and the rest
- * as its queue drains (older peers drop us when their queue passes GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES,
- * which no window based on the mean can rule out).  So this only bounds what a slow or stalled peer holds back;
- * it lets a mix of transactions of a few hundred bytes fill the whole item window
- * (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER), two full requests per round trip.
- * Applies only to a peer that says in its hello that it defers replies so (GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES):
- * an older peer keeps no more than one full request outstanding, as before pipelining, so a jump in transaction size
- * takes its queue over the limit no sooner than it did then.
- */
-#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER  (512 * 1024)
-
-/**
- * While the pending pool holds more than a third of max-mempool-size (graphene::net::is_transaction_fetching_gated())
- * the node requests no transactions, and checks again this often whether the pool has drained below that while
- * transactions wait to be fetched.  The pool drains when a block is applied, so a fraction of the block interval
- * is enough.  Meanwhile arriving inventory and replies wake the fetch loop no more often than this either (blocks
- * still wake it at once), since only the gate's minimum (GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH) could be requested.
- */
-#define GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS  100
-
-/**
- * However many transactions the transaction fetch gate withholds (closed, or bounded by its headroom;
- * graphene::net::transaction_fetch_gate), a fetch pass still requests this many in all, from the peers in turn
- * (graphene::net::fetch_turn_order), so relay never stops: small and privileged transactions such as fast-confirms
- * (witness_block_approve) can't be told from the rest before they are fetched.  A pass may do so only once per
- * GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS (graphene::net::fetch_minimum_schedule), so a gated node's intake is
- * at most 200 transactions a second, in requests of several transactions, however often replies and inventory wake
- * the fetch loop.  The minimum takes each peer's newest candidates first (graphene::net::fetch_candidate_order): a
- * fast-confirm is broadcast as soon as its block arrives, so it is among the newest ids its relays advertised, while
- * a flood's backlog is older.
- */
-#define GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH  20
-
-/**
- * While the transaction fetch gate withholds transactions (closed or bounded by its headroom), how often (at most)
- * the node warns that items to fetch expired, with their sum since the last warning
- * (graphene::net::fetch_expiry_warning_limiter)
- */
-#define GRAPHENE_NET_GATED_FETCH_EXPIRY_WARNING_INTERVAL_SEC  30
 
 /**
  * The key of the hello's user_data by which a node says it queues the transactions a peer asks for only as its send
@@ -515,42 +73,417 @@
 #define GRAPHENE_NET_HELLO_UNDERSTANDS_ITEM_BUSY             "understands_item_busy"
 
 /**
- * A requested transaction times out (and the peer is dropped) once active_ignored_request_timeout_microseconds have
- * passed both since we asked for it and since the peer last delivered one we asked for, so a peer delivering a large
- * window over a slow link keeps it, but one answering that it doesn't have them does not.  A block times out from its
- * request, whatever the peer delivers meanwhile.  However steadily the peer delivers others, a transaction still
- * outstanding this many timeouts after we asked for it times out too.  With the default 6 s timeout that is 18 s,
- * well within GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES, so the peer is dropped while the records of who else
- * advertised what it held are still there to ask them.  18 s receives what a peer may owe us at the estimated
- * transaction size (its queued reply budget and our byte window, 1 MiB) at about 0.5 Mbit/s, and the most it may
- * defer after a jump in size (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER) at about 4 Mbit/s; a
- * slower link is dropped and what it held is fetched from the others.
+ * Define this to enable debugging code in the p2p network interface.
+ * This is code that would never be executed in normal operation, but is
+ * used for automated testing (creating artificial net splits,
+ * tracking where messages came from and when)
  */
-#define GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING 3
+#define ENABLE_P2P_DEBUGGING_API                             1
 
 /**
- * A block request during normal operation times out active_ignored_request_timeout after it was made or after bytes
- * of a block message from the peer last arrived, whichever is later (see requested_items::timed_out()): a large
- * block downloading over a slow link of ours is not the peer ignoring us.  But a block still outstanding this many
- * timeouts after we asked for it times out however it arrives (12 s with the default 6 s timeout, four blocks late),
- * so a peer sending a few bytes at a time can't hold the request forever.
+ * 2MiB
  */
-#define GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING 2
+#define MAX_MESSAGE_SIZE                                     (1024*1024*2 + 20) //20 for block_type_id size
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Connection admission: dialing, handshakes, per-host and per-family shares.
+// Owner: node_impl::p2p_network_connect_loop(), accept_loop(), on_hello_message(), select_connection_candidates()
+// ---------------------------------------------------------------------------------------------------------------------
+
+#define GRAPHENE_NET_TEST_SEED_IP                            "104.236.44.210" // autogenerated
+#define GRAPHENE_NET_TEST_P2P_PORT                           1700
+#define GRAPHENE_NET_DEFAULT_P2P_PORT                        1776
+#define GRAPHENE_NET_DEFAULT_DESIRED_CONNECTIONS             20
+#define GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS                 200
+#define GRAPHENE_NET_DEFAULT_PEER_CONNECTION_RETRY_TIME      30 // seconds
+#define GRAPHENE_NET_MAX_PEERDB_SIZE                           1000
+#define GRAPHENE_NET_FETCH_UPDATED_PEER_LISTS_INTERVAL_MINUTES 15
+#define GRAPHENE_NET_FIREWALL_CHECK_MESSAGE_INTERVAL_MINUTES   5
+#define GRAPHENE_NET_PORT_WAIT_DELAY_SECONDS                   5
+
+/**
+ * The connect loop runs again when it is triggered (a peer was added or learned, a connection closed or
+ * failed), but at most once per GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS: a peer that accepts the
+ * handshake and drops us, or whose address pair is still held by our previous connection, is due again
+ * at once and triggers the loop each time, so the interval bounds how often such a peer is redialed.
+ * Without a trigger it runs again GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC after an iteration, for
+ * state changes that do not trigger it (a peer's retry delay expiring).
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_CONNECT_LOOP_MINIMUM_INTERVAL_MS        1000
+#define GRAPHENE_NET_CONNECT_LOOP_MAXIMUM_WAIT_SEC           10
+
+// how long the connect loop trusts a route-lookup result for a peer address before probing
+// again, so that interface/route changes (link coming up, a default route appearing) are
+// picked up without re-probing every candidate on every pass
+#define GRAPHENE_NET_ROUTE_PROBE_CACHE_SEC                         60
+
+/// node_configuration::peer_inactivity_timeout's default: a handshaking connection that exchanged no message for this long is closed
+#define GRAPHENE_NET_PEER_HANDSHAKE_INACTIVITY_TIMEOUT       5
+
+/**
+ * A connection still handshaking (key exchange, hellos, address exchange) this many seconds after it was accepted
+ * or dialed is closed, whatever it sends meanwhile: the inactivity timeout above counts any message as activity, and
+ * a peer may send time and address requests before its hello.  An honest handshake takes a few round trips.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_HANDSHAKE_DEADLINE_SEC                  15
+/**
+ * How many inbound connections whose hello we haven't accepted the node holds at once; one accepted past it is
+ * closed at once.  Such connections hold no connection slot (they don't count toward the desired or maximum number
+ * of connections), so peers that never send a hello can't keep the node from dialing or from accepting hellos.
+ * Basis: unvalidated.
+ */
+#define GRAPHENE_NET_MAXIMUM_HANDSHAKING_INBOUND_CONNECTIONS 32
+/**
+ * How many of those may come from one host (connection_host_of()) at once, unless its address is exempt from the
+ * per-host limit or the limit is 0.  A host that already holds as many connections whose hello we accepted as a
+ * hard per-host limit allows (node_configuration::relax_per_host_limit false) may have one, to be told so in the
+ * rejection of its hello.
+ * Basis: unvalidated.
+ */
+#define GRAPHENE_NET_MAXIMUM_HANDSHAKING_CONNECTIONS_PER_HOST 2
+/**
+ * How often, at most, a node closing inbound connections at accept (see above) warns that it does, with their count
+ */
+#define GRAPHENE_NET_REFUSED_HANDSHAKE_WARNING_INTERVAL_SEC  60
+/**
+ * Until we accept a peer's hello, a message it announces as larger than this ends the connection before anything is
+ * allocated for it.  The messages allowed before a hello are small; an address message is the largest, about 70 bytes
+ * an address.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_MAXIMUM_HANDSHAKE_MESSAGE_SIZE          (64 * 1024)
+/**
+ * The size of a connection's read buffer and of the stcp_socket read and write buffers until we accept the peer's
+ * hello (GRAPHENE_NET_CONNECTION_BUFFER_SIZE after that), so a connection that never gets there costs little memory.
+ * Basis: measured (heap per handshaking connection about 62 KB against 211-232 KB with the full buffers).
+ */
+#define GRAPHENE_NET_HANDSHAKE_BUFFER_SIZE                   (2 * 1024)
+/**
+ * The size of those buffers once we have accepted the peer's hello: each read takes whatever the kernel holds, up to
+ * this much, so a busy connection is read in few reads.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_CONNECTION_BUFFER_SIZE                  (64 * 1024)
+
+/**
+ * node_configuration::maximum_connections_per_host's default: how many connections, at most, are held to one host
+ * (an IPv4 address or an IPv6 /64).  Several nodes run on one machine have node ids of their own, so without it a
+ * host offering many ports can take most of the connection slots.  0 for no limit.  Addresses in
+ * node_configuration::host_limit_exempt_subnets (loopback by default) are never limited, and neither are seed and
+ * add-node targets.  Whether the limit gives way while candidates on other hosts can't fill the desired connections
+ * is node_configuration::relax_per_host_limit.
+ * Basis: unvalidated.
+ */
+#define GRAPHENE_NET_DEFAULT_MAX_CONNECTIONS_PER_HOST        2
+/**
+ * The share, in percent of the desired connections, that the connect loop reserves for each address family while
+ * that family has candidates to dial; the rest go IPv6 first.  At most 50.
+ * Basis: unvalidated.
+ */
+#define GRAPHENE_NET_DEFAULT_RESERVED_ADDRESS_FAMILY_PERCENT 25
+/**
+ * How often, at most, a node refusing hellos for the per-host limit warns that most of its inbound connections come
+ * from the refused peer's host, which is what a proxy rewriting source addresses looks like.
+ */
+#define GRAPHENE_NET_SHARED_INBOUND_HOST_WARNING_INTERVAL_SEC 600
+/**
+ * How often, at most, a node says that it let connections past a relaxed per-host limit, which it does while no
+ * candidates on other hosts fill its desired connections.
+ */
+#define GRAPHENE_NET_HOST_LIMIT_RELAXED_LOG_INTERVAL_SEC     600
+/**
+ * Default node_configuration::host_limit_relax_delay: for how many seconds after the node starts a relaxed per-host
+ * limit stays hard.  Right after a restart the connect loop knows few hosts, and relaxing at once would let the first
+ * host it reaches take most of the slots before peer exchange names others.
+ * Basis: unvalidated.
+ */
+#define GRAPHENE_NET_DEFAULT_HOST_LIMIT_RELAX_DELAY_SEC      60
+/**
+ * How many of the candidates the per-host limit left out the connect loop considers per pass while the limit is
+ * relaxed (the first ones, in the peer database's order: most recently seen first).  Each relaxed step looks at each
+ * of them, so this bounds a pass however many candidates one host offers.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_MAX_RELAXED_CANDIDATES_PER_PASS         64
+/**
+ * How many failed attempts a rejection with too_many_connections_from_host counts toward a peer's retry backoff at
+ * most: such a rejection says the peer's host is full now, maybe because another node shares our address (a NAT or
+ * a shared /64), not that the peer is gone, so the redial delay stops growing at (this + 1) * peer_connection_retry_timeout.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_MAX_HOST_LIMIT_REJECTIONS_COUNTED       2
+
+// how far a peer's head may lag behind the oldest block we still have (our tail block, above 1
+// only when we prune our block log) and still be treated as a peer we can serve.  A node that
+// keeps no block log (block-log-split = 0) has its last irreversible block as the tail, and with
+// one-block irreversibility that is its head block or close to it, so peers in live sync are
+// often momentarily behind it; they get the missing blocks through normal block propagation.
+// Peers further behind are rejected at the handshake or disconnected with an explanation,
+// instead of being sent block ids we don't have
+#define GRAPHENE_NET_PRUNED_TAIL_GRACE_BLOCKS                      20
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Send queue and the transaction budget.  Owner: peer_connection (send_queueable_message(), send_transaction_reply(),
+// send_transaction_inventory(), send_queued_messages_task())
+//
+// A peer's send queue holds at most GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES; a message that would take it over
+// closes the connection.  A queued block counts only the few bytes of its placeholder
+// (peer_connection::virtual_queued_block_message): it is looked up and built only when it nears the front of the queue
+// (GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD), so blocks never use the queue's bytes, and need no share of them.  What
+// does count is transaction traffic and the other messages built when queued (sync item id inventories, address
+// lists, requests).  Transaction traffic is kept to GRAPHENE_NET_TRANSACTION_BUDGET_BYTES of the queue: what goes past
+// it waits outside the queue and is queued as the queue drains.  The other half is headroom for the other messages,
+// for the one transaction a reply or inventory may queue past the budget, and for an older peer that queues its whole
+// reply at once.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/// Basis: reasoned (inherited from graphene).
+#define GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES        (1024 * 1024)
+
+/**
+ * The one transaction byte budget the node and its peers' send queues agree on.  The four 512 KiB limits are this
+ * value, so they can't drift apart:
+ *  - GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES: replies we queue for a peer (sender side)
+ *  - GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES: inventory we queue for a peer (sender side)
+ *  - GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH: what one of our requests may expect back (requester side)
+ *  - GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER: what all our requests to a peer may expect back (requester side)
+ * The requester-side limits equal the sender-side reply budget so that a full request, or our whole window, fits in
+ * the part of a peer's queue its replies may use.
+ * Basis: derived (half of GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES).
+ */
+#define GRAPHENE_NET_TRANSACTION_BUDGET_BYTES                (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2)
+
+/**
+ * The transactions a peer asks for are queued for it only while its send queue holds at most this many bytes;
+ * the rest of the reply waits outside the queue and is queued, in order, as the queue drains.  However large
+ * the transactions it asked for turn out to be, a reply never takes the queue over
+ * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES.
+ * Basis: derived (GRAPHENE_NET_TRANSACTION_BUDGET_BYTES).
+ */
+#define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES  GRAPHENE_NET_TRANSACTION_BUDGET_BYTES
+/**
+ * A transaction inventory we advertise to a peer is queued only if the peer's send queue holds at most this many
+ * bytes with it; otherwise its ids wait outside the queue and are queued, newest first, as the queue drains (see
+ * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER).  Inventories are queued for every peer as fast as
+ * transactions arrive, whatever the peer reads, so a burst of new transactions toward a slow reader would otherwise
+ * take its queue over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES and close the connection.  The budget is the one
+ * replies get, so inventory and replies together stay within it.
+ * Basis: derived (GRAPHENE_NET_TRANSACTION_BUDGET_BYTES).
+ */
+#define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES GRAPHENE_NET_TRANSACTION_BUDGET_BYTES
+/**
+ * The most transaction ids one inventory message we advertise carries: a quarter of
+ * GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES, so a queue holding other traffic still has room for one
+ * and the next can be queued before the previous one has been written out.
+ * Basis: derived (20 bytes an id).
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 4 / 20)
+/**
+ * How many transaction ids to advertise may wait, per peer, for its send queue to drain below
+ * GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES: as many as that budget holds.  Past it the oldest are
+ * dropped, and the peer learns of those transactions from another peer or from a block.  Stale ids are dropped
+ * sooner (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS).
+ * Basis: derived (20 bytes an id).
+ */
+#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 20)
+/**
+ * How long, at most, a transaction id to advertise waits for the peer's send queue to drain
+ * (GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES) before it is dropped as stale: two block intervals.  By
+ * then the transaction is probably in a block or the peer has it from another peer, and a fast-confirm that late
+ * no longer helps its block become irreversible sooner.
+ * Basis: reasoned (two 3 s block intervals).
+ */
+#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS 6000
+/**
+ * How often (at most) we log, per peer, the transaction ids to advertise that were dropped because too many waited
+ * for its send queue (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER) or they had waited too long
+ * (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS) or were no longer cached
+ */
+#define GRAPHENE_NET_DROPPED_TRANSACTION_INVENTORY_REPORT_INTERVAL_SEC 10
+/**
+ * How many requested transactions may wait for room in one peer's send queue
+ * (see GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES); a peer asking for more than that while they wait
+ * is told the rest are not available (or that we are busy, item_busy_message).  Twice what we ourselves keep
+ * outstanding with a peer (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER), so a peer requesting as we do never
+ * gets there.
+ * Basis: derived (2 * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER).
+ */
+#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER (2 * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER)
+/**
+ * How many bytes of requested transactions may wait for room in one peer's send queue, as
+ * GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLIES_PER_PEER bounds their count: past it, further transactions the peer
+ * asks for are not available.  Our own full item window after a jump to 8 KB transactions (6.4 MB) still waits in
+ * full, while a peer that stops reading holds this much at most rather than its count of the largest transactions.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER (8 * 1024 * 1024)
+/**
+ * A block a peer asks for is queued for sending as its id, and looked up only once it is one of
+ * this many messages at the front of the peer's send queue: the lookups (and the compression the
+ * worker threads may do for that peer) run ahead of the message being sent, while the blocks held
+ * for one peer stay this few however many it asks for.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD           4
+
+/**
+ * A peer's queued messages are written to its socket together until the batch reaches this many
+ * bytes; the message that crosses the bound is still part of the batch.
+ * Basis: reasoned (the size of one connection buffer).
+ */
+#define GRAPHENE_NET_MAXIMUM_BATCHED_SEND_BYTES              (64 * 1024)
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Transaction fetching: per-peer windows, the node-wide gate and its minimum, advertised inventory.
+// Owner: node_impl::fetch_items_loop() (transaction_fetch_gate, fetch_minimum_schedule, fetch_turn_order,
+// transaction_size_estimate), node_impl::on_item_ids_inventory_message()
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * During normal operation, how many transactions one request will fetch
+ * from a peer (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER bounds all
+ * those outstanding with it).  This will only come into play when the network
+ * is being flooded -- typically transactions will be fetched as soon
+ * as we find out about them, so only one item will be requested
+ * at a time.  GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH lowers it for
+ * a peer sending large transactions.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION  400
+
+/**
+ * How many transactions may be outstanding with one peer during normal operation, over all the requests
+ * in flight with it.  The next request may go out before earlier replies have fully arrived, so a
+ * high-latency link carries up to this many transactions per round trip rather than one request's worth.
+ * It also bounds what a stalled peer holds back until its requests time out or it disconnects.
+ * Basis: derived (two requests).
+ */
+#define GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER  (2 * GRAPHENE_NET_MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION)
+
+/**
+ * How many bytes of transactions we expect all the requests outstanding with one peer to bring back, at
+ * most, unless one full request (see GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH) expects more.  The
+ * expectation is the peer's mean transaction size, which learns of larger transactions only as their replies
+ * arrive, so the peer may owe us several times this after a jump in transaction size.  The peer does not drop
+ * us for it: it queues our replies only up to GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES and the rest
+ * as its queue drains (older peers drop us when their queue passes GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES,
+ * which no window based on the mean can rule out).  So this only bounds what a slow or stalled peer holds back;
+ * it lets a mix of transactions of a few hundred bytes fill the whole item window
+ * (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER), two full requests per round trip.
+ * Applies only to a peer that says in its hello that it defers replies so (GRAPHENE_NET_HELLO_DEFERS_TRANSACTION_REPLIES):
+ * an older peer keeps no more than one full request outstanding, as before pipelining, so a jump in transaction size
+ * takes its queue over the limit no sooner than it did then.
+ * Basis: derived (GRAPHENE_NET_TRANSACTION_BUDGET_BYTES).
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER  GRAPHENE_NET_TRANSACTION_BUDGET_BYTES
 
 /**
  * How many bytes of transactions we expect a single transaction request to bring back, at most.
- * The peer queues its whole reply at once and drops us when its queue passes
+ * An older peer queues its whole reply at once and drops us when its queue passes
  * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, so this leaves it room for other traffic and for
  * transactions larger than the peer's recent mean.
+ * Basis: derived (GRAPHENE_NET_TRANSACTION_BUDGET_BYTES).
  */
-#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH         (512 * 1024)
+#define GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH         GRAPHENE_NET_TRANSACTION_BUDGET_BYTES
 
 /**
  * The transaction size assumed for a peer that has not sent us a transaction yet: the largest
  * transaction, so the first requests stay within GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH whatever the
  * peer sends.  Needs hive/protocol/config.hpp where it is used.
+ * Basis: derived (HIVE_MAX_TRANSACTION_SIZE).
  */
 #define GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE       HIVE_MAX_TRANSACTION_SIZE
+
+/**
+ * The transaction fetch gate (graphene::net::transaction_fetch_gate_threshold()) closes while the pending pool holds
+ * more than max-mempool-size divided by this, which leaves the rest of the pool for API submissions, fork switches and
+ * replies already on their way.
+ * Basis: unvalidated.
+ */
+#define GRAPHENE_NET_TRANSACTION_FETCH_GATE_POOL_DIVISOR     3
+
+/**
+ * While the pending pool holds more than its gate threshold (graphene::net::is_transaction_fetching_gated())
+ * the node requests no transactions, and checks again this often whether the pool has drained below that while
+ * transactions wait to be fetched.  The pool drains when a block is applied, so a fraction of the block interval
+ * is enough.  Meanwhile arriving inventory and replies wake the fetch loop no more often than this either (blocks
+ * still wake it at once), since only the gate's minimum (GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH) could be requested.
+ * Basis: unvalidated.
+ */
+#define GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS  100
+
+/**
+ * However many transactions the transaction fetch gate withholds (closed, or bounded by its headroom;
+ * graphene::net::transaction_fetch_gate), a fetch pass still requests this many in all, from the peers in turn
+ * (graphene::net::fetch_turn_order), so relay never stops: small and privileged transactions such as fast-confirms
+ * (witness_block_approve) can't be told from the rest before they are fetched.  A pass may do so only once per
+ * GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS (graphene::net::fetch_minimum_schedule), so a gated node's intake is
+ * at most 200 transactions a second, in requests of several transactions, however often replies and inventory wake
+ * the fetch loop.  The minimum takes each peer's newest candidates first (graphene::net::fetch_candidate_order): a
+ * fast-confirm is broadcast as soon as its block arrives, so it is among the newest ids its relays advertised, while
+ * a flood's backlog is older.
+ * Basis: unvalidated.
+ */
+#define GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH  20
+
+/**
+ * While the transaction fetch gate withholds transactions (closed or bounded by its headroom), how often (at most)
+ * the node warns that items to fetch expired, with their sum since the last warning
+ * (graphene::net::fetch_expiry_warning_limiter)
+ */
+#define GRAPHENE_NET_GATED_FETCH_EXPIRY_WARNING_INTERVAL_SEC  30
+
+/* recently lowered from 2 minutes -> 1 minute, to match the cache
+ * duration/default wallet expiration time */
+#define GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES           1
+
+/// Basis: reasoned (inherited from graphene).
+#define GRAPHENE_NET_MAX_TRX_PER_SECOND                      1000
+
+/**
+ * How many transactions one peer may have advertised to us within the inventory window
+ * (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES) before further advertisements wait or are dropped.  An item_ids_inventory
+ * message carrying more ids than this is no advertisement a peer could make, and its sender is disconnected.
+ * Basis: derived (the window times GRAPHENE_NET_MAX_TRX_PER_SECOND).
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER      (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60)
+#define GRAPHENE_NET_MAX_ITEM_IDS_PER_INVENTORY_MESSAGE      GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER
+
+/**
+ * The most transactions one fetch_items message may ask for: twice what we ourselves keep outstanding with a peer
+ * (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER).  A peer asking for more is disconnected.
+ * Basis: derived.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTIONS_PER_FETCH_REQUEST      (2 * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER)
+
+/**
+ * How often (at most) we log, per peer, that advertisements were deferred or
+ * dropped because the peer exceeded our inventory limit
+ */
+#define GRAPHENE_NET_INVENTORY_LIMIT_REPORT_INTERVAL_SEC     10
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Block fetching during normal operation and sync.  Owner: node_impl::fetch_items_loop() (judge_fetch_candidate(),
+// choose_block_source()), node_impl::rerequest_overdue_blocks(), fetch_sync_items_loop()
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * During normal operation, how many blocks will be fetched from each
+ * peer at a time.  A request that reaches this many blocks asks for
+ * no transactions.
+ */
+#define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_NORMAL_OPERATION  100
+
+#define GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING      200
+
+/**
+ * The most blocks one fetch_items message may ask for: a sync request's worth.  Our own sync requests stay within it
+ * whatever maximum_blocks_per_peer_during_syncing says, and a peer asking for more is disconnected.
+ * Basis: derived.
+ */
+#define GRAPHENE_NET_MAX_BLOCKS_PER_FETCH_REQUEST            GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING
 
 /**
  * Instead of fetching all item IDs from a peer, then fetching all blocks
@@ -563,52 +496,259 @@
 #define GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_HANDLE_AT_ONE_TIME 200
 #define GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_PREFETCH           (100* GRAPHENE_NET_MAX_NUMBER_OF_BLOCKS_TO_HANDLE_AT_ONE_TIME)
 
-#define GRAPHENE_NET_MAX_TRX_PER_SECOND                      1000
+/**
+ * We prevent a peer from offering us a list of blocks which, if we fetched them
+ * all, would result in a blockchain that extended into the future.
+ * This parameter gives us some wiggle room, allowing a peer to give us blocks
+ * that would put our blockchain up to an hour in the future, just in case
+ * our clock is a bit off.
+ */
+#define GRAPHENE_NET_FUTURE_SYNC_BLOCKS_GRACE_PERIOD_SEC     (60 * 60)
+
+// how far past our current head an advertised block id may claim to be and still be worth
+// fetching.  Legitimate live adverts are at most a block or two ahead; this allows for
+// generous clock skew and momentary head lag while rejecting fabricated far-future ids
+#define GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS                 20
+
+// a block we asked a peer for during normal operation is asked of another peer that advertised it too once
+// every request for it outstanding is past its deadline, and the peers that kept us waiting are asked for blocks
+// only when no other peer has them (see peer_connection::is_block_fetching_deprioritized()).  Their requests stay
+// outstanding, so they may still deliver, and are judged by active_ignored_request_timeout as before.  The first
+// request for a block has this deadline, and each later one twice that of the one before (1 s, 2 s, 4 s, see
+// block_request_deadline()), so a large block on a slow link is not downloaded again every second.  At most
+// GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK requests for a block are outstanding: then we wait for a copy
+// or until one of them ends.  A block is propagated in well under a second, so k peers that withhold one in a
+// row cost us 1 s, 3 s, 7 s for k = 1, 2, 3; with three, the next is asked once the third one's deadline passes
+// (7 s after the first request) or, if later, when the first one's request times out.  Deadlines run from when a
+// request was written to the socket, and none passes while the block is visibly arriving from a peer asked for it
+// (see block_download_holds_rerequest_until()).
+// Basis: reasoned.
+#define GRAPHENE_NET_BLOCK_REREQUEST_TIMEOUT_MS                    1000
+#define GRAPHENE_NET_MAX_OUTSTANDING_REQUESTS_PER_BLOCK            3
+
+// a copy of a block that arrives after its request's deadline, once we have the block from another peer, restores
+// the peer's block-fetching priority only if it starts arriving (its first bytes, see
+// message_oriented_connection::get_message_in_progress()) within this many deadlines after the deadline, and never
+// later than half of active_ignored_request_timeout after the request was written (unless that is before the deadline): see
+// block_copy_grace().  A later copy counts as withholding the block (an unavailable item strike, from a peer that says
+// in its hello that it queues blocks ahead of its transaction traffic, GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST).  So a slow link
+// keeps its standing, but a peer can't withhold a block until just before its request times out and then have
+// its copy reset its standing.
+// Basis: reasoned.
+#define GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES                    2
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Withholding: the demotion pair and strikes.  Owner: node_impl::record_withholding_strike(),
+// peer_connection::is_transaction_fetching_inhibited(), peer_connection::is_block_fetching_deprioritized()
+//
+// The demotion pair: a peer that kept us waiting for an item is demoted for transactions for
+// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC (asked for none) and for blocks for GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC
+// (asked only when no other peer has them).  The block demotion is the longer one because it only orders the sources
+// of a block, which costs an honest peer little, while block withholding delays the chain.  Strikes are spaced one
+// transaction demotion apart, so a block demotion spans several of them.
+// ---------------------------------------------------------------------------------------------------------------------
+
+// a peer that answers item_not_available for an item it advertised to us is asked for no transactions for
+// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC, and for blocks only when no other peer has them for
+// GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC; such answers count as one strike per
+// GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC, so a peer demoted for transactions earns at most one strike per
+// demotion.  At GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES strikes with no requested item (block or transaction)
+// delivered in between it is disconnected.  Each strike is forgotten GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC
+// after it was made: a peer in sync is rarely the first to advertise an item, so it rarely delivers one to clear them.
+// An honest peer says so only when an item left its cache, so the strikes cost it little; one whose replies to us
+// are backed up says it is busy instead (item_busy_message, to a peer that says in its hello it understands it), which
+// is no strike.  A peer advertising items it doesn't have would otherwise hold requests (and the fetch gate's
+// headroom) for nothing as often as it likes.  A block copy that arrives past its grace
+// (GRAPHENE_NET_BLOCK_COPY_GRACE_DEADLINES) counts as such an answer, from a peer that queues blocks ahead of
+// transactions (GRAPHENE_NET_HELLO_QUEUES_BLOCKS_FIRST) only.
+// Basis: reasoned.
+#define GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC                 10
+#define GRAPHENE_NET_MAX_UNAVAILABLE_ITEM_STRIKES                  3
+#define GRAPHENE_NET_UNAVAILABLE_ITEM_STRIKE_DECAY_SEC             600
+
+// how long a peer that kept us waiting for a block (past its deadline, an item_not_available answer, a copy past its
+// grace, or a block whose body didn't match its header while the breaker kept it) is asked for blocks only when no
+// other peer has them (see peer_connection::is_block_fetching_deprioritized()); the second of the demotion pair above.
+// Basis: reasoned.
+#define GRAPHENE_NET_BLOCK_FETCHING_DEMOTION_SEC                   60
+
+// how often, at most, a node warns that it struck a peer for withholding items or disconnected one for its strikes;
+// the strikes and disconnects in between are counted in the next warning (all of them are counted in the p2p
+// statistics' "withholding" report)
+#define GRAPHENE_NET_WITHHOLDING_WARNING_INTERVAL_SEC              60
+
+// how often, at most, a node warns that it answered a peer's transaction requests as not available
+// because the replies already waiting for that peer's send queue are at their limit; the requests
+// answered so in between are counted in the next warning
+#define GRAPHENE_NET_NOT_AVAILABLE_WARNING_INTERVAL_SEC            60
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Liveness: request timeouts, the slow-reader rule, stall recovery, and the disconnect breakers.
+// Owner: node_impl::terminate_inactive_connections_loop() (judge_handshaking_connection(), judge_active_connection()),
+// node_impl::restart_sync_if_head_stalled(), node_impl::find_idle_peers_to_replace()
+//
+// Three rules act when our head has not advanced for 60 s, and don't overlap.  In every pass of
+// terminate_inactive_connections_loop() the breaker override comes first and drops only peers whose blocks were
+// rejected while a breaker held them; idle replacement (off by default) comes last but one and drops peers that
+// delivered no block while another did, with a window that must be longer than the restart's; the sync restart comes
+// last and asks the peers we keep.
+// ---------------------------------------------------------------------------------------------------------------------
 
 /**
- * How many transactions one peer may have advertised to us within the inventory window
- * (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES) before further advertisements wait or are dropped.  An item_ids_inventory
- * message carrying more ids than this is no advertisement a peer could make, and its sender is disconnected.
- */
-#define GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER      (GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES * GRAPHENE_NET_MAX_TRX_PER_SECOND * 60)
-#define GRAPHENE_NET_MAX_ITEM_IDS_PER_INVENTORY_MESSAGE      GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_PER_PEER
-
-/**
- * The most blocks one fetch_items message may ask for: a sync request's worth.  Our own sync requests stay within it
- * whatever maximum_blocks_per_peer_during_syncing says, and a peer asking for more is disconnected.
- */
-#define GRAPHENE_NET_MAX_BLOCKS_PER_FETCH_REQUEST            GRAPHENE_NET_MAX_BLOCKS_PER_PEER_DURING_SYNCING
-/**
- * The most transactions one fetch_items message may ask for: twice what we ourselves keep outstanding with a peer
- * (GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER).  A peer asking for more is disconnected.
- */
-#define GRAPHENE_NET_MAX_TRANSACTIONS_PER_FETCH_REQUEST      (2 * GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER)
-
-/**
- * Set the ignored request time out to 1 second.  When we request a block
- * or transaction from a peer, this timeout determines how long we wait for them
- * to reply before we give up and ask another peer for the item.
- * Ideally this should be significantly shorter than the block interval, because
- * we'd like to realize the block isn't coming and fetch it from a different
- * peer before the next block comes in.  At the current target of 3 second blocks,
- * 1 second seems reasonable.  When we get closer to our eventual target of 1 second
- * blocks, this will need to be re-evaluated (i.e., can we set the timeout to 500ms
- * and still handle normal network & processing delays without excessive disconnects)
+ * Default active_ignored_request_timeout_microseconds, in seconds.  When we request a block or transaction from a
+ * peer, this timeout determines how long we wait for them to reply before we give up and drop it, so the item is
+ * asked of another peer.  Increased to 6 from 1 in steem #1660 due to heavy load.
+ * Basis: reasoned.
  */
 #define GRAPHENE_NET_ACTIVE_IGNORED_REQUEST_TIMEOUT_SECONDS    6
 
+/**
+ * A requested transaction times out (and the peer is dropped) once active_ignored_request_timeout_microseconds have
+ * passed both since we asked for it and since the peer last delivered one we asked for, so a peer delivering a large
+ * window over a slow link keeps it, but one answering that it doesn't have them does not.  A block times out from its
+ * request, whatever the peer delivers meanwhile.  However steadily the peer delivers others, a transaction still
+ * outstanding this many timeouts after we asked for it times out too.  With the default 6 s timeout that is 18 s,
+ * well within GRAPHENE_NET_MAX_INVENTORY_SIZE_IN_MINUTES, so the peer is dropped while the records of who else
+ * advertised what it held are still there to ask them.  18 s receives what a peer may owe us at the estimated
+ * transaction size (its queued reply budget and our byte window, 1 MiB) at about 0.5 Mbit/s, and the most it may
+ * defer after a jump in size (GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_REPLY_BYTES_PER_PEER) at about 4 Mbit/s; a
+ * slower link is dropped and what it held is fetched from the others.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_MAX_TRANSACTION_REQUEST_TIMEOUTS_WHILE_DELIVERING 3
+
+/**
+ * A block request during normal operation times out active_ignored_request_timeout after it was made or after bytes
+ * of a block message from the peer last arrived, whichever is later (see requested_items::timed_out()): a large
+ * block downloading over a slow link of ours is not the peer ignoring us.  But a block still outstanding this many
+ * timeouts after we asked for it times out however it arrives (12 s with the default 6 s timeout, four blocks late),
+ * so a peer sending a few bytes at a time can't hold the request forever.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_MAX_BLOCK_REQUEST_TIMEOUTS_WHILE_DOWNLOADING 2
+
+/**
+ * The slow-reader rule: an active peer to which we have had something to send, and of which nothing has been written
+ * to its socket, for this many seconds is disconnected: it doesn't read what we send.  Transaction replies and
+ * inventory waiting outside the send queue for it to drain count as something to send, since one of them is queued
+ * whenever the queue empties.  Progress is seen one socket write (at most GRAPHENE_NET_CONNECTION_BUFFER_SIZE) at a
+ * time, not one message, so a slow link carrying a large block keeps the connection, and so does a peer back from a
+ * brief stall.  The other bound on a slow reader is GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, which closes the
+ * connection at once when a message would take the queue over it.
+ * Basis: reasoned.
+ */
+#define GRAPHENE_NET_SEND_STALL_DISCONNECT_SEC               60
+
+/// a peer we asked to close its connection that hasn't done so this many seconds later is disconnected forcibly
+#define GRAPHENE_NET_PEER_DISCONNECT_TIMEOUT                 20
+/// a connection whose closing didn't finish this many seconds after it was terminated is deleted
 #define GRAPHENE_NET_FAILED_TERMINATE_TIMEOUT_SECONDS          120
 
-#define GRAPHENE_NET_PRUNE_FAILED_IDS_MINUTES                  15
+// circuit breaker for invalid-block punitive disconnects: if we find ourselves kicking more
+// than COUNT peers within WINDOW seconds for offering "invalid" blocks, the far more likely
+// explanation is a systemic event (fork storm, local latency, a bug of ours) than that many
+// simultaneous attackers -- stop disconnecting and fall back to reconciliation until the
+// window drains.  The 2026-07-09 incident was exactly this signature: hundreds of honest
+// peers punished in minutes, every rejection a false positive.
+// Basis: reasoned.
+#define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_COUNT        5
+#define GRAPHENE_NET_INVALID_BLOCK_DISCONNECT_BREAKER_WINDOW_SEC   60
 
-#define GRAPHENE_NET_FETCH_UPDATED_PEER_LISTS_INTERVAL_MINUTES 15
+// a separate breaker with the same semantics for disconnects over a block whose body doesn't
+// match its header's merkle root.  Such a copy says nothing about the block itself, only about
+// the peer that sent it, so it doesn't count toward the breaker above; and a burst of them
+// (which could be a local decoding bug) stops these disconnects instead of isolating the node
+#define GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_COUNT        5
+#define GRAPHENE_NET_BLOCK_BODY_MISMATCH_DISCONNECT_BREAKER_WINDOW_SEC   60
+
+// stall rule 1, the breaker override: if the invalid-block disconnect breaker has been keeping peers whose blocks we
+// rejected, but our head hasn't advanced for this long, the breaker's systemic-blip assumption is
+// falsified -- those peers may be all that's occupying our slots while none of them can
+// feed us the chain.  Revoke the deferral and disconnect them so the connect loop can
+// find replacements.
+// Basis: reasoned.
+#define GRAPHENE_NET_BREAKER_STALL_OVERRIDE_SEC                    60
+
+// stall rule 2, the sync restart: the far-future filter above assumes head lag is momentary.  If our head has not advanced
+// for this long while an established peer keeps advertising blocks past the grace window,
+// the likelier explanation is that we fell behind (e.g. the chain thread stalled long enough
+// for the network to get more than GRAPHENE_NET_FUTURE_BLOCK_IDS_GRACE_BLOCKS ahead) than
+// that the peer is fabricating ids.  Since adverts are dropped before they are recorded and
+// sync otherwise only restarts on a new connection, such a node would stay behind until its
+// next new peer.  Instead we restart sync with the advertising peer, at most once per this
+// interval per peer.  Also the minimum spacing between such restarts for one peer.
+// A peer that knows we are behind advertises nothing to us, so the same interval also
+// restarts sync with every active peer that may be ahead of us once our head has not
+// advanced for it and nothing we asked for is outstanding, advertisement or not.
+// Basis: reasoned.
+#define GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC                       60
+
+// stall rule 3, idle replacement: default node_configuration::idle_peer_disconnect_timeout: a peer that delivered us
+// no block that we pushed for this long while our head is behind and another peer delivered blocks (asking us
+// for blocks or advertising them doesn't count), is disconnected so its slot goes to another candidate, and may not take a
+// slot again, inbound or outbound, for as long.  Longer than GRAPHENE_NET_STALLED_HEAD_RESYNC_SEC,
+// so restarting sync with the peers we have is tried first.  0 disables it, and it is off by
+// default: live checks of the feature found it problematic, and it stays an operator opt-in; 180 is the value to set
+// to enable it.
+// Basis: unvalidated (off by default).
+#define GRAPHENE_NET_DEFAULT_IDLE_PEER_DISCONNECT_TIMEOUT_SEC      0
+
+// idle peers are only replaced while our head block is older than this (the gap at which the
+// chain plugin leaves live sync): a node in sync gets its blocks, and most of its peers never
+// deliver or advertise one first, so their silence says nothing about them
+#define GRAPHENE_NET_IDLE_PEERS_HEAD_BEHIND_SEC                    60
+
+// replacing idle peers leaves at least this many active connections, idle or not, and at least
+// half of node_configuration::desired_number_of_connections
+#define GRAPHENE_NET_IDLE_PEERS_KEPT_AT_LEAST                      2
+
+// idle-peer disconnects logged at warn level per interval; the rest go to the debug log and are
+// counted in the next warning
+#define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNINGS_PER_INTERVAL    10
+#define GRAPHENE_NET_IDLE_PEER_DISCONNECT_WARNING_INTERVAL_SEC     60
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Caches, monitoring and logging.  Owner: node_impl (message cache, statistics_report_loop(), bandwidth_monitor_loop())
+// ---------------------------------------------------------------------------------------------------------------------
+
+/**
+ * When we receive a message from the network, we advertise it to
+ * our peers and save a copy in a cache were we will find it if
+ * a peer requests it.  We expire out old items out of the cache
+ * after this number of blocks go by.
+ *
+ * Recently lowered from 30 to match the default expiration time
+ * the web wallet imposes on transactions.
+ */
+#define GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS        20
+
+/**
+ * Number of transactions the transaction message cache's message hash index is sized for
+ * when the node starts, so it does not rehash on the p2p thread while the cache fills.
+ * It covers GRAPHENE_NET_MESSAGE_CACHE_DURATION_IN_BLOCKS blocks of about 13k
+ * transactions each (over 4k tx/s); a busier network still works, the index just
+ * grows once more.  Costs one bucket pointer per item, 2 MB.
+ * Basis: derived.
+ */
+#define GRAPHENE_NET_TRANSACTION_MESSAGE_CACHE_EXPECTED_SIZE (256 * 1024)
+
+#define GRAPHENE_NET_PRUNE_FAILED_IDS_MINUTES                  15
 
 #define GRAPHENE_NET_BANDWIDTH_MONITOR_INTERVAL_SECONDS        1
 
 #define GRAPHENE_NET_DUMP_NODE_STATUS_INTERVAL_MINUTES         1
 
-#define GRAPHENE_NET_FIREWALL_CHECK_MESSAGE_INTERVAL_MINUTES   5
+/**
+ * How often the node writes its p2p statistics (fetch scheduling, transaction handoff, send batching,
+ * request sizing) to the GRAPHENE_NET_STATISTICS_LOGGER logger, when that logger is enabled for info
+ */
+#define GRAPHENE_NET_STATISTICS_REPORT_INTERVAL_SEC          30
+#define GRAPHENE_NET_STATISTICS_LOGGER                       "p2p_stats"
 
-#define GRAPHENE_NET_PORT_WAIT_DELAY_SECONDS                   5
-
-#define GRAPHENE_NET_MAX_PEERDB_SIZE                           1000
+/**
+ * One in this many transactions, chosen by message hash so every node picks the same ones, is logged with
+ * a real-clock timestamp when received and when broadcast, to the GRAPHENE_NET_RELAY_SAMPLE_LOGGER logger
+ * when that logger is enabled for info
+ */
+#define GRAPHENE_NET_RELAY_SAMPLE_ONE_IN                     64
+#define GRAPHENE_NET_RELAY_SAMPLE_LOGGER                     "p2p_relay_sample"
