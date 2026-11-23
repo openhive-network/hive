@@ -4981,6 +4981,7 @@
       },
       "sort_order_type_enum": {
         "type": "string",
+        "description": "Sort orders of hived's database_api list_* methods. Each method accepts only the orders it documents. by_permlink and by_voter_comment are unsupported: every list_* method rejects them with \"Unknown or unsupported sort order\". They stay in this list so that the values after them keep their positions, because orders are also sent by number.",
         "enum": [
           "by_name",
           "by_proxy",
