@@ -12,6 +12,7 @@
 #include <hive/chain/buffer_type.hpp>
 
 #include <hive/chain/multi_index_types.hpp>
+#include <hive/chain/util/seeded_hash.hpp>
 
 namespace hive {
 
@@ -47,19 +48,19 @@ struct by_name {};
 struct by_name_hash {};
 
 /**
-  * Mixes both words of the name, so names sharing a prefix or differing only in their tail spread over buckets.
-  * Deterministic across builds; only used for point lookups, never for iteration.
+  * Keyed with a random seed of its own (see util::seeded_hash), so bucket order differs between nodes and an author
+  * cannot choose names that collide on every node. An index using it may only be searched, never iterated.
   */
 struct account_name_hash
 {
   size_t operator()( const account_name_type& name )const
   {
-    uint64_t h = name.data.first ^ ( name.data.second * 0x9E3779B97F4A7C15ull );
-    h ^= h >> 32;
-    h *= 0xD6E8FEB86659FD93ull;
-    h ^= h >> 32;
-    return static_cast< size_t >( h );
+    uint64_t words[2] = { name.data.first, name.data.second };
+    return static_cast< size_t >( _hash( words, sizeof( words ) ) );
   }
+
+private:
+  util::seeded_hash _hash;
 };
 
 enum object_type

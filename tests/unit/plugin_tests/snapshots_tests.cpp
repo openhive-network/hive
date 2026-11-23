@@ -346,6 +346,16 @@ void check_startup_refused( snapshots_fixture& fixture, const std::function< voi
   BOOST_CHECK( fixture.get_chain_plugin().startup_refused() );
 }
 
+/// Hash values a hashed index's hasher gives the keys, which decide the buckets the keys are placed in.
+template< typename Hasher, typename Keys >
+std::vector< size_t > hashes_of( const Hasher& hasher, const Keys& keys )
+{
+  std::vector< size_t > hashes;
+  for( const auto& key : keys )
+    hashes.push_back( hasher( key ) );
+  return hashes;
+}
+
 } // namespace
 
 BOOST_FIXTURE_TEST_SUITE( snapshots_tests, snapshots_fixture )
@@ -517,12 +527,17 @@ BOOST_AUTO_TEST_CASE( account_lookup_by_name_after_snapshot_load )
       ids_by_name.emplace( account.get_name(), account.get_id() );
     for( const auto& name : created_names )
       BOOST_REQUIRE( ids_by_name.count( name ) );
+    const std::vector< account_name_type > names( created_names.begin(), created_names.end() );
+    const account_name_hash hash_before_load = db()->get_index< account_index, by_name_hash >().hash_function();
 
     load_snapshot( snapshot_root_dir );
 
     const auto& by_name_idx = db()->get_index< account_index, by_name >();
     const auto& by_name_hash_idx = db()->get_index< account_index, by_name_hash >();
     BOOST_REQUIRE_EQUAL( by_name_hash_idx.size(), by_name_idx.size() );
+    // the loaded state is built in new indexes, seeded anew, so the same names land in other buckets
+    const account_name_hash hash_after_load = by_name_hash_idx.hash_function();
+    BOOST_REQUIRE( hashes_of( hash_before_load, names ) != hashes_of( hash_after_load, names ) );
     for( const auto& [ name, id ] : ids_by_name )
     {
       const account_object* account = db()->find_account( name );
@@ -538,6 +553,19 @@ BOOST_AUTO_TEST_CASE( account_lookup_by_name_after_snapshot_load )
     BOOST_REQUIRE( std::is_sorted( names_in_index_order.begin(), names_in_index_order.end() ) );
     BOOST_REQUIRE_EQUAL( names_in_index_order.size(), ids_by_name.size() );
 
+    generate_block();
+
+    // the seed is kept with the index in shared memory, so a reopened state places names as before and finds them
+    reset_fixture( false );
+    postponed_init();
+    BOOST_REQUIRE( hashes_of( hash_after_load, names ) ==
+      hashes_of( db()->get_index< account_index, by_name_hash >().hash_function(), names ) );
+    for( const auto& [ name, id ] : ids_by_name )
+    {
+      const account_object* account = db()->find_account( name );
+      BOOST_REQUIRE( account != nullptr );
+      BOOST_REQUIRE( account->get_id() == id );
+    }
     generate_block();
   }
   FC_LOG_AND_RETHROW()
@@ -577,7 +605,22 @@ BOOST_AUTO_TEST_CASE( comment_and_witness_lookup_after_snapshot_load )
       witness_ids.emplace( witness.owner, witness.get_id() );
     BOOST_REQUIRE_EQUAL( witness_ids.size(), size_t( HIVE_MAX_WITNESSES ) );
 
+    std::vector< comment_object::author_and_permlink_hash_type > permlink_keys;
+    for( const auto& [ key, id ] : comment_ids )
+      permlink_keys.emplace_back( comment_object::compute_author_and_permlink_hash( key.first, key.second ) );
+    std::vector< account_name_type > witness_names;
+    for( const auto& [ name, id ] : witness_ids )
+      witness_names.emplace_back( name );
+    const author_and_permlink_hash_hasher permlink_hash_before_load = db()->get_index< comment_index, by_permlink >().hash_function();
+    const account_name_hash witness_hash_before_load = db()->get_index< witness_index, by_name_hash >().hash_function();
+
     load_snapshot( snapshot_root_dir );
+
+    // the loaded state is built in new indexes, seeded anew, so the same keys land in other buckets
+    const author_and_permlink_hash_hasher permlink_hash_after_load = db()->get_index< comment_index, by_permlink >().hash_function();
+    const account_name_hash witness_hash_after_load = db()->get_index< witness_index, by_name_hash >().hash_function();
+    BOOST_REQUIRE( hashes_of( permlink_hash_before_load, permlink_keys ) != hashes_of( permlink_hash_after_load, permlink_keys ) );
+    BOOST_REQUIRE( hashes_of( witness_hash_before_load, witness_names ) != hashes_of( witness_hash_after_load, witness_names ) );
 
     for( const auto& [ key, id ] : comment_ids )
     {
@@ -603,6 +646,28 @@ BOOST_AUTO_TEST_CASE( comment_and_witness_lookup_after_snapshot_load )
     BOOST_REQUIRE( db()->find_witness( "nobody" ) == nullptr );
 
     // the node keeps producing blocks on the loaded state
+    generate_block();
+
+    // the seeds are kept with the indexes in shared memory, so a reopened state places keys as before and finds them
+    reset_fixture( false );
+    postponed_init();
+    BOOST_REQUIRE( hashes_of( permlink_hash_after_load, permlink_keys ) ==
+      hashes_of( db()->get_index< comment_index, by_permlink >().hash_function(), permlink_keys ) );
+    BOOST_REQUIRE( hashes_of( witness_hash_after_load, witness_names ) ==
+      hashes_of( db()->get_index< witness_index, by_name_hash >().hash_function(), witness_names ) );
+    for( const auto& [ key, id ] : comment_ids )
+    {
+      const comment_object* comment = db()->find< comment_object, by_permlink >(
+        comment_object::compute_author_and_permlink_hash( key.first, key.second ) );
+      BOOST_REQUIRE( comment != nullptr );
+      BOOST_REQUIRE( comment->get_id() == id );
+    }
+    for( const auto& [ name, id ] : witness_ids )
+    {
+      const witness_object* witness = db()->find_witness( name );
+      BOOST_REQUIRE( witness != nullptr );
+      BOOST_REQUIRE( witness->get_id() == id );
+    }
     generate_block();
   }
   FC_LOG_AND_RETHROW()

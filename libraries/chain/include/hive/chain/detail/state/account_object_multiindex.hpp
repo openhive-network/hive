@@ -17,7 +17,8 @@ namespace hive { namespace chain {
         const_mem_fun< account_object, account_object::id_type, &account_object::get_id > >,
       ordered_unique< tag< by_name >,
         const_mem_fun< account_object, const account_name_type&, &account_object::get_name > >,
-      // by_name stays for iteration in name order; by_name_hash serves point lookups in O(1)
+      // by_name stays for iteration in name order; by_name_hash serves point lookups in O(1) and, being seeded per node,
+      // must never be iterated
       hashed_unique< tag< by_name_hash >,
         const_mem_fun< account_object, const account_name_type&, &account_object::get_name >, account_name_hash >,
       ordered_unique< tag< by_proxy >,
