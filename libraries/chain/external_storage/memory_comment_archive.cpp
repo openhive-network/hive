@@ -5,6 +5,10 @@
 
 namespace hive { namespace chain {
 
+namespace {
+  const char* const ARCHIVE_NAME = "memory_comment_archive";
+}
+
 void memory_comment_archive::on_cashout( uint32_t _block_num, const comment_object& _comment, const comment_cashout_object& _comment_cashout )
 {
   auto time_start = std::chrono::high_resolution_clock::now();
@@ -96,14 +100,23 @@ void memory_comment_archive::open()
 {
   // create or find stored LIB and archive set
   auto s = db.get_segment_manager();
-  archive = s->find_or_construct<archive_object_type>( "memory_comment_archive" )( allocator< archive_object_type >( s ) );
+  archive = s->find<archive_object_type>( ARCHIVE_NAME ).first;
+  if( archive == nullptr )
+  {
+    archive = s->construct<archive_object_type>( ARCHIVE_NAME )( allocator< archive_object_type >( s ) );
+    chainbase::record_container_layout< archive_object_type >( *s, ARCHIVE_NAME );
+  }
+  else
+  {
+    chainbase::verify_container_layout< archive_object_type >( *s, ARCHIVE_NAME );
+  }
   FC_ASSERT( db.get_last_irreversible_block_num() == archive->last_irreversible_block_num, "Data range mismatch between database and comment archive" );
     // did you change comment-archive config option? if so, you need to replay
 }
 
 void memory_comment_archive::on_segment_remapped()
 {
-  archive = db.get_segment_manager()->find<archive_object_type>( "memory_comment_archive" ).first;
+  archive = db.get_segment_manager()->find<archive_object_type>( ARCHIVE_NAME ).first;
   FC_ASSERT( archive, "Comment archive is missing from the remapped storage" );
 }
 
