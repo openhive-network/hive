@@ -294,14 +294,7 @@ void remove_proposal_evaluator::do_apply(const remove_proposal_operation& op)
         /// Do not mark again proposal already flagged for removal, e.g. when someone pushed multiple operations referencing the same proposal.
         /// Try to delete proposal first and mark it for removal only if we reached the threshold.
         if( dhf_helper::remove_proposal( *found_proposal, proposal_vote_idx, _db, obj_perf ) == false && found_proposal->removed == false )
-        {
-          _db.modify( *found_proposal, [new_end_date]( proposal_object& proposal )
-          {
-            proposal.removed = true;
-            proposal.end_date = new_end_date;
-          } );
-          _db.set_may_have_removed_proposals();
-        }
+          dhf_helper::mark_proposal_removed( *found_proposal, new_end_date, _db );
       }
     }
   }

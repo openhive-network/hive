@@ -23,6 +23,7 @@
 #include <hive/chain/util/reward.hpp>
 
 #include <hive/chain/detail/state/dhf_objects.hpp>
+#include <hive/chain/util/dhf_helper.hpp>
 #include <hive/chain/util/dhf_processor.hpp>
 #include <hive/chain/detail/state/comment_object.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
@@ -3832,6 +3833,38 @@ BOOST_AUTO_TEST_CASE( proposals_removing_with_threshold_after_pop_block )
     BOOST_REQUIRE( !db->may_have_removed_proposals() );
 
     validate_database();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( proposal_marked_removed_must_have_ended )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: a proposal can't be marked `removed` with an `end_date` after head block time" );
+
+    ACTORS( DEFAULT_VESTING, (alice) );
+    generate_block();
+
+    set_price_feed( HBD_price( 1000, 1000 ) );
+    generate_block();
+
+    ISSUE_FUNDS( "alice", HBD_asset( 1'000'000 ) );
+    auto start_date = db->head_block_time() + fc::days( 1 );
+    auto end_date = start_date + fc::days( 2 );
+    int64_t id = create_proposal( "alice", db->get_treasury_name(), start_date, end_date, HBD_asset( 100 ), alice_private_key, alice_post_key );
+    generate_block();
+    const proposal_object& proposal = *find_proposal( id );
+
+    HIVE_REQUIRE_ASSERT( dhf_helper::mark_proposal_removed( proposal, db->head_block_time() + fc::seconds( 1 ), *db ),
+      "end_date <= db.head_block_time()" );
+    BOOST_REQUIRE( !proposal.removed );
+    BOOST_REQUIRE( proposal.end_date == end_date );
+
+    dhf_helper::mark_proposal_removed( proposal, db->head_block_time(), *db );
+    BOOST_REQUIRE( proposal.removed );
+    BOOST_REQUIRE( proposal.end_date == db->head_block_time() );
+    BOOST_REQUIRE( db->may_have_removed_proposals() );
   }
   FC_LOG_AND_RETHROW()
 }

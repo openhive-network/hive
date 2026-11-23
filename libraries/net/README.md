@@ -316,7 +316,7 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 | `GRAPHENE_NET_MAX_TRANSACTIONS_IN_FLIGHT_PER_PEER` | `(2 * MAX_TRANSACTIONS_PER_PEER_DURING_NORMAL_OPERATION)` | transactions | per-peer item window | derived: two requests |
 | `GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER` | `TRANSACTION_BUDGET_BYTES` | bytes | per-peer byte window | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
 | `GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH` | `TRANSACTION_BUDGET_BYTES` | bytes | one request | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
-| `GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE` | `HIVE_MAX_TRANSACTION_SIZE` | bytes | size assumed before a peer sent any | derived: HIVE_MAX_TRANSACTION_SIZE |
+| `GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE` | `(64 * 1024)` | bytes | starting guess of a peer's mean transaction size, not a bound | unvalidated |
 | `GRAPHENE_NET_TRANSACTION_FETCH_GATE_POOL_DIVISOR` | `3` | - | gate threshold is max-mempool-size / this | unvalidated |
 | `GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS` | `100` | ms | gate re-check and minimum interval | unvalidated |
 | `GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH` | `20` | transactions | gated minimum per interval | unvalidated |

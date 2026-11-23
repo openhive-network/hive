@@ -381,12 +381,14 @@
 #define GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH         GRAPHENE_NET_TRANSACTION_BUDGET_BYTES
 
 /**
- * The transaction size assumed for a peer that has not sent us a transaction yet: the largest
- * transaction, so the first requests stay within GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH whatever the
- * peer sends.  Needs hive/protocol/config.hpp where it is used.
- * Basis: derived (HIVE_MAX_TRANSACTION_SIZE).
+ * The transaction size assumed for a peer that has not sent us a transaction yet: a starting guess, not a
+ * bound.  A transaction may be as large as the head block allows (maximum_block_size - 256), so a first request
+ * sized by this guess can bring back more than GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH; the peer's measured
+ * mean takes over as its transactions arrive.  Assuming the largest possible transaction instead would make the
+ * first request to a new peer ask for a single transaction.
+ * Basis: unvalidated (the value it had while it was defined as HIVE_MAX_TRANSACTION_SIZE).
  */
-#define GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE       HIVE_MAX_TRANSACTION_SIZE
+#define GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE       (64 * 1024)
 
 /**
  * The transaction fetch gate (graphene::net::transaction_fetch_gate_threshold()) closes while the pending pool holds

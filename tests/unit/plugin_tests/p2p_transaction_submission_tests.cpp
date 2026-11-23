@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE( peer_delivering_steadily_is_kept_past_the_request_timeout 
       std::to_string( timeout.count() ) + "}";
     run( {}, [&]( fc::thread& peer_thread, test_peer&, test_peer& observer )
     {
-      // as many as the first request to a new peer asks for (GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE), so
+      // as many as the first request to a new peer asks for (sized by GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE), so
       // however the node batches its requests no more than these wait at once, and delivering them in request order
       // one per pace keeps every wait within transaction_count * pace, while the last of a full request waits
       // more than the timeout
