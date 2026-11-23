@@ -1,6 +1,7 @@
 #pragma once
 #include <hive/protocol/block.hpp>
 #include <hive/chain/full_block.hpp>
+#include <hive/chain/util/seeded_hash.hpp>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
@@ -115,14 +116,30 @@ namespace hive { namespace chain {
       vector<fork_item>                fetch_block_range_on_main_branch_by_number( const uint32_t first_block_num, const uint32_t count, fc::microseconds wait_for_microseconds = fc::microseconds() )const;
       std::vector<block_id_type> get_blockchain_synopsis(block_id_type reference_point, uint32_t number_of_blocks_after_reference_point, /* out */ fc::optional<uint32_t>& blocks_number_needed_from_block_log)const;
 
+      /**
+        * Keyed with a random seed of its own (see util::seeded_hash): unlinked blocks come from peers, and their ids
+        * must not decide bucket placement. Bucket order is process-specific, so the hashed indexes are only searched;
+        * anything that walks the database walks the block_num index.
+        */
+      struct block_id_hash
+      {
+        size_t operator()( const block_id_type& id )const
+        {
+          return static_cast< size_t >( _hash( id.data(), id.data_size() ) );
+        }
+
+      private:
+        util::seeded_hash _hash;
+      };
+
       struct block_id;
       struct block_num;
       struct by_previous;
       typedef boost::multi_index_container<
         item_ptr,
         boost::multi_index::indexed_by<
-          boost::multi_index::hashed_unique<boost::multi_index::tag<block_id>, boost::multi_index::mem_fun<fork_item, const block_id_type&, &fork_item::get_block_id>, std::hash<fc::ripemd160>>,
-          boost::multi_index::hashed_non_unique<boost::multi_index::tag<by_previous>, boost::multi_index::mem_fun<fork_item, const block_id_type&, &fork_item::previous_id>, std::hash<fc::ripemd160>>,
+          boost::multi_index::hashed_unique<boost::multi_index::tag<block_id>, boost::multi_index::mem_fun<fork_item, const block_id_type&, &fork_item::get_block_id>, block_id_hash>,
+          boost::multi_index::hashed_non_unique<boost::multi_index::tag<by_previous>, boost::multi_index::mem_fun<fork_item, const block_id_type&, &fork_item::previous_id>, block_id_hash>,
           boost::multi_index::ordered_non_unique<boost::multi_index::tag<block_num>, boost::multi_index::mem_fun<fork_item, uint32_t, &fork_item::get_block_num>>
         >
       > fork_multi_index_type;
