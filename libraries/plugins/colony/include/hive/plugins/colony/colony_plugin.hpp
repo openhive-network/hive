@@ -30,6 +30,19 @@ class colony_plugin : public appbase::plugin< colony_plugin >
     virtual void plugin_pre_shutdown() override;
     virtual void plugin_shutdown() override;
 
+    /// counters of the list of accepted transactions waiting for the colony broadcast thread
+    struct broadcast_stats
+    {
+      uint64_t broadcast = 0; ///< handed to p2p
+      uint64_t dropped = 0; ///< not broadcast because the list was full
+      uint64_t abandoned = 0; ///< still waiting when broadcasting stopped
+      size_t queued = 0; ///< waiting now
+      size_t max_queued = 0; ///< longest the list was
+    };
+    broadcast_stats get_broadcast_stats() const;
+    /// makes the broadcast thread wait @p pause after each p2p broadcast, as if p2p thread was that slow (for tests)
+    void set_broadcast_pause( fc::microseconds pause );
+
   private:
     std::unique_ptr< detail::colony_plugin_impl > my;
 };
