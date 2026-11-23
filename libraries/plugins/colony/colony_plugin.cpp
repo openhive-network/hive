@@ -22,9 +22,10 @@
 
 #include <boost/scope_exit.hpp>
 
+#include <condition_variable>
 #include <mutex>
 #include <random>
-#include <unordered_map>
+#include <thread>
 
 #define COLONY_COMMENT_BUFFER 10000 // number of recent comments kept as targets for replies/votes
 #define COLONY_MAX_CONCURRENT_TRANSACTIONS 1000 // default number of transactions per thread that can be sent with no wait
@@ -38,8 +39,6 @@
 #define COLONY_OVERFLOW_TOLERANCE_MIN 100 // minimum margin of overflowing transactions
 #define COLONY_OVERFLOW_TOLERANCE_MAX 500 // maximum margin of overflowing transactions
 #define COLONY_OVERFLOW_TOLERANCE_RATE 500 // percentage rate of allowed overflowing transactions (in BP)
-#define COLONY_STUCK_OWN_TX_BLOCKS 4 // number of consecutive blocks that had room for own transaction but did not
-  // include it, after which the transaction is assumed rejected by the witness and no longer counted as overflow
 
 namespace hive { namespace plugins { namespace colony {
 
@@ -72,9 +71,9 @@ struct operation_params
     FC_ASSERT( exponent >= 0.0, "Exponent has to be positive value." );
   }
 
-  int32_t randomize() const
+  int32_t randomize( std::mt19937& random ) const
   {
-    double x = double( std::rand() ) / double( RAND_MAX );
+    double x = double( random() ) / double( std::mt19937::max() );
     FC_ASSERT( 0.0 <= x && x <= 1.0, "Wrong randomized value ${x}", (x) );
     int32_t extra_operation_size = ( max - min ) * std::pow( x, exponent ) + min;
     return extra_operation_size;
@@ -114,6 +113,7 @@ struct transaction_builder
   std::atomic_uint32_t                                _concurrent_tx_count = 0;
   uint32_t                                            _max_concurrent_tx_count = COLONY_MAX_CONCURRENT_TRANSACTIONS;
   uint32_t                                            _restart_concurrency = COLONY_RESTART_CONCURRENCY;
+  std::mt19937                                        _random; // glibc rand() has one locked state for all threads
 
   hive::protocol::signed_transaction                  _tx;
   std::atomic_bool                                    _tx_needs_update = { true };
@@ -149,7 +149,7 @@ class colony_plugin_impl
     : _chain( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
       _db( _chain.db() ),
       _self( _plugin ), theApp( app ) {}
-    ~colony_plugin_impl() {}
+    ~colony_plugin_impl() { stop_broadcast(); }
 
     void start( uint32_t block_num );
     void scan_accounts( const flat_set<public_key_type>& common_keys, bool active_needed, bool posting_needed,
@@ -160,11 +160,9 @@ class colony_plugin_impl
     void post_apply_transaction( const transaction_notification& note );
     void post_apply_block( const block_notification& note );
 
-    bool tracks_own_transactions() const { return _max_tx_per_block != 0; }
-    void remember_own_transaction( const full_transaction_type& tx ) const;
-    void forget_own_transaction( const transaction_id_type& id ) const;
-    bool is_own_overflowing_transaction( const transaction_id_type& id ) const;
-    void forget_own_transactions_in_block( const full_block_type& block, uint64_t room_left_in_block ) const;
+    void queue_broadcast( const full_transaction_ptr& tx ) const;
+    void broadcast_queued();
+    void stop_broadcast();
 
     chain::chain_plugin&          _chain;
     plugins::p2p::p2p_plugin*     _p2p_ptr = nullptr;
@@ -185,8 +183,8 @@ class colony_plugin_impl
     uint32_t                                             _total_weight = 0;
     uint32_t                                             _max_tx_per_block = -1;
     uint32_t                                             _dynamic_tx_per_block = -1; // updated under _common_mutex
-    uint32_t                                             _overflowing_tx = 0; // own transactions reapplied after last block that could have been in it; updated under db write lock but not always under _common_mutex
-    uint64_t                                             _max_block_size = 0; // limit in effect when last block was produced; updated in post_apply_block
+    uint32_t                                             _overflowing_tx = 0; // updated under db write lock but not always under _common_mutex
+    uint32_t                                             _tx_expiration = HIVE_MAX_TIME_UNTIL_EXPIRATION; // seconds from head block time
     uint32_t                                             _start_at_block = 0;
     uint8_t                                              _max_threads = COLONY_DEFAULT_THREADS;
     bool                                                 _disable_broadcast = false;
@@ -212,28 +210,13 @@ class colony_plugin_impl
     std::array< comment_data, COLONY_COMMENT_BUFFER >    _comments; // updated under _common_mutex
     uint32_t                                             _last_comment = 0; // updated under _common_mutex
 
-    // transactions produced by this colony that did not reach a block yet (limited production only); lets
-    // _overflowing_tx count own overflow and not transactions of other nodes that are pending at block time
-    // just because they are still in transit to the witness; entries that never reach a block (dropped from
-    // pending) are pruned at expiration, so the map is bounded by own production within expiration window;
-    // entries that miss COLONY_STUCK_OWN_TX_BLOCKS blocks in a row that had room for them are pruned too: they
-    // stay valid locally but the witness rejected them (f.e. as conflicting with transaction of other colony)
-    // and since pending transactions are not rebroadcast, they would lower the quota until expiration
-    struct own_pending_tx
-    {
-      fc::time_point_sec expiration;
-      uint32_t           size = 0;
-      bool               missed_block = false; // was left out of at least one block already
-      uint32_t           missed_with_room = 0; // number of consecutive blocks that were not full and left it out
-      // left out of last block although it could have been in it: either the block was full (some own
-      // transaction would not fit in the room it left) or it was already pending at previous block (so it
-      // is not in transit anymore); own transaction missing from a block that had room for it was produced
-      // too late to reach the witness in time and should make next block, so it is not overflow
-      bool               overflowing = false;
-    };
-    mutable std::mutex                                   _own_tx_mutex;
-    mutable std::unordered_map< transaction_id_type, own_pending_tx > _own_pending_tx; // updated under _own_tx_mutex
-    mutable uint64_t                                     _stuck_own_tx = 0; // updated under _own_tx_mutex
+    // accepted transactions are handed to the broadcast thread, because p2p broadcast waits for the p2p thread,
+    // and the writer would wait with the write lock held
+    mutable std::mutex                                   _broadcast_mutex;
+    mutable std::condition_variable                      _broadcast_cv;
+    mutable std::vector< full_transaction_ptr >          _to_broadcast; // updated under _broadcast_mutex
+    std::atomic_bool                                     _stop_broadcast = { false };
+    std::thread                                          _broadcaster; // runs only when _p2p_ptr is set
 };
 
 void transaction_builder::finalize()
@@ -291,6 +274,7 @@ void transaction_builder::init( int starting_point )
 {
   _current_account = _accounts.begin();
   std::advance( _current_account, starting_point % _accounts.size() );
+  _random.seed( starting_point );
   _worker.async( [this]()
   {
     ilog( "Starting thread ${n} with ${w} workers.",
@@ -319,7 +303,7 @@ void colony_transaction_flow_control::on_worker_done( appbase::application& app 
   {
     rethrow_if_exception();
     if( builder._common._p2p_ptr )
-      builder._common._p2p_ptr->broadcast_transaction( get_full_transaction() );
+      builder._common.queue_broadcast( get_full_transaction() );
   }
   catch( const fc::canceled_exception& ex )
   {
@@ -327,7 +311,6 @@ void colony_transaction_flow_control::on_worker_done( appbase::application& app 
   }
   catch( const not_enough_rc_exception& ex )
   {
-    builder._common.forget_own_transaction( get_full_transaction()->get_transaction_id() );
     // elog( "Shortfall of RC during accepting transaction: ${d} transaction: ${t}",
     //  ( "d", ex.to_string() )( "t", full_tx->get_transaction() ) );
     //considering that colony is mostly made to stress test node with large amounts of
@@ -352,12 +335,10 @@ void colony_transaction_flow_control::on_worker_done( appbase::application& app 
     //it would be nice if it triggered app.kill(), because at that point all you get is log spam
     elog( "Exception during accepting transaction: ${d} transaction: ${t}",
       ( "d", ex.to_string() )( "t", get_full_transaction()->get_transaction() ) );
-    builder._common.forget_own_transaction( get_full_transaction()->get_transaction_id() );
     ++builder._failed_transactions;
   }
   catch( ... )
   {
-    builder._common.forget_own_transaction( get_full_transaction()->get_transaction_id() );
     elog( "Unknown exception during accepting transaction ${t}", ( "t", get_full_transaction()->get_transaction() ) );
     ++builder._failed_transactions;
   }
@@ -390,7 +371,6 @@ void transaction_builder::push_transaction( kind_of_operation kind )
     return;
 
   ++_concurrent_tx_count;
-  _common.remember_own_transaction( *full_tx );
   auto ctrl = std::make_shared< colony_transaction_flow_control >( full_tx, *this );
   _common._chain.queue_transaction( ctrl, chain::chain_plugin::lock_type::fc );
 }
@@ -410,12 +390,12 @@ void transaction_builder::build_transaction()
         colony_plugin_impl::read_lock lock( _common._common_mutex, boost::defer_lock_t() );
         lock.lock(); // make sure we wait until post_apply_block updates all common data
         _tx.set_reference_block( _common._head_block_id );
-        _tx.set_expiration( _common._head_block_time + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+        _tx.set_expiration( _common._head_block_time + _common._tx_expiration );
         _block_num = block_header::num_from_id( _common._head_block_id );
         _tx_to_produce = -1;
         // randomize for 10% of max to make it less likely for all workers to wait in the same time
         auto ten_percent = std::max( _common._concurrency / 10, 1u );
-        _max_concurrent_tx_count = _common._concurrency + ( std::rand() % ten_percent );
+        _max_concurrent_tx_count = _common._concurrency + ( _random() % ten_percent );
         _restart_concurrency = _max_concurrent_tx_count / 5; // restart at 20% of max
       }
       else // normal limited production
@@ -427,7 +407,7 @@ void transaction_builder::build_transaction()
         _common._db.with_read_lock( [&]()
         {
           _tx.set_reference_block( _common._head_block_id );
-          _tx.set_expiration( _common._head_block_time + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+          _tx.set_expiration( _common._head_block_time + _common._tx_expiration );
           _block_num = block_header::num_from_id( _common._head_block_id );
           uint32_t effective_total;
           if( _common._overflowing_tx == 0 ) // transactions didn't overflow - go with given max
@@ -452,7 +432,7 @@ void transaction_builder::build_transaction()
       continue;
     }
 
-    uint32_t randomTx = std::rand() % _common._total_weight;
+    uint32_t randomTx = _random() % _common._total_weight;
     const account_name_type account = *_current_account;
     ++_current_account;
     if( _current_account == _accounts.end() )
@@ -536,11 +516,11 @@ void transaction_builder::build_article( const account_name_type& actor, uint64_
   article.parent_permlink = "category" + std::to_string( nonce % 101 );
   article.author = actor;
   article.permlink = "a" + article.title;
-  auto extra_size = _common._params[ ARTICLE ].randomize();
+  auto extra_size = _common._params[ ARTICLE ].randomize( _random );
   _stats[ ARTICLE ].extra_size += extra_size;
   fill_string( article.body, extra_size );
   _tx.operations.emplace_back( article );
-  int beneficiaries_count = std::min( std::rand() % HIVE_MAX_COMMENT_BENEFICIARIES, (int)_accounts.size() - 1 );
+  int beneficiaries_count = std::min( int( _random() % HIVE_MAX_COMMENT_BENEFICIARIES ), (int)_accounts.size() - 1 );
   if( beneficiaries_count > 0 )
   {
     comment_options_operation options;
@@ -563,7 +543,7 @@ void transaction_builder::build_article( const account_name_type& actor, uint64_
 
 void transaction_builder::build_reply( const account_name_type& actor, uint64_t nonce )
 {
-  uint32_t random_comment = std::rand() % COLONY_COMMENT_BUFFER;
+  uint32_t random_comment = _random() % COLONY_COMMENT_BUFFER;
   account_name_type existing_author;
   std::string existing_permlink;
   {
@@ -587,7 +567,7 @@ void transaction_builder::build_reply( const account_name_type& actor, uint64_t 
   reply.parent_permlink = std::move( existing_permlink );
   reply.author = actor;
   reply.permlink = "r" + reply.title;
-  auto extra_size = _common._params[ REPLY ].randomize();
+  auto extra_size = _common._params[ REPLY ].randomize( _random );
   _stats[ REPLY ].extra_size += extra_size;
   fill_string( reply.body, extra_size );
   _tx.operations.emplace_back( reply );
@@ -596,7 +576,7 @@ void transaction_builder::build_reply( const account_name_type& actor, uint64_t 
 
 void transaction_builder::build_vote( const account_name_type& actor, uint64_t nonce )
 {
-  uint32_t random_comment = std::rand() % COLONY_COMMENT_BUFFER;
+  uint32_t random_comment = _random() % COLONY_COMMENT_BUFFER;
   account_name_type existing_author;
   std::string existing_permlink;
   {
@@ -620,7 +600,7 @@ void transaction_builder::build_vote( const account_name_type& actor, uint64_t n
   vote.permlink = std::move( existing_permlink );
   // there is no other place to use nonce - place it in weight
   nonce >>= 8; // but remove id part for better uniqueness
-  vote.weight = ( std::rand() > 0 ? 1 : -1 ) * ( ( nonce % HIVE_100_PERCENT ) + 1 );
+  vote.weight = ( _random() > 0 ? 1 : -1 ) * ( ( nonce % HIVE_100_PERCENT ) + 1 );
   _tx.operations.emplace_back( vote );
   push_transaction( VOTE );
 }
@@ -660,7 +640,7 @@ void transaction_builder::build_transfer( const account_name_type& actor, uint64
   else
     transfer.amount = asset( 1, HBD_SYMBOL );
   transfer.memo = std::to_string( nonce );
-  auto extra_size = _common._params[ TRANSFER ].randomize();
+  auto extra_size = _common._params[ TRANSFER ].randomize( _random );
   _stats[ TRANSFER ].extra_size += extra_size;
   if( extra_size > (int64_t)transfer.memo.size() + 1 )
   {
@@ -683,7 +663,7 @@ void transaction_builder::build_custom( const account_name_type& actor, uint64_t
   else
     custom.required_auths.emplace( actor );
   custom.id = "id" + std::to_string( nonce );
-  auto extra_size = _common._params[ CUSTOM_JSON ].randomize();
+  auto extra_size = _common._params[ CUSTOM_JSON ].randomize( _random );
   _stats[ CUSTOM_JSON ].extra_size += extra_size;
   std::string fill;
   fill_string( fill, extra_size );
@@ -701,7 +681,6 @@ void colony_plugin_impl::start( uint32_t block_num )
   ilog( "Colony plugin starting at block #${block_num}", ( block_num ) );
   _head_block_id = _db.head_block_id();
   _head_block_time = _db.head_block_time();
-  _max_block_size = _db.get_dynamic_global_properties().get_maximum_block_size();
 
   flat_set<public_key_type> common_keys;
   for( const auto& key : _sign_with )
@@ -881,7 +860,10 @@ void colony_plugin_impl::start_workers()
     else if( _chain.is_p2p_enabled() == false )
       wlog( "P2P plugin disabled - transactions produced by colony won't be broadcast" );
     else
+    {
       _p2p_ptr = _p2p_plugin;
+      _broadcaster = std::thread( [this]() { broadcast_queued(); } );
+    }
   }
 
   // not seeded with time: nodes started together (f.e. under one libfaketime start) would all get the same
@@ -914,82 +896,67 @@ void colony_plugin_impl::end_of_sync()
   hive::utilities::disconnect_signal( _end_of_sync_conn );
 }
 
-void colony_plugin_impl::remember_own_transaction( const full_transaction_type& tx ) const
+void colony_plugin_impl::queue_broadcast( const full_transaction_ptr& tx ) const
 {
-  if( not tracks_own_transactions() )
-    return;
-  std::lock_guard< std::mutex > guard( _own_tx_mutex );
-  _own_pending_tx.emplace( tx.get_transaction_id(), own_pending_tx{ tx.get_transaction().expiration, (uint32_t)tx.get_transaction_size() } );
+  bool was_empty = false;
+  {
+    std::lock_guard< std::mutex > guard( _broadcast_mutex );
+    if( _stop_broadcast.load() )
+      return;
+    was_empty = _to_broadcast.empty();
+    _to_broadcast.emplace_back( tx );
+  }
+  if( was_empty ) // otherwise the broadcast thread was already woken up and will take this one with the rest
+    _broadcast_cv.notify_one();
 }
 
-void colony_plugin_impl::forget_own_transaction( const transaction_id_type& id ) const
+void colony_plugin_impl::broadcast_queued()
 {
-  if( not tracks_own_transactions() )
-    return;
-  std::lock_guard< std::mutex > guard( _own_tx_mutex );
-  _own_pending_tx.erase( id );
+  fc::thread::current().set_name( "colony_broadcast" );
+  std::vector< full_transaction_ptr > batch;
+  while( true )
+  {
+    {
+      std::unique_lock< std::mutex > guard( _broadcast_mutex );
+      _broadcast_cv.wait( guard, [this]() { return _stop_broadcast.load() || not _to_broadcast.empty(); } );
+      if( _stop_broadcast.load() )
+        return;
+      batch.swap( _to_broadcast );
+    }
+    for( const auto& tx : batch )
+    {
+      if( _stop_broadcast.load() )
+        return;
+      try
+      {
+        _p2p_ptr->broadcast_transaction( tx );
+      }
+      catch( const fc::exception& ex )
+      {
+        elog( "Exception during broadcast of transaction ${id}: ${d}",
+          ( "id", tx->get_transaction_id() )( "d", ex.to_string() ) );
+      }
+    }
+    batch.clear();
+  }
 }
 
-bool colony_plugin_impl::is_own_overflowing_transaction( const transaction_id_type& id ) const
+void colony_plugin_impl::stop_broadcast()
 {
-  std::lock_guard< std::mutex > guard( _own_tx_mutex );
-  auto it = _own_pending_tx.find( id );
-  return it != _own_pending_tx.end() && it->second.overflowing;
-}
-
-void colony_plugin_impl::forget_own_transactions_in_block( const full_block_type& block, uint64_t room_left_in_block ) const
-{
-  if( not tracks_own_transactions() )
-    return;
-  const fc::time_point_sec head_block_time = block.get_block_header().timestamp;
-  std::lock_guard< std::mutex > guard( _own_tx_mutex );
-  for( const auto& tx : block.get_full_transactions() )
-    _own_pending_tx.erase( tx->get_transaction_id() );
-  // transactions that were dropped from pending without reaching a block are not reported to us
-  bool block_full = false;
-  for( auto it = _own_pending_tx.begin(); it != _own_pending_tx.end(); )
   {
-    if( it->second.expiration < head_block_time )
-    {
-      it = _own_pending_tx.erase( it );
-    }
-    else
-    {
-      // block producer skips transaction when it would make block size reach the limit, and after
-      // HIVE_BLOCK_GENERATION_POSTPONED_TX_LIMIT skips it stops, so smaller ones that would fit in the
-      // room that is left might not have been tried at all
-      block_full = block_full || it->second.size >= room_left_in_block;
-      ++it;
-    }
+    std::lock_guard< std::mutex > guard( _broadcast_mutex );
+    _stop_broadcast.store( true );
   }
-  uint32_t stuck = 0;
-  for( auto it = _own_pending_tx.begin(); it != _own_pending_tx.end(); )
-  {
-    own_pending_tx& own_tx = it->second;
-    own_tx.missed_with_room = block_full ? 0 : own_tx.missed_with_room + 1;
-    if( own_tx.missed_with_room >= COLONY_STUCK_OWN_TX_BLOCKS )
-    {
-      it = _own_pending_tx.erase( it );
-      ++stuck;
-      continue;
-    }
-    own_tx.overflowing = block_full || own_tx.missed_block;
-    own_tx.missed_block = true;
-    ++it;
-  }
-  if( stuck > 0 )
-  {
-    _stuck_own_tx += stuck;
-    ilog( "${s} own transactions missed ${n} blocks that had room for them - no longer counted as overflow "
-      "(${t} in total)", ( "s", stuck )( "n", COLONY_STUCK_OWN_TX_BLOCKS )( "t", _stuck_own_tx ) );
-  }
+  _broadcast_cv.notify_one();
+  // joined and not abandoned: p2p thread refers to the transaction until the broadcast we wait for returns
+  if( _broadcaster.joinable() )
+    _broadcaster.join();
 }
 
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )
 {
-  // the counter will not cover postponed transactions, but it is better than nothing
-  if( tracks_own_transactions() && _db.is_reapplying_one_tx() && is_own_overflowing_transaction( note.transaction_id ) )
-    ++_overflowing_tx;
+  if( _db.is_reapplying_one_tx() )
+    ++_overflowing_tx; // the counter will not cover postponed transactions, but it is better than nothing
 }
 
 void colony_plugin_impl::post_apply_block( const block_notification& note )
@@ -1012,9 +979,6 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
 
   _head_block_id = _db.head_block_id();
   _head_block_time = _db.head_block_time();
-  const uint64_t block_size = note.full_block->get_uncompressed_block_size();
-  forget_own_transactions_in_block( *note.full_block, _max_block_size > block_size ? _max_block_size - block_size : 0 );
-  _max_block_size = _db.get_dynamic_global_properties().get_maximum_block_size();
   uint32_t fit_in_block = note.full_block->get_full_transactions().size();
   uint32_t margin = ( (uint64_t)fit_in_block * COLONY_OVERFLOW_TOLERANCE_RATE ) / HIVE_100_PERCENT;
   if( margin < COLONY_OVERFLOW_TOLERANCE_MIN )
@@ -1070,6 +1034,8 @@ void colony_plugin::set_program_options(
     ( "colony-transactions-per-block", bpo::value<std::uint32_t>(), "Max number of transactions produced per block. When not set it will be sum of weights of individual types." )
     ( "colony-start-at-block", bpo::value<std::uint32_t>()->default_value( 0 ), "Start producing transactions when block with given number becomes head block (or right at the start if the block already passed)." )
     ( "colony-no-broadcast", bpo::value<bool>()->default_value( false ), "Disables broadcasting of produced transactions - only local witness will include them in block." )
+    ( "colony-transaction-expiration", bpo::value<std::uint32_t>()->default_value( HIVE_MAX_TIME_UNTIL_EXPIRATION ),
+      ( "Expiration (in seconds after head block time) of produced transactions; a transaction no block included leaves pending at that time. Default is " + std::to_string( HIVE_MAX_TIME_UNTIL_EXPIRATION ) ).c_str() )
     ( "colony-article", bpo::value<std::string>(), "Size and frequency parameters of article transactions." )
     ( "colony-reply", bpo::value<std::string>(), "Size and frequency parameters of reply transactions." )
     ( "colony-vote", bpo::value<std::string>(), "Size and frequency parameters of vote transactions." )
@@ -1176,6 +1142,14 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
     my->_start_at_block = options.at( "colony-start-at-block" ).as<std::uint32_t>();
     my->_disable_broadcast = options.at( "colony-no-broadcast" ).as<bool>();
 
+    {
+      uint32_t expiration = options.at( "colony-transaction-expiration" ).as<std::uint32_t>();
+      FC_ASSERT( expiration > 0 && expiration <= HIVE_MAX_TIME_UNTIL_EXPIRATION,
+        "Value for colony-transaction-expiration has to be between 1 and ${max} seconds, got ${expiration}",
+        ( "max", HIVE_MAX_TIME_UNTIL_EXPIRATION )( expiration ) );
+      my->_tx_expiration = expiration;
+    }
+
     // only attach to end of sync for now, so colony does not start producing during replay/sync
     // even if _start_at_block is not set/set too low
     my->_end_of_sync_conn = my->_db.add_end_of_syncing_handler( [&]()
@@ -1201,6 +1175,8 @@ void colony_plugin::plugin_pre_shutdown()
   if( my->_scan_done.valid() )
     my->_scan_done.wait();
   my->_scanner.quit();
+
+  my->stop_broadcast();
 
   for( auto& thread : my->_threads )
     thread.finalize();
