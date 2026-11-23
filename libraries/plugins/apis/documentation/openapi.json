@@ -27909,7 +27909,7 @@
                     "order": {
                         "type": "string",
                         "example": "by_comment_voter",
-                        "description": "Either by_comment_voter or by_voter_comment."
+                        "description": "Either by_comment_voter or by_voter_comment. list_votes is served by Hivemind, which accepts both; the by_voter_comment value of hived's own database_api sort orders is unsupported by every hived list_* method."
                     },
                     "observer": {
                         "type": "string",
