@@ -80,6 +80,7 @@ set( SOURCES
              util/operation_extractor.cpp
              util/data_filter.cpp
              util/state_checker_tools.cpp
+             util/seeded_hash.cpp
 
              rc/rc_curve.cpp
              rc/rc_objects.cpp

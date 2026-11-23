@@ -17,6 +17,7 @@ typedef multi_index_container<
         const_mem_fun< volatile_comment_object, volatile_comment_object::id_type, &volatile_comment_object::get_id >
       >
     >,
+    // bucket order is seeded per node, so it must only be searched, never iterated
     hashed_unique< tag< by_permlink >,
       const_mem_fun< volatile_comment_object, const comment_object::author_and_permlink_hash_type&, &volatile_comment_object::get_author_and_permlink_hash >,
       author_and_permlink_hash_hasher >

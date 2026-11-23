@@ -973,6 +973,45 @@ BOOST_AUTO_TEST_CASE( chain_object_size )
 
 }
 
+BOOST_AUTO_TEST_CASE( seeded_index_hashers )
+{
+  std::vector< account_name_type > names;
+  std::vector< comment_object::author_and_permlink_hash_type > permlink_keys;
+  for( int i = 0; i < 64; ++i )
+  {
+    names.emplace_back( "name" + std::to_string( i ) );
+    permlink_keys.emplace_back( fc::ripemd160::hash( "permlink" + std::to_string( i ) ) );
+  }
+  const auto hashes_of = []( const auto& hasher, const auto& keys )
+  {
+    std::vector< size_t > hashes;
+    for( const auto& key : keys )
+      hashes.push_back( hasher( key ) );
+    return hashes;
+  };
+
+  // each newly created index default-constructs its hasher, so two of them place the same keys differently
+  const account_name_hash name_hash_a, name_hash_b;
+  BOOST_CHECK( hashes_of( name_hash_a, names ) != hashes_of( name_hash_b, names ) );
+  const author_and_permlink_hash_hasher permlink_hash_a, permlink_hash_b;
+  BOOST_CHECK( hashes_of( permlink_hash_a, permlink_keys ) != hashes_of( permlink_hash_b, permlink_keys ) );
+
+  // the hasher is stored by value in its index, and a copy keeps the seed, so placement stays the same for its lifetime
+  const account_name_hash name_hash_copy = name_hash_a;
+  BOOST_CHECK( hashes_of( name_hash_a, names ) == hashes_of( name_hash_copy, names ) );
+  const author_and_permlink_hash_hasher permlink_hash_copy = permlink_hash_a;
+  BOOST_CHECK( hashes_of( permlink_hash_a, permlink_keys ) == hashes_of( permlink_hash_copy, permlink_keys ) );
+
+  // equal keys built separately hash equally
+  BOOST_CHECK_EQUAL( name_hash_a( account_name_type( std::string( "alice" ) ) ), name_hash_a( account_name_type( std::string( "ali" ) + "ce" ) ) );
+  BOOST_CHECK_EQUAL( permlink_hash_a( fc::ripemd160::hash( std::string( "permlink0" ) ) ), hashes_of( permlink_hash_a, permlink_keys ).front() );
+
+  // the hash is not just the leading bytes of the key, which an author can choose by searching permlinks
+  size_t leading_bytes;
+  std::memcpy( &leading_bytes, permlink_keys.front()._hash, sizeof( leading_bytes ) );
+  BOOST_CHECK_NE( permlink_hash_a( permlink_keys.front() ), leading_bytes );
+}
+
 BOOST_AUTO_TEST_CASE( fc_static_variant_alignment )
 {
   BOOST_CHECK_EQUAL( sizeof(__test_for_alignment), 80u );

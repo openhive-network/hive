@@ -10,8 +10,6 @@
 
 #include <fc/crypto/ripemd160.hpp>
 
-#include <cstring>
-
 #define HIVE_ROOT_POST_PARENT_ID hive::chain::account_id_type::null_id()
 
 namespace hive { namespace chain {
@@ -98,17 +96,19 @@ inline comment_object::author_and_permlink_hash_type comment_object::compute_aut
 }
 
 /**
-  * The key is already a uniform hash (ripemd160 of author id and permlink), so its leading bytes serve as the hash value.
+  * The key is a ripemd160 of author id and permlink, but the author chooses the permlink, so it can be searched for keys
+  * that share their leading bytes. The whole key is therefore hashed again under a random seed of the hasher
+  * (see util::seeded_hash): bucket order differs between nodes, and an index using it may only be searched, never iterated.
   */
 struct author_and_permlink_hash_hasher
 {
   size_t operator()( const comment_object::author_and_permlink_hash_type& key )const
   {
-    size_t h;
-    static_assert( sizeof( h ) <= sizeof( key._hash ) );
-    std::memcpy( &h, key._hash, sizeof( h ) );
-    return h;
+    return static_cast< size_t >( _hash( key._hash, sizeof( key._hash ) ) );
   }
+
+private:
+  util::seeded_hash _hash;
 };
   
 /*
