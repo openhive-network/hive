@@ -1,16 +1,20 @@
 #include <boost/test/unit_test.hpp>
 
 #include <chainbase/chainbase.hpp>
+#include <chainbase/container_layout.hpp>
 #include <chainbase/huge_pages.hpp>
 #include <chainbase/index_key_snapshot.hpp>
 
 #include <hive/utilities/tempdir.hpp>
 
 #include <fc/filesystem.hpp>
+#include <fc/io/raw.hpp>
 #include <fc/log/logger_config.hpp>
+#include <fc/reflect/reflect.hpp>
 
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -143,7 +147,66 @@ using string_keyed_item_index = bmi::multi_index_container<
   >
 >;
 
+class layout_item : public chainbase::object< 0, layout_item >
+{
+  CHAINBASE_OBJECT( layout_item );
+
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( layout_item )
+
+  uint64_t key = 0;
+};
+
+using layout_item_index = bmi::multi_index_container<
+  layout_item,
+  bmi::indexed_by<
+    bmi::ordered_unique< bmi::tag< chainbase::by_id >, bmi::const_mem_fun< layout_item, layout_item::id_type, &layout_item::get_id > >
+  >,
+  chainbase::multi_index_allocator< layout_item >
+>;
+
+struct keyed_hash
+{
+  size_t operator()( uint64_t key ) const { return std::hash< uint64_t >()( key ^ seed ); }
+  uint64_t seed = 0;
+};
+
+// the same objects in a container laid out differently, stored under the same name
+using hashed_layout_item_index = bmi::multi_index_container<
+  layout_item,
+  bmi::indexed_by<
+    bmi::ordered_unique< bmi::tag< chainbase::by_id >, bmi::const_mem_fun< layout_item, layout_item::id_type, &layout_item::get_id > >,
+    bmi::hashed_unique< bmi::member< layout_item, uint64_t, &layout_item::key >, keyed_hash >
+  >,
+  chainbase::multi_index_allocator< layout_item >
+>;
+
+using archived_keys = bmi::multi_index_container<
+  uint64_t,
+  bmi::indexed_by< bmi::ordered_unique< bmi::identity< uint64_t > > >,
+  boost::interprocess::allocator< uint64_t, boost::interprocess::managed_mapped_file::segment_manager >
+>;
+
+using hashed_archived_keys = bmi::multi_index_container<
+  uint64_t,
+  bmi::indexed_by< bmi::hashed_unique< bmi::identity< uint64_t >, keyed_hash > >,
+  boost::interprocess::allocator< uint64_t, boost::interprocess::managed_mapped_file::segment_manager >
+>;
+
+const auto replay_needed = []( const std::logic_error& e ) { return std::string( e.what() ).find( "A replay (or a snapshot load) is needed" ) != std::string::npos; };
+
+template< typename Index >
+void create_state_with_index( const chainbase::bfs::path& state_dir )
+{
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  db.add_index< Index >();
+  db.close();
 }
+
+}
+
+FC_REFLECT( layout_item, (id)(key) )
 
 BOOST_AUTO_TEST_SUITE( chainbase_tests )
 
@@ -504,6 +567,72 @@ BOOST_AUTO_TEST_CASE( index_key_snapshot_copies_every_kind_of_index_key )
   items.modify( items.begin(), []( keyed_item& i ){ ++i.score; } );
   BOOST_CHECK( keys_snapshot::take( items, item ) != keys );
   BOOST_CHECK( std::get< 4 >( keys_snapshot::take( items, item ) ) == std::make_tuple( 7u, uint64_t( 10 ) ) );
+}
+
+BOOST_AUTO_TEST_CASE( index_is_reopened_by_the_build_that_laid_it_out )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  create_state_with_index< layout_item_index >( state_dir );
+
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_CHECK_NO_THROW( db.add_index< layout_item_index >() );
+  db.close();
+
+  chainbase::database reader;
+  reader.open( state_dir, chainbase::database::read_only_storage );
+  BOOST_CHECK_NO_THROW( reader.add_index< layout_item_index >() );
+  reader.close();
+}
+
+BOOST_AUTO_TEST_CASE( index_laid_out_differently_is_refused )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  create_state_with_index< layout_item_index >( state_dir );
+
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_CHECK_EXCEPTION( db.add_index< hashed_layout_item_index >(), std::logic_error, replay_needed );
+  db.close();
+
+  chainbase::database reader;
+  reader.open( state_dir, chainbase::database::read_only_storage );
+  BOOST_CHECK_EXCEPTION( reader.add_index< hashed_layout_item_index >(), std::logic_error, replay_needed );
+  reader.close();
+}
+
+BOOST_AUTO_TEST_CASE( index_without_recorded_layout_is_refused )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  create_state_with_index< layout_item_index >( state_dir );
+
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  // what a build that did not record layouts leaves
+  const std::string index_name = boost::core::demangle( typeid( layout_item ).name() );
+  BOOST_REQUIRE( db.get_segment_manager()->destroy< chainbase::container_layout >( ( index_name + "::layout" ).c_str() ) );
+  BOOST_CHECK_EXCEPTION( db.add_index< layout_item_index >(), std::logic_error, replay_needed );
+  db.close();
+}
+
+BOOST_AUTO_TEST_CASE( named_container_layout_is_verified )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  chainbase::database db;
+  db.open( shared_memory_dir( dir ), 0, STATE_FILE_SIZE );
+  auto& segment_manager = *db.get_segment_manager();
+
+  BOOST_CHECK_EXCEPTION( chainbase::verify_container_layout< archived_keys >( segment_manager, "archive" ), std::logic_error, replay_needed );
+
+  segment_manager.construct< archived_keys >( "archive" )( archived_keys::allocator_type( &segment_manager ) );
+  chainbase::record_container_layout< archived_keys >( segment_manager, "archive" );
+  BOOST_CHECK_NO_THROW( chainbase::verify_container_layout< archived_keys >( segment_manager, "archive" ) );
+  BOOST_CHECK_EXCEPTION( chainbase::verify_container_layout< hashed_archived_keys >( segment_manager, "archive" ), std::logic_error, replay_needed );
+  BOOST_CHECK( !( chainbase::container_layout::of< archived_keys >() == chainbase::container_layout::of< hashed_archived_keys >() ) );
+  db.close();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

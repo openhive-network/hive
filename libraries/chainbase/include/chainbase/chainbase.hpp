@@ -20,6 +20,7 @@
 #include <boost/throw_exception.hpp>
 
 #include <chainbase/allocators.hpp>
+#include <chainbase/container_layout.hpp>
 #include <chainbase/index_key_snapshot.hpp>
 #include <chainbase/state_snapshot_support.hpp>
 #include <chainbase/util/object.hpp>
@@ -1450,6 +1451,7 @@ namespace chainbase {
           if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is created, but other indexes are found in `shared_memory_file` file. A replay is needed. Problem with: " + type_name ) );
           idx_ptr = _segment_manager->construct< index_type >( type_name.c_str() )( index_alloc( _segment_manager ) );
+          record_container_layout< index_type >( *_segment_manager, type_name );
         }
         else
         {
@@ -1457,6 +1459,7 @@ namespace chainbase {
           _at_least_one_index_was_created_earlier = true;
           if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is found in `shared_memory_file` file, but other indexes are created. A replay is needed. Problem with: " + type_name ) );
+          verify_container_layout< index_type >( *_segment_manager, type_name );
         }
 
         if( type_id >= _index_map.size() )
