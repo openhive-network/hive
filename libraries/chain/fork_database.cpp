@@ -261,7 +261,8 @@ vector<item_ptr> fork_database::fetch_heads() const
   return with_read_lock([&](){
     vector<item_ptr> result;
     const auto& prev_idx = _index.get<by_previous>();
-    std::copy_if(_index.begin(), _index.end(), std::back_inserter(result), 
+    const auto& block_num_idx = _index.get<block_num>();
+    std::copy_if(block_num_idx.begin(), block_num_idx.end(), std::back_inserter(result),
                  [&](const item_ptr& fork_item) {
       return prev_idx.find(fork_item->get_block_id()) == prev_idx.end();
     });

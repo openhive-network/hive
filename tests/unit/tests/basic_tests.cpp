@@ -32,6 +32,7 @@
 
 #include <hive/chain/database.hpp>
 #include <hive/chain/database_authority_getter.hpp>
+#include <hive/chain/fork_database.hpp>
 #include <hive/chain/notifications.hpp>
 #include <hive/chain/detail/state/account_object.hpp>
 #include <hive/chain/detail/state/block_summary_object.hpp>
@@ -1010,6 +1011,48 @@ BOOST_AUTO_TEST_CASE( seeded_index_hashers )
   size_t leading_bytes;
   std::memcpy( &leading_bytes, permlink_keys.front()._hash, sizeof( leading_bytes ) );
   BOOST_CHECK_NE( permlink_hash_a( permlink_keys.front() ), leading_bytes );
+}
+
+BOOST_AUTO_TEST_CASE( seeded_process_local_hashers )
+{
+  // per-process containers keyed by user-influenced values: the pending custom op counter (account names)
+  // and the fork database (block ids received from peers)
+  using custom_op_count_hash = decltype( database::_pending_tx_custom_op_count )::hasher;
+  std::vector< account_name_type > names;
+  std::vector< block_id_type > block_ids;
+  for( int i = 0; i < 64; ++i )
+  {
+    names.emplace_back( "name" + std::to_string( i ) );
+    block_ids.emplace_back( fc::ripemd160::hash( "block" + std::to_string( i ) ) );
+  }
+  const auto hashes_of = []( const auto& hasher, const auto& keys )
+  {
+    std::vector< size_t > hashes;
+    for( const auto& key : keys )
+      hashes.push_back( hasher( key ) );
+    return hashes;
+  };
+
+  const custom_op_count_hash name_hash_a, name_hash_b;
+  BOOST_CHECK( hashes_of( name_hash_a, names ) != hashes_of( name_hash_b, names ) );
+  const fork_database::block_id_hash block_hash_a, block_hash_b;
+  BOOST_CHECK( hashes_of( block_hash_a, block_ids ) != hashes_of( block_hash_b, block_ids ) );
+
+  // the old unseeded hashes were computable from the key alone
+  BOOST_CHECK( hashes_of( name_hash_a, names ) != hashes_of( std::hash< account_name_type >(), names ) );
+  BOOST_CHECK( hashes_of( block_hash_a, block_ids ) != hashes_of( std::hash< fc::ripemd160 >(), block_ids ) );
+
+  // a copy keeps the seed and equal keys hash equally, so lookups find what was inserted
+  const fork_database::block_id_hash block_hash_copy = block_hash_a;
+  BOOST_CHECK( hashes_of( block_hash_a, block_ids ) == hashes_of( block_hash_copy, block_ids ) );
+  BOOST_CHECK_EQUAL( block_hash_a( fc::ripemd160::hash( std::string( "block0" ) ) ), hashes_of( block_hash_a, block_ids ).front() );
+
+  decltype( database::_pending_tx_custom_op_count ) counter;
+  for( size_t i = 0; i < names.size(); ++i )
+    counter[ names[i] ] = static_cast< uint8_t >( i );
+  BOOST_REQUIRE_EQUAL( counter.size(), names.size() );
+  for( size_t i = 0; i < names.size(); ++i )
+    BOOST_CHECK_EQUAL( size_t( counter.at( account_name_type( "name" + std::to_string( i ) ) ) ), i );
 }
 
 BOOST_AUTO_TEST_CASE( fc_static_variant_alignment )
