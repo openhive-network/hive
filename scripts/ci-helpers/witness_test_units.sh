@@ -13,9 +13,10 @@
 #
 # Serial durations in the CI image (seconds), which the groups balance:
 #   colony_basic   colony_basic_test 444
-#   colony         colony_foreign_pending_test 114, colony_in_transit_test 132,
-#                  colony_stuck_test 117, colony_no_workers_test 17,
-#                  colony_queen_test 14, basic_queen_test 0; 394 together
+#   colony         colony_pending_backpressure_test ~114, colony_expiration_test ~117
+#                  (estimated from the cases they replaced), colony_expiration_zero_refused_test
+#                  and colony_expiration_too_long_refused_test ~0, colony_no_workers_test 17,
+#                  colony_queen_test 14, basic_queen_test 0; ~262 together
 #   rest           the 21 other cases (474 for the 17 timed when sharding), the longest
 #                  inventory_limit_deferral_test 74 and four cases of ~65; the p2p
 #                  inbound accept cases take about 10 and 15
@@ -24,7 +25,7 @@ set -euo pipefail
 
 declare -A SHARDS=(
     [colony_basic]="colony_basic_test"
-    [colony]="colony_foreign_pending_test colony_in_transit_test colony_stuck_test colony_no_workers_test basic_queen_test colony_queen_test"
+    [colony]="colony_pending_backpressure_test colony_expiration_test colony_expiration_zero_refused_test colony_expiration_too_long_refused_test colony_no_workers_test basic_queen_test colony_queen_test"
 )
 
 BINARY="${1:?usage: $0 <plugin_test binary> <shard>}"
