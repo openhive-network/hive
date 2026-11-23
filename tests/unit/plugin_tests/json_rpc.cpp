@@ -326,6 +326,23 @@ BOOST_AUTO_TEST_CASE( database_api_negative )
 
     request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{\"limit\":10}, \"id\":10}";
     make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message, assertion_hash );
+
+    // orders no index backs any more are rejected, whether sent by name or by number
+    message = "Assert Exception:false: Unknown or unsupported sort order 'by_permlink'";
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{\"limit\":10, \"order\":\"by_permlink\"}, \"id\":10}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_accounts\", \"params\":{\"limit\":10, \"order\":20}, \"id\":10}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+
+    message = "Assert Exception:false: Unknown or unsupported sort order 'by_voter_comment'";
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_proposal_votes\", \"params\":{\"limit\":10, \"order\":\"by_voter_comment\", \"order_direction\":\"ascending\", \"status\":\"all\"}, \"id\":10}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_proposal_votes\", \"params\":{\"limit\":10, \"order\":23, \"order_direction\":\"ascending\", \"status\":\"all\"}, \"id\":10}";
+    make_request( request, JSON_RPC_ERROR_DURING_CALL, false, true, message );
+
+    // the orders after them keep their numbers: 33 is by_voter_proposal
+    request = "{\"jsonrpc\":\"2.0\", \"method\":\"database_api.list_proposal_votes\", \"params\":{\"limit\":10, \"order\":33, \"order_direction\":\"ascending\", \"status\":\"all\"}, \"id\":10}";
+    make_positive_request( request );
   }
   FC_LOG_AND_RETHROW()
 }

@@ -987,7 +987,8 @@ namespace graphene { namespace net {
   /**
    * A peer's recent mean transaction size, from the transactions it sent us, and how many transactions one
    * request may ask it for so the expected reply stays within GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH.
-   * Until the peer sends a transaction its mean is taken to be GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE.
+   * Until the peer sends a transaction its mean is taken to be GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE, a
+   * starting guess, so a first request can bring back more than that limit if the peer's transactions are larger.
    * A transaction larger than the mean moves it a quarter of the way, a smaller one a sixteenth, so a burst of
    * large transactions shrinks the next request quickly and requests grow back over a few round trips.
    */

@@ -35,4 +35,18 @@ bool dhf_helper::remove_proposal_votes( const proposal_object& proposal, const p
   return true;
 }
 
+void dhf_helper::mark_proposal_removed( const proposal_object& proposal, const time_point_sec& end_date, database& db )
+{
+  // the sweep in dhf_processor::remove_proposals only walks proposals that already ended, and the hint that lets it
+  // skip the walk (database::may_have_removed_proposals) relies on finding every proposal marked `removed` there
+  FC_ASSERT( end_date <= db.head_block_time(), "Proposal ${pid} marked removed must end by head block time ${h}, not at ${e}",
+    ("pid", proposal.proposal_id)("h", db.head_block_time())("e", end_date) );
+  db.modify( proposal, [&]( proposal_object& p )
+  {
+    p.removed = true;
+    p.end_date = end_date;
+  } );
+  db.set_may_have_removed_proposals();
+}
+
 } } // hive::chain

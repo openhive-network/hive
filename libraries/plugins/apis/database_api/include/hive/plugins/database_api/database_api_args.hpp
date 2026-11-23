@@ -48,10 +48,10 @@ enum sort_order_type
   by_account_expiration,
   by_conversion_date,
   by_cashout_time,
-  by_permlink,
+  by_permlink, //< unused, no list_* API accepts it; kept because orders are also sent by number
   by_parent,
   by_comment_voter,
-  by_voter_comment,
+  by_voter_comment, //< unused, no list_* API accepts it; kept because orders are also sent by number
   by_price,
   by_symbol_contributor,
   by_symbol,

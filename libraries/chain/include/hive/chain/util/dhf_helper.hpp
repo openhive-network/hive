@@ -26,6 +26,10 @@ class dhf_helper
       remove_proposal_votes( proposal, proposal_votes, db, obj_perf );
       return obj_perf.remove( db, proposal );
     }
+
+    // marks given proposal `removed` for the per-block sweep, moving its `end_date` to given time; throws unless
+    // that time is not after head block time
+    static void mark_proposal_removed( const proposal_object& proposal, const time_point_sec& end_date, database& db );
 };
 
 } } // hive::chain
