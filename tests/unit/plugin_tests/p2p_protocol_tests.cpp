@@ -2399,7 +2399,8 @@ BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
 
 /// D17: below the threshold the node asks for no more transactions than fit under it with those already on their
 /// way: a peer that has sent none yet is expected to send ones of the mean size of those peers sent that validated,
-/// HIVE_MAX_TRANSACTION_SIZE while there are none (as here), so with a threshold smaller than that the headroom is used
+/// GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE (a starting guess) while there are none (as here), so with a threshold
+/// smaller than that the headroom is used
 /// up by the first transaction requested.  What it expects on their way
 /// doesn't stop the empty pool fetching: the gate's minimum asks for the rest, but no sooner than
 /// GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS after the last pass that asked for some of its minimum, however
@@ -2407,7 +2408,7 @@ BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
 BOOST_AUTO_TEST_CASE( transaction_fetch_headroom_test )
 {
   const uint64_t max_mempool_size = 6 * 1024;
-  BOOST_REQUIRE_LT( transaction_fetch_gate_threshold( max_mempool_size ), uint64_t( HIVE_MAX_TRANSACTION_SIZE ) );
+  BOOST_REQUIRE_LT( transaction_fetch_gate_threshold( max_mempool_size ), uint64_t( GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE ) );
   start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
   run( [&]()
   {
@@ -2551,17 +2552,17 @@ BOOST_AUTO_TEST_CASE( unavailable_advertised_items_test )
 
 /// D17: peers that advertise transactions and never deliver them can't use up the fetch gate's headroom for free: a
 /// request to a peer that has sent no transaction counts as one of the mean size of those peers sent that validated,
-/// not of HIVE_MAX_TRANSACTION_SIZE. With 66 such peers each holding a full window of requests (8, by their own
-/// estimate: worth more than the threshold at the largest size), a peer that delivers is still asked for its whole
+/// not of the starting guess GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE. With 66 such peers each holding a full window
+/// of requests (8, by their own estimate: worth more than the threshold at that guess), a peer that delivers is still asked for its whole
 /// new inventory in one request, not for the gate's minimum per recheck
 BOOST_AUTO_TEST_CASE( withholding_peers_headroom_test )
 {
   const uint64_t max_mempool_size = 12 * 1024 * 1024;
   const uint64_t threshold = transaction_fetch_gate_threshold( max_mempool_size );
   const size_t withholding_count = 66;
-  const size_t window = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / HIVE_MAX_TRANSACTION_SIZE;
+  const size_t window = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE;
   const size_t batch_size = 100;
-  BOOST_REQUIRE_GT( uint64_t( withholding_count * window ) * HIVE_MAX_TRANSACTION_SIZE, threshold );
+  BOOST_REQUIRE_GT( uint64_t( withholding_count * window ) * GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE, threshold );
   start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
   run( [&]()
   {
