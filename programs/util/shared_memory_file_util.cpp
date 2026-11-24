@@ -44,12 +44,14 @@
 #include <hive/chain/detail/state/withdraw_vesting_route_object_multiindex.hpp>
 #include <hive/chain/detail/state/decline_voting_rights_request_object_multiindex.hpp>
 #include <hive/chain/detail/state/reward_fund_object_multiindex.hpp>
+#include <hive/chain/detail/state/state_stamp_data_object_multiindex.hpp>
 #include <hive/chain/detail/state/recurrent_transfer_object_multiindex.hpp>
 #include <hive/chain/detail/state/transaction_object.hpp>
 #include <hive/chain/detail/state/transaction_object_multiindex.hpp>
 #include <hive/chain/detail/state/witness_objects.hpp>
 #include <hive/chain/detail/state/witness_objects_multiindex.hpp>
 #include <hive/chain/rc/rc_objects_multiindex.hpp>
+#include <hive/chain/external_storage/comment_rocksdb_objects_multiindex.hpp>
 
 #include <hive/plugins/chain/snapshot_load_marker.hpp>
 #include <hive/plugins/account_by_key/account_by_key_objects_multiindex.hpp>
@@ -424,6 +426,8 @@ namespace shared_memory_file_util
     save_index_name(add_index_to_db<hive::chain::rc_direct_delegation_index>());
     save_index_name(add_index_to_db<hive::chain::rc_expired_delegation_index>());
     save_index_name(add_index_to_db<hive::chain::rc_usage_bucket_index>());
+    save_index_name(add_index_to_db<hive::chain::state_stamp_data_index>());
+    save_index_name(add_index_to_db<hive::chain::volatile_comment_index>());
 
     save_index_name(add_index_to_db<hive::plugins::account_by_key::key_lookup_index>());
     save_index_name(add_index_to_db<hive::plugins::account_history_rocksdb::volatile_operation_index>());

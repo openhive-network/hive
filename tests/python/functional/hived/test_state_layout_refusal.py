@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import mmap
+import re
 import shutil
 import signal
 import subprocess
@@ -23,6 +24,20 @@ STARTUP_REFUSED_EXIT_CODE: Final[int] = 78
 LAYOUT_RECORD_NAME: Final[bytes] = b"hive::chain::account_object::layout"
 LAYOUT_RECORD_SIZE: Final[int] = 16
 NAME_LENGTH_SIZE: Final[int] = 2
+LAYOUT_RECORD_NAMES: Final[re.Pattern[bytes]] = re.compile(rb"hive::[\w:]+::layout\0")
+
+OPEN_ERROR_MESSAGE: Final[str] = "Error opening database or block log"
+
+# the plugins that add indexes to the state, besides those hived always adds
+INDEX_PLUGINS: Final[tuple[str, ...]] = (
+    "account_by_key",
+    "account_history_rocksdb",
+    "block_log_info",
+    "market_history",
+    "metadata",
+    "reputation",
+    "transaction_status",
+)
 
 INCOMPLETE_STATE_MESSAGES: Final[tuple[str, ...]] = (
     "The state in `shared_memory_file` was not completely created: its first open did not complete (it was interrupted"
@@ -30,6 +45,11 @@ INCOMPLETE_STATE_MESSAGES: Final[tuple[str, ...]] = (
     "The lock of `shared_memory_file` was left held by a process that was killed while it changed the state, so the"
     " state may be inconsistent. A replay (or a snapshot load) is needed.",
 )
+
+
+def assert_no_open_error(output: str) -> None:
+    """Checks that a refused start does not also log the generic open error, which adds nothing to the refusal."""
+    assert OPEN_ERROR_MESSAGE not in output, f"'{OPEN_ERROR_MESSAGE}' logged on a refusal:\n{excerpt(output)}"
 
 
 def assert_logged_once(output: str, message: str) -> None:
@@ -90,6 +110,18 @@ def enlarge_recorded_account_index_size(state_file: Path) -> int:
         state[size_offset : size_offset + 8] = enlarged.to_bytes(8, "little")
         state.flush()
     return enlarged
+
+
+def recorded_layouts(state_file: Path) -> set[str]:
+    """The names of the containers whose layout hived recorded in `state_file`."""
+    with state_file.open("rb") as file, mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as state:
+        names: set[str] = set()
+        for record in LAYOUT_RECORD_NAMES.finditer(state):
+            name = record.group()[:-1]
+            name_length = int.from_bytes(state[record.start() - NAME_LENGTH_SIZE : record.start()], "little")
+            assert name_length == len(name), f"{name_length} stored as the length of {name!r}: unexpected layout"
+            names.add(name.decode())
+    return names
 
 
 def shared_memory_file_util_path() -> Path:
@@ -167,6 +199,7 @@ def test_hived_refuses_state_with_another_layout_with_exit_code_78() -> None:
         ):
             assert expected in output, f"'{expected}' not logged in:\n{excerpt(output)}"
         assert_logged_once(output, "The layout of hive::chain::account_object in `shared_memory_file`")
+        assert_no_open_error(output)
         assert file_hash(state_file) == state_before
 
 
@@ -176,14 +209,19 @@ def test_shared_memory_file_util_reads_the_indexes_of_state_hived_created() -> N
     shutil.rmtree(data_dir, ignore_errors=True)
     data_dir.mkdir(parents=True)
 
-    exit_code, output = run_hived(data_dir)
+    exit_code, output = run_hived(data_dir, *(f"--plugin={plugin}" for plugin in INDEX_PLUGINS))
     assert exit_code == 0, excerpt(output)
 
     # the util checks the layout of each index hived recorded against its own, so both have to compute it alike
     exit_code, stdout, stderr = run_shared_memory_file_util(data_dir, "--list-indices")
     assert exit_code == 0, f"stdout:\n{stdout}\nstderr:\n{excerpt(stderr)}"
-    assert stdout.startswith("Detected "), stdout
+    detected = re.match(r"Detected (\d+) indices:", stdout)
+    assert detected, stdout
     assert "account_object" in stdout, stdout
+    # every index hived added, each of which it recorded the layout of, is one the util knows
+    layouts = recorded_layouts(data_dir / "blockchain" / "shared_memory.bin")
+    assert "hive::chain::state_stamp_data_object::layout" in layouts, layouts
+    assert int(detected.group(1)) == len(layouts), f"the util detected {detected.group(1)} of:\n{sorted(layouts)}"
 
     dump_dir = data_dir / "dump"
     exit_code, stdout, stderr = run_shared_memory_file_util(data_dir, "--dump-indices", "--output", str(dump_dir))
@@ -201,6 +239,7 @@ def assert_refused_as_incomplete(exit_code: int, output: str, message: str | Non
     logged = [expected for expected in expected_messages if expected in output]
     assert logged, f"none of {expected_messages} logged in:\n{excerpt(output)}"
     assert_logged_once(output, logged[0])
+    assert_no_open_error(output)
     for expected in (
         "or with --force-replay to rebuild it from the block log.",
         f"Exiting with code {STARTUP_REFUSED_EXIT_CODE}.",

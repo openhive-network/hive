@@ -1051,14 +1051,16 @@ void chain_plugin_impl::open()
 {
   bool was_error = true;
 
-  BOOST_SCOPE_EXIT(&was_error, &thread_pool, &theApp)
+  BOOST_SCOPE_EXIT(&was_error, &startup_refused, &thread_pool, &theApp)
   {
     if( was_error )
     {
       /// This is a hack - seems blockchain_worker_thread_pool is completely out of control in the errorneous cases and can lead to 2nd level crash 
       thread_pool.shutdown();
 
-      wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
+      // a refusal already says what to do instead
+      if( !startup_refused )
+        wlog( "Error opening database or block log. If the binary or configuration has changed, replay the blockchain explicitly using `--force-replay`." );
       theApp.notify_status("exitting with open database error");
     }
   } BOOST_SCOPE_EXIT_END
