@@ -586,23 +586,7 @@ bool resource_credits::use_account_rcs( int64_t rc )
         uint64_t blocks_in_mempool = db._pending_tx_size / dgpo.get_maximum_block_size();
         if( blocks_in_mempool > flood_level )
         {
-          // check if transaction might be privileged - top witness transaction containing only
-          // one witness related operation is privileged because its execution might fix flood problem
-          // and is at the very least important for chain to function properly
-          if( tx_info.op.valid() )
-          {
-            auto op = tx_info.op.value();
-            switch( op )
-            {
-              case operation::tag<feed_publish_operation>::value:
-              case operation::tag<witness_update_operation>::value:
-              case operation::tag<witness_set_properties_operation>::value:
-              {
-                const auto* witness = db.find_witness( tx_info.payer );
-                is_privileged = ( witness != nullptr ) && ( witness->schedule == witness_object::elected );
-              } break;
-            }
-          }
+          is_privileged = is_privileged_operation( tx_info.payer, tx_info.op );
 
           if( !is_privileged )
           {
@@ -660,6 +644,39 @@ bool resource_credits::use_account_rcs( int64_t rc )
     } );
   } FC_CAPTURE_AND_RETHROW( (tx_info) )
   return is_privileged;
+}
+
+uint64_t resource_credits::flood_pending_size( uint32_t maximum_block_size )
+{
+  return ( uint64_t( flood_level ) + 1 ) * maximum_block_size;
+}
+
+bool resource_credits::is_privileged_transaction( const full_transaction_type& full_tx ) const
+{
+  const signed_transaction& tx = full_tx.get_transaction();
+  optional< uint8_t > op;
+  if( tx.operations.size() == 1 )
+    op = tx.operations.front().which();
+  return is_privileged_operation( full_tx.get_rc_payer(), op );
+}
+
+bool resource_credits::is_privileged_operation( const account_name_type& payer, const optional< uint8_t >& op ) const
+{
+  // top witness transaction containing only one witness related operation is privileged because its execution
+  // might fix flood problem and is at the very least important for chain to function properly
+  if( !op.valid() )
+    return false;
+  switch( op.value() )
+  {
+    case operation::tag<feed_publish_operation>::value:
+    case operation::tag<witness_update_operation>::value:
+    case operation::tag<witness_set_properties_operation>::value:
+    {
+      const auto* witness = db.find_witness( payer );
+      return ( witness != nullptr ) && ( witness->schedule == witness_object::elected );
+    }
+  }
+  return false;
 }
 
 bool resource_credits::has_expired_delegation( const account_object& account ) const

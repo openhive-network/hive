@@ -76,7 +76,8 @@ public:
   void queue_transaction( const std::shared_ptr< transaction_flow_control >& trx_ctrl, const lock_type lock = lock_type::boost );
   void determine_encoding_and_accept_transaction( full_transaction_ptr& result, const hive::protocol::signed_transaction& trx,
     std::function< void( bool hf26_auth_fail )> on_full_trx = []( bool ){}, const lock_type lock = lock_type::boost );
-  void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = database::skip_nothing );
+  /// Returns whether the accepted transaction is worth relaying to peers (see transaction_flow_control::set_relay())
+  bool push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = database::skip_nothing );
   bool push_block( const block_flow_control& block_ctrl, uint32_t skip = database::skip_nothing );
   void push_generate_block_request( const std::shared_ptr< generate_block_flow_control >& generate_block_ctrl );
   // nonblocking version of push_generate_block_request used by queen_plugin
@@ -160,8 +161,10 @@ public:
 
   /// The bytes of transactions pending as of the end of the last write queue item; safe to call without a lock from any thread
   uint64_t get_published_pending_transactions_size() const;
-  /// max-mempool-size in bytes
-  uint64_t get_max_mempool_size() const;
+  /// hive::chain::database::get_pending_keep_limit() as of the end of the last write queue item; safe to call without a lock from any thread
+  uint64_t get_published_pending_keep_limit() const;
+  /// hive::chain::resource_credits::flood_pending_size() as of the end of the last write queue item; safe to call without a lock from any thread
+  uint64_t get_published_flood_pending_size() const;
 
 private:
   std::unique_ptr< detail::chain_plugin_impl, detail::chain_plugin_impl_deleter > my;

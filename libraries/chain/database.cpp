@@ -683,6 +683,23 @@ void database::process_non_fast_confirm_transaction( const std::shared_ptr<full_
   FC_CAPTURE_AND_RETHROW((trx))
 }
 
+uint64_t database::pending_keep_limit( uint64_t max_mempool_size, uint64_t reapply_window_bytes, uint32_t maximum_block_size )
+{
+  return std::max( max_mempool_size, reapply_window_bytes ) + maximum_block_size;
+}
+
+uint64_t database::get_pending_keep_limit() const
+{
+  return pending_keep_limit( _max_mempool_size, _reapply_window_bytes, get_dynamic_global_properties().get_maximum_block_size() );
+}
+
+bool database::is_kept_by_next_reapply( const full_transaction_type& full_transaction ) const
+{
+  // checked whatever pending holds: the RC code marks a transaction privileged (full_transaction_type::check_privilege())
+  // only above the flood level, which may be above what the reapply keeps
+  return rc().is_privileged_transaction( full_transaction ) || _pending_tx_size <= get_pending_keep_limit();
+}
+
 struct custom_op_visitor
 {
   typedef void result_type;
@@ -3058,7 +3075,7 @@ const witness_schedule_object& database::get_witness_schedule_object_for_irrever
     return get_witness_schedule_object();
 }
 
-void database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
+bool database::process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction,
   switch_forks_t sf)
 { try {
   FC_ASSERT(has_hardfork(HIVE_HARDFORK_1_26_FAST_CONFIRMATION), "Fast confirmation transactions not valid until HF26");
@@ -3088,7 +3105,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   if (!witness_is_scheduled)
   {
     ilog("Received a fast-confirm from witness ${witness} who is not on the schedule, ignoring", ("witness", block_approve_op.witness));
-    return;
+    return false;
   }
 
   const uint32_t new_approved_block_number = block_header::num_from_id( block_approve_op.block_id );
@@ -3112,7 +3129,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
            "but we already have a fast-confirm for a block #${previous_approved_block_number} which is at least as new, ignoring",
            ("witness", block_approve_op.witness)
            (previous_approved_block_number)(new_approved_block_number));
-      return;
+      return false;
     }
   }
   _my->_last_fast_approved_block_by_witness[block_approve_op.witness] = block_approve_op.block_id;
@@ -3123,6 +3140,7 @@ void database::process_fast_confirm_transaction(const std::shared_ptr<full_trans
   uint32_t old_last_irreversible_block = update_last_irreversible_block( std::optional<switch_forks_t>( sf ) );
 
   migrate_irreversible_state(old_last_irreversible_block);
+  return true;
 } FC_CAPTURE_AND_RETHROW() }
 
 uint32_t database::update_last_irreversible_block( std::optional<switch_forks_t> sf )

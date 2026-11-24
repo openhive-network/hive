@@ -28,14 +28,20 @@ public:
   void on_failure( const fc::exception& ex ) { except = ex.dynamic_copy_exception(); }
   virtual void on_worker_done( appbase::application& app ) const;
 
+  // set by the writer thread for a transaction accepted but not worth relaying (it was ignored, or is not expected to
+  // stay in pending after the next reapply, see database::is_kept_by_next_reapply())
+  void set_relay( bool _relay ) { relay = _relay; }
+
   const std::shared_ptr<full_transaction_type>& get_full_transaction() const { return tx; }
   const fc::exception_ptr& get_exception() const { return except; }
+  bool should_relay() const { return relay; }
   void rethrow_if_exception() const { if( except ) except->dynamic_rethrow_exception(); }
 
 private:
   std::shared_ptr<full_transaction_type> tx;
   promise_ptr                            prom_ptr;
   fc::exception_ptr                      except;
+  bool                                   relay = true;
 };
 
 } } // hive::chain

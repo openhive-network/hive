@@ -2236,7 +2236,7 @@ BOOST_AUTO_TEST_CASE( transaction_relay_test )
   } );
 }
 
-/// D17: while the pending pool holds more than a third of max-mempool-size the node asks its peers for no more than
+/// D17: while the pending pool holds more than the fetch gate's threshold the node asks its peers for no more than
 /// GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH transactions per GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS, and for
 /// blocks as always; so a fast-confirm one peer advertises while another floods it is still fetched and relayed to the
 /// peers in sync.  The flooder's own window doesn't bound it: it has delivered small transactions, so one request may
@@ -2244,10 +2244,9 @@ BOOST_AUTO_TEST_CASE( transaction_relay_test )
 /// have transactions it advertised would be demoted for that, see unavailable_advertised_items_test.)
 BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
 {
-  const uint64_t max_mempool_size = 6 * 1024;
-  const uint64_t threshold = transaction_fetch_gate_threshold( max_mempool_size );
+  const uint64_t threshold = 2 * 1024;
   const size_t flood_size = 50;
-  start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
+  start_node( "", true, { config_line_t( { "p2p-transaction-fetch-gate-threshold", { std::to_string( threshold ) } } ) } );
   run( [&]()
   {
     fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
@@ -2377,9 +2376,8 @@ BOOST_AUTO_TEST_CASE( transaction_fetch_gate_test )
 /// never ask for the fast-confirm
 BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
 {
-  const uint64_t max_mempool_size = 6 * 1024;
-  const uint64_t threshold = transaction_fetch_gate_threshold( max_mempool_size );
-  start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
+  const uint64_t threshold = 2 * 1024;
+  start_node( "", true, { config_line_t( { "p2p-transaction-fetch-gate-threshold", { std::to_string( threshold ) } } ) } );
   run( [&]()
   {
     fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
@@ -2438,6 +2436,129 @@ BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
   } );
 }
 
+/// Not relaying: once the pending pool holds more than its next reapply is expected to keep (with max-mempool-size 1,
+/// what the reapplication window held plus a block), a transfer fetched from a peer is accepted into pending but not
+/// advertised to the peers in sync, nor fetched again from another peer that advertises it; a feed_publish of the
+/// elected witness in the same state is privileged (whatever the RC flood level), so it is advertised.  The pool is
+/// filled through the API, so the gate is disabled to keep it out of the way.
+BOOST_AUTO_TEST_CASE( transactions_past_the_keep_limit_not_relayed_test )
+{
+  start_node( "", true, { config_line_t( { "max-mempool-size", { "1" } } ),
+                          config_line_t( { "p2p-transaction-fetch-gate-threshold", { "0" } } ) } );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+    // a witness's transactions are privileged only once a schedule update (every HIVE_MAX_WITNESSES blocks) elected it
+    BOOST_REQUIRE( wait_until( [&]()
+    {
+      bool elected = false;
+      db->with_read_lock( [&]() { elected = db->get_witness( HIVE_INIT_MINER_NAME ).schedule == hive::chain::witness_object::elected; } );
+      return elected;
+    }, fc::seconds( 2 * HIVE_MAX_WITNESSES * HIVE_BLOCK_INTERVAL ) ) );
+
+    auto source = make_peer( "source" );
+    connect_in_sync( *source );
+    auto other_source = make_peer( "other source" );
+    connect_in_sync( *other_source );
+    auto observer = make_peer( "observer" );
+    connect_in_sync( *observer );
+
+    // as in transaction_fetch_gate_test, the checks are made again after a block that was under way when production stopped
+    stop_block_production();
+    const std::string padding( HIVE_MAX_MEMO_SIZE - 64, 'x' );
+    bool checked_past_the_limit = false;
+    for( int attempt = 0; attempt < 3 && !checked_past_the_limit; ++attempt )
+    {
+      const uint32_t head = get_block_num();
+      const uint64_t keep_limit = get_chain_plugin().get_published_pending_keep_limit();
+      BOOST_TEST_MESSAGE( "keep limit " << keep_limit << " bytes" );
+      for( uint64_t filled = 0; filled <= keep_limit; )
+      {
+        const full_transaction_ptr filler = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                            padding + std::to_string( attempt ) + "/" + std::to_string( filled ),
+                                                            get_default_expiration() );
+        schedule_transaction( filler );
+        filled += filler->get_transaction_size();
+      }
+      wait_for_pool_over( keep_limit, head );
+      if( get_block_num() != head )
+        continue;
+
+      const full_transaction_ptr transfer = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                            "past the keep limit " + std::to_string( attempt ), get_default_expiration() );
+      feed_publish_operation feed;
+      feed.publisher = HIVE_INIT_MINER_NAME;
+      feed.exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( std::to_string( attempt + 2 ) + ".000 TESTS" ) );
+      const full_transaction_ptr privileged = build_transaction( feed, get_default_expiration() );
+      const item_hash_t transfer_hash = transfer->get_legacy_transaction_message_hash();
+      const item_hash_t privileged_hash = privileged->get_legacy_transaction_message_hash();
+      source->provide( { transfer, privileged } );
+      source->advertise( { transfer_hash, privileged_hash } );
+      BOOST_REQUIRE( wait_until( [&]() { return observer->was_advertised( privileged_hash ) || get_block_num() != head; }, reply_timeout ) );
+      other_source->provide( { transfer } );
+      other_source->advertise( { transfer_hash } );
+      fc::usleep( quiet_period );
+      if( get_block_num() != head )
+        continue;
+      checked_past_the_limit = true;
+
+      BOOST_CHECK( !observer->was_advertised( transfer_hash ) );
+      BOOST_CHECK_EQUAL( times_requested( *source, transfer_hash ), 1u );
+      BOOST_CHECK_EQUAL( times_requested( *other_source, transfer_hash ), 0u );
+      bool pending = false;
+      db->with_read_lock( [&]() { pending = db->is_known_transaction( transfer->get_transaction_id() ); } );
+      BOOST_CHECK( pending );
+      BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), keep_limit );
+    }
+    BOOST_REQUIRE_MESSAGE( checked_past_the_limit, "a block came before the checks of the full pool ended, every time" );
+    require_kept( *source );
+    require_kept( *other_source );
+  } );
+}
+
+/// A fast-confirm the node accepts is advertised to the peers in sync; another one for the same block, which the node
+/// ignores (it already has one at least as new from that witness), is not, nor fetched again from another peer
+BOOST_AUTO_TEST_CASE( ignored_fast_confirm_not_relayed_test )
+{
+  start_node( "", true );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto source = make_peer( "source" );
+    connect_in_sync( *source );
+    auto other_source = make_peer( "other source" );
+    connect_in_sync( *other_source );
+    auto observer = make_peer( "observer" );
+    connect_in_sync( *observer );
+
+    witness_block_approve_operation approve;
+    approve.witness = HIVE_INIT_MINER_NAME;
+    approve.block_id = head_block_id();
+    const full_transaction_ptr accepted = build_transaction( approve, get_default_expiration() );
+    const full_transaction_ptr ignored = build_transaction( approve, get_default_expiration() - 1 );
+    const item_hash_t accepted_hash = accepted->get_legacy_transaction_message_hash();
+    const item_hash_t ignored_hash = ignored->get_legacy_transaction_message_hash();
+
+    source->provide( { accepted } );
+    source->advertise( { accepted_hash } );
+    BOOST_REQUIRE( wait_until( [&]() { return observer->was_advertised( accepted_hash ); }, reply_timeout ) );
+
+    source->provide( { ignored } );
+    source->advertise( { ignored_hash } );
+    BOOST_REQUIRE( wait_until( [&]() { return source->was_requested( ignored_hash ); }, reply_timeout ) );
+    other_source->provide( { ignored } );
+    other_source->advertise( { ignored_hash } );
+    fc::usleep( quiet_period );
+    BOOST_CHECK( !observer->was_advertised( ignored_hash ) );
+    BOOST_CHECK_EQUAL( times_requested( *source, ignored_hash ), 1u );
+    BOOST_CHECK_EQUAL( times_requested( *other_source, ignored_hash ), 0u );
+    require_kept( *source );
+  } );
+}
+
 /// D17: below the threshold the node asks for no more transactions than fit under it with those already on their
 /// way: a peer that has sent none yet is expected to send ones of the mean size of those peers sent that validated,
 /// GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE while there are none (as here), so with a threshold smaller than that
@@ -2447,9 +2568,9 @@ BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
 /// soon more is advertised
 BOOST_AUTO_TEST_CASE( transaction_fetch_headroom_test )
 {
-  const uint64_t max_mempool_size = 6 * 1024;
-  BOOST_REQUIRE_LT( transaction_fetch_gate_threshold( max_mempool_size ), uint64_t( GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE ) );
-  start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
+  const uint64_t threshold = 2 * 1024;
+  BOOST_REQUIRE_LT( threshold, uint64_t( GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE ) );
+  start_node( "", true, { config_line_t( { "p2p-transaction-fetch-gate-threshold", { std::to_string( threshold ) } } ) } );
   run( [&]()
   {
     fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
@@ -2597,13 +2718,12 @@ BOOST_AUTO_TEST_CASE( unavailable_advertised_items_test )
 /// for its whole new inventory in one request, not for the gate's minimum per recheck
 BOOST_AUTO_TEST_CASE( withholding_peers_headroom_test )
 {
-  const uint64_t max_mempool_size = 12 * 1024 * 1024;
-  const uint64_t threshold = transaction_fetch_gate_threshold( max_mempool_size );
+  const uint64_t threshold = 4 * 1024 * 1024;
   const size_t withholding_count = 66;
   const size_t window = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE;
   const size_t batch_size = 100;
   BOOST_REQUIRE_GT( uint64_t( withholding_count * window ) * GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE, threshold );
-  start_node( "", true, { config_line_t( { "max-mempool-size", { std::to_string( max_mempool_size ) } } ) } );
+  start_node( "", true, { config_line_t( { "p2p-transaction-fetch-gate-threshold", { std::to_string( threshold ) } } ) } );
   run( [&]()
   {
     fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );

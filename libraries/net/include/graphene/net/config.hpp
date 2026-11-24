@@ -391,12 +391,13 @@
 #define GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE       (64 * 1024)
 
 /**
- * The transaction fetch gate (graphene::net::transaction_fetch_gate_threshold()) closes while the pending pool holds
- * more than max-mempool-size divided by this, which leaves the rest of the pool for API submissions, fork switches and
- * replies already on their way.
- * Basis: unvalidated.
+ * By default the transaction fetch gate (graphene::net::default_transaction_fetch_gate_threshold()) closes while the
+ * pending pool holds more than this percentage of the larger of what the next reapply of pending is expected to keep
+ * and the pool at which the RC flood surcharge engages (rc-flood-level full blocks), so that it engages only after
+ * both, as a backstop for a node whose intake between two blocks outgrows what it keeps.
+ * Basis: unvalidated (to be confirmed by the live A/B of the gate against not relaying).
  */
-#define GRAPHENE_NET_TRANSACTION_FETCH_GATE_POOL_DIVISOR     3
+#define GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT   150
 
 /**
  * While the pending pool holds more than its gate threshold (graphene::net::is_transaction_fetching_gated())

@@ -93,8 +93,25 @@ waits and its blocks are read as they arrive. At the cap the fetch passes reques
 (`transaction_fetch_window()`) until validation results bring the count back under it; only replies already
 requested still arrive, so the count exceeds the cap by at most what the peers' windows held. Normally the fetch
 gate's headroom (which counts the bytes being validated) keeps the count far below the cap; the cap matters when the
-gate is disabled (`max-mempool-size` 0) or validation stops while the gated minimum keeps fetching. The statistics
+gate is disabled (`p2p-transaction-fetch-gate-threshold` 0) or validation stops while the gated minimum keeps fetching. The statistics
 report counts the times the cap was reached and for how long (`handoff.limit_waits`, `handoff.limit_wait_us`).
+
+## Relaying and the fetch gate
+
+The client tells the node with each transaction it validated whether to relay it (`transaction_validated_callback`).
+It says no for a fast-confirm it ignored (its witness is not on the schedule, or one at least as new is recorded),
+and for a transaction that is not privileged (`resource_credits::is_privileged_transaction()`) and lands in pending
+beyond what the next reapply is expected to keep (`database::pending_keep_limit()`: the larger of
+`max-mempool-size` and what the last reapplication window applied, plus one block). The node still counts such a
+transaction as received, so it doesn't fetch it again; it only doesn't advertise it (`handoff.not_relayed` in the
+statistics report). A flooded node so keeps fetching and validating, its RC flood surcharge and the witnesses'
+privilege keep working, and it passes on about one block's worth per block.
+
+The fetch gate is the backstop behind that. With the default options, as the pool grows the RC surcharge engages first (above `rc-flood-level`
+full blocks), not relaying next, and the gate last: by default it closes above
+`GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT` of the larger of the keep limit and the flood level
+(`default_transaction_fetch_gate_threshold()`). `p2p-transaction-fetch-gate-threshold` sets a fixed threshold
+instead, 0 disabling the gate. The statistics report gives how long it was closed (`transaction_fetch_gate.gated_us`).
 
 ## Disconnect reasons, ranked
 
@@ -223,7 +240,7 @@ host and must exempt the proxy's address or set the cap to 0.
 | - | `maximum_blocks_per_peer_during_syncing` | 200 | blocks | one sync request |
 | - | `peer_advertising_disabled` | false | bool | don't share peer addresses |
 | - | `accept_incoming_connections`, `wait_if_endpoint_is_busy`, `private_key` | true, true, generated | - | listening and node identity |
-| `max-mempool-size` (chain) | - | chain default | bytes | the fetch gate closes above a third of it |
+| `p2p-transaction-fetch-gate-threshold` | - | derived | bytes | the fetch gate closes above it; 0 = off; default: see "Relaying and the fetch gate" |
 
 `node_config.json` in the p2p data directory saves the whole configuration of the last run and is read at start,
 before `p2p-parameters`; `peer_expansion_timeout`, `silent_peer_disconnect_timeout` and `relax_per_host_limit`
@@ -317,7 +334,7 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 | `GRAPHENE_NET_MAX_TRANSACTION_BYTES_IN_FLIGHT_PER_PEER` | `TRANSACTION_BUDGET_BYTES` | bytes | per-peer byte window | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
 | `GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH` | `TRANSACTION_BUDGET_BYTES` | bytes | one request | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
 | `GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE` | `(64 * 1024)` | bytes | starting guess of a peer's mean transaction size, not a bound | unvalidated |
-| `GRAPHENE_NET_TRANSACTION_FETCH_GATE_POOL_DIVISOR` | `3` | - | gate threshold is max-mempool-size / this | unvalidated |
+| `GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT` | `150` | % | default gate threshold over the larger of the keep limit and the flood level | unvalidated |
 | `GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS` | `100` | ms | gate re-check and minimum interval | unvalidated |
 | `GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH` | `20` | transactions | gated minimum per interval | unvalidated |
 | `GRAPHENE_NET_GATED_FETCH_EXPIRY_WARNING_INTERVAL_SEC` | `30` | s | log rate | n/a |

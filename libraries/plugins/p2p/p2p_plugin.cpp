@@ -51,7 +51,7 @@ public:
   virtual void on_worker_done( appbase::application& app ) const override
   {
     transaction_flow_control::on_worker_done( app );
-    on_validated( get_exception() );
+    on_validated( get_exception(), should_relay() );
   }
 
 private:
@@ -130,6 +130,8 @@ public:
   fc::optional<uint32_t> transaction_flush_delay_us;
   fc::optional<uint32_t> fetch_items_minimum_interval_us;
   fc::optional<uint32_t> max_transactions_in_flight;
+  /// p2p-transaction-fetch-gate-threshold in bytes; unset for graphene::net::default_transaction_fetch_gate_threshold()
+  fc::optional<uint64_t> transaction_fetch_gate_threshold;
   fc::optional<uint32_t> max_connections_per_host;
   fc::optional<bool> relax_per_host_limit;
   vector<string> host_limit_exempt;
@@ -391,7 +393,9 @@ bool p2p_plugin_impl::is_at_live_sync()
 
 graphene::net::pending_transaction_pool_size p2p_plugin_impl::get_pending_transaction_pool_size() const
 {
-  return { chain.get_published_pending_transactions_size(), chain.get_max_mempool_size() };
+  const uint64_t threshold = transaction_fetch_gate_threshold ? *transaction_fetch_gate_threshold
+    : graphene::net::default_transaction_fetch_gate_threshold( chain.get_published_pending_keep_limit(), chain.get_published_flood_pending_size() );
+  return { chain.get_published_pending_transactions_size(), threshold };
 }
 
 // Runs on the p2p thread as a long-lived task while any seed string from the configuration is
@@ -522,6 +526,12 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-max-transactions-in-flight", bpo::value<uint32_t>(), "Maximum number of transactions received from peers that may wait for validation at once. "
      "A safety cap: at it, the node requests no more transactions from peers until some are validated; transactions already requested, "
      "and blocks, are still read and processed as they arrive. Default 10000; 0 for no limit. Overrides maximum_transactions_in_flight in p2p-parameters.")
+    ("p2p-transaction-fetch-gate-threshold", bpo::value<string>(), "Pending transactions size (e.g. 300M) above which the node requests only "
+     BOOST_PP_STRINGIZE(GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH) " transactions per " BOOST_PP_STRINGIZE(GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS) " ms "
+     "from its peers (blocks are fetched as always). 0 disables this fetch gate. By default it is "
+     BOOST_PP_STRINGIZE(GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT) "% of the larger of what the next reapplication of pending "
+     "is expected to keep (see max-mempool-size; transactions beyond that are not relayed) and rc-flood-level full blocks, "
+     "so that it engages only after the RC flood surcharge and not relaying.")
     ("p2p-max-connections-per-host", bpo::value<uint32_t>(), "Maximum number of connections held to one host, an IPv4 address or an IPv6 /64, inbound and outbound together. "
      "A hello beyond it is rejected, and the peer counts that as a failed attempt and backs off. Loopback addresses and p2p-host-limit-exempt "
      "ones are not limited, and neither are the seed nodes and add_node targets this node dials (they still count against their host's limit). "
@@ -575,6 +585,9 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count( "p2p-max-transactions-in-flight" ) )
     my->max_transactions_in_flight = options.at( "p2p-max-transactions-in-flight" ).as< uint32_t >();
+
+  if( options.count( "p2p-transaction-fetch-gate-threshold" ) )
+    my->transaction_fetch_gate_threshold = fc::parse_size( options.at( "p2p-transaction-fetch-gate-threshold" ).as< string >() );
 
   if( options.count( "p2p-max-connections-per-host" ) )
     my->max_connections_per_host = options.at( "p2p-max-connections-per-host" ).as< uint32_t >();

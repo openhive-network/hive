@@ -560,6 +560,7 @@ namespace graphene { namespace net {
         fc::time_point submitted_time;
         fc::time_point validated_time;
         fc::exception_ptr error;
+        bool relay = true;
       };
       /// filled by the delegate's validation callbacks on the chain's writer thread, applied on our thread
       std::shared_ptr<completion_queue<transaction_completion>> _transaction_completions;
@@ -1747,6 +1748,7 @@ namespace graphene { namespace net {
 
         const fc::time_point next_minimum_due = _fetch_minimum_schedule.record_pass(gate, iteration_start);
         ++_statistics.fetch.wakes;
+        _statistics.record_gate(gate.closed(), iteration_start);
         if (gate.held_back())
           ++_statistics.fetch.transactions_gated;
         if (gate.bounded())
@@ -1763,7 +1765,7 @@ namespace graphene { namespace net {
         // Nothing tells the loop when the pending pool drains (by inclusion in blocks, expiry or drops at
         // max-mempool-size), so while live candidates wait for it the gate is checked again at an interval; once
         // they have all expired (trimmed in list_peers_for_fetch_pass()) the loop waits for a trigger.  API submissions may keep the pool
-        // over the threshold for as long as they last (see transaction_fetch_gate_threshold()).  Replies that free
+        // over the threshold for as long as they last (see default_transaction_fetch_gate_threshold()).  Replies that free
         // the headroom need not open a peer's window, so they may not wake the loop either
         const fetch_loop_wait wait = next_fetch_pass(gate, iteration_start,
                                                      fc::microseconds(_node_configuration.fetch_items_minimum_interval_microseconds),
@@ -6456,10 +6458,11 @@ namespace graphene { namespace net {
             dlog("passing message containing transaction ${trx} to client", ("trx", full_transaction->get_transaction_id()));
             transaction_completion completion{full_transaction, message_hash, message_receive_time, originating_peer->node_id, submitted_time};
             _delegate->submit_transaction(full_transaction,
-              [completions = _transaction_completions, completion](const fc::exception_ptr& error) {
+              [completions = _transaction_completions, completion](const fc::exception_ptr& error, bool relay) {
                 transaction_completion validated = completion;
                 validated.validated_time = fc::time_point::now();
                 validated.error = error;
+                validated.relay = relay;
                 completions->push(std::move(validated));
               });
           }
@@ -6556,8 +6559,17 @@ namespace graphene { namespace net {
         process_deferred_transaction_advertisements(active_peer.get());
       }
 
-      // finally, as the delegate validated the transaction, broadcast it to our other peers
       message_propagation_data propagation_data{completion.received_time, completion.validated_time, completion.originating_peer};
+      if (!completion.relay)
+      {
+        // the client keeps it but it is not to spread any further: cached, so no other advertiser is asked for it
+        // again, but not added to the inventory we advertise
+        _transaction_message_cache.cache_message(completion.full_transaction, propagation_data);
+        _statistics.record_not_relayed();
+        return;
+      }
+
+      // finally, as the delegate validated the transaction, broadcast it to our other peers
       broadcast(completion.full_transaction, propagation_data);
     }
 
@@ -8826,7 +8838,7 @@ namespace graphene { namespace net {
                        destination_node->delegate->handle_block(full_block, false);
                      },
                      [&](const std::shared_ptr<full_transaction_type>& full_transaction) {
-                       destination_node->delegate->submit_transaction(full_transaction, [](const fc::exception_ptr&) {});
+                       destination_node->delegate->submit_transaction(full_transaction, [](const fc::exception_ptr&, bool) {});
                      }
                    }, message_to_deliver);
       }
@@ -9516,6 +9528,18 @@ namespace graphene { namespace net {
     _handoff.limit_wait_time += waited;
   }
 
+  void p2p_statistics::record_not_relayed()
+  {
+    ++_handoff.not_relayed;
+  }
+
+  void p2p_statistics::record_gate(bool closed, fc::time_point now)
+  {
+    if (_gate_closed_since)
+      fetch.gated_time += now - *_gate_closed_since;
+    _gate_closed_since = closed ? std::optional<fc::time_point>(now) : std::nullopt;
+  }
+
   void p2p_statistics::record_completion(fc::microseconds latency)
   {
     ++_handoff.completions;
@@ -9544,6 +9568,12 @@ namespace graphene { namespace net {
                                                  std::vector<uint64_t> transactions_requested_per_peer)
   {
     const auto mean = [](uint64_t total, uint64_t count) { return count ? double(total) / double(count) : 0.0; };
+    // a gate still closed counts until now, and from now in the next period
+    if (_gate_closed_since)
+    {
+      fetch.gated_time += now - *_gate_closed_since;
+      _gate_closed_since = now;
+    }
 
     // with an even number of peers the median is the upper of the two middle counts
     std::vector<uint64_t>& per_peer = transactions_requested_per_peer;
@@ -9573,9 +9603,10 @@ namespace graphene { namespace net {
         ("items_queued", items_queued)
         ("scheduling_us", fetch.scheduling_time.count()))
       ("transaction_fetch_gate", fc::mutable_variant_object()
-        ("threshold_bytes", transaction_fetch_gate_threshold(pool.max_bytes))
+        ("threshold_bytes", pool.gate_threshold_bytes)
         ("pending_bytes", pool.pending_bytes)
         ("gated", is_transaction_fetching_gated(pool))
+        ("gated_us", fetch.gated_time.count())
         ("gated_wakes", fetch.transactions_gated)
         ("bounded_wakes", fetch.transactions_bounded))
       ("handoff", fc::mutable_variant_object()
@@ -9586,7 +9617,8 @@ namespace graphene { namespace net {
         ("mean_in_flight", mean(_handoff.in_flight_sum, _handoff.submissions))
         ("completion_latency", std::move(latency))
         ("limit_waits", _handoff.limit_waits)
-        ("limit_wait_us", _handoff.limit_wait_time.count()))
+        ("limit_wait_us", _handoff.limit_wait_time.count())
+        ("not_relayed", _handoff.not_relayed))
       ("send", fc::mutable_variant_object()
         ("writes", _sending.writes)
         ("messages_per_write", mean(_sending.messages, _sending.writes))
@@ -9612,16 +9644,18 @@ namespace graphene { namespace net {
     return report;
   }
 
-  uint64_t transaction_fetch_gate_threshold(uint64_t max_bytes)
+  uint64_t default_transaction_fetch_gate_threshold(uint64_t keep_limit_bytes, uint64_t flood_pending_bytes)
   {
-    // a max-mempool-size of 1 or 2 bytes still gates
-    return max_bytes == 0 ? 0 : std::max<uint64_t>(max_bytes / GRAPHENE_NET_TRANSACTION_FETCH_GATE_POOL_DIVISOR, 1);
+    const uint64_t base = std::max(keep_limit_bytes, flood_pending_bytes);
+    const uint64_t threshold = base > std::numeric_limits<uint64_t>::max() / GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT
+                                 ? std::numeric_limits<uint64_t>::max()
+                                 : base * GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT / 100;
+    return std::max<uint64_t>(threshold, 1);
   }
 
   bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool)
   {
-    const uint64_t threshold = transaction_fetch_gate_threshold(pool.max_bytes);
-    return threshold > 0 && pool.pending_bytes > threshold;
+    return pool.gate_threshold_bytes > 0 && pool.pending_bytes > pool.gate_threshold_bytes;
   }
 
   transaction_fetch_gate::transaction_fetch_gate(const pending_transaction_pool_size& pool, uint64_t bytes_on_their_way,
@@ -9629,7 +9663,7 @@ namespace graphene { namespace net {
     _closed(is_transaction_fetching_gated(pool)),
     _minimum(minimum_transactions)
   {
-    const uint64_t threshold = transaction_fetch_gate_threshold(pool.max_bytes);
+    const uint64_t threshold = pool.gate_threshold_bytes;
     if (threshold == 0)
       _headroom = std::numeric_limits<uint64_t>::max();
     else

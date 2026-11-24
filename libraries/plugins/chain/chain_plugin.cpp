@@ -156,7 +156,7 @@ class chain_plugin_impl
     void setup_benchmark_dumper();
     void dump_benchmark_summary( summary_type summary );
 
-    void push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip );
+    bool push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip );
     bool push_block( const block_flow_control& block_ctrl, uint32_t skip );
 
     bool test_checkpoint( const std::shared_ptr<full_block_type>& block );
@@ -210,6 +210,9 @@ class chain_plugin_impl
     // db._pending_tx_size as of the end of the last write queue item, for readers that hold no lock; it is not
     // updated in the middle of an item, so the pool emptied while a block is applied is never seen
     std::atomic<uint64_t>            published_pending_tx_size{0};
+    // db.get_pending_keep_limit() and resource_credits::flood_pending_size() as of the end of the last write queue item
+    std::atomic<uint64_t>            published_pending_keep_limit{0};
+    std::atomic<uint64_t>            published_flood_pending_size{0};
 
     enum class comment_archive_type
     {
@@ -413,7 +416,7 @@ struct chain_plugin_impl::write_request_visitor
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f, cp.theApp)
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
       ++count_tx_pushed;
-      cp.push_transaction( tx_ctrl->get_full_transaction(), database::skip_nothing );
+      tx_ctrl->set_relay( cp.push_transaction( tx_ctrl->get_full_transaction(), database::skip_nothing ) );
       cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
@@ -663,6 +666,9 @@ void chain_plugin_impl::start_write_processing()
             req_visitor.cxt = cxt;
             last_block_number = cxt->req_ptr.visit( req_visitor );
             published_pending_tx_size.store( db._pending_tx_size, std::memory_order_relaxed );
+            published_pending_keep_limit.store( db.get_pending_keep_limit(), std::memory_order_relaxed );
+            published_flood_pending_size.store( resource_credits::flood_pending_size( db.get_dynamic_global_properties().get_maximum_block_size() ),
+                                                std::memory_order_relaxed );
 
             ++write_queue_items_processed;
 
@@ -1148,7 +1154,7 @@ void chain_plugin_impl::open()
   was_error = false;
 }
 
-void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
+bool chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
 {
   const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
   try
@@ -1158,7 +1164,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
       // skip_transaction_dupe_check prevents populating of transaction_index - check is done anyway
       // but with dedicated in-memory index for pending transactions
       db.process_non_fast_confirm_transaction( full_transaction, skip | database::skip_transaction_dupe_check );
-      return;
+      return db.is_kept_by_next_reapply( *full_transaction );
     }
 
     auto sf = [&]( std::shared_ptr<full_block_type> new_head_block, uint32_t old_last_irreversible )-> std::optional< uint32_t > {
@@ -1201,7 +1207,7 @@ void chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
     }; // end sf lambda
 
     // fast-confirm transactions are just processed in memory, they're not added to the blockchain
-    db.process_fast_confirm_transaction( full_transaction, sf );
+    return db.process_fast_confirm_transaction( full_transaction, sf );
   }
   FC_CAPTURE_AND_RETHROW((trx))
 }
@@ -1787,7 +1793,7 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY, JSONL. Default ILOG. JSONL puts output to rc_stats.jsonl" )
       ("block-log-split", bpo::value<int>()->default_value( 9999 ), "Whether the block log should be single file (-1), not used at all & keeping only head block in memory (0), or split into files each containing 1M blocks & keeping N full million latest blocks (N). Default 9999." )
-      ("max-mempool-size", bpo::value<string>()->default_value( "100M" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool. While pending transactions exceed a third of it the node fetches no transactions from its p2p peers, also when API submissions keep it there.")
+      ("max-mempool-size", bpo::value<string>()->default_value( "100M" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool. A transaction received from a p2p peer that lands in pending beyond what the next reapplication is expected to keep (the larger of this limit and what the last reapplication window held, plus one block) is kept but not relayed to other peers, unless it is a privileged witness transaction. See p2p-transaction-fetch-gate-threshold for when the node stops fetching transactions from its peers.")
       ("rc-flood-level", bpo::value<uint16_t>()->default_value( 20 ), "Number of full blocks that can be present in mempool before RC surcharge is applied. 0-65535. Default 20 (one minute of full blocks).")
       ("rc-flood-surcharge", bpo::value<uint16_t>()->default_value( HIVE_100_PERCENT ), "Multiplication factor for temporary extra RC cost charged for each block above flood level before transaction is allowed to enter and remain in pending. 0-10000. Default 10000 (100%).")
 #ifdef USE_ALTERNATE_CHAIN_ID
@@ -2437,9 +2443,9 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
   }
 } FC_CAPTURE_AND_RETHROW() }
 
-void chain_plugin::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
+bool chain_plugin::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
 {
-  my->push_transaction( full_transaction, skip );
+  return my->push_transaction( full_transaction, skip );
 }
 
 /**
@@ -2564,9 +2570,14 @@ uint64_t chain_plugin::get_published_pending_transactions_size() const
   return my->published_pending_tx_size.load( std::memory_order_relaxed );
 }
 
-uint64_t chain_plugin::get_max_mempool_size() const
+uint64_t chain_plugin::get_published_pending_keep_limit() const
 {
-  return my->max_mempool_size;
+  return my->published_pending_keep_limit.load( std::memory_order_relaxed );
+}
+
+uint64_t chain_plugin::get_published_flood_pending_size() const
+{
+  return my->published_flood_pending_size.load( std::memory_order_relaxed );
 }
 
 } } } // namespace hive::plugins::chain
