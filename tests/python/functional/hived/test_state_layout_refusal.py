@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import mmap
 import shutil
+import signal
 import subprocess
+import time
 from typing import TYPE_CHECKING, Final
 
 import pytest
@@ -30,18 +32,22 @@ def excerpt(output: str) -> str:
     return "\n".join(relevant[:40]) + "\n...\n" + output[-1500:]
 
 
+def hived_command(data_dir: Path, *args: str) -> list[str]:
+    return [
+        str(tt.paths_to_executables.get_path_of("hived")),
+        "--data-dir",
+        str(data_dir),
+        "--shared-file-size",
+        "128M",
+        "--exit-before-sync",
+        *args,
+    ]
+
+
 def run_hived(data_dir: Path, *args: str) -> tuple[int, str]:
     try:
         hived = subprocess.run(
-            [
-                tt.paths_to_executables.get_path_of("hived"),
-                "--data-dir",
-                str(data_dir),
-                "--shared-file-size",
-                "128M",
-                "--exit-before-sync",
-                *args,
-            ],
+            hived_command(data_dir, *args),
             cwd=data_dir.parent,
             capture_output=True,
             text=True,
@@ -71,6 +77,24 @@ def enlarge_recorded_account_index_size(state_file: Path) -> int:
         state[size_offset : size_offset + 8] = enlarged.to_bytes(8, "little")
         state.flush()
     return enlarged
+
+
+def kill_hived_during_first_open(data_dir: Path, delay: float) -> None:
+    """Starts hived on a fresh data directory and kills it with SIGKILL `delay` seconds after it creates its state."""
+    state_file = data_dir / "blockchain" / "shared_memory.bin"
+    hived = subprocess.Popen(
+        hived_command(data_dir), cwd=data_dir.parent, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    try:
+        deadline = time.monotonic() + 60
+        # busy, because the whole open takes a few tens of milliseconds
+        while not state_file.exists():
+            assert hived.poll() is None, f"hived exited with {hived.returncode} before it created {state_file}"
+            assert time.monotonic() < deadline, f"hived did not create {state_file} within 60 s"
+        time.sleep(delay)
+    finally:
+        hived.send_signal(signal.SIGKILL)
+        hived.wait()
 
 
 def file_hash(path: Path) -> str:
@@ -108,3 +132,34 @@ def test_hived_refuses_state_with_another_layout_with_exit_code_78() -> None:
         ):
             assert expected in output, f"'{expected}' not logged in:\n{excerpt(output)}"
         assert file_hash(state_file) == state_before
+
+
+@pytest.mark.testnet
+def test_hived_refuses_state_of_an_interrupted_first_open_with_exit_code_78() -> None:
+    root = tt.context.get_current_directory() / "interrupted_first_open"
+    shutil.rmtree(root, ignore_errors=True)
+    exit_codes: list[int] = []
+    refused_data_dir: Path | None = None
+    # from right after the state file appears, through the construction of the indexes, to past the end of the open
+    for delay in (0.0, 0.001, 0.003, 0.01, 0.02, 0.04, 0.08):
+        data_dir = root / f"delay_{delay}"
+        data_dir.mkdir(parents=True)
+        kill_hived_during_first_open(data_dir, delay)
+
+        exit_code, output = run_hived(data_dir)
+        tt.logger.info(f"Killed {delay * 1000} ms after the state was created, restart exited with {exit_code}")
+        exit_codes.append(exit_code)
+        assert exit_code in (0, STARTUP_REFUSED_EXIT_CODE), excerpt(output)
+        if exit_code == STARTUP_REFUSED_EXIT_CODE:
+            refused_data_dir = data_dir
+            for expected in (
+                "A replay (or a snapshot load) is needed.",
+                "or with --force-replay to rebuild it from the block log.",
+                f"Exiting with code {STARTUP_REFUSED_EXIT_CODE}.",
+            ):
+                assert expected in output, f"'{expected}' not logged in:\n{excerpt(output)}"
+
+    assert refused_data_dir is not None, f"no kill interrupted the first open; restarts exited with {exit_codes}"
+    # refused again, rather than opened or failing otherwise once the first refusal has touched the state
+    exit_code, output = run_hived(refused_data_dir)
+    assert exit_code == STARTUP_REFUSED_EXIT_CODE, excerpt(output)

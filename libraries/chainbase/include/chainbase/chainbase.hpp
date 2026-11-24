@@ -980,6 +980,14 @@ namespace chainbase {
       using std::logic_error::logic_error;
   };
 
+  /// Thrown when `shared_memory_file` holds a state whose creation did not complete, or whose segment lock is held by a
+  /// process that was killed while it held it: a replay (or a snapshot load) is needed.
+  class incomplete_state : public std::logic_error
+  {
+    public:
+      using std::logic_error::logic_error;
+  };
+
   /**
     *  This class
     */
@@ -1013,7 +1021,10 @@ namespace chainbase {
         /// so a storage in use by another process is refused at once, and the mapping is private and read-only except
         /// for the segment manager's header, so it does not commit memory for the whole file. Indexes missing from
         /// the storage cannot be created.
-        read_only_storage = 1
+        read_only_storage = 1,
+        /// Marks a storage this open creates as being created until complete_creation() is called. An open of a
+        /// storage still marked so is refused with incomplete_state, whether or not it passes this flag.
+        track_creation = 2
       };
 
       virtual ~database() = default;
@@ -1021,6 +1032,8 @@ namespace chainbase {
       void open( const bfs::path& dir, uint32_t flags = 0, size_t shared_file_size = 0, const boost::any& database_cfg = nullptr, const helpers::environment_extension_resources* environment_extension = nullptr );
       void close();
       void flush();
+      /// Removes the mark track_creation put on the storage when this open created it; does nothing otherwise.
+      void complete_creation();
 
     protected:
       void wipe( const bfs::path& dir );
@@ -1485,7 +1498,8 @@ namespace chainbase {
       class read_only_mapping;
       class state_file_lock;
 
-      void open_storage( const bfs::path& dir, bool read_only, bool evict_page_cache, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension );
+      /// remapping: resize maps the file this process has just used again, so its pages are kept and it is not checked again.
+      void open_storage( const bfs::path& dir, uint32_t flags, bool remapping, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension );
       void request_huge_pages();
 
       unique_ptr<bip::managed_mapped_file>                        _segment;

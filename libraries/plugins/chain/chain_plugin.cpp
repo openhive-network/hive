@@ -1102,11 +1102,6 @@ void chain_plugin_impl::open()
     if( ( force_replay || resync ) && !load_snapshot )
       marker.clear();
 
-    db.pre_open( db_open_args );
-    db.with_write_lock([&]()
-    {
-      block_storage->open_and_init( bl_open_args, true/*read_only*/, true/*allow_artifacts_regeneration*/, &db );
-    });
     const auto refuse_unopenable_state = [&]()
     {
       startup_refused = true;
@@ -1115,22 +1110,31 @@ void chain_plugin_impl::open()
         "Start hived with --load-snapshot=${s} to replace it with a snapshot, or with --force-replay to rebuild it from the block log.",
         ( "s", snapshot ) );
     };
-    try
+    const auto open_or_refuse = [&]( auto&& open_step )
     {
-      db.open( db_open_args );
-    }
-    catch( const shm_state_definitions_mismatch_exception& )
+      try
+      {
+        open_step();
+      }
+      catch( const shm_state_definitions_mismatch_exception& )
+      {
+        if( !wipe_state )
+          refuse_unopenable_state();
+        throw;
+      }
+      catch( const blockchain_config_mismatch_exception& )
+      {
+        if( !wipe_state )
+          refuse_unopenable_state();
+        throw;
+      }
+    };
+    open_or_refuse( [&]() { db.pre_open( db_open_args ); } );
+    db.with_write_lock([&]()
     {
-      if( !wipe_state )
-        refuse_unopenable_state();
-      throw;
-    }
-    catch( const blockchain_config_mismatch_exception& )
-    {
-      if( !wipe_state )
-        refuse_unopenable_state();
-      throw;
-    }
+      block_storage->open_and_init( bl_open_args, true/*read_only*/, true/*allow_artifacts_regeneration*/, &db );
+    });
+    open_or_refuse( [&]() { db.open( db_open_args ); } );
   } FC_LOG_AND_RETHROW()
 
   was_error = false;

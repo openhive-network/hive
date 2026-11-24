@@ -163,7 +163,16 @@ void database::pre_open( const open_args& args )
                                                 []( const std::string& message ){ wlog( message.c_str() ); }
                                               );
     ilog("Opening/creating shared memory from ${path}", ("path", args.shared_mem_dir.generic_string()));
-    chainbase::database::open( args.shared_mem_dir, args.chainbase_flags, args.shared_file_size, args.database_cfg, &environment_extension );
+    try
+    {
+      // open() completes the creation: until then, a start finds the state it leaves incomplete and refuses it
+      chainbase::database::open( args.shared_mem_dir, args.chainbase_flags | chainbase::database::track_creation,
+        args.shared_file_size, args.database_cfg, &environment_extension );
+    }
+    catch( const chainbase::incomplete_state& e )
+    {
+      FC_THROW_EXCEPTION( shm_state_definitions_mismatch_exception, "${what}", ( "what", e.what() ) );
+    }
     reset_singleton_cache();
     initialize_irreversible_storage();
   }
@@ -179,6 +188,7 @@ void database::open( const open_args& args )
     _block_writer->on_state_independent_data_initialized();
     load_state_initial_data(args);
     verify_match_of_blockchain_configuration();
+    complete_creation();
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
