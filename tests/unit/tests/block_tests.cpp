@@ -410,6 +410,92 @@ BOOST_AUTO_TEST_CASE( fork_database_refuses_overlong_producer_name )
   }
 }
 
+/// Heads come ordered by block number, then block id, whatever order the blocks arrived in.
+BOOST_AUTO_TEST_CASE( fork_database_heads_ordered_by_number_then_id )
+{
+  try {
+    const auto root = empty_block_on( block_id_type(), HIVE_INIT_MINER_NAME );
+    const auto a2 = empty_block_on( root->get_block_id(), "producera" );
+    const auto a3 = empty_block_on( a2->get_block_id(), "producera" );
+    const auto b2 = empty_block_on( root->get_block_id(), "producerb" );
+    const auto b3 = empty_block_on( b2->get_block_id(), "producerb" );
+    const auto c2 = empty_block_on( root->get_block_id(), "producerc" );
+    const auto& lower_3 = a3->get_block_id() < b3->get_block_id() ? a3 : b3;
+    const auto& higher_3 = a3->get_block_id() < b3->get_block_id() ? b3 : a3;
+    const std::vector< block_id_type > expected_heads = {
+      c2->get_block_id(), lower_3->get_block_id(), higher_3->get_block_id() };
+
+    for( const auto& arrival_order : { std::vector{ a2, a3, b2, b3, c2 }, std::vector{ b2, b3, a2, a3, c2 } } )
+    {
+      fork_database fork_db;
+      fork_db.start_block( root );
+      for( const auto& block : arrival_order )
+        fork_db.push_block( block );
+
+      std::vector< block_id_type > heads;
+      for( const item_ptr& head : fork_db.fetch_heads() )
+        heads.push_back( head->get_block_id() );
+      BOOST_CHECK( heads == expected_heads );
+    }
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
+/// Two heads of equal height that both reach the irreversibility threshold, at different block numbers: the head
+/// and last irreversible block chosen don't depend on which of them arrived first.
+BOOST_FIXTURE_TEST_CASE( last_irreversible_block_independent_of_arrival_order, clean_database_fixture )
+{
+  try {
+    const auto root = empty_block_on( block_id_type(), HIVE_INIT_MINER_NAME );
+    // produced by names outside the schedule, so the only approvals are the fast confirmations below
+    const auto a2 = empty_block_on( root->get_block_id(), "producera" );
+    const auto a3 = empty_block_on( a2->get_block_id(), "producera" );
+    const auto b2 = empty_block_on( root->get_block_id(), "producerb" );
+    const auto b3 = empty_block_on( b2->get_block_id(), "producerb" );
+
+    const std::vector< const witness_object* > scheduled_witnesses = {
+      &db->get_witness( "initminer1" ), &db->get_witness( "initminer2" ),
+      &db->get_witness( "initminer3" ), &db->get_witness( "initminer4" ) };
+    // branch a qualifies at block 3, branch b at block 2
+    const std::map< account_name_type, block_id_type > fast_confirmations = {
+      { "initminer1", a3->get_block_id() }, { "initminer2", a3->get_block_id() },
+      { "initminer3", b2->get_block_id() }, { "initminer4", b2->get_block_id() } };
+    const unsigned witnesses_required = 2;
+
+    // the head visited first wins the tie
+    const bool a_first = a3->get_block_id() < b3->get_block_id();
+    const block_id_type expected_head = a_first ? a3->get_block_id() : b3->get_block_id();
+    const uint32_t expected_last_irreversible = a_first ? 3 : 2;
+
+    auto block_storage = block_storage_i::create_storage( LEGACY_SINGLE_FILE_BLOCK_LOG, theApp, *thread_pool );
+    for( const auto& arrival_order : { std::vector{ a2, a3, b2, b3 }, std::vector{ b2, b3, a2, a3 } } )
+    {
+      sync_block_writer writer( *block_storage, *db, theApp );
+      std::vector< std::shared_ptr< full_block_type > > blocks = { root };
+      blocks.insert( blocks.end(), arrival_order.begin(), arrival_order.end() );
+      for( const auto& block : blocks )
+      {
+        // a state head above every block keeps them all in the fork database without applying any
+        existing_block_flow_control block_ctrl( block );
+        writer.push_block( block, block_ctrl, std::numeric_limits< uint32_t >::max(), block_id_type(),
+                           database::skip_merkle_check, nullptr, nullptr );
+        BOOST_REQUIRE( block_ctrl.ignored() );
+      }
+
+      const auto result = writer.find_new_last_irreversible_block( scheduled_witnesses, fast_confirmations,
+                                                                   witnesses_required, 1 );
+      BOOST_REQUIRE( result );
+      BOOST_CHECK_EQUAL( result->new_head_block->get_block_id().str(), expected_head.str() );
+      BOOST_CHECK_EQUAL( result->new_last_irreversible_block_num, expected_last_irreversible );
+    }
+  } catch (fc::exception& e) {
+    edump((e.to_detail_string()));
+    throw;
+  }
+}
+
 namespace
 {
   /// A copy of @p genuine with the same header, and therefore the same id, but with a body that

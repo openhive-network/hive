@@ -5,6 +5,8 @@
 #include <boost/range/algorithm/reverse.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
+#include <algorithm>
+
 namespace hive { namespace chain {
 
 fork_database::fork_database()
@@ -265,6 +267,13 @@ vector<item_ptr> fork_database::fetch_heads() const
     std::copy_if(block_num_idx.begin(), block_num_idx.end(), std::back_inserter(result),
                  [&](const item_ptr& fork_item) {
       return prev_idx.find(fork_item->get_block_id()) == prev_idx.end();
+    });
+    // find_new_last_irreversible_block() depends on the order of heads, so it has to be the same on every node:
+    // equal block numbers are ordered by block id (its bytes), not by arrival order or a node's hash seed
+    std::sort(result.begin(), result.end(), [](const item_ptr& a, const item_ptr& b) {
+      if (a->get_block_num() != b->get_block_num())
+        return a->get_block_num() < b->get_block_num();
+      return a->get_block_id() < b->get_block_id();
     });
     return result;
   });

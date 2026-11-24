@@ -701,7 +701,8 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
   try
   {
     // check if there is not too many custom operations added with current transaction
-    decltype( _pending_tx_custom_op_count ) _current_tx_custom_op_count;
+    // a copy of the pending map's hasher, since a default constructed one draws a new random key
+    decltype( _pending_tx_custom_op_count ) _current_tx_custom_op_count( 0, _pending_tx_custom_op_count.hash_function() );
     custom_op_visitor visitor( _pending_tx_custom_op_count, _current_tx_custom_op_count );
     for( const auto& op : full_transaction->get_transaction().operations )
       op.visit( visitor );
