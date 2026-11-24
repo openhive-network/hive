@@ -43,7 +43,9 @@ void check_colony_expiration_refused( witness_fixture& fixture, uint32_t expirat
       hived_fixture::config_line_t( { "colony-transaction-expiration", { std::to_string( expiration ) } } ),
     } ), fc::exception, []( const fc::exception& e )
     {
-      return e.to_detail_string().find( "colony-transaction-expiration has to be between 1 and" ) != std::string::npos;
+      // the message names the bounds
+      return e.to_detail_string().find( "colony-transaction-expiration has to be between " +
+        std::to_string( 2 * HIVE_BLOCK_INTERVAL ) + " and " + std::to_string( HIVE_MAX_TIME_UNTIL_EXPIRATION ) ) != std::string::npos;
     } );
 }
 
@@ -2016,11 +2018,124 @@ BOOST_AUTO_TEST_CASE( colony_expiration_zero_refused_test )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( colony_expiration_below_two_blocks_refused_test )
+{
+  // transactions built at head block T reach witness at T+3 or later, so they would expire on arrival
+  try
+  {
+    check_colony_expiration_refused( *this, 2 * HIVE_BLOCK_INTERVAL - 1 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( colony_expiration_too_long_refused_test )
 {
   try
   {
     check_colony_expiration_refused( *this, HIVE_MAX_TIME_UNTIL_EXPIRATION + 1 );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( colony_broadcast_test )
+{
+  // colony with broadcast on hands its transactions to p2p on its own thread; when p2p is slower than
+  // production, the broadcast list stays within its limit and the writer goes on, so the local witness
+  // still includes the whole quota; shutdown with transactions still waiting for broadcast has to be clean
+  try
+  {
+    BOOST_SCOPE_EXIT( this_ )
+    {
+      this_->theApp.generate_interrupt_request();
+      this_->theApp.wait4interrupt_request();
+      this_->theApp.quit( true );
+    } BOOST_SCOPE_EXIT_END
+
+    const uint32_t COLONY_START = 24; // colony takes only accounts older than LIB as workers
+    const uint32_t ACCOUNTS = 40; // HIVE_CUSTOM_OP_BLOCK_LIMIT custom jsons each can be pending
+    const uint32_t COLONY_TX_PER_BLOCK = 100;
+    const uint32_t BROADCAST_LIMIT = 20;
+    const fc::microseconds BROADCAST_DELAY = fc::milliseconds( 200 ); // 15 transactions per block reach p2p
+    bool test_passed = false;
+
+    initialize( 3, {}, { "initminer" }, {
+      config_line_t( { "plugin", { HIVE_COLONY_PLUGIN_NAME } } ),
+      config_line_t( { "colony-sign-with", { init_account_priv_key.key_to_wif() } } ),
+      config_line_t( { "colony-start-at-block", { std::to_string( COLONY_START ) } } ),
+      config_line_t( { "colony-transactions-per-block", { std::to_string( COLONY_TX_PER_BLOCK ) } } ),
+      config_line_t( { "colony-broadcast-queue-limit", { std::to_string( BROADCAST_LIMIT ) } } ),
+      config_line_t( { "colony-custom", { R"~({"min":0,"max":0,"weight":1,"exponent":1})~" } } ),
+    }, "1G" );
+
+    BOOST_REQUIRE( get_chain_plugin().is_p2p_enabled() );
+    auto& colony = theApp.get_plugin< hive::plugins::colony::colony_plugin >();
+    colony.delay_broadcast( BROADCAST_DELAY );
+
+    fc::thread api_thread;
+    auto _future = api_thread.async( [&]()
+    {
+      BOOST_SCOPE_EXIT( this_ ) { this_->theApp.generate_interrupt_request(); } BOOST_SCOPE_EXIT_END
+      try
+      {
+        wait_for_block_num( 1 );
+        BOOST_REQUIRE( db->has_hardfork( HIVE_NUM_HARDFORKS ) );
+
+        for( uint32_t i = 0; i < ACCOUNTS && !theApp.is_interrupt_request(); ++i )
+        {
+          auto account_name = "account" + std::to_string( i );
+          schedule_account_create( account_name );
+          schedule_vest( account_name, ASSET( "1000.000 TESTS" ) );
+        }
+
+        uint32_t block_num = wait_for_block_num( COLONY_START, 3 * COLONY_START + 30 );
+        const auto& block_reader = get_chain_plugin().block_reader();
+        const uint32_t start = COLONY_START + 3; // margin for colony to get going
+        const uint32_t stop = start + 5;
+        uint32_t checked_blocks = 0;
+        do
+        {
+          block_num = wait_for_block_change( block_num, [&]()
+          {
+            auto block = block_reader.head_block();
+            uint32_t colony_tx_count = 0;
+            for( const auto& tx : block->get_full_transactions() )
+            {
+              if( tx->get_transaction().operations.front().which() == operation::tag< custom_json_operation >::value )
+                ++colony_tx_count;
+            }
+            auto stats = colony.get_broadcast_stats();
+            ilog( "Block #${b} has ${c} colony transactions; broadcast ${s}, dropped ${d}, waiting ${w}",
+              ( "b", block->get_block_num() )( "c", colony_tx_count )( "s", stats.broadcast )( "d", stats.dropped )
+              ( "w", stats.waiting ) );
+            BOOST_CHECK_LE( stats.waiting, BROADCAST_LIMIT );
+            if( block->get_block_num() >= start )
+            {
+              // way more than p2p takes - the writer is not paced by broadcast
+              BOOST_CHECK_GE( colony_tx_count, COLONY_TX_PER_BLOCK / 2 );
+              ++checked_blocks;
+            }
+          } );
+        }
+        while( block_num < stop && !theApp.is_interrupt_request() );
+
+        BOOST_REQUIRE_GE( checked_blocks, stop - start );
+        auto stats = colony.get_broadcast_stats();
+        BOOST_CHECK_EQUAL( stats.limit, BROADCAST_LIMIT );
+        BOOST_CHECK_EQUAL( stats.max_waiting, BROADCAST_LIMIT );
+        BOOST_CHECK_GT( stats.broadcast, 0u );
+        BOOST_CHECK_GT( stats.dropped, 0u );
+        BOOST_CHECK_GT( stats.waiting, 0u ); // shutdown follows with transactions waiting
+        test_passed = !theApp.is_interrupt_request();
+      }
+      CATCH( "API" )
+    } );
+
+    _future.wait();
+    theApp.wait4interrupt_request();
+    theApp.quit( true );
+    db = nullptr; // prevent fixture destructor from accessing database after it was closed
+    BOOST_REQUIRE( test_passed );
+    ilog( "Test done" );
   }
   FC_LOG_AND_RETHROW()
 }
