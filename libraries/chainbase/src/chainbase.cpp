@@ -232,6 +232,36 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     constexpr int TRY_LOCK_COMMAND = F_SETLK;
 #endif
 
+    /// The named object track_creation stores while the storage is being created.
+    const char* const CREATION_IN_PROGRESS = "creation in progress";
+
+    /// Constructs the mark of a storage being created. Called before the environment is constructed and, where hard
+    /// links work, before the file is linked in place, so no storage another process opens is being created unmarked.
+    void mark_creation_in_progress( bip::managed_mapped_file::segment_manager& segment_manager, uint32_t flags )
+    {
+      if( flags & database::track_creation )
+        segment_manager.construct< bool >( CREATION_IN_PROGRESS )( true );
+    }
+
+    /// Refuses a storage still marked as being created, and one whose segment lock was left held by a killed process.
+    /// The file lock taken before the storage is mapped excludes a live holder of the segment lock.
+    void verify_creation_completed( bip::managed_mapped_file::segment_manager& segment_manager )
+    {
+      bool in_progress = false;
+      try
+      {
+        in_progress = segment_manager.find< bool >( CREATION_IN_PROGRESS ).first != nullptr;
+      }
+      catch( const bip::lock_exception& )
+      {
+        BOOST_THROW_EXCEPTION( incomplete_state( "The lock of `shared_memory_file` was left held by a process that was killed while it "
+          "changed the state, so the state may be inconsistent. A replay (or a snapshot load) is needed." ) );
+      }
+      if( in_progress )
+        BOOST_THROW_EXCEPTION( incomplete_state( "The state in `shared_memory_file` was not completely created: its first open was "
+          "interrupted. A replay (or a snapshot load) is needed." ) );
+    }
+
     const std::string NEW_STATE_FILE_PREFIX = "shared_memory.bin.";
     const std::string NEW_STATE_FILE_SUFFIX = ".new";
     /// Creating a state file takes well under this, so an older shared_memory.bin.*.new is stray. Age is the only
@@ -444,7 +474,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     try
     {
-      open_storage( dir, read_only, true /*evict_page_cache*/, shared_file_size, database_cfg, environment_extension );
+      open_storage( dir, flags, false /*remapping*/, shared_file_size, database_cfg, environment_extension );
     }
     catch( ... )
     {
@@ -460,8 +490,9 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     }
   }
 
-  void database::open_storage( const bfs::path& dir, bool read_only, bool evict_page_cache, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
+  void database::open_storage( const bfs::path& dir, uint32_t flags, bool remapping, size_t shared_file_size, const boost::any& database_cfg, const helpers::environment_extension_resources* environment_extension )
   {
+    const bool read_only = flags & read_only_storage;
     _data_dir = dir;
     _database_cfg = database_cfg;
     auto abs_path = bfs::absolute( dir / "shared_memory.bin" );
@@ -514,7 +545,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         // pre-rollback data. Without this, mmap can return stale pages instead
         // of reading the rolled-back data from disk. A resize maps the file this process has just used, so it
         // keeps the pages: evicting them would stall a large node on page faults after every resize.
-        if( evict_page_cache )
+        if( !remapping )
         {
           if( _evict_page_cache )
             _evict_page_cache( abs_path );
@@ -527,6 +558,10 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                         ) );
         _segment_manager = _segment->get_segment_manager();
       }
+
+      // Before the environment is read: an interrupted creation leaves it without the version and plugins.
+      if( !remapping )
+        verify_creation_completed( *_segment_manager );
 
       auto env = _segment_manager->find< environment_check >( "environment" );
       environment_check eCheck{ allocator< environment_check >( _segment_manager ) };
@@ -560,6 +595,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                         ) );
         auto new_lock = std::make_shared< state_file_lock >( new_path, abs_path );
         _segment_manager = _segment->get_segment_manager();
+        mark_creation_in_progress( *_segment_manager, flags );
         _segment_manager->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment_manager ) );
         if( _link_file )
           link_error = _link_file( new_path, abs_path );
@@ -577,7 +613,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         wlog( "${path} was removed while it was being created, creating the state file again", ( "path", new_path.generic_string() ) );
       if( link_error == EEXIST || link_error == ENOENT )
       {
-        open_storage( dir, read_only, evict_page_cache, shared_file_size, database_cfg, environment_extension );
+        open_storage( dir, flags, remapping, shared_file_size, database_cfg, environment_extension );
         return;
       }
       if( link_error != 0 )
@@ -599,11 +635,12 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         {
           if( e.get_error_code() != bip::already_exists_error )
             throw;
-          open_storage( dir, read_only, evict_page_cache, shared_file_size, database_cfg, environment_extension );
+          open_storage( dir, flags, remapping, shared_file_size, database_cfg, environment_extension );
           return;
         }
         lock_for_writing();
         _segment_manager = _segment->get_segment_manager();
+        mark_creation_in_progress( *_segment_manager, flags );
         _segment_manager->find_or_construct< environment_check >( "environment" )( allocator< environment_check >( _segment_manager ) );
       }
       ilog( "Creating storage at ${abs_path}', size: ${shared_file_size}", ( "abs_path",abs_path.generic_string() )(shared_file_size) );
@@ -662,6 +699,13 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     }
   }
 
+  void database::complete_creation()
+  {
+    assert( _is_open );
+    if( !_read_only_mapping )
+      _segment_manager->destroy< bool >( CREATION_IN_PROGRESS );
+  }
+
   void database::wipe_indexes()
   {
     _index_list.clear();
@@ -702,7 +746,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     try
     {
-      open_storage( _data_dir, false /*read_only*/, false /*evict_page_cache*/, new_shared_file_size, _database_cfg, nullptr );
+      open_storage( _data_dir, 0, true /*remapping*/, new_shared_file_size, _database_cfg, nullptr );
     }
     catch( const std::exception& e )
     {

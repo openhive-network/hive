@@ -28,6 +28,7 @@
 #include <cstring>
 #include <ctime>
 #include <fstream>
+#include <iterator>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -241,6 +242,22 @@ void create_interrupted_state( const chainbase::bfs::path& state_dir )
   chainbase::record_container_layout< RecordedContainer >( *db.get_segment_manager(), boost::core::demangle( typeid( other_layout_item ).name() ) );
   db.close();
 }
+
+std::string read_file( const chainbase::bfs::path& path )
+{
+  std::ifstream file( path.string(), std::ios::binary );
+  return std::string( std::istreambuf_iterator< char >( file ), std::istreambuf_iterator< char >() );
+}
+
+const auto creation_interrupted = []( const std::logic_error& e )
+{
+  return replay_needed( e ) && std::string( e.what() ).find( "was not completely created: its first open was interrupted" ) != std::string::npos;
+};
+
+const auto lock_left_held = []( const std::logic_error& e )
+{
+  return replay_needed( e ) && std::string( e.what() ).find( "was left held by a process that was killed" ) != std::string::npos;
+};
 
 const auto other_index_is_missing = []( const std::logic_error& e )
 {
@@ -739,6 +756,102 @@ BOOST_AUTO_TEST_CASE( interrupted_first_open_is_refused )
   BOOST_REQUIRE_NO_THROW( db.add_index< layout_item_index >() );
   BOOST_CHECK_EXCEPTION( db.add_index< other_layout_item_index >(), chainbase::index_set_mismatch, other_index_is_missing );
   db.close();
+}
+
+BOOST_AUTO_TEST_CASE( state_whose_creation_did_not_complete_is_refused )
+{
+  // as an open is left when its process is killed before any index is stored (its environment holds no version or
+  // plugins either), while indexes are stored, and once all of them are stored
+  for( int stored_indexes : { 0, 1, 2 } )
+  {
+    BOOST_TEST_MESSAGE( "indexes stored: " << stored_indexes );
+    fc::temp_directory dir( hive::utilities::temp_directory_path() );
+    const auto state_dir = shared_memory_dir( dir );
+    const auto state_file = state_dir / "shared_memory.bin";
+    {
+      chainbase::database creator;
+      creator.open( state_dir, chainbase::database::track_creation, STATE_FILE_SIZE );
+      if( stored_indexes > 0 )
+        creator.add_index< layout_item_index >();
+      if( stored_indexes > 1 )
+        creator.add_index< other_layout_item_index >();
+      creator.close();
+    }
+    const std::string created = read_file( state_file );
+
+    const std::string version = R"({"version":{"node_type":"testnet"}})";
+    const helpers::environment_extension_resources environment_extension( version, { "chain" }, []( const std::string& ) {} );
+    for( uint32_t flags : { 0u, uint32_t( chainbase::database::track_creation ) } )
+    {
+      chainbase::database db;
+      BOOST_CHECK_EXCEPTION( db.open( state_dir, flags, STATE_FILE_SIZE, nullptr, &environment_extension ), chainbase::incomplete_state, creation_interrupted );
+    }
+    chainbase::database reader;
+    BOOST_CHECK_EXCEPTION( reader.open( state_dir, chainbase::database::read_only_storage ), chainbase::incomplete_state, creation_interrupted );
+    BOOST_CHECK( read_file( state_file ) == created );
+  }
+}
+
+BOOST_AUTO_TEST_CASE( state_whose_creation_completed_opens )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  {
+    chainbase::database creator;
+    creator.open( state_dir, chainbase::database::track_creation, STATE_FILE_SIZE );
+    creator.add_index< layout_item_index >();
+    // a creation that grows the state is not refused by its own mark
+    BOOST_REQUIRE_NO_THROW( creator.resize( 2 * STATE_FILE_SIZE ) );
+    creator.complete_creation();
+    creator.close();
+  }
+
+  for( uint32_t flags : { 0u, uint32_t( chainbase::database::track_creation ), uint32_t( chainbase::database::read_only_storage ) } )
+  {
+    chainbase::database db;
+    BOOST_REQUIRE_NO_THROW( db.open( state_dir, flags, STATE_FILE_SIZE ) );
+    BOOST_CHECK_NO_THROW( db.add_index< layout_item_index >() );
+    BOOST_CHECK_NO_THROW( db.complete_creation() );
+    db.close();
+  }
+}
+
+BOOST_AUTO_TEST_CASE( state_locked_by_a_killed_process_is_refused )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  create_state_with_index< layout_item_index >( state_dir );
+
+  const pid_t pid = ::fork();
+  BOOST_REQUIRE( pid >= 0 );
+  if( pid == 0 )
+  {
+    // the test framework's handler would report the signal and carry on running the tests in this process
+    ::signal( SIGALRM, SIG_DFL );
+    ::alarm( 60 );
+    try
+    {
+      chainbase::database db;
+      db.open( state_dir, 0, STATE_FILE_SIZE );
+      // dies holding the segment's lock, as a process killed inside an index construction does
+      auto die = []() { ::_exit( 0 ); };
+      db.get_segment_manager()->atomic_func( die );
+    }
+    catch( ... )
+    {
+    }
+    ::_exit( 2 );
+  }
+  int status = 0;
+  BOOST_REQUIRE_EQUAL( ::waitpid( pid, &status, 0 ), pid );
+  BOOST_REQUIRE( WIFEXITED( status ) && WEXITSTATUS( status ) == 0 );
+
+  chainbase::database db;
+  BOOST_CHECK_EXCEPTION( db.open( state_dir, 0, STATE_FILE_SIZE ), chainbase::incomplete_state, lock_left_held );
+  chainbase::database reader;
+  BOOST_CHECK_EXCEPTION( reader.open( state_dir, chainbase::database::read_only_storage ), chainbase::incomplete_state, lock_left_held );
+  // refused the same way on every later open
+  BOOST_CHECK_EXCEPTION( db.open( state_dir, 0, STATE_FILE_SIZE ), chainbase::incomplete_state, lock_left_held );
 }
 
 BOOST_AUTO_TEST_CASE( layout_recorded_for_a_missing_index_is_reported_as_missing )
