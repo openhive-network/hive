@@ -19,6 +19,7 @@ HIVE_CONVERTER_BUILD=OFF
 
 EXPORT_PATH=""
 PLATFORMS=""
+SHARED_VARIANT=""
 CACHE_TO_REGISTRY="${CI:+true}"
 
 print_help () {
@@ -34,6 +35,8 @@ cat <<-EOF
                                 be loaded into the local docker daemon, so the result is pushed to the
                                 registry instead of being --load'ed. Omit for a single-arch local build.
       --export-binaries=PATH    Allows to specify a path where binaries shall be exported from built image.
+      --build-shared-libs       Build the shared-library variant (HIVE_BUILD_SHARED_LIBS): thin executables with their
+                                libraries in /home/hived/bin/lib. Give it an image tag of its own (CI uses <commit>-shared).
       --cache-to-registry       Write the buildx layer cache to <registry_url>/cache (--cache-to), which
                                 needs write access to the registry. This is the default when CI is set
                                 (GitLab sets CI=true); otherwise the cache is only read (--cache-from),
@@ -80,6 +83,9 @@ while [ $# -gt 0 ]; do
     --export-binaries=*)
         arg="${1#*=}"
         EXPORT_PATH="$arg"
+        ;;
+    --build-shared-libs)
+        SHARED_VARIANT=true
         ;;
     --cache-to-registry)
         CACHE_TO_REGISTRY=true
@@ -162,6 +168,13 @@ else
     CACHE_KEY="mainnet-build"
 fi
 
+# The shared-library variant keeps a cache of its own, which does not replace the static build's layers
+SHARED_LIBS_ARGS=()
+if [[ -n "$SHARED_VARIANT" ]]; then
+    CACHE_KEY="${CACHE_KEY}-shared"
+    SHARED_LIBS_ARGS=( --build-arg HIVE_BUILD_SHARED_LIBS=ON )
+fi
+
 # Separate cache keys per PostgreSQL version to avoid mixing PG17/PG18 build caches
 if [[ -n "${POSTGRES_VERSION:-}" ]]; then
     CACHE_KEY="${CACHE_KEY}-pg${POSTGRES_VERSION}"
@@ -215,6 +228,7 @@ if docker buildx version &>/dev/null && [[ "${USE_BUILDX:-true}" != "false" ]]; 
       --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
       --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
       --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
+      "${SHARED_LIBS_ARGS[@]}" \
       --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \
@@ -238,6 +252,7 @@ else
       --build-arg CI_REGISTRY_IMAGE="$REGISTRY/" \
       --build-arg BUILD_HIVE_TESTNET=$BUILD_HIVE_TESTNET \
       --build-arg HIVE_CONVERTER_BUILD=$HIVE_CONVERTER_BUILD \
+      "${SHARED_LIBS_ARGS[@]}" \
       --build-arg BUILD_IMAGE_TAG="$BUILD_IMAGE_TAG" \
       --build-arg HIVE_SUBDIR="$HIVE_SUBDIR" \
       --build-arg IMAGE_TAG_PREFIX="${IMAGE_TAG_PREFIX:+$IMAGE_TAG_PREFIX-}" \

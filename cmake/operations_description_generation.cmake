@@ -21,7 +21,7 @@ function( operations_description_generation )
   # libraries of hive_protocol are listed explicitly before OpenSSL - static libraries of fc need it
   find_package( OpenSSL REQUIRED )
   target_link_libraries( operations_description_generator
-    PRIVATE hive_protocol hive_schema_core fc_core fc OpenSSL::SSL OpenSSL::Crypto ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
+    PRIVATE hive_protocol hive_schema_core ${HIVE_FC_CORE_LIBRARY} fc OpenSSL::SSL OpenSSL::Crypto ${CMAKE_DL_LIBS} ${PLATFORM_SPECIFIC_LIBS} )
 
   get_filename_component( OUTPUT_DIRECTORY "${OPERATIONS_DESCRIPTION_OUTPUT}" DIRECTORY )
   file( MAKE_DIRECTORY "${OUTPUT_DIRECTORY}" )

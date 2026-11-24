@@ -50,6 +50,12 @@ variables:
   # Python 3.14 compatibility - allow PyO3-based packages to build
   PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"
 
+  # Set to "ON" by hand (Run pipeline) to build and test the shared-library variant (CMake's HIVE_BUILD_SHARED_LIBS)
+  # instead of the static one: the build jobs publish <commit>-shared images (built for the commit, never taken from
+  # the static images' cache, never re-tagged latest/stable/<tag>), and the test jobs run against them. Change
+  # detection, the static linking check and the multiarch (cross) builds stand down; nothing else changes.
+  HIVE_BUILD_SHARED_LIBS: "OFF"
+
   # Set to "true" to run poetry update and test with latest dependency versions
   TEST_WITH_LATEST_DEPENDENCIES: "false"
   STATIC_ANALYSIS_WITH_LATEST_DEPENDENCIES: "false"
@@ -106,6 +112,8 @@ prepare_hived_image:
     - bigjob
   after_script:
     - |
+      # A shared-library pipeline (HIVE_BUILD_SHARED_LIBS) publishes only its <commit>-shared image
+      if [[ "${HIVE_BUILD_SHARED_LIBS:-OFF}" == "ON" ]]; then exit 0; fi
       source docker_image_name.env
       echo "Adding latest/stable/version tags for mainnet image..."
       # Pull image to local daemon (may not be loaded when using cached builds)
@@ -190,6 +198,8 @@ testnet_node_build:
     - bigjob
   after_script:
     - |
+      # A shared-library pipeline (HIVE_BUILD_SHARED_LIBS) publishes only its <commit>-shared image
+      if [[ "${HIVE_BUILD_SHARED_LIBS:-OFF}" == "ON" ]]; then exit 0; fi
       source docker_image_name.env
       echo "Adding latest/stable/version tags for testnet image..."
       # Pull image to local daemon (may not be loaded when using cached builds)
@@ -244,6 +254,8 @@ mirrornet_node_build:
     - bigjob
   after_script:
     - |
+      # A shared-library pipeline (HIVE_BUILD_SHARED_LIBS) publishes only its <commit>-shared image
+      if [[ "${HIVE_BUILD_SHARED_LIBS:-OFF}" == "ON" ]]; then exit 0; fi
       source docker_image_name.env
       echo "Adding latest/stable/version tags for mirrornet image..."
       # Pull image to local daemon (may not be loaded when using cached builds)
@@ -281,6 +293,9 @@ mirrornet_node_build:
     # IMAGE_PATH: "" for mainnet, "/mirrornet" for mirrornet (set per job)
     IMAGE_PATH: ""
   rules:
+    # The shared-library variant has no cross build (scripts/build.sh)
+    - if: '$HIVE_BUILD_SHARED_LIBS == "ON"'
+      when: never
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_COMMIT_BRANCH == "master"'
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_REF_PROTECTED == "true"'
@@ -607,6 +622,11 @@ static_linking_check:
     - .job-defaults
     - .skip_test_on_docs_only
   stage: test
+  rules:
+    # The shared-library variant links dynamically by design
+    - if: $HIVE_BUILD_SHARED_LIBS == "ON"
+      when: never
+    - !reference [.skip_test_on_docs_only, rules]
   needs:
     - job: prepare_hived_image
       artifacts: true

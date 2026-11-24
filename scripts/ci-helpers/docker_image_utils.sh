@@ -71,9 +71,18 @@ extract_files_from_image() {
 
   export DOCKER_BUILDKIT=1
 
+  # Executables of the shared-library variant load their libraries from lib/ next to them, so lib/ of each directory
+  # the files come from is exported with them. The wildcard matches nothing in a static image, which BuildKit accepts.
+  local lib_copies=""
+  local dir
+  while read -r dir; do
+    lib_copies+="COPY --from=${IMAGE_TAGGED_NAME} ${dir%/}/li[b] /lib/"$'\n'
+  done < <(for file in "${FILES[@]}"; do dirname "$file"; done | sort -u)
+
   docker build -o "${EXPORT_PATH}" - << EOF
     FROM scratch
     COPY --from=${IMAGE_TAGGED_NAME} "${FILES[@]}" /
+    ${lib_copies}
 EOF
 
 }

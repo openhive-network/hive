@@ -9,7 +9,9 @@ if( GPERFTOOLS_FOUND )
     list( APPEND PLATFORM_SPECIFIC_LIBS tcmalloc )
 endif()
 
-add_library(db_fixture
+# Static in the shared variant too: the fixtures use Boost.Test, whose static library each test executable links
+# itself, so the fixtures must share that executable's copy rather than carry one of their own.
+add_library(db_fixture STATIC
             ${SOURCES}
             ${HEADERS})
 

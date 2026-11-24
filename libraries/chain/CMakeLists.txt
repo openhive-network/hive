@@ -109,7 +109,7 @@ add_library( hive_chain
   ${SOURCES}
 )
 
-target_link_libraries( hive_chain rocksdb hive_siphash hive_jsonball hive_protocol fc chainbase hive_schema appbase libzstd_static ${COMPRESSION_DICTIONARY_LIBRARIES}
+target_link_libraries( hive_chain ${HIVE_ROCKSDB_LIBRARY} hive_siphash hive_jsonball hive_protocol fc chainbase hive_schema appbase ${HIVE_ZSTD_LIBRARY} ${COMPRESSION_DICTIONARY_LIBRARIES}
                        ${PATCH_MERGE_LIB} ${BROTLI_LIBRARIES} ${ZLIB_LIBRARIES})
 target_include_directories( hive_chain
                             PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${BROTLI_INCLUDE_DIRS}" "${ZLIB_INCLUDE_DIRS}"

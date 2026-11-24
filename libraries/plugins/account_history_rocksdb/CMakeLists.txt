@@ -7,7 +7,7 @@ add_library( account_history_rocksdb_plugin
            )
 
 target_link_libraries( account_history_rocksdb_plugin
-   rocksdb chain_plugin hive_chain hive_protocol json_rpc_plugin
+   ${HIVE_ROCKSDB_LIBRARY} chain_plugin hive_chain hive_protocol json_rpc_plugin
    )
 
 target_include_directories( account_history_rocksdb_plugin

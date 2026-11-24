@@ -38,6 +38,7 @@ DOTENV_VAR_NAME=""
 REGISTRY_USER=""
 REGISTRY_PASSWORD=""
 NETWORK_TYPE=""
+SHARED_VARIANT=""
 
 print_help () {
     echo "Usage: $0 <submodule_path> <registry> <dotenv_var_name> <registry_user> <registry_password> [OPTION[=VALUE]]..."
@@ -46,6 +47,7 @@ print_help () {
     echo "OPTIONS:"
     echo "  --network-type=TYPE         Allows to specify type of blockchain network supported by built hived. Allowed values: mainnet, testnet, mirrornet"
     echo "  --export-binaries=PATH      Allows to specify a path where binaries shall be exported from built image."
+    echo "  --build-shared-libs         Get the shared-library variant (HIVE_BUILD_SHARED_LIBS), tagged <commit>-shared."
     echo "  --help                      Display this help screen and exit"
     echo
 }
@@ -78,6 +80,9 @@ while [ $# -gt 0 ]; do
         ;;
     --export-binaries=*)
         # Ignored - binaries exported via BINARY_CACHE_PATH env var
+        ;;
+    --build-shared-libs)
+        SHARED_VARIANT=true
         ;;
     --help)
         print_help
@@ -125,7 +130,7 @@ short_commit=$("$CI_SCRIPTS_DIR/find-last-source-commit.sh" --dir="$submodule_pa
 echo "commit with last source code changes is $commit (short: $short_commit)"
 
 # Build image name
-img_tag="$short_commit"
+img_tag="$short_commit${SHARED_VARIANT:+-shared}"
 if [[ -n "$IMGNAME_INSTANCE" ]]; then
     img_path="${REGISTRY}/${IMGNAME_INSTANCE}"
     img_instance="${REGISTRY}/${IMGNAME_INSTANCE}:${img_tag}"
@@ -138,15 +143,25 @@ fi
 echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" "$REGISTRY" --password-stdin
 
 # Check if image exists
-CACHE_ENV=$(mktemp)
-if [[ -n "$IMGNAME_INSTANCE" ]]; then
-    "$CI_SCRIPTS_DIR/get-cached-image.sh" --commit="$short_commit" --registry="$REGISTRY" --image="$IMGNAME_INSTANCE" --output="$CACHE_ENV" --quiet || true
+if [[ -n "$SHARED_VARIANT" ]]; then
+    # get-cached-image.sh looks up the static image of the commit; the shared one has a tag of its own
+    shared_image_exists=0
+    docker_image_exists "$img_instance" shared_image_exists
+    CACHE_HIT=false
+    if [[ "$shared_image_exists" -eq 1 ]]; then
+        CACHE_HIT=true
+    fi
 else
-    "$CI_SCRIPTS_DIR/get-cached-image.sh" --commit="$short_commit" --registry="$REGISTRY" --output="$CACHE_ENV" --quiet || true
+    CACHE_ENV=$(mktemp)
+    if [[ -n "$IMGNAME_INSTANCE" ]]; then
+        "$CI_SCRIPTS_DIR/get-cached-image.sh" --commit="$short_commit" --registry="$REGISTRY" --image="$IMGNAME_INSTANCE" --output="$CACHE_ENV" --quiet || true
+    else
+        "$CI_SCRIPTS_DIR/get-cached-image.sh" --commit="$short_commit" --registry="$REGISTRY" --output="$CACHE_ENV" --quiet || true
+    fi
+    # shellcheck source=/dev/null
+    source "$CACHE_ENV"
+    rm -f "$CACHE_ENV"
 fi
-# shellcheck source=/dev/null
-source "$CACHE_ENV"
-rm -f "$CACHE_ENV"
 
 if [[ "${CACHE_HIT:-false}" == "true" ]]; then
     echo "Image $img_instance already exists..."
@@ -169,8 +184,12 @@ else
     if [[ -n "${PG_IMAGE_SUBPATH:-}" ]]; then
       BUILD_REGISTRY="$img_path"
     fi
-    "$SCRIPTPATH/build_instance.sh" "$short_commit" "$submodule_path" "$BUILD_REGISTRY" \
-        --export-binaries="${BINARY_CACHE_PATH}" --network-type="$NETWORK_TYPE"
+    SHARED_VARIANT_ARGS=()
+    if [[ -n "$SHARED_VARIANT" ]]; then
+      SHARED_VARIANT_ARGS=( --build-shared-libs )
+    fi
+    "$SCRIPTPATH/build_instance.sh" "$img_tag" "$submodule_path" "$BUILD_REGISTRY" \
+        --export-binaries="${BINARY_CACHE_PATH}" --network-type="$NETWORK_TYPE" "${SHARED_VARIANT_ARGS[@]}"
     time docker push "$img_instance"
 fi
 
