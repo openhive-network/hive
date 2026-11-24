@@ -24,6 +24,13 @@ LAYOUT_RECORD_NAME: Final[bytes] = b"hive::chain::account_object::layout"
 LAYOUT_RECORD_SIZE: Final[int] = 16
 NAME_LENGTH_SIZE: Final[int] = 2
 
+INCOMPLETE_STATE_MESSAGES: Final[tuple[str, ...]] = (
+    "The state in `shared_memory_file` was not completely created: its first open did not complete (it was interrupted"
+    " or failed). A replay (or a snapshot load) is needed.",
+    "The lock of `shared_memory_file` was left held by a process that was killed while it changed the state, so the"
+    " state may be inconsistent. A replay (or a snapshot load) is needed.",
+)
+
 
 def excerpt(output: str) -> str:
     """The lines worth seeing first when a check fails, followed by the end of the output."""
@@ -32,22 +39,22 @@ def excerpt(output: str) -> str:
     return "\n".join(relevant[:40]) + "\n...\n" + output[-1500:]
 
 
-def hived_command(data_dir: Path, *args: str) -> list[str]:
+def hived_command(data_dir: Path, *args: str, shared_file_size: str = "128M") -> list[str]:
     return [
         str(tt.paths_to_executables.get_path_of("hived")),
         "--data-dir",
         str(data_dir),
         "--shared-file-size",
-        "128M",
+        shared_file_size,
         "--exit-before-sync",
         *args,
     ]
 
 
-def run_hived(data_dir: Path, *args: str) -> tuple[int, str]:
+def run_hived(data_dir: Path, *args: str, shared_file_size: str = "128M") -> tuple[int, str]:
     try:
         hived = subprocess.run(
-            hived_command(data_dir, *args),
+            hived_command(data_dir, *args, shared_file_size=shared_file_size),
             cwd=data_dir.parent,
             capture_output=True,
             text=True,
@@ -134,6 +141,54 @@ def test_hived_refuses_state_with_another_layout_with_exit_code_78() -> None:
         assert file_hash(state_file) == state_before
 
 
+def assert_refused_as_incomplete(exit_code: int, output: str, message: str | None = None) -> None:
+    """Checks that hived refused the state with code 78 as one whose first open did not complete."""
+    assert exit_code == STARTUP_REFUSED_EXIT_CODE, excerpt(output)
+    expected_messages = (message,) if message is not None else INCOMPLETE_STATE_MESSAGES
+    assert any(expected in output for expected in expected_messages), (
+        f"none of {expected_messages} logged in:\n{excerpt(output)}"
+    )
+    for expected in (
+        "or with --force-replay to rebuild it from the block log.",
+        f"Exiting with code {STARTUP_REFUSED_EXIT_CODE}.",
+    ):
+        assert expected in output, f"'{expected}' not logged in:\n{excerpt(output)}"
+
+
+def assert_refused_without_growing(data_dir: Path) -> None:
+    """Restarts hived with a larger shared file size: it is refused the same way and the state file is left as it is."""
+    state_file = data_dir / "blockchain" / "shared_memory.bin"
+    state_before = file_hash(state_file)
+    size_before = state_file.stat().st_size
+    for shared_file_size in ("128M", "256M"):
+        exit_code, output = run_hived(data_dir, shared_file_size=shared_file_size)
+        assert_refused_as_incomplete(exit_code, output)
+        assert state_file.stat().st_size == size_before
+        assert file_hash(state_file) == state_before
+
+
+@pytest.mark.testnet
+def test_hived_refuses_state_of_a_failed_first_open_with_exit_code_78() -> None:
+    data_dir = tt.context.get_current_directory() / "failed_first_open"
+    shutil.rmtree(data_dir, ignore_errors=True)
+    blockchain_dir = data_dir / "blockchain"
+    blockchain_dir.mkdir(parents=True)
+    # a file where the comment archive's RocksDB directory belongs makes the first open fail after creating the state
+    comment_archive = blockchain_dir / "comments-rocksdb-storage"
+    comment_archive.write_bytes(b"")
+
+    exit_code, output = run_hived(data_dir)
+    assert exit_code not in (0, STARTUP_REFUSED_EXIT_CODE), excerpt(output)
+    assert (blockchain_dir / "shared_memory.bin").exists(), excerpt(output)
+
+    # refused once the cause is gone too: the state is still incomplete
+    comment_archive.unlink()
+    exit_code, output = run_hived(data_dir)
+    assert_refused_as_incomplete(exit_code, output, INCOMPLETE_STATE_MESSAGES[0])
+    assert not (comment_archive / "CURRENT").exists(), "the comment archive was opened before the state was refused"
+    assert_refused_without_growing(data_dir)
+
+
 @pytest.mark.testnet
 def test_hived_refuses_state_of_an_interrupted_first_open_with_exit_code_78() -> None:
     root = tt.context.get_current_directory() / "interrupted_first_open"
@@ -152,14 +207,8 @@ def test_hived_refuses_state_of_an_interrupted_first_open_with_exit_code_78() ->
         assert exit_code in (0, STARTUP_REFUSED_EXIT_CODE), excerpt(output)
         if exit_code == STARTUP_REFUSED_EXIT_CODE:
             refused_data_dir = data_dir
-            for expected in (
-                "A replay (or a snapshot load) is needed.",
-                "or with --force-replay to rebuild it from the block log.",
-                f"Exiting with code {STARTUP_REFUSED_EXIT_CODE}.",
-            ):
-                assert expected in output, f"'{expected}' not logged in:\n{excerpt(output)}"
+            assert_refused_as_incomplete(exit_code, output)
 
     assert refused_data_dir is not None, f"no kill interrupted the first open; restarts exited with {exit_codes}"
-    # refused again, rather than opened or failing otherwise once the first refusal has touched the state
-    exit_code, output = run_hived(refused_data_dir)
-    assert exit_code == STARTUP_REFUSED_EXIT_CODE, excerpt(output)
+    # refused again, also by a start that would grow the state file, which is left as it is
+    assert_refused_without_growing(refused_data_dir)

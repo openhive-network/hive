@@ -13,15 +13,15 @@ Two objects in `shared_memory.bin` have no layout record and are read before any
 
 A build that changes the layout of either of them has to refuse older state by other means.
 
-## State whose first open was interrupted
+## State whose first open did not complete
 
-hived creates `shared_memory.bin` with a "creation in progress" mark, stored together with the environment before the file appears under its name (where the file system supports hard links), and removes the mark as the last step of the first open: after every index and the comment archive are stored, the state definitions and blockchain configuration are saved and the genesis state is built. A start that finds the mark refuses the state before it reads anything else from it (the version, the plugins or any index), with code 78 and the hint below, logging:
+hived creates `shared_memory.bin` with a "creation in progress" mark, stored together with the environment before the file appears under its name, and removes the mark as the last step of the first open: after every index and the comment archive are stored, the state definitions and blockchain configuration are saved and the genesis state is built. A start that finds the mark refuses the state before it grows the file to a larger `shared-file-size` or reads anything else from it (the version, the plugins, any index or the comment archive), with code 78 and the hint below, logging:
 
 ```
-The state in `shared_memory_file` was not completely created: its first open was interrupted. A replay (or a snapshot load) is needed.
+The state in `shared_memory_file` was not completely created: its first open did not complete (it was interrupted or failed). A replay (or a snapshot load) is needed.
 ```
 
-So whenever a first open is interrupted (the process is killed, for example), the next start exits with code 78, and so does every start after it, until the state is rebuilt with `--force-replay` or replaced with `--load-snapshot=<name>`. hived does not wipe such state itself.
+So whenever a first open does not complete, the next start exits with code 78, and so does every start after it, until the state is rebuilt with `--force-replay` or replaced with `--load-snapshot=<name>`. That holds whether the process was killed or the open failed: a block log that cannot be opened, a comment archive that cannot be opened or a full disk during the construction of the indexes leaves the mark too, so such state is refused even after the cause is fixed. hived does not wipe such state itself.
 
 A process killed while it changes the state (inside an index construction, for example) can leave the lock of the shared memory segment held. No live process can hold it when hived opens the file, because hived locks the file first, so the lock was left by a killed process. hived refuses that state the same way, with code 78, logging:
 
@@ -29,15 +29,19 @@ A process killed while it changes the state (inside an index construction, for e
 The lock of `shared_memory_file` was left held by a process that was killed while it changed the state, so the state may be inconsistent. A replay (or a snapshot load) is needed.
 ```
 
-That open marks the lock as unrecoverable in the file, so later starts are refused the same way.
+Only the lock of the segment manager, which every allocation from the segment takes, is checked. The pools that allocate from the segment for some containers keep locks of their own in the file, which are not checked: the memory comment archive (`comment-archive=MEMORY`) allocates its comments from such a pool. A process killed inside an allocation from that pool leaves state that passes this check, and a later start fails when it takes that lock (rewinding the undo state, for example) and exits with code 255 rather than 78.
 
-Neither refusal changes anything else in the state. The refusals in the other sections come later in the open, after the open has cleared the environment's `created_storage` flag (one byte) of state never reopened since its creation. So the first such refusal of that state changes that byte, and later ones change nothing.
+Both checks read the file through a private mapping, so neither refusal changes anything in the file, the lock included: later starts find the same lock left held and are refused the same way. The refusals in the other sections come later in the open, after the open has grown the file to a larger `shared-file-size` and cleared the environment's `created_storage` flag (one byte) of state never reopened since its creation. So the first such refusal of that state changes that byte (and the size of the file, if it grew), and later ones change nothing.
 
 State created by builds that did not store the mark carries none, so an interrupted first open of such state is caught only by the checks below.
 
+### File systems without hard links
+
+The mark is stored before the file appears under its name only where the file system supports hard links: hived creates the file under a temporary name and links it in place once the mark and the environment are stored. Where hard links are unavailable (hived logs "Hard links are unavailable under ..." once), the file is created under its final name, and hived locks it and stores the mark and the environment only after that. A process killed in between leaves a file without the mark and without the environment, and the next start fails with "Unable to find environment data saved in persistent storage" (or with "the shared memory file holds no complete storage", if the process was killed before the segment was set up in the file) and exits with code 255 rather than 78. That state has to be removed or rebuilt (`--force-replay`) the same way.
+
 ## State that only part of the indexes were stored in
 
-When a first open of new state by a build that did not store the creation mark (see [above](#state-whose-first-open-was-interrupted)) is interrupted after some indexes are stored but before the others are, or the state was created by a build that adds other indexes, the next start finds some of the indexes the running build adds and not others. hived refuses that state the same way, with code 78, logging one of:
+When a first open of new state by a build that did not store the creation mark (see [above](#state-whose-first-open-did-not-complete)) is interrupted after some indexes are stored but before the others are, or the state was created by a build that adds other indexes, the next start finds some of the indexes the running build adds and not others. hived refuses that state the same way, with code 78, logging one of:
 
 ```
 The index <index> is not stored in `shared_memory_file`, but indexes added before it are: the first open of the state was interrupted, or a build that adds other indexes created it. A replay (or a snapshot load) is needed.
@@ -66,7 +70,7 @@ The layout of <container> is not recorded in `shared_memory_file`: it was create
 The layout of <container> in `shared_memory_file` {size: ..., type hash: ...} differs from the one of the running build {size: ..., type hash: ...} (the container type or the Boost version changed). A replay (or a snapshot load) is needed.
 ```
 
-(for the memory comment archive the size is labelled `sum of the sizes of the container and its members`), or one of the messages in [State whose first open was interrupted](#state-whose-first-open-was-interrupted) and [State that only part of the indexes were stored in](#state-that-only-part-of-the-indexes-were-stored-in),
+(for the memory comment archive the size is labelled `sum of the sizes of the container and its members`), or one of the messages in [State whose first open did not complete](#state-whose-first-open-did-not-complete) and [State that only part of the indexes were stored in](#state-that-only-part-of-the-indexes-were-stored-in),
 
 followed by
 
@@ -75,7 +79,7 @@ The existing state cannot be opened by this version of hived, and it is not wipe
 hived refused to start; a restart will not change that. Exiting with code 78.
 ```
 
-and exits with code 78 (`STARTUP_REFUSED_EXIT_CODE`). Apart from the changes described in [State whose first open was interrupted](#state-whose-first-open-was-interrupted), the state is left untouched. Restarting without one of the options above is refused the same way, so a supervisor should not restart hived on exit code 78. For systemd, use `RestartPreventExitStatus=78`. With Docker, prefer `restart: on-failure` with a retry limit over `restart: always`.
+and exits with code 78 (`STARTUP_REFUSED_EXIT_CODE`). Apart from the changes described in [State whose first open did not complete](#state-whose-first-open-did-not-complete), the state is left untouched. Restarting without one of the options above is refused the same way, so a supervisor should not restart hived on exit code 78. For systemd, use `RestartPreventExitStatus=78`. With Docker, prefer `restart: on-failure` with a retry limit over `restart: always`.
 
 A "differs from the running build" refusal does not only follow a change to hive's own state objects. The type names and sizes of the containers include Boost.MultiIndex and Boost.Interprocess types, so a build against another Boost version can refuse state written by the previous one. That state needs the same replay or snapshot load.
 
