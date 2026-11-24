@@ -1152,6 +1152,55 @@ BOOST_AUTO_TEST_CASE( interrupted_first_open_is_refused )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( state_of_a_first_open_that_did_not_complete_is_refused )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: state_of_a_first_open_that_did_not_complete_is_refused" );
+
+    postponed_init();
+    reset_fixture( false );
+    fc::remove_all( state_dir() );
+
+    // What a first open killed while it creates the comment archive leaves of the archive: its column families are
+    // created, but the store version is not written yet, so opening it again fails on a key it does not find.
+    const fc::path archive_dir = state_dir() / "comments-rocksdb-storage";
+    {
+      fc::create_directories( archive_dir );
+      ::rocksdb::Options options;
+      options.create_if_missing = true;
+      std::unique_ptr< ::rocksdb::DB > archive;
+      BOOST_REQUIRE( ::rocksdb::DB::Open( options, archive_dir.string(), &archive ).ok() );
+      ::rocksdb::ColumnFamilyOptions column_options;
+      column_options.comparator = hive::chain::by_Hash_Comparator();
+      ::rocksdb::ColumnFamilyHandle* column = nullptr;
+      BOOST_REQUIRE( archive->CreateColumnFamily( column_options, "account_permlink_hash", &column ).ok() );
+      BOOST_REQUIRE( archive->DestroyColumnFamilyHandle( column ).ok() );
+      BOOST_REQUIRE( archive->Close().ok() );
+    }
+
+    // the first open of new state fails there, after the state is created, and is not taken for a refusal
+    BOOST_CHECK_EXCEPTION( postponed_init(), fc::exception, []( const fc::exception& e )
+    {
+      return e.to_detail_string().find( "Data access failed: NotFound" ) != std::string::npos;
+    } );
+    BOOST_CHECK( !get_chain_plugin().startup_refused() );
+    reset_fixture( false );
+    const auto state_files_before = hash_state_files( state_dir() );
+
+    // the state it left is refused on every start, before the archive is opened, without touching any file
+    for( int i = 0; i < 2; ++i )
+    {
+      check_startup_refused( *this, [&]() { postponed_init(); },
+        { "The state in `shared_memory_file` was not completely created: its first open did not complete (it was interrupted or failed)",
+          "A replay (or a snapshot load) is needed" } );
+      reset_fixture( false );
+      BOOST_REQUIRE( state_files_before == hash_state_files( state_dir() ) );
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( read_only_storage_is_refused_in_use_and_leaves_state_untouched )
 {
   try

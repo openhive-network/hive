@@ -244,7 +244,8 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     }
 
     /// Refuses a storage still marked as being created, and one whose segment lock was left held by a killed process.
-    /// The file lock taken before the storage is mapped excludes a live holder of the segment lock.
+    /// The file lock taken before the storage is mapped excludes a live holder of the segment lock. Only the segment
+    /// manager's lock is checked: the locks of pools allocating from the segment are not.
     void verify_creation_completed( bip::managed_mapped_file::segment_manager& segment_manager )
     {
       bool in_progress = false;
@@ -258,8 +259,8 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
           "changed the state, so the state may be inconsistent. A replay (or a snapshot load) is needed." ) );
       }
       if( in_progress )
-        BOOST_THROW_EXCEPTION( incomplete_state( "The state in `shared_memory_file` was not completely created: its first open was "
-          "interrupted. A replay (or a snapshot load) is needed." ) );
+        BOOST_THROW_EXCEPTION( incomplete_state( "The state in `shared_memory_file` was not completely created: its first open did not "
+          "complete (it was interrupted or failed). A replay (or a snapshot load) is needed." ) );
     }
 
     const std::string NEW_STATE_FILE_PREFIX = "shared_memory.bin.";
@@ -331,14 +332,15 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
     }
   }
 
-  /// shared_memory.bin mapped privately and read-only, for as long as the file is locked for reading. Only the pages of
+  /// shared_memory.bin mapped privately and read-only, for as long as the file is locked for reading (or, when
+  /// locked_for_writing, for as long as the caller holds the write lock of the file). Only the pages of
   /// the segment manager are writable, because Boost.Interprocess takes the segment's mutex even to find an object;
   /// read-only private pages are not charged against the memory commit limit, so this works on a state larger than
   /// RAM and swap, and with vm.overcommit_memory=2. A write anywhere else crashes instead of reaching the file.
   class database::read_only_mapping
   {
     public:
-      explicit read_only_mapping( const bfs::path& path );
+      explicit read_only_mapping( const bfs::path& path, bool locked_for_writing = false );
       ~read_only_mapping() { release(); }
 
       read_only_mapping( const read_only_mapping& ) = delete;
@@ -360,7 +362,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       size_t  _size = 0;
   };
 
-  database::read_only_mapping::read_only_mapping( const bfs::path& path )
+  database::read_only_mapping::read_only_mapping( const bfs::path& path, bool locked_for_writing )
   {
     const std::string file = path.generic_string();
     _fd = ::open( file.c_str(), O_RDONLY | O_CLOEXEC );
@@ -368,12 +370,16 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
       fail_on_error( "could not open the shared memory file " + file );
 
     // Taken before the file is mapped: the segment's mutexes live in the file, so a copy of a page where a running
-    // node holds one of them would stay locked forever.
-    struct flock lock = {};
-    lock.l_type = F_RDLCK;
-    lock.l_whence = SEEK_SET;
-    if( ::fcntl( _fd, TRY_LOCK_COMMAND, &lock ) != 0 )
-      fail_on_error( "could not gain read access to the shared memory file, it is in use by another process" );
+    // node holds one of them would stay locked forever. The caller's write lock excludes such a node already, and
+    // conflicts with this lock even within one process.
+    if( !locked_for_writing )
+    {
+      struct flock lock = {};
+      lock.l_type = F_RDLCK;
+      lock.l_whence = SEEK_SET;
+      if( ::fcntl( _fd, TRY_LOCK_COMMAND, &lock ) != 0 )
+        fail_on_error( "could not gain read access to the shared memory file, it is in use by another process" );
+    }
 
     struct stat file_stat;
     if( ::fstat( _fd, &file_stat ) != 0 )
@@ -520,8 +526,24 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
 
     if( bfs::exists( abs_path ) )
     {
-      if( !read_only )
+      if( read_only )
+      {
+        _read_only_mapping = std::make_shared< read_only_mapping >( abs_path );
+        _segment_manager = _read_only_mapping->get_segment_manager();
+      }
+      else
         lock_for_writing();
+
+      // Before the file is grown or anything is read from it: growing changes the free space tree, which a process
+      // killed inside an allocation leaves inconsistent, and refused state is left as it is. The check maps the file
+      // privately, so it does not change the file even where it takes the segment lock a killed process left held.
+      if( !remapping )
+      {
+        if( read_only )
+          verify_creation_completed( *_segment_manager );
+        else
+          verify_creation_completed( *read_only_mapping( abs_path, true /*locked_for_writing*/ ).get_segment_manager() );
+      }
 
       _file_size = bfs::file_size( abs_path );
       if( !read_only && shared_file_size > _file_size )
@@ -533,12 +555,7 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
         _file_size = shared_file_size;
       }
 
-      if( read_only )
-      {
-        _read_only_mapping = std::make_shared< read_only_mapping >( abs_path );
-        _segment_manager = _read_only_mapping->get_segment_manager();
-      }
-      else
+      if( !read_only )
       {
         // Evict any stale pages from the Linux page cache before mmap.
         // After a ZFS/LVM snapshot rollback, the page cache may still contain
@@ -558,10 +575,6 @@ size_t snapshot_base_serializer::worker_common_base::get_serialized_object_cache
                                         ) );
         _segment_manager = _segment->get_segment_manager();
       }
-
-      // Before the environment is read: an interrupted creation leaves it without the version and plugins.
-      if( !remapping )
-        verify_creation_completed( *_segment_manager );
 
       auto env = _segment_manager->find< environment_check >( "environment" );
       environment_check eCheck{ allocator< environment_check >( _segment_manager ) };

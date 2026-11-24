@@ -251,7 +251,7 @@ std::string read_file( const chainbase::bfs::path& path )
 
 const auto creation_interrupted = []( const std::logic_error& e )
 {
-  return replay_needed( e ) && std::string( e.what() ).find( "was not completely created: its first open was interrupted" ) != std::string::npos;
+  return replay_needed( e ) && std::string( e.what() ).find( "was not completely created: its first open did not complete (it was interrupted or failed)" ) != std::string::npos;
 };
 
 const auto lock_left_held = []( const std::logic_error& e )
@@ -781,10 +781,11 @@ BOOST_AUTO_TEST_CASE( state_whose_creation_did_not_complete_is_refused )
 
     const std::string version = R"({"version":{"node_type":"testnet"}})";
     const helpers::environment_extension_resources environment_extension( version, { "chain" }, []( const std::string& ) {} );
+    // also by an open that would grow the file first
     for( uint32_t flags : { 0u, uint32_t( chainbase::database::track_creation ) } )
     {
       chainbase::database db;
-      BOOST_CHECK_EXCEPTION( db.open( state_dir, flags, STATE_FILE_SIZE, nullptr, &environment_extension ), chainbase::incomplete_state, creation_interrupted );
+      BOOST_CHECK_EXCEPTION( db.open( state_dir, flags, 2 * STATE_FILE_SIZE, nullptr, &environment_extension ), chainbase::incomplete_state, creation_interrupted );
     }
     chainbase::database reader;
     BOOST_CHECK_EXCEPTION( reader.open( state_dir, chainbase::database::read_only_storage ), chainbase::incomplete_state, creation_interrupted );
@@ -846,12 +847,16 @@ BOOST_AUTO_TEST_CASE( state_locked_by_a_killed_process_is_refused )
   BOOST_REQUIRE_EQUAL( ::waitpid( pid, &status, 0 ), pid );
   BOOST_REQUIRE( WIFEXITED( status ) && WEXITSTATUS( status ) == 0 );
 
+  const auto state_file = state_dir / "shared_memory.bin";
+  const std::string left = read_file( state_file );
+
+  // refused before the file is grown, and the same way on every later open, leaving the file as it is
   chainbase::database db;
-  BOOST_CHECK_EXCEPTION( db.open( state_dir, 0, STATE_FILE_SIZE ), chainbase::incomplete_state, lock_left_held );
+  BOOST_CHECK_EXCEPTION( db.open( state_dir, 0, 2 * STATE_FILE_SIZE ), chainbase::incomplete_state, lock_left_held );
   chainbase::database reader;
   BOOST_CHECK_EXCEPTION( reader.open( state_dir, chainbase::database::read_only_storage ), chainbase::incomplete_state, lock_left_held );
-  // refused the same way on every later open
   BOOST_CHECK_EXCEPTION( db.open( state_dir, 0, STATE_FILE_SIZE ), chainbase::incomplete_state, lock_left_held );
+  BOOST_CHECK( read_file( state_file ) == left );
 }
 
 BOOST_AUTO_TEST_CASE( layout_recorded_for_a_missing_index_is_reported_as_missing )
