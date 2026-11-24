@@ -26,6 +26,8 @@ set(sources
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/git_revision.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp" @ONLY)
 list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/git_revision.cpp")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version_info.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/version_info.cpp" @ONLY)
+list(APPEND sources "${CMAKE_CURRENT_BINARY_DIR}/version_info.cpp")
 
 add_library( hive_utilities
              ${sources}

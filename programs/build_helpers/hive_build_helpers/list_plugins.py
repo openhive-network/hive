@@ -7,9 +7,9 @@ import sys
 
 def find_plugin_filenames(basedir):
     for root, dirs, files in os.walk(basedir, followlinks=True):
-        dirs_to_remove = [d for d in dirs if d.startswith(".")]
-        for d in dirs_to_remove:
-            dirs.remove(d)
+        # os.walk lists directories in the filesystem's order, which differs between copies of
+        # the same tree; sorted, the generated sources (and hived) do not depend on it.
+        dirs[:] = sorted(d for d in dirs if not d.startswith("."))
         if "plugin.json" in files:
             yield os.path.join(root, "plugin.json")
 

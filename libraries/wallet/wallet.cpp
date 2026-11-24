@@ -289,7 +289,7 @@ public:
     result["fc_revision"]              = fc::git_revision_sha;
     result["fc_revision_age"]          = fc::get_approximate_relative_time_string( fc::time_point_sec( fc::git_revision_unix_timestamp ) );
     result["chain_id"]                 = _hive_chain_id;
-    result["compile_date"]             = "compiled on " __DATE__ " at " __TIME__;
+    result["compile_date"]             = "compiled from revision dated " + fc::time_point_sec( hive::utilities::git_revision_unix_timestamp ).to_iso_string();
     result["boost_version"]            = boost::replace_all_copy(std::string(BOOST_LIB_VERSION), "_", ".");
     result["openssl_version"]          = OPENSSL_VERSION_TEXT;
 

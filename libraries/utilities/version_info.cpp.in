@@ -1,0 +1,45 @@
+#include <hive/utilities/git_revision.hpp>
+
+#include <hive/protocol/config.hpp>
+
+using hive::protocol::version;
+
+#include <fc/git_revision.hpp>
+#include <fc/variant_object.hpp>
+
+#include <cstring>
+
+/// Kept out of git_revision.cpp: as a separate member of the static library, the root project's
+/// revision is linked only into executables that report it, so the others do not change with it.
+#define ROOT_GIT_REVISION_SHA "@ROOT_GIT_REVISION_SHA@"
+#define ROOT_PROJECT_NAME "@CMAKE_PROJECT_NAME@"
+
+namespace hive { namespace utilities {
+
+const char* const root_project_git_revision_sha = ROOT_GIT_REVISION_SHA;
+const char* const root_project_name = ROOT_PROJECT_NAME;
+
+void build_version_info(fc::mutable_variant_object* storage)
+{
+  if(strcmp(root_project_name, hive_project_name) != 0)
+  {
+    /// There is present some root project embedding Hive. We need to report it's name and git revision.
+    std::string key_name(root_project_name);
+    key_name += "_revision";
+    /// haf_revision (usually)
+    storage->set(key_name, root_project_git_revision_sha);
+  }
+
+  storage->set("blockchain_version", std::string(HIVE_BLOCKCHAIN_VERSION));
+  storage->set("hive_revision", git_revision_sha);
+  storage->set("fc_revision", fc::git_revision_sha);
+  #if defined(USE_ALTERNATE_CHAIN_ID) && !defined(IS_TEST_NET)
+    storage->set("node_type", "mirrornet");
+  #elif defined(IS_TEST_NET)
+    storage->set("node_type", "testnet");
+  #else
+    storage->set("node_type", "mainnet");
+  #endif // IS_TEST_NET
+}
+
+} } // end namespace hive::utilities

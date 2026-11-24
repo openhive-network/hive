@@ -192,6 +192,23 @@ if(NOT _use_preinstalled)
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
     add_compile_options("SHELL:$<$<COMPILE_LANGUAGE:CXX>:-include cstdint>")
   endif()
+  # RocksDB compiles BUILD_DATE (by default the wall-clock time of the first configuration) into
+  # the binaries whenever it finds its checkout modified, and `git diff-index` without an index
+  # refresh reports a copied checkout, like the Docker image build's, as modified. The date RocksDB
+  # reports for an unmodified checkout, its commit's, is used instead, so two builds of the same
+  # sources give the same binaries.
+  execute_process(
+    COMMAND git log -1 --format=%ad "--date=format:%Y-%m-%d %H:%M:%S"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb"
+    OUTPUT_VARIABLE _rocksdb_commit_date
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE _rocksdb_commit_date_result
+  )
+  if(_rocksdb_commit_date_result EQUAL 0 AND _rocksdb_commit_date MATCHES "^[0-9]+-[0-9]+-[0-9]+ [0-9:]+$")
+    set(BUILD_DATE "${_rocksdb_commit_date}" CACHE STRING "the time we first built rocksdb" FORCE)
+  else()
+    message(WARNING "Cannot read the RocksDB submodule's commit date, RocksDB will embed its build time")
+  endif()
   add_subdirectory(rocksdb)
   # RocksDB 11 compresses Snappy blocks through a local subclass of snappy::Sink. Compiled with RTTI
   # (USE_RTTI above), that object needs snappy's typeinfo, which upstream snappy builds (-fno-rtti
