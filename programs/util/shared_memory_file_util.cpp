@@ -303,6 +303,11 @@ namespace shared_memory_file_util
         // ilog("Index: ${index} is in the shared memory file", ("index", index_name));
         return index_name;
       }
+      catch (const chainbase::container_layout_mismatch&)
+      {
+        // the index is stored, but this build cannot read it
+        throw;
+      }
       catch (std::logic_error &e)
       {
         // dlog("Adding ${index} to DB failed", ("index", boost::core::demangle(typeid(T).name())));

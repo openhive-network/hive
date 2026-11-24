@@ -1441,25 +1441,24 @@ namespace chainbase {
         if( !( _index_map.size() <= type_id || _index_map[ type_id ] == nullptr ) ) {
           CHAINBASE_THROW_EXCEPTION( std::logic_error( type_name + "::type_id is already in use" ) );
         }
-        index_type* idx_ptr =  nullptr;
-        auto _found = _segment_manager->find< index_type >( type_name.c_str() );
-        if( !_found.first )
+        // the layout is checked first: a typed find of a container laid out differently asserts in debug builds
+        const bool layout_is_recorded = verify_container_layout< index_type >( *_segment_manager, type_name );
+        index_type* idx_ptr = layout_is_recorded ? _segment_manager->find< index_type >( type_name.c_str() ).first : nullptr;
+        if( !idx_ptr )
         {
           if( _read_only_mapping )
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Index is not in the storage opened read-only: " + type_name ) );
           _at_least_one_index_is_created_now = true;
           if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is created, but other indexes are found in `shared_memory_file` file. A replay is needed. Problem with: " + type_name ) );
-          idx_ptr = _segment_manager->construct< index_type >( type_name.c_str() )( index_alloc( _segment_manager ) );
           record_container_layout< index_type >( *_segment_manager, type_name );
+          idx_ptr = _segment_manager->construct< index_type >( type_name.c_str() )( index_alloc( _segment_manager ) );
         }
         else
         {
-          idx_ptr = _found.first;
           _at_least_one_index_was_created_earlier = true;
           if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is found in `shared_memory_file` file, but other indexes are created. A replay is needed. Problem with: " + type_name ) );
-          verify_container_layout< index_type >( *_segment_manager, type_name );
         }
 
         if( type_id >= _index_map.size() )

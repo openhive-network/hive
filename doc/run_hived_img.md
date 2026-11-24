@@ -76,6 +76,10 @@ Leaving application main loop...
 exited cleanly 
 ```
 
+### Upgrading hived on existing state
+
+A build that lays the state out differently than the one that created `shared_memory.bin` refuses that state and exits with code 78 until it is rebuilt with `--force-replay` or replaced with `--load-snapshot`. See [state-container-layouts.md](state-container-layouts.md).
+
 ### Scenarios for using dockerized hived (assuming mainnet configuration)
 
 *Note:* In all scenarios, the dockerized hived process must have write access to the data directory and the shared memory storage directory.
