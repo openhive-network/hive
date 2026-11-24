@@ -15,6 +15,8 @@
 #include <hive/plugins/chain/snapshot_load_marker.hpp>
 #include <hive/plugins/state_snapshot/state_snapshot_plugin.hpp>
 
+#include <chainbase/container_layout.hpp>
+
 #include "../db_fixture/snapshots_fixture.hpp"
 #include "../db_fixture/hived_fixture.hpp"
 
@@ -1045,6 +1047,38 @@ BOOST_AUTO_TEST_CASE( unusable_snapshot_load_marker_is_refused )
     const auto marker = read_snapshot_load_marker();
     BOOST_REQUIRE( marker );
     BOOST_CHECK( marker->stage == snapshot_load_marker::load_stage::replaying );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( state_without_container_layouts_is_refused )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: state_without_container_layouts_is_refused" );
+
+    postponed_init();
+    generate_blocks( 3 );
+    reset_fixture( false );
+
+    // what a build that did not record container layouts leaves
+    const std::string index_name = boost::core::demangle( typeid( account_object ).name() );
+    {
+      chainbase::database storage;
+      storage.open( state_dir() );
+      BOOST_REQUIRE( storage.get_segment_manager()->destroy< chainbase::container_layout >( ( index_name + "::layout" ).c_str() ) );
+      storage.close();
+    }
+    const auto state_files_before = hash_state_files( state_dir() );
+
+    // refused on every start, without touching the state, until it is rebuilt
+    for( int i = 0; i < 2; ++i )
+    {
+      check_startup_refused( *this, [&]() { postponed_init(); },
+        { "The layout of " + index_name + " is not recorded", "A replay (or a snapshot load) is needed" } );
+      reset_fixture( false );
+      BOOST_REQUIRE( state_files_before == hash_state_files( state_dir() ) );
+    }
   }
   FC_LOG_AND_RETHROW()
 }

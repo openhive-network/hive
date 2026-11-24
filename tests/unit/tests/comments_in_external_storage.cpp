@@ -8,6 +8,7 @@
 
 #include <hive/chain/detail/state/block_summary_object.hpp>
 #include <hive/chain/database.hpp>
+#include <hive/chain/database_exceptions.hpp>
 #include <hive/chain/detail/state/convert_request_object.hpp>
 #include <hive/chain/detail/state/collateralized_convert_request_object.hpp>
 #include <hive/chain/detail/state/escrow_object.hpp>
@@ -50,6 +51,9 @@
 #include <hive/chain/detail/state/global_property_object.hpp>
 
 #include <hive/chain/external_storage/comments_handler.hpp>
+#include <hive/chain/external_storage/memory_comment_archive.hpp>
+
+#include <chainbase/container_layout.hpp>
 
 #include <fc/crypto/digest.hpp>
 #include <fc/io/json.hpp>
@@ -629,6 +633,53 @@ BOOST_FIXTURE_TEST_CASE( inconsistent_comment_archive, empty_fixture )
       fixture.vote( "bob", "test", "alice", 50 * HIVE_1_PERCENT, fixture.init_account_priv_key );
       fixture.post_comment_to_comment( "bob", "reply", "reply", "I'm replying", "alice", "test", fixture.init_account_priv_key );
       fixture.generate_block();
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_FIXTURE_TEST_CASE( memory_comment_archive_laid_out_differently_is_refused, empty_fixture )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "The memory comment archive is reopened by the build that laid it out, and refused when its container differs" );
+    const hived_fixture::config_arg_override_t memory_archive{ hived_fixture::config_line_t( { "comment-archive", { "MEMORY" } } ) };
+    fc::path state_dir;
+    {
+      hived_fixture fixture( true );
+      fixture.postponed_init( memory_archive );
+      state_dir = fixture.get_data_dir() / "blockchain";
+      fixture.generate_block();
+    }
+    {
+      hived_fixture fixture( false );
+      BOOST_REQUIRE_NO_THROW( fixture.postponed_init( memory_archive ) );
+      fixture.generate_block();
+    }
+
+    // the archive as a build whose pool takes another number of nodes per chunk leaves it: the same size, another type
+    using archive_with_other_pool = boost::multi_index::multi_index_container<
+      comment_object,
+      memory_comment_archive::archived_comment_index::index_specifier_type_list,
+      boost::interprocess::adaptive_pool< comment_object, boost::interprocess::managed_mapped_file::segment_manager, 64*1024 >
+    >;
+    static_assert( sizeof( archive_with_other_pool ) == sizeof( memory_comment_archive::archived_comment_index ) );
+    {
+      chainbase::database storage;
+      storage.open( state_dir );
+      chainbase::record_container_layout< memory_comment_archive::archive_object_type, archive_with_other_pool >(
+        *storage.get_segment_manager(), "memory_comment_archive" );
+      storage.close();
+    }
+    {
+      hived_fixture fixture( false );
+      BOOST_CHECK_EXCEPTION( fixture.postponed_init( memory_archive ), shm_state_definitions_mismatch_exception, []( const fc::exception& e )
+      {
+        const std::string details = e.to_detail_string();
+        return details.find( "The layout of memory_comment_archive" ) != std::string::npos &&
+          details.find( "A replay (or a snapshot load) is needed" ) != std::string::npos;
+      } );
+      BOOST_CHECK( fixture.get_chain_plugin().startup_refused() );
     }
   }
   FC_LOG_AND_RETHROW()

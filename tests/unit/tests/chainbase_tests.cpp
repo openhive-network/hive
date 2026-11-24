@@ -25,6 +25,7 @@
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
+#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <optional>
@@ -177,6 +178,15 @@ using hashed_layout_item_index = bmi::multi_index_container<
   bmi::indexed_by<
     bmi::ordered_unique< bmi::tag< chainbase::by_id >, bmi::const_mem_fun< layout_item, layout_item::id_type, &layout_item::get_id > >,
     bmi::hashed_unique< bmi::member< layout_item, uint64_t, &layout_item::key >, keyed_hash >
+  >,
+  chainbase::multi_index_allocator< layout_item >
+>;
+
+// the same objects in a container of another type with the same size, stored under the same name
+using non_unique_layout_item_index = bmi::multi_index_container<
+  layout_item,
+  bmi::indexed_by<
+    bmi::ordered_non_unique< bmi::tag< chainbase::by_id >, bmi::const_mem_fun< layout_item, layout_item::id_type, &layout_item::get_id > >
   >,
   chainbase::multi_index_allocator< layout_item >
 >;
@@ -603,6 +613,42 @@ BOOST_AUTO_TEST_CASE( index_laid_out_differently_is_refused )
   reader.close();
 }
 
+BOOST_AUTO_TEST_CASE( index_of_another_type_with_the_same_size_is_refused )
+{
+  static_assert( sizeof( chainbase::generic_index< layout_item_index > ) == sizeof( chainbase::generic_index< non_unique_layout_item_index > ) );
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  create_state_with_index< layout_item_index >( state_dir );
+
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_CHECK_EXCEPTION( db.add_index< non_unique_layout_item_index >(), chainbase::container_layout_mismatch, replay_needed );
+  db.close();
+}
+
+BOOST_AUTO_TEST_CASE( index_of_another_size_with_the_same_type_name_is_refused )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  create_state_with_index< layout_item_index >( state_dir );
+
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  // what a build leaves whose container has the same type name, but a member of another size (a seeded hasher)
+  const std::string index_name = boost::core::demangle( typeid( layout_item ).name() );
+  auto* stored = db.get_segment_manager()->find< chainbase::container_layout >( ( index_name + "::layout" ).c_str() ).first;
+  BOOST_REQUIRE( stored != nullptr );
+  static_assert( sizeof( chainbase::container_layout ) == 2 * sizeof( uint64_t ) );
+  uint64_t fields[ 2 ];
+  std::memcpy( fields, stored, sizeof( fields ) );
+  BOOST_REQUIRE_EQUAL( fields[ 0 ], sizeof( chainbase::generic_index< layout_item_index > ) );
+  fields[ 0 ] += sizeof( uint64_t );
+  std::memcpy( static_cast< void* >( stored ), fields, sizeof( fields ) );
+
+  BOOST_CHECK_EXCEPTION( db.add_index< layout_item_index >(), chainbase::container_layout_mismatch, replay_needed );
+  db.close();
+}
+
 BOOST_AUTO_TEST_CASE( index_without_recorded_layout_is_refused )
 {
   fc::temp_directory dir( hive::utilities::temp_directory_path() );
@@ -618,6 +664,30 @@ BOOST_AUTO_TEST_CASE( index_without_recorded_layout_is_refused )
   db.close();
 }
 
+BOOST_AUTO_TEST_CASE( index_is_created_when_only_its_layout_is_recorded )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  {
+    // what a first open interrupted between recording the layout and constructing the index leaves
+    chainbase::database db;
+    db.open( state_dir, 0, STATE_FILE_SIZE );
+    chainbase::record_container_layout< chainbase::generic_index< layout_item_index > >( *db.get_segment_manager(),
+      boost::core::demangle( typeid( layout_item ).name() ) );
+    db.close();
+  }
+
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_CHECK_NO_THROW( db.add_index< layout_item_index >() );
+  db.close();
+
+  chainbase::database reader;
+  reader.open( state_dir, chainbase::database::read_only_storage );
+  BOOST_CHECK_NO_THROW( reader.add_index< layout_item_index >() );
+  reader.close();
+}
+
 BOOST_AUTO_TEST_CASE( named_container_layout_is_verified )
 {
   fc::temp_directory dir( hive::utilities::temp_directory_path() );
@@ -625,13 +695,21 @@ BOOST_AUTO_TEST_CASE( named_container_layout_is_verified )
   db.open( shared_memory_dir( dir ), 0, STATE_FILE_SIZE );
   auto& segment_manager = *db.get_segment_manager();
 
-  BOOST_CHECK_EXCEPTION( chainbase::verify_container_layout< archived_keys >( segment_manager, "archive" ), std::logic_error, replay_needed );
+  // neither the container nor its layout is stored yet
+  BOOST_CHECK( !chainbase::verify_container_layout< archived_keys >( segment_manager, "archive" ) );
 
+  // a container stored without its layout, as a build that did not record layouts leaves it
   segment_manager.construct< archived_keys >( "archive" )( archived_keys::allocator_type( &segment_manager ) );
+  BOOST_CHECK_EXCEPTION( chainbase::verify_container_layout< archived_keys >( segment_manager, "archive" ), chainbase::container_layout_mismatch, replay_needed );
+
   chainbase::record_container_layout< archived_keys >( segment_manager, "archive" );
-  BOOST_CHECK_NO_THROW( chainbase::verify_container_layout< archived_keys >( segment_manager, "archive" ) );
-  BOOST_CHECK_EXCEPTION( chainbase::verify_container_layout< hashed_archived_keys >( segment_manager, "archive" ), std::logic_error, replay_needed );
+  BOOST_CHECK( chainbase::verify_container_layout< archived_keys >( segment_manager, "archive" ) );
+  BOOST_CHECK_EXCEPTION( chainbase::verify_container_layout< hashed_archived_keys >( segment_manager, "archive" ), chainbase::container_layout_mismatch, replay_needed );
   BOOST_CHECK( !( chainbase::container_layout::of< archived_keys >() == chainbase::container_layout::of< hashed_archived_keys >() ) );
+
+  // the types of the members of a wrapper are part of its layout
+  BOOST_CHECK( !( chainbase::container_layout::of< layout_item, archived_keys >() == chainbase::container_layout::of< layout_item, hashed_archived_keys >() ) );
+  BOOST_CHECK( !( chainbase::container_layout::of< layout_item, archived_keys >() == chainbase::container_layout::of< layout_item >() ) );
   db.close();
 }
 

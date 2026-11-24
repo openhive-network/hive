@@ -100,15 +100,13 @@ void memory_comment_archive::open()
 {
   // create or find stored LIB and archive set
   auto s = db.get_segment_manager();
-  archive = s->find<archive_object_type>( ARCHIVE_NAME ).first;
+  // the type name of archive_object_type does not spell out its container, so the container type is recorded with it
+  const bool layout_is_recorded = chainbase::verify_container_layout< archive_object_type, archived_comment_index >( *s, ARCHIVE_NAME );
+  archive = layout_is_recorded ? s->find<archive_object_type>( ARCHIVE_NAME ).first : nullptr;
   if( archive == nullptr )
   {
+    chainbase::record_container_layout< archive_object_type, archived_comment_index >( *s, ARCHIVE_NAME );
     archive = s->construct<archive_object_type>( ARCHIVE_NAME )( allocator< archive_object_type >( s ) );
-    chainbase::record_container_layout< archive_object_type >( *s, ARCHIVE_NAME );
-  }
-  else
-  {
-    chainbase::verify_container_layout< archive_object_type >( *s, ARCHIVE_NAME );
   }
   FC_ASSERT( db.get_last_irreversible_block_num() == archive->last_irreversible_block_num, "Data range mismatch between database and comment archive" );
     // did you change comment-archive config option? if so, you need to replay

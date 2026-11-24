@@ -188,9 +188,17 @@ void database::initialize_state_independent_data(const open_args& args)
   _my->create_new_decoded_types_data_storage();
   _my->_decoded_types_data_storage->register_new_type<irreversible_block_data_type>();
 
-  initialize_indexes();
-  set_may_have_removed_proposals();
-  get_comments_handler().open();
+  try
+  {
+    initialize_indexes();
+    set_may_have_removed_proposals();
+    get_comments_handler().open();
+  }
+  catch( const chainbase::container_layout_mismatch& e )
+  {
+    // refused like other state laid out by another build, which chain_plugin reports as a refused startup
+    FC_THROW_EXCEPTION( shm_state_definitions_mismatch_exception, "${what}", ( "what", e.what() ) );
+  }
   verify_match_of_state_objects_definitions_from_shm();
   initialize_evaluators();
 
