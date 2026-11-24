@@ -22,6 +22,8 @@
 
 #include <boost/scope_exit.hpp>
 
+#include <algorithm>
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <random>
@@ -39,6 +41,8 @@
 #define COLONY_OVERFLOW_TOLERANCE_MIN 100 // minimum margin of overflowing transactions
 #define COLONY_OVERFLOW_TOLERANCE_MAX 500 // maximum margin of overflowing transactions
 #define COLONY_OVERFLOW_TOLERANCE_RATE 500 // percentage rate of allowed overflowing transactions (in BP)
+#define COLONY_BROADCAST_QUEUE_LIMIT 10000 // default max number of transactions waiting for broadcast; more are not broadcast
+#define COLONY_MIN_TRANSACTION_EXPIRATION ( 2 * HIVE_BLOCK_INTERVAL ) // shorter could expire before it reaches the witness
 
 namespace hive { namespace plugins { namespace colony {
 
@@ -149,12 +153,14 @@ class colony_plugin_impl
     : _chain( app.get_plugin< hive::plugins::chain::chain_plugin >() ),
       _db( _chain.db() ),
       _self( _plugin ), theApp( app ) {}
-    ~colony_plugin_impl() { stop_broadcast(); }
+    // the scan has to be over first, because it starts the broadcast thread
+    ~colony_plugin_impl() { stop_scan(); stop_broadcast(); }
 
     void start( uint32_t block_num );
     void scan_accounts( const flat_set<public_key_type>& common_keys, bool active_needed, bool posting_needed,
       fc::time_point_sec lib_ts );
     void start_workers();
+    void stop_scan();
 
     void end_of_sync();
     void post_apply_transaction( const transaction_notification& note );
@@ -163,6 +169,7 @@ class colony_plugin_impl
     void queue_broadcast( const full_transaction_ptr& tx ) const;
     void broadcast_queued();
     void stop_broadcast();
+    void log_dropped_broadcasts();
 
     chain::chain_plugin&          _chain;
     plugins::p2p::p2p_plugin*     _p2p_ptr = nullptr;
@@ -215,6 +222,13 @@ class colony_plugin_impl
     mutable std::mutex                                   _broadcast_mutex;
     mutable std::condition_variable                      _broadcast_cv;
     mutable std::vector< full_transaction_ptr >          _to_broadcast; // updated under _broadcast_mutex
+    uint32_t                                             _taken_for_broadcast = 0; // updated under _broadcast_mutex
+    uint32_t                                             _broadcast_queue_limit = COLONY_BROADCAST_QUEUE_LIMIT;
+    // when _to_broadcast and _taken_for_broadcast reach the limit, the transaction is not broadcast (only
+    // local witness can include it), because the writer that hands it over must not wait for p2p
+    mutable colony_plugin::broadcast_stats               _broadcast_stats; // updated under _broadcast_mutex
+    mutable uint64_t                                     _logged_dropped = 0; // updated under _broadcast_mutex
+    std::atomic_int64_t                                  _broadcast_delay_us = { 0 };
     std::atomic_bool                                     _stop_broadcast = { false };
     std::thread                                          _broadcaster; // runs only when _p2p_ptr is set
 };
@@ -896,6 +910,15 @@ void colony_plugin_impl::end_of_sync()
   hive::utilities::disconnect_signal( _end_of_sync_conn );
 }
 
+void colony_plugin_impl::stop_scan()
+{
+  _stop_scan.store( true );
+  if( _scan_done.valid() )
+    _scan_done.wait();
+  if( _scanner.is_running() ) // called again from destructor after pre-shutdown
+    _scanner.quit();
+}
+
 void colony_plugin_impl::queue_broadcast( const full_transaction_ptr& tx ) const
 {
   bool was_empty = false;
@@ -903,8 +926,15 @@ void colony_plugin_impl::queue_broadcast( const full_transaction_ptr& tx ) const
     std::lock_guard< std::mutex > guard( _broadcast_mutex );
     if( _stop_broadcast.load() )
       return;
+    const uint32_t waiting = _to_broadcast.size() + _taken_for_broadcast;
+    if( waiting >= _broadcast_queue_limit )
+    {
+      ++_broadcast_stats.dropped; // logged once per block by log_dropped_broadcasts
+      return;
+    }
     was_empty = _to_broadcast.empty();
     _to_broadcast.emplace_back( tx );
+    _broadcast_stats.max_waiting = std::max( _broadcast_stats.max_waiting, waiting + 1 );
   }
   if( was_empty ) // otherwise the broadcast thread was already woken up and will take this one with the rest
     _broadcast_cv.notify_one();
@@ -922,20 +952,40 @@ void colony_plugin_impl::broadcast_queued()
       if( _stop_broadcast.load() )
         return;
       batch.swap( _to_broadcast );
+      _taken_for_broadcast = batch.size();
     }
     for( const auto& tx : batch )
     {
       if( _stop_broadcast.load() )
         return;
+      bool done = false;
       try
       {
+        const int64_t delay = _broadcast_delay_us.load();
+        if( delay > 0 )
+          std::this_thread::sleep_for( std::chrono::microseconds( delay ) );
         _p2p_ptr->broadcast_transaction( tx );
+        done = true;
       }
+      // the thread has to survive anything, otherwise std::terminate kills the node
       catch( const fc::exception& ex )
       {
         elog( "Exception during broadcast of transaction ${id}: ${d}",
           ( "id", tx->get_transaction_id() )( "d", ex.to_string() ) );
       }
+      catch( const std::exception& ex )
+      {
+        elog( "Exception during broadcast of transaction ${id}: ${d}",
+          ( "id", tx->get_transaction_id() )( "d", ex.what() ) );
+      }
+      catch( ... )
+      {
+        elog( "Unknown exception during broadcast of transaction ${id}", ( "id", tx->get_transaction_id() ) );
+      }
+      std::lock_guard< std::mutex > guard( _broadcast_mutex );
+      --_taken_for_broadcast;
+      if( done )
+        ++_broadcast_stats.broadcast;
     }
     batch.clear();
   }
@@ -953,6 +1003,16 @@ void colony_plugin_impl::stop_broadcast()
     _broadcaster.join();
 }
 
+void colony_plugin_impl::log_dropped_broadcasts()
+{
+  std::lock_guard< std::mutex > guard( _broadcast_mutex );
+  if( _broadcast_stats.dropped == _logged_dropped )
+    return;
+  wlog( "Broadcast list of colony was full (${l}) - ${d} transactions were not broadcast since last block, ${t} in total",
+    ( "l", _broadcast_queue_limit )( "d", _broadcast_stats.dropped - _logged_dropped )( "t", _broadcast_stats.dropped ) );
+  _logged_dropped = _broadcast_stats.dropped;
+}
+
 void colony_plugin_impl::post_apply_transaction( const transaction_notification& note )
 {
   if( _db.is_reapplying_one_tx() )
@@ -966,6 +1026,8 @@ void colony_plugin_impl::post_apply_block( const block_notification& note )
     start( note.block_num );
     return;
   }
+
+  log_dropped_broadcasts();
 
   // until the account scan completes, _threads is being built by the scanner thread
   const bool workers_ready = _workers_ready.load();
@@ -1034,8 +1096,10 @@ void colony_plugin::set_program_options(
     ( "colony-transactions-per-block", bpo::value<std::uint32_t>(), "Max number of transactions produced per block. When not set it will be sum of weights of individual types." )
     ( "colony-start-at-block", bpo::value<std::uint32_t>()->default_value( 0 ), "Start producing transactions when block with given number becomes head block (or right at the start if the block already passed)." )
     ( "colony-no-broadcast", bpo::value<bool>()->default_value( false ), "Disables broadcasting of produced transactions - only local witness will include them in block." )
+    ( "colony-broadcast-queue-limit", bpo::value<std::uint32_t>()->default_value( COLONY_BROADCAST_QUEUE_LIMIT ),
+      ( "Max number of produced transactions waiting for broadcast; when p2p falls behind, further transactions are not broadcast (and are counted in logs). Default is " + std::to_string( COLONY_BROADCAST_QUEUE_LIMIT ) ).c_str() )
     ( "colony-transaction-expiration", bpo::value<std::uint32_t>()->default_value( HIVE_MAX_TIME_UNTIL_EXPIRATION ),
-      ( "Expiration (in seconds after head block time) of produced transactions; a transaction no block included leaves pending at that time. Default is " + std::to_string( HIVE_MAX_TIME_UNTIL_EXPIRATION ) ).c_str() )
+      ( "Expiration (in seconds after head block time) of produced transactions; a transaction no block included leaves pending at that time. At least " + std::to_string( COLONY_MIN_TRANSACTION_EXPIRATION ) + ". Default is " + std::to_string( HIVE_MAX_TIME_UNTIL_EXPIRATION ) ).c_str() )
     ( "colony-article", bpo::value<std::string>(), "Size and frequency parameters of article transactions." )
     ( "colony-reply", bpo::value<std::string>(), "Size and frequency parameters of reply transactions." )
     ( "colony-vote", bpo::value<std::string>(), "Size and frequency parameters of vote transactions." )
@@ -1130,8 +1194,8 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
       total_weight += my->_params[ CUSTOM_JSON ].weight;
     }
 
-    FC_ASSERT( total_weight <= RAND_MAX, "Sum of weights should be smaller than ${x}, current value: ${t}",
-      ( "x", RAND_MAX )( "t", total_weight ) );
+    FC_ASSERT( total_weight <= std::mt19937::max(), "Sum of weights should be at most ${x}, current value: ${t}",
+      ( "x", std::mt19937::max() )( "t", total_weight ) );
     my->_total_weight = total_weight;
 
     if( options.count( "colony-transactions-per-block" ) )
@@ -1144,10 +1208,19 @@ void colony_plugin::plugin_initialize( const boost::program_options::variables_m
 
     {
       uint32_t expiration = options.at( "colony-transaction-expiration" ).as<std::uint32_t>();
-      FC_ASSERT( expiration > 0 && expiration <= HIVE_MAX_TIME_UNTIL_EXPIRATION,
-        "Value for colony-transaction-expiration has to be between 1 and ${max} seconds, got ${expiration}",
-        ( "max", HIVE_MAX_TIME_UNTIL_EXPIRATION )( expiration ) );
+      // transactions built at head block reach the witness a block interval later at the earliest
+      FC_ASSERT( expiration >= COLONY_MIN_TRANSACTION_EXPIRATION && expiration <= HIVE_MAX_TIME_UNTIL_EXPIRATION,
+        "Value for colony-transaction-expiration has to be between ${min} and ${max} seconds, got ${expiration}",
+        ( "min", COLONY_MIN_TRANSACTION_EXPIRATION )( "max", HIVE_MAX_TIME_UNTIL_EXPIRATION )( expiration ) );
       my->_tx_expiration = expiration;
+    }
+
+    {
+      uint32_t limit = options.at( "colony-broadcast-queue-limit" ).as<std::uint32_t>();
+      FC_ASSERT( limit > 0 && limit <= 1000000,
+        "Value for colony-broadcast-queue-limit has to be between 1 and 1000000, got ${limit}", ( limit ) );
+      my->_broadcast_queue_limit = limit;
+      my->_broadcast_stats.limit = limit;
     }
 
     // only attach to end of sync for now, so colony does not start producing during replay/sync
@@ -1171,12 +1244,15 @@ void colony_plugin::plugin_pre_shutdown()
   hive::utilities::disconnect_signal( my->_post_apply_transaction_conn );
   hive::utilities::disconnect_signal( my->_post_apply_block_conn );
 
-  my->_stop_scan.store( true );
-  if( my->_scan_done.valid() )
-    my->_scan_done.wait();
-  my->_scanner.quit();
-
+  my->stop_scan();
   my->stop_broadcast();
+  my->log_dropped_broadcasts();
+  if( my->_p2p_ptr != nullptr )
+  {
+    auto stats = get_broadcast_stats();
+    ilog( "Colony broadcast ${b} transactions, ${d} not broadcast due to full list (max ${m} of ${l} waiting), ${w} still waiting at shutdown",
+      ( "b", stats.broadcast )( "d", stats.dropped )( "m", stats.max_waiting )( "l", stats.limit )( "w", stats.waiting ) );
+  }
 
   for( auto& thread : my->_threads )
     thread.finalize();
@@ -1185,6 +1261,19 @@ void colony_plugin::plugin_pre_shutdown()
 void colony_plugin::plugin_shutdown()
 {
   //Nothing to do. Everything is closed/finished during `pre_shutdown` stage,
+}
+
+colony_plugin::broadcast_stats colony_plugin::get_broadcast_stats() const
+{
+  std::lock_guard< std::mutex > guard( my->_broadcast_mutex );
+  broadcast_stats stats = my->_broadcast_stats;
+  stats.waiting = my->_to_broadcast.size() + my->_taken_for_broadcast;
+  return stats;
+}
+
+void colony_plugin::delay_broadcast( fc::microseconds delay )
+{
+  my->_broadcast_delay_us.store( delay.count() );
 }
 
 } } } // hive::plugins::colony
