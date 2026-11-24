@@ -6,10 +6,7 @@ namespace hive { namespace chain { namespace util {
 
 seeded_hash::seeded_hash()
 {
-  uint64_t key[2];
-  fc::rand_bytes( reinterpret_cast< char* >( key ), sizeof( key ) );
-  _k0 = key[0];
-  _k1 = key[1];
+  fc::rand_bytes( reinterpret_cast< char* >( &_key ), sizeof( _key ) );
 }
 
 } } } // hive::chain::util
