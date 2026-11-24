@@ -5,34 +5,36 @@ import json
 import os
 import sys
 
+
 def find_plugin_filenames(basedir):
     for root, dirs, files in os.walk(basedir, followlinks=True):
-        dirs_to_remove = [d for d in dirs if d.startswith(".")]
-        for d in dirs_to_remove:
-            dirs.remove(d)
+        # os.walk lists directories in the filesystem's order, which differs between copies of
+        # the same tree; sorted, the generated sources (and hived) do not depend on it.
+        dirs[:] = sorted(d for d in dirs if not d.startswith("."))
         if "plugin.json" in files:
             yield os.path.join(root, "plugin.json")
 
+
 def find_plugins(basedir):
     for plugin_json in find_plugin_filenames(basedir):
-        with open(plugin_json, "r") as f:
+        with open(plugin_json) as f:
             yield json.load(f)
 
-def process_plugin(ctx, plugin):
+
+def process_plugin(ctx, plugin) -> None:
     ctx["plugins"].append(plugin)
     for iext in plugin.get("index_extensions", []):
         ctx["index_extensions"].append(iext)
     return
 
-def main(argv):
 
-    parser = argparse.ArgumentParser( description="Find plugins" )
+def main(argv) -> None:
 
-    parser.add_argument("plugin_dir", metavar="DIR", type=str, nargs="+",
-                        help="Dir(s) to search for templates")
-    parser.add_argument("-o", "--output", metavar="FILE", type=str, default="-",
-                        help="Output file")
-    parser.add_argument( "--print-dependencies", action="store_true", help="Print dependencies and exit")
+    parser = argparse.ArgumentParser(description="Find plugins")
+
+    parser.add_argument("plugin_dir", metavar="DIR", type=str, nargs="+", help="Dir(s) to search for templates")
+    parser.add_argument("-o", "--output", metavar="FILE", type=str, default="-", help="Output file")
+    parser.add_argument("--print-dependencies", action="store_true", help="Print dependencies and exit")
 
     args = parser.parse_args()
 
@@ -51,15 +53,16 @@ def main(argv):
         outfile = open(args.output, "w")
 
     ctx = {
-        "plugins" : [],
-        "index_extensions" : [],
-        }
+        "plugins": [],
+        "index_extensions": [],
+    }
     for d in args.plugin_dir:
         for plugin in find_plugins(d):
             process_plugin(ctx, plugin)
     outfile.write(json.dumps(ctx))
     outfile.write("\n")
     outfile.close()
+
 
 if __name__ == "__main__":
     main(sys.argv)

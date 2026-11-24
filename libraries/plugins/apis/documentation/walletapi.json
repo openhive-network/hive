@@ -5832,8 +5832,8 @@
           },
           "compile_date": {
             "type": "string",
-            "description": "Date and time when the wallet was compiled",
-            "example": "compiled on Dec  1 2024 at 10:30:45"
+            "description": "Commit date of the hive revision the wallet was compiled from",
+            "example": "compiled from revision dated 2024-12-01T10:30:45"
           },
           "boost_version": {
             "type": "string",
