@@ -199,6 +199,10 @@ void database::initialize_state_independent_data(const open_args& args)
     // refused like other state laid out by another build, which chain_plugin reports as a refused startup
     FC_THROW_EXCEPTION( shm_state_definitions_mismatch_exception, "${what}", ( "what", e.what() ) );
   }
+  catch( const chainbase::index_set_mismatch& e )
+  {
+    FC_THROW_EXCEPTION( shm_state_definitions_mismatch_exception, "${what}", ( "what", e.what() ) );
+  }
   verify_match_of_state_objects_definitions_from_shm();
   initialize_evaluators();
 

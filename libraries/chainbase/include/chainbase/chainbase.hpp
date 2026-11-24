@@ -972,6 +972,14 @@ namespace chainbase {
     virtual const char* what() const noexcept { return "Unable to acquire database lock"; }
   };
 
+  /// Thrown when some of the indexes the running build adds are stored in `shared_memory_file` and others are not, as
+  /// a first open interrupted before it constructed every index, or a build that adds other indexes, leaves the state.
+  class index_set_mismatch : public std::logic_error
+  {
+    public:
+      using std::logic_error::logic_error;
+  };
+
   /**
     *  This class
     */
@@ -1450,7 +1458,8 @@ namespace chainbase {
             CHAINBASE_THROW_EXCEPTION( std::logic_error( "Index is not in the storage opened read-only: " + type_name ) );
           _at_least_one_index_is_created_now = true;
           if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
-            CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is created, but other indexes are found in `shared_memory_file` file. A replay is needed. Problem with: " + type_name ) );
+            CHAINBASE_THROW_EXCEPTION( index_set_mismatch( "The index " + type_name + " is not stored in `shared_memory_file`, but indexes added "
+              "before it are: the first open of the state was interrupted, or a build that adds other indexes created it. A replay (or a snapshot load) is needed." ) );
           record_container_layout< index_type >( *_segment_manager, type_name );
           idx_ptr = _segment_manager->construct< index_type >( type_name.c_str() )( index_alloc( _segment_manager ) );
         }
@@ -1458,7 +1467,8 @@ namespace chainbase {
         {
           _at_least_one_index_was_created_earlier = true;
           if( _at_least_one_index_is_created_now && _at_least_one_index_was_created_earlier )
-            CHAINBASE_THROW_EXCEPTION( std::logic_error( "Inconsistency occurs. A new index is found in `shared_memory_file` file, but other indexes are created. A replay is needed. Problem with: " + type_name ) );
+            CHAINBASE_THROW_EXCEPTION( index_set_mismatch( "The index " + type_name + " is stored in `shared_memory_file`, but indexes added "
+              "before it are not: a build that adds other indexes created the state. A replay (or a snapshot load) is needed." ) );
         }
 
         if( type_id >= _index_map.size() )
