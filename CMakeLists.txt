@@ -67,6 +67,67 @@ endif(USE_PCH)
 include( hive_options )
 include( hive_targets )
 
+# Shared-library variant: hive's libraries, fc, appbase, chainbase, RocksDB and zstd become shared libraries under thin
+# executables, which use Boost's and OpenSSL's shared libraries too. Off by default, and with it off nothing below
+# changes the static build.
+OPTION( HIVE_BUILD_SHARED_LIBS "Build hive's libraries and their vendored dependencies as shared libraries (ON or OFF)" OFF )
+MESSAGE( STATUS "HIVE_BUILD_SHARED_LIBS: ${HIVE_BUILD_SHARED_LIBS}" )
+# fc and appbase have options of their own; hive's decides them, so that reconfiguring switches all of them together.
+SET( FC_BUILD_SHARED_LIBS ${HIVE_BUILD_SHARED_LIBS} CACHE BOOL "Build fc as a shared library (follows HIVE_BUILD_SHARED_LIBS)" FORCE )
+SET( APPBASE_BUILD_SHARED_LIBS ${HIVE_BUILD_SHARED_LIBS} CACHE BOOL "Build appbase as a shared library (follows HIVE_BUILD_SHARED_LIBS)" FORCE )
+
+IF( HIVE_BUILD_SHARED_LIBS )
+  IF( NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" )
+    MESSAGE( FATAL_ERROR "HIVE_BUILD_SHARED_LIBS is supported on Linux only" )
+  ENDIF()
+  # Type of the libraries that hive declares explicitly; the others follow BUILD_SHARED_LIBS.
+  SET( HIVE_LIBRARY_TYPE SHARED )
+  SET( BUILD_SHARED_LIBS ON )
+  SET( CMAKE_POSITION_INDEPENDENT_CODE ON )
+  # fc's core: libfc.so holds its objects, so hive's libraries link fc itself (see the static case below).
+  SET( HIVE_FC_CORE_LIBRARY fc )
+  # The libraries and executables share one copy of libstdc++, the system's.
+  SET( HIVE_EXECUTABLE_RUNTIME_LINK_FLAGS )
+
+  # Every symbol keeps default visibility (templates, reflection, exceptions and static registries cross library
+  # boundaries). These two let a library's calls to its own functions bind locally, as they do when linked statically.
+  ADD_COMPILE_OPTIONS( -fno-semantic-interposition )
+  STRING( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,-Bsymbolic-functions" )
+  # A library that only registers itself from static initializers (as plugins do) stays a dependency of whatever
+  # links it, even though nothing references it by symbol.
+  STRING( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--no-as-needed" )
+  STRING( APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--no-as-needed" )
+  # The shared fc links readline, whose static library is not position independent. Where the shared one is installed
+  # without its development link (as in the CI build image), fc's FindReadline would find only the static one.
+  IF( Readline_LIBRARIES MATCHES "\\${CMAKE_STATIC_LIBRARY_SUFFIX}$" )
+    UNSET( Readline_LIBRARIES CACHE )
+  ENDIF()
+  FIND_LIBRARY( Readline_LIBRARIES NAMES libreadline.so libreadline.so.8 libreadline.so.7 )
+
+  # All shared libraries are built into one directory, lib. An executable finds it next to itself ($ORIGIN/lib, as
+  # in the image's /home/hived/bin/lib, where scripts/build.sh also puts the third-party libraries, and in what is
+  # copied out of it) and, when installed, one level up ($ORIGIN/../lib); in the build tree, through its relative path
+  # to the build's lib. A library finds the others in its own directory ($ORIGIN). No path depends on where the build
+  # or the installation is.
+  SET( CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib" )
+  SET( CMAKE_BUILD_RPATH_USE_ORIGIN ON )
+  SET( CMAKE_BUILD_RPATH "$ORIGIN/lib;$ORIGIN" )
+  SET( CMAKE_INSTALL_RPATH "$ORIGIN/lib;$ORIGIN;$ORIGIN/../lib" )
+  # The build tree's paths also hold absolute directories of the build host and end in empty entries (room for CMake
+  # to edit them at installation), which the loader takes for the current directory: scripts/build.sh, which installs
+  # the build tree's files into the images, sets the paths of what it installs.
+  # RPATH rather than RUNPATH: the loader searches an executable's RPATH for the dependencies of every library it
+  # loads, so also for those of the third-party libraries next to it, which have no path of their own leading there
+  # (Boost's libraries load one another).
+  STRING( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--disable-new-dtags" )
+  STRING( APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--disable-new-dtags" )
+ELSE()
+  SET( HIVE_LIBRARY_TYPE STATIC )
+  # fc's core is its OBJECT library fc_core, whose objects a static archive linking it takes in.
+  SET( HIVE_FC_CORE_LIBRARY fc_core )
+  SET( HIVE_EXECUTABLE_RUNTIME_LINK_FLAGS "-static-libstdc++ -static-libgcc" )
+ENDIF()
+
 IF( WIN32 )
   SET(BOOST_ROOT $ENV{BOOST_ROOT})
   set(Boost_USE_MULTITHREADED ON)

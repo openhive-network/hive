@@ -1,7 +1,7 @@
 file(GLOB HEADERS "include/hive/schema/*.hpp")
-add_library( hive_schema_core STATIC schema.cpp ${HEADERS} )
+add_library( hive_schema_core ${HIVE_LIBRARY_TYPE} schema.cpp ${HEADERS} )
 target_include_directories( hive_schema_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
-target_link_libraries( hive_schema_core PUBLIC fc_core )
+target_link_libraries( hive_schema_core PUBLIC ${HIVE_FC_CORE_LIBRARY} )
 
 add_library( hive_schema INTERFACE )
 target_link_libraries( hive_schema INTERFACE hive_schema_core fc )

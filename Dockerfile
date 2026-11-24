@@ -76,6 +76,10 @@ ENV HIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}
 ARG HIVE_LINT=OFF
 ENV HIVE_LINT=${HIVE_LINT}
 
+# ON builds the shared-library variant: thin executables in /home/hived/bin and their libraries in /home/hived/bin/lib.
+ARG HIVE_BUILD_SHARED_LIBS=OFF
+ENV HIVE_BUILD_SHARED_LIBS=${HIVE_BUILD_SHARED_LIBS}
+
 ARG HIVE_SUBDIR=.
 ENV HIVE_SUBDIR=${HIVE_SUBDIR}
 
@@ -115,6 +119,11 @@ RUN <<-EOF
     CROSS_ARGS+=( --cross-root="${CROSS_ROOT}" )
   fi
 
+  # The shared-library variant links Boost's shared libraries, which ci-base-image does not ship.
+  if [ "${HIVE_BUILD_SHARED_LIBS}" = "ON" ]; then
+    ./source/${HIVE_SUBDIR}/scripts/install_shared_boost.sh
+  fi
+
   # Precompiled headers are disabled: a fresh container has no sccache preprocessor-mode manifests, so sccache
   # keys the PCH by preprocessed output and serves a stale .gch after a comment-only change in a #pragma once
   # header it contains (e.g. fc/filesystem.hpp) - GCC then sees the changed header as a different file and
@@ -123,6 +132,7 @@ RUN <<-EOF
   --cmake-arg="-DBUILD_HIVE_TESTNET=${BUILD_HIVE_TESTNET}" \
   --cmake-arg="-DHIVE_CONVERTER_BUILD=${HIVE_CONVERTER_BUILD}" \
   --cmake-arg="-DHIVE_LINT=${HIVE_LINT}" \
+  --cmake-arg="-DHIVE_BUILD_SHARED_LIBS=${HIVE_BUILD_SHARED_LIBS}" \
   --cmake-arg="-DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON" \
   "${CROSS_ARGS[@]}" \
   --flat-binary-directory="${INSTALLATION_DIR}" \
@@ -187,8 +197,9 @@ RUN mkdir -p /home/hived/bin && \
     mkdir /home/hived/datadir && \
     chown -Rc hived:users /home/hived/
 
+# The directory, not /home/hived/bin/*: COPY would flatten the shared variant's lib/ into bin/.
 COPY --from=build --chown=hived:users \
-    /home/hived/bin/*  /home/hived/bin/
+    /home/hived/bin/  /home/hived/bin/
 
 COPY --from=build --chown=hived:users /home/hived/source/${HIVE_SUBDIR}/contrib/example-exchange-config.ini /home/hived/datadir/example-exchange-config.ini
 

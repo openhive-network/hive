@@ -1,3 +1,23 @@
+# Boost for the shared variant (HIVE_BUILD_SHARED_LIBS), given the Boost libraries FindBoost returned, which may be the
+# static archives it found first for a static target: their shared libraries instead, so that a process holds one copy
+# of Boost, as of every other library. Boost.Test stays static: only test executables use it, each with its own main.
+# Sets <result_var> to the libraries to link.
+FUNCTION( HIVE_SHARED_BOOST_LIBRARIES result_var )
+  SET( _libraries )
+  FOREACH( _library ${ARGN} )
+    IF( _library MATCHES "^(.*)\\${CMAKE_STATIC_LIBRARY_SUFFIX}$" AND NOT _library MATCHES "unit_test_framework" )
+      SET( _shared_library "${CMAKE_MATCH_1}${CMAKE_SHARED_LIBRARY_SUFFIX}" )
+      IF( NOT EXISTS "${_shared_library}" )
+        MESSAGE( FATAL_ERROR "HIVE_BUILD_SHARED_LIBS needs Boost's shared libraries, but only ${_library} is installed "
+                             "(scripts/install_shared_boost.sh builds them)" )
+      ENDIF()
+      SET( _library "${_shared_library}" )
+    ENDIF()
+    LIST( APPEND _libraries ${_library} )
+  ENDFOREACH()
+  SET( ${result_var} ${_libraries} PARENT_SCOPE )
+ENDFUNCTION()
+
 MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
     SET( BOOST_COMPONENTS ${components} )
 
@@ -14,15 +34,19 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
 
     MESSAGE( STATUS "Setting up Boost libraries for target: ${target_name} defined as: ${_target_type}" )
 
-    IF (_target_type  STREQUAL "EXECUTABLE")
+    SET( _boost_shared OFF )
+
+    IF (_target_type  STREQUAL "EXECUTABLE" AND NOT HIVE_BUILD_SHARED_LIBS)
       # Executable can always link against static Boost libraries, to reduce binary dependencies
       SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" FORCE )
       SET( CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX} )
 
-    ELSEIF (_target_type  STREQUAL "SHARED_LIBRARY")
-      # Shared library shall always link against shared Boost libraries
+    ELSEIF (_target_type  STREQUAL "SHARED_LIBRARY" OR _target_type  STREQUAL "EXECUTABLE")
+      # Shared library shall always link against shared Boost libraries, and so does an executable of the shared
+      # variant, which shares Boost with the libraries it loads
       SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" FORCE )
       SET( CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+      SET( _boost_shared ON )
 
     ELSE() 
       # Nothing to do for static libraries - they does not need to know dependencies at library level, since all symbols must be finally solved at .so or exec level
@@ -33,6 +57,7 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
         MESSAGE( STATUS "Target: ${target_name} requires boost dynamic linkage" )
         SET( Boost_USE_STATIC_LIBS OFF CACHE STRING "ON or OFF" FORCE )
         SET( CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+        SET( _boost_shared ON )
       ELSE()
         MESSAGE( STATUS "Target: ${target_name} can use boost static linkage" )
         SET( Boost_USE_STATIC_LIBS ON CACHE STRING "ON or OFF" FORCE )
@@ -43,7 +68,12 @@ MACRO( ADD_TARGET_BOOST_LIBRARIES target_name components )
 
     FIND_PACKAGE( Boost 1.74 REQUIRED COMPONENTS ${BOOST_COMPONENTS} )
 
-    TARGET_LINK_LIBRARIES( ${target_name} INTERFACE ${Boost_LIBRARIES} )
+    IF ( HIVE_BUILD_SHARED_LIBS AND _boost_shared )
+      HIVE_SHARED_BOOST_LIBRARIES( _boost_libraries ${Boost_LIBRARIES} )
+      TARGET_LINK_LIBRARIES( ${target_name} INTERFACE ${_boost_libraries} )
+    ELSE()
+      TARGET_LINK_LIBRARIES( ${target_name} INTERFACE ${Boost_LIBRARIES} )
+    ENDIF()
 
     MESSAGE ( STATUS "Detected boost libs: ${Boost_LIBRARIES}" )
 
@@ -141,7 +171,7 @@ MACRO( ADD_HIVE_EXECUTABLE)
   endif()
 
   TARGET_LINK_LIBRARIES( ${HIVE_EXE_NAME} PUBLIC
-     "-static-libstdc++ -static-libgcc"
+     ${HIVE_EXECUTABLE_RUNTIME_LINK_FLAGS}
 
      ${HIVE_EXE_LIBRARIES}
 

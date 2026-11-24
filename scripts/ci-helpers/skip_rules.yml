@@ -170,6 +170,9 @@ variables:
     # Skip if forcing full pipeline
     - if: $FORCE_FULL_PIPELINE == "true"
       when: never
+    # Skip for the shared-library variant: its binaries are built for the commit, never taken from the static cache
+    - if: $HIVE_BUILD_SHARED_LIBS == "ON"
+      when: never
     # Skip if QUICK_TEST is manually enabled
     - if: $QUICK_TEST == "true"
       when: never

@@ -105,7 +105,7 @@ endif()
 cmake_policy(SET CMP0041 NEW)
 
 ## SORT .cpp by most likely to change / break compile
-add_library( hive_protocol STATIC ${SOURCES} )
+add_library( hive_protocol ${HIVE_LIBRARY_TYPE} ${SOURCES} )
 
 file(MAKE_DIRECTORY ${BINARY_INCLUDE_DIR})
 
@@ -124,7 +124,7 @@ if( C23_EMBED_SUPPORTED )
   target_compile_options(hive_protocol PRIVATE "--embed-dir=${BINARY_INCLUDE_DIR}")
 endif()
 
-target_link_libraries( hive_protocol PUBLIC hive_schema_core fc_core )
+target_link_libraries( hive_protocol PUBLIC hive_schema_core ${HIVE_FC_CORE_LIBRARY} )
 
 target_link_libraries ( hive_protocol PUBLIC
    $<IF:$<OR:$<STREQUAL:$<TARGET_PROPERTY:TYPE>,SHARED_LIBRARY>,$<STREQUAL:$<TARGET_PROPERTY:TYPE>,MODULE_LIBRARY>>, hive_schema_shared_boost, hive_schema>

@@ -77,6 +77,85 @@ add_cmake_arg () {
   CMAKE_ARGS+=("$1")
 }
 
+# Prints those of the given paths that are ELF files (not symbolic links to them).
+elf_files () {
+  local file
+  for file in "$@"; do
+    if [[ -f "$file" && ! -L "$file" && "$(head -c4 "$file")" == $'\x7fELF' ]]; then
+      echo "$file"
+    fi
+  done
+}
+
+# Sets the RPATH of those of the given ELF files that have one, with CMake's ELF editor (the new path is not longer).
+set_rpath () {
+  local rpath="$1"
+  shift
+  local script
+  script=$(mktemp --suffix=.cmake)
+  # shellcheck disable=SC2016 # CMake's own variable references
+  printf '%s\n' \
+    'foreach(file IN LISTS FILES)' \
+    '  unset(old_rpath)' \
+    '  unset(old_runpath)' \
+    '  file(READ_ELF "${file}" RPATH old_rpath RUNPATH old_runpath)' \
+    '  if(old_rpath OR old_runpath)' \
+    '    file(RPATH_SET FILE "${file}" NEW_RPATH "${RPATH}")' \
+    '  endif()' \
+    'endforeach()' > "$script"
+  cmake "-DRPATH=$rpath" "-DFILES=$(IFS=';'; echo "$*")" -P "$script"
+  rm -f "$script"
+}
+
+# Copies the libraries of the shared-library variant (HIVE_BUILD_SHARED_LIBS) into lib/ of the installation
+# directory, where its executables look for them: the build's own (hive's, fc, appbase, chainbase, RocksDB, zstd) and
+# every other library they load except the C and C++ runtime (glibc, libstdc++, libgcc_s), which the host provides.
+# The installation then runs on a host whose glibc and libstdc++ are at least as new as the build's.
+install_shared_libraries () {
+  local build_lib_dir="$1"
+  local installation_dir="$2"
+  local lib_dir="$installation_dir/lib"
+  local runtime='^(linux-vdso|ld-linux.*|libc|libm|libdl|libpthread|librt|libresolv|libutil|libstdc\+\+|libgcc_s)\.so'
+  local file name path missing
+  local -a built_libraries executables
+
+  mkdir -p "$lib_dir"
+  cp -a "$build_lib_dir/"*.so* "$lib_dir/"
+  mapfile -t built_libraries < <(for file in $(elf_files "$build_lib_dir"/*); do echo "$lib_dir/${file##*/}"; done)
+  mapfile -t executables < <(elf_files "$installation_dir"/*)
+
+  # The build tree's paths still lead to where the third-party libraries are installed on the build host.
+  for file in "${executables[@]}" "${built_libraries[@]}"; do
+    while read -r name _ path _; do
+      if [[ "$path" == /* && ! "$name" =~ $runtime && ! -e "$lib_dir/$name" ]]; then
+        cp -L "$path" "$lib_dir/$name"
+      fi
+    done < <(ldd "$file" | grep ' => ')
+  done
+
+  # The build tree's paths also hold the build host's directories and end in empty entries, which the loader takes
+  # for the current directory (CMake's room to edit them at installation): the installed files get only what this
+  # layout needs. RPATH, which the build sets rather than RUNPATH, also leads the third-party libraries to lib/.
+  # shellcheck disable=SC2016 # the loader's $ORIGIN
+  set_rpath '$ORIGIN' "${built_libraries[@]}"
+  # shellcheck disable=SC2016 # the loader's $ORIGIN
+  set_rpath '$ORIGIN/lib' "${executables[@]}"
+
+  # Every library an executable loads, other than the C and C++ runtime, has to come from lib/.
+  missing=$(for file in "${executables[@]}"; do
+    while read -r name _ path _; do
+      if [[ ! "$name" =~ $runtime && "$path" != "$lib_dir/"* ]]; then
+        echo "${file##*/}: $name => $path"
+      fi
+    done < <(ldd "$file" | grep ' => ')
+  done)
+  if [[ -n "$missing" ]]; then
+    echo "ERROR: the installed executables load libraries from outside $lib_dir:"
+    echo "$missing"
+    exit 1
+  fi
+}
+
 # Configure the whole aarch64 cross-compilation environment from a single --cross-root path.
 # This centralises everything the cross build needs (previously duplicated inline in the Dockerfile
 # and forced onto anyone building locally): toolchain compilers, OpenSSL lookup, the qemu emulator,
@@ -229,6 +308,17 @@ pushd "$abs_build_dir"
 echo "Building Hive!"
 
 cmake -DCMAKE_BUILD_TYPE=Release -GNinja "${CMAKE_ARGS[@]}" "$abs_src_dir"
+
+SHARED_LIBS_BUILD=""
+if grep -qx 'HIVE_BUILD_SHARED_LIBS:BOOL=ON' CMakeCache.txt; then
+  SHARED_LIBS_BUILD="true"
+  # Installing the shared variant runs ldd on what it installs, which a cross build cannot.
+  if [[ -n "$CROSS_ROOT_ARG" ]]; then
+    echo "ERROR: HIVE_BUILD_SHARED_LIBS is not supported together with --cross-root"
+    exit 1
+  fi
+fi
+
 ninja -j "$JOBS" "$@"
 
 if [[ "$CLEAN_AFTER_BUILD" == "true" ]]; then
@@ -272,6 +362,10 @@ if [[ -d "$HIVED_INSTALLATION_DIR" ]]; then
     fi
 
     rm -rf "$HIVED_INSTALLATION_DIR/CMakeFiles" "$HIVED_INSTALLATION_DIR/cmake_install.cmake"
+
+    if [[ -n "$SHARED_LIBS_BUILD" ]]; then
+        install_shared_libraries "$abs_build_dir/lib" "$HIVED_INSTALLATION_DIR"
+    fi
 
     # sst_dump is hive's (programs/util/sst_dump.cpp), moved with programs/util above: RocksDB's
     # own crashes on the SST files ordered by hive's comparators. The default target builds it.

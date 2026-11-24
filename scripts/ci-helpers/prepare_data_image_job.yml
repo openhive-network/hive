@@ -68,6 +68,18 @@ include:
 
       set -euo pipefail
 
+      # The shared-library variant, built when the pipeline variable HIVE_BUILD_SHARED_LIBS is set to ON by hand
+      # (.gitlab-ci.yaml): its images are tagged <commit>-shared, and neither reuse nor re-tag the static images,
+      # which everything below is about.
+      if [[ "${HIVE_BUILD_SHARED_LIBS:-OFF}" == "ON" ]]; then
+        "$SCRIPTS_PATH/ci-helpers/get_image4submodule.sh" \
+          "$SUBMODULE_DIR" registry.gitlab.syncad.com/hive/hive HIVED "$REGISTRY_USER" "$REGISTRY_PASS" \
+          --export-binaries="$BINARY_CACHE_PATH" --network-type="$HIVE_NETWORK_TYPE" --build-shared-libs
+        chmod -Rc a+rwx "$BINARY_CACHE_PATH"
+        ls -la $BINARY_CACHE_PATH/*
+        exit 0
+      fi
+
       echo -e "\e[0Ksection_start:$(date +%s):smart_build_setup[collapsed=true]\r\e[0KSetting up smart-image-build..."
 
       # Fetch smart-image-build script from common-ci-configuration

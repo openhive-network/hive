@@ -32,6 +32,15 @@ Builds hived for use in a private testnet. Also required for building unit tests
 
 Builds Hive project in MirrorNet configuration (similar to testnet, but enables importing mainnet data to create a better testing environment).
 
+### HIVE_BUILD_SHARED_LIBS=[OFF/ON]
+
+Builds hive's libraries, fc, appbase, chainbase, RocksDB and zstd as shared libraries, with thin executables on top that also use Boost's and OpenSSL's shared libraries. Off by default: the static build is what is shipped, and it is unaffected by the option. Linux only; not available together with `--cross-root`.
+
+- All shared libraries are built into `lib` of the build directory. Executables find them without `LD_LIBRARY_PATH`: in `lib` next to themselves (the layout of `scripts/build.sh --flat-binary-directory` and of the image's `/home/hived/bin`), in `../lib` (an installation prefix) and, in the build tree, through their relative path to the build's `lib`.
+- `scripts/build.sh --flat-binary-directory=DIR` puts the libraries into `DIR/lib`, together with every third-party library they load except the C and C++ runtime, so that `DIR` can be copied to another host whose glibc and libstdc++ are at least as new as the build's.
+- Boost's shared libraries must be installed next to its static ones. Where Boost is installed static only (the CI build image), `scripts/install_shared_boost.sh` builds them.
+- The libraries are linked with `-Wl,-Bsymbolic-functions` and compiled with `-fno-semantic-interposition`; every symbol keeps default visibility.
+
 ## Building hived as a docker image
 
 We ship a Dockerfile.
@@ -47,6 +56,10 @@ We ship a Dockerfile.
     - testnet
 
 - `--export-binaries=PATH` - extracts the built binaries from the created docker image
+
+- `--build-shared-libs` - builds the shared-library variant (`HIVE_BUILD_SHARED_LIBS`, Docker build argument of the same name): the executables in `/home/hived/bin`, their libraries in `/home/hived/bin/lib`. Give the image a tag of its own; CI tags it `<commit>-shared`. Exporting `/home/hived/bin/` (`scripts/ci-helpers/export-data-from-docker-image.sh`) brings the libraries along.
+
+A GitLab pipeline started by hand with the variable `HIVE_BUILD_SHARED_LIBS` set to `ON` builds and publishes the `-shared` images instead of the static ones and runs the test jobs against them.
 
 The example command above will build an image named `registry.gitlab.syncad.com/hive/hive:my-tag`
 

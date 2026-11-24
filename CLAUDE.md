@@ -52,6 +52,7 @@ ninja hived cli_wallet
 - `CMAKE_BUILD_TYPE`: Release (production), RelWithDebInfo (debugging symbols), Debug (full debug)
 - `BUILD_HIVE_TESTNET=ON`: Required for building unit tests and testnet nodes
 - `HIVE_CONVERTER_BUILD=ON`: MirrorNet configuration (imports mainnet data for testing)
+- `HIVE_BUILD_SHARED_LIBS=ON`: shared-library variant, off by default (see `doc/building.md`); the static default must stay unchanged by changes to it
 
 **Memory requirements**: 16GB+ RAM for building
 

@@ -4,7 +4,8 @@ set(BUILD_SHARED_LIBS OFF)
 set(ROCKSDB_STATIC ON)
 
 #Configure needed build options of RocksDB.
-set(ROCKSDB_BUILD_SHARED OFF CACHE BOOL "Build shared versions of the RocksDB libraries")
+# The shared variant (HIVE_BUILD_SHARED_LIBS) links librocksdb.so; RocksDB's static target is then left unbuilt.
+set(ROCKSDB_BUILD_SHARED ${HIVE_BUILD_SHARED_LIBS} CACHE BOOL "Build shared versions of the RocksDB libraries" FORCE)
 SET(FAIL_ON_WARNINGS OFF CACHE BOOL "Treat compile warnings as errors")
 SET(WITH_TESTS OFF CACHE BOOL "build with tests")
 SET(WITH_SNAPPY ON CACHE BOOL "build with SNAPPY")
@@ -97,7 +98,7 @@ function(hive_add_db_bench_tool)
   target_compile_definitions(rocksdb_db_bench_tool PRIVATE ${_definitions} GFLAGS=1)
   target_include_directories(rocksdb_db_bench_tool PRIVATE ${_includes} "${_rocksdb_dir}")
   target_compile_options(rocksdb_db_bench_tool PRIVATE ${_cxx_flags})
-  target_link_libraries(rocksdb_db_bench_tool PUBLIC rocksdb gflags::gflags)
+  target_link_libraries(rocksdb_db_bench_tool PUBLIC ${HIVE_ROCKSDB_LIBRARY} gflags::gflags)
 endfunction()
 
 # --- Preinstalled RocksDB detection ---
@@ -131,7 +132,8 @@ if(HIVE_USE_PREINSTALLED_VENDOR
    AND _rocksdb_git_result EQUAL 0
    AND EXISTS "${_rocksdb_preinstalled_dir}/lib/librocksdb.a"
    AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
-   AND NOT HIVE_BUILD_DB_BENCH)
+   AND NOT HIVE_BUILD_DB_BENCH
+   AND NOT HIVE_BUILD_SHARED_LIBS)
 
   # Ensure uring::uring is available before find_package(RocksDB).
   # RocksDBConfig.cmake does NOT call find_dependency(uring), but
@@ -173,8 +175,13 @@ if(HIVE_USE_PREINSTALLED_VENDOR
   endif()
 endif()
 
+# The name of the RocksDB library hive's targets link (sibling directories read it from the parent scope).
+set(HIVE_ROCKSDB_LIBRARY rocksdb)
+
 if(NOT _use_preinstalled)
-  if(HIVE_BUILD_DB_BENCH)
+  if(HIVE_BUILD_SHARED_LIBS)
+    message(STATUS "The shared-library build links librocksdb.so, building RocksDB from source")
+  elseif(HIVE_BUILD_DB_BENCH)
     message(STATUS "hive_db_bench compiles RocksDB's own sources, building RocksDB from source")
   elseif(_rocksdb_git_result EQUAL 0 AND HIVE_USE_PREINSTALLED_VENDOR)
     message(STATUS "No preinstalled RocksDB for commit ${_rocksdb_commit} "
@@ -210,6 +217,10 @@ if(NOT _use_preinstalled)
     message(WARNING "Cannot read the RocksDB submodule's commit date, RocksDB will embed its build time")
   endif()
   add_subdirectory(rocksdb)
+  if(HIVE_BUILD_SHARED_LIBS)
+    set(HIVE_ROCKSDB_LIBRARY rocksdb-shared)
+    set_target_properties(rocksdb PROPERTIES EXCLUDE_FROM_ALL TRUE)
+  endif()
   # RocksDB 11 compresses Snappy blocks through a local subclass of snappy::Sink. Compiled with RTTI
   # (USE_RTTI above), that object needs snappy's typeinfo, which upstream snappy builds (-fno-rtti
   # since 1.1.9, e.g. the static library of the CI base image) do not provide, so linking fails.
@@ -222,11 +233,20 @@ if(NOT _use_preinstalled)
       "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/db_stress_tool/db_stress_compression_manager.cc"
       DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb"
       PROPERTIES COMPILE_OPTIONS "-fno-rtti;-UROCKSDB_USE_RTTI")
+    # librocksdb.so holds every object of RocksDB, so also the compression managers of these files, which subclass
+    # those classes as well (db_bench links them too, see hive_add_db_bench_tool).
+    if(HIVE_BUILD_SHARED_LIBS)
+      set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/util/auto_tune_compressor.cc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb/util/simple_mixed_compressor.cc"
+        DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/rocksdb"
+        PROPERTIES COMPILE_OPTIONS "-fno-rtti;-UROCKSDB_USE_RTTI")
+    endif()
   endif()
   if(HIVE_BUILD_DB_BENCH)
     hive_add_db_bench_tool()
   endif()
 endif()
+set(HIVE_ROCKSDB_LIBRARY ${HIVE_ROCKSDB_LIBRARY} PARENT_SCOPE)
 
 GET_TARGET_PROPERTY( prop Snappy::snappy IMPORTED_LOCATION_RELWITHDEBINFO )
 
@@ -234,15 +254,23 @@ MESSAGE ( STATUS "Snappy::snappy (IMPORTED_LOCATION): ${prop}" )
 
 # Seems that nowadays versions of smappy library define just single target:
 
-IF ( TARGET Snappy::snappy-static )
+IF ( TARGET Snappy::snappy-static AND NOT HIVE_BUILD_SHARED_LIBS )
   GET_TARGET_PROPERTY( prop Snappy::snappy-static IMPORTED_LOCATION_RELWITHDEBINFO )
   MESSAGE ( STATUS "Snappy::snappy-static (IMPORTED_LOCATION): ${prop}, overriding standard target path to force static linking" )
   SET_TARGET_PROPERTIES( Snappy::snappy PROPERTIES IMPORTED_LOCATION ${prop} IMPORTED_LOCATION_RELWITHDEBINFO ${prop} )
 ENDIF()
 
-SET(ZSTD_BUILD_SHARED OFF)
+SET(ZSTD_BUILD_SHARED ${HIVE_BUILD_SHARED_LIBS})
 SET(ZSTD_BUILD_STATIC ON)
 SET(ZSTD_BUILD_CONTRIB OFF)
 SET(ZSTD_BUILD_TESTS OFF)
 SET(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "Build ZSTD programs")
 add_subdirectory(zstd/build/cmake)
+
+# The name of the zstd library hive's targets link (sibling directories read it from the parent scope).
+IF ( HIVE_BUILD_SHARED_LIBS )
+  SET_TARGET_PROPERTIES( libzstd_static PROPERTIES EXCLUDE_FROM_ALL TRUE )
+  SET( HIVE_ZSTD_LIBRARY libzstd_shared PARENT_SCOPE )
+ELSE()
+  SET( HIVE_ZSTD_LIBRARY libzstd_static PARENT_SCOPE )
+ENDIF()
