@@ -1026,4 +1026,126 @@ BOOST_AUTO_TEST_CASE( canceling_the_send_task_while_building_ends_it )
   BOOST_CHECK_LT( ( fc::time_point::now() - started_at ).count(), fc::seconds( 10 ).count() );
 }
 
+/// A transaction may be as large as the head block allows (maximum_block_size - 256), over the send queue's limit when
+/// the witnesses vote blocks over it.  One such message is accepted into an empty queue, and the messages queued while
+/// it waits for the send task or is being written are held to the limit without it: none closes the connection, and
+/// all arrive in order.
+BOOST_AUTO_TEST_CASE( message_over_the_queue_limit_is_accepted_into_an_empty_queue )
+{
+  const message oversized = make_message( 5000, GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES * 3 / 2, 'o' );
+  BOOST_REQUIRE_LE( oversized.data.size(), size_t( MAX_MESSAGE_SIZE ) );
+  for( bool being_written : { false, true } )
+  {
+    BOOST_TEST_CONTEXT( ( being_written ? "being written" : "waiting in the queue" ) )
+    {
+      connected_pair pair;
+      blocking_write_hooks blocking;
+      pair.sender->get_socket().set_io_hooks( &blocking );
+
+      pair.sender->send_message( oversized );
+      if( being_written )
+        fc::usleep( fc::milliseconds( 50 ) ); // the send task takes it off the queue and blocks writing it
+      const message behind_a = make_message( 5001, GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2, 'a' );
+      const message behind_b = make_message( 5002, GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2 - 16, 'b' );
+      pair.sender->send_message( behind_a );
+      pair.sender->send_message( behind_b );
+      fc::usleep( fc::milliseconds( 50 ) );
+      BOOST_CHECK( !pair.sender_delegate.closed );
+      blocking.blocked = false;
+      pair.wait_for_messages( 3 );
+
+      BOOST_CHECK( !pair.sender_delegate.closed );
+      BOOST_CHECK( !pair.receiver_delegate.closed );
+      BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 3u );
+      BOOST_CHECK( same_message( pair.receiver_delegate.received[0], oversized ) );
+      BOOST_CHECK( same_message( pair.receiver_delegate.received[1], behind_a ) );
+      BOOST_CHECK( same_message( pair.receiver_delegate.received[2], behind_b ) );
+
+      // once it is written the queue holds the limit again, as for any other message
+      fc::usleep( fc::milliseconds( 50 ) );
+      pair.sender->send_queueable_message( std::make_unique<queue_limit_sized_message>( make_message( 5003, 16, 'p' ) ) );
+      pair.wait_for_messages( 4 );
+      BOOST_CHECK( !pair.receiver_delegate.closed );
+      BOOST_CHECK_EQUAL( pair.receiver_delegate.received.size(), 4u );
+    }
+  }
+}
+
+/// The limit still closes the connection when the queue holds something: a message over the limit queued behind
+/// another, or messages behind an oversized one that take the rest of the queue over the limit.
+BOOST_AUTO_TEST_CASE( queue_holding_messages_still_closes_past_the_limit )
+{
+  const message oversized = make_message( 5000, GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES * 3 / 2, 'o' );
+  for( bool behind_oversized : { false, true } )
+  {
+    BOOST_TEST_CONTEXT( ( behind_oversized ? "behind an oversized message" : "oversized behind another" ) )
+    {
+      connected_pair pair;
+      blocking_write_hooks blocking;
+      pair.sender->get_socket().set_io_hooks( &blocking );
+
+      if( behind_oversized )
+      {
+        pair.sender->send_message( oversized );
+        pair.sender->send_message( make_message( 5001, 16, 'a' ) );
+        pair.sender->send_queueable_message( std::make_unique<queue_limit_sized_message>( make_message( 5002, 16, 'b' ) ) );
+      }
+      else
+      {
+        pair.sender->send_message( make_message( 5001, 16, 'a' ) );
+        pair.sender->send_message( oversized );
+      }
+      blocking.blocked = false;
+      const fc::time_point deadline = fc::time_point::now() + fc::seconds( 30 );
+      while( !pair.receiver_delegate.closed && fc::time_point::now() < deadline )
+        fc::usleep( fc::milliseconds( 1 ) );
+      BOOST_CHECK( pair.receiver_delegate.closed );
+    }
+  }
+}
+
+/// A requested transaction larger than the send queue's limit waits for the queue to empty and then goes out alone:
+/// the replies around it, and a block queued while it is written, all arrive, with the replies in the order asked.
+BOOST_AUTO_TEST_CASE( transaction_reply_over_the_queue_limit_is_sent_alone )
+{
+  connected_pair pair;
+  blocking_write_hooks blocking;
+  pair.sender->get_socket().set_io_hooks( &blocking );
+
+  const std::shared_ptr<hive::chain::full_transaction_type> small = make_full_transaction( 8000 );
+  const std::shared_ptr<hive::chain::full_transaction_type> large = make_full_transaction( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES * 3 / 2 );
+  BOOST_REQUIRE_GT( large->get_transaction_size(), size_t( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES ) );
+  BOOST_REQUIRE_LE( large->get_transaction_size(), size_t( MAX_MESSAGE_SIZE ) );
+  BOOST_REQUIRE( pair.sender->send_transaction_reply( small ) );
+  BOOST_REQUIRE( pair.sender->send_transaction_reply( large ) );
+  BOOST_REQUIRE( pair.sender->send_transaction_reply( small ) );
+  BOOST_REQUIRE( pair.sender->send_transaction_reply( large ) );
+  BOOST_REQUIRE( pair.sender->send_transaction_reply( small ) );
+  // the send task is writing the first reply: the large one waits outside the queue
+  fc::usleep( fc::milliseconds( 50 ) );
+  BOOST_CHECK_EQUAL( pair.sender->get_deferred_transaction_reply_bytes(),
+                     2 * large->get_transaction_size() + 2 * small->get_transaction_size() );
+  blocking.blocked = false;
+  const fc::time_point large_written_deadline = fc::time_point::now() + fc::seconds( 30 );
+  while( pair.sender->get_deferred_transaction_reply_bytes() > large->get_transaction_size() + 2 * small->get_transaction_size() &&
+         fc::time_point::now() < large_written_deadline )
+    fc::usleep( fc::milliseconds( 1 ) );
+  pair.send_block( make_small_block() );
+  pair.wait_for_messages( 6 );
+
+  BOOST_CHECK( !pair.sender_delegate.closed );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
+  BOOST_CHECK_EQUAL( pair.sender->get_deferred_transaction_reply_bytes(), 0u );
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 6u );
+  const message small_reply = message( graphene::net::trx_message( small ) );
+  const message large_reply = message( graphene::net::trx_message( large ) );
+  std::vector<message> replies;
+  for( const message& received : pair.receiver_delegate.received )
+    if( received.msg_type != graphene::net::block_message_type )
+      replies.push_back( received );
+  BOOST_REQUIRE_EQUAL( replies.size(), 5u );
+  for( size_t i = 0; i < replies.size(); ++i )
+    BOOST_CHECK_MESSAGE( same_message( replies[i], i % 2 == 0 ? small_reply : large_reply ), "reply " << i << " differs" );
+}
+
 BOOST_AUTO_TEST_SUITE_END()

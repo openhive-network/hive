@@ -84,6 +84,10 @@ requests to a peer, may expect back. A queued block counts only its small placeh
 built when it nears the front, so block bytes never use the queue's limit and need no share of it. The other half of
 the queue is headroom for the messages built when queued (sync item id inventories, address lists, requests), for
 the one transaction a reply may queue past the budget, and for older peers that queue a whole reply at once.
+A transaction may be as large as the head block allows (`maximum_block_size - 256`, up to 2 MiB), not
+`HIVE_MAX_TRANSACTION_SIZE`: a reply larger than the budget waits for the queue to empty and is then queued alone, and
+one larger than the 1 MiB limit is accepted into the empty queue; what is queued behind it is held to the limit
+without it.
 
 ## Transactions in flight
 
@@ -124,8 +128,8 @@ report counts the times the cap was reached and for how long (`handoff.limit_wai
    connections); keepalives and addresses don't count, requests do, so a peer syncing from us or downstream of us is
    kept. A replaced silent peer may not take a slot again for one window, inbound or outbound.
 
-Other disconnects happen where the cause is seen, not in this loop: the send queue passing its 1 MiB limit closes
-the connection at once; withholding strikes (`MAX_UNAVAILABLE_ITEM_STRIKES` item_not_available answers for advertised
+Other disconnects happen where the cause is seen, not in this loop: the send queue passing its 1 MiB limit (besides
+the one oversized message it may hold alone) closes the connection at once; withholding strikes (`MAX_UNAVAILABLE_ITEM_STRIKES` item_not_available answers for advertised
 items; late or slow block copies are no strike), invalid blocks and blocks whose body
 doesn't match their header (each behind its breaker), unrequested items, oversized inventory or requests, and the
 per-host limit at hello.
@@ -295,9 +299,9 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 
 | Name | Value | Unit | Purpose | Basis |
 |---|---|---|---|---|
-| `GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES` | `(1024 * 1024)` | bytes | send queue limit; past it the connection closes | reasoned: inherited from graphene |
+| `GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES` | `(1024 * 1024)` | bytes | send queue limit; past it the connection closes, except for one larger message queued alone | reasoned: inherited from graphene |
 | `GRAPHENE_NET_TRANSACTION_BUDGET_BYTES` | `(MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2)` | bytes | the one transaction budget | derived: half of GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES |
-| `GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES` | `TRANSACTION_BUDGET_BYTES` | bytes | replies queued only below it | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
+| `GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES` | `TRANSACTION_BUDGET_BYTES` | bytes | replies queued only below it, or one at a time into an empty queue | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
 | `GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES` | `TRANSACTION_BUDGET_BYTES` | bytes | inventory queued only below it | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
 | `GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE` | `(MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 4 / 20)` | ids | ids per inventory we send | derived: 20 bytes an id |
 | `GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER` | `(MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 20)` | ids | held-back inventory per peer | derived: 20 bytes an id |

@@ -455,7 +455,11 @@ namespace graphene { namespace net
         // every popped message, sent or dropped, leaves the queue's size exactly once, however this batch ends
         BOOST_SCOPE_EXIT(this_, &batch) {
           for (const std::unique_ptr<queued_message>& popped_message : batch)
+          {
             this_->_total_queued_messages_size -= popped_message->get_size_in_queue();
+            if (popped_message->exceeds_queue_limit)
+              this_->_queued_oversized_message_size = 0;
+          }
         } BOOST_SCOPE_EXIT_END
         size_t batch_size = 0;
         do
@@ -605,11 +609,20 @@ namespace graphene { namespace net
       if (_send_queue_limit_exceeded)
         return;
       const size_t message_size = message_to_send->get_size_in_queue();
-      if (_total_queued_messages_size + message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
+      // a transaction may be as large as the head block allows (maximum_block_size - 256), which may be more than the
+      // limit, so one message is accepted alone whatever its size; what is queued with it is held to the limit
+      // without it, so it doesn't close the connection for the block traffic and control messages queued behind it
+      if (_total_queued_messages_size == 0 && message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
+      {
+        message_to_send->exceeds_queue_limit = true;
+        _queued_oversized_message_size = message_size;
+      }
+      else if (_total_queued_messages_size - _queued_oversized_message_size + message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
       {
         _send_queue_limit_exceeded = true;
-        elog("send queue exceeded maximum size of ${max} bytes (current size ${current} bytes)",
-             ("max", GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)("current", _total_queued_messages_size + message_size));
+        elog("send queue exceeded maximum size of ${max} bytes (current size ${current} bytes, ${oversized} of them one oversized message)",
+             ("max", GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)("current", _total_queued_messages_size + message_size)
+             ("oversized", _queued_oversized_message_size));
         try
         {
           close_connection();
@@ -745,12 +758,13 @@ namespace graphene { namespace net
 
     bool peer_connection::queue_deferred_transaction_replies()
     {
-      // one is queued into an empty queue whatever its size, which keeps the send task running while any wait; a
-      // transaction may be as large as the head block allows (maximum_block_size - 256), so one larger than
-      // GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES still exceeds the queue's limit and closes the connection
+      // the oldest is queued into an empty queue (nothing queued or being written) whatever its size, which keeps the
+      // send task running while any wait; a transaction may be as large as the head block allows
+      // (maximum_block_size - 256), and send_queueable_message() accepts one larger than
+      // GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES only into an empty queue, so it waits for the queue to empty
       bool queued_any = false;
       while (!_deferred_transaction_replies.empty() && !_send_queue_limit_exceeded &&
-             (_queued_messages.empty() ||
+             (_total_queued_messages_size == 0 ||
               _total_queued_messages_size + _deferred_transaction_replies.front()->get_transaction_size() <=
                 GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES))
       {

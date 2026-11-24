@@ -910,6 +910,72 @@ BOOST_AUTO_TEST_CASE( request_larger_than_the_send_queue_is_answered_in_full )
   FC_LOG_AND_RETHROW()
 }
 
+/// On a chain whose witnesses voted blocks over the send queue's limit, a transaction larger than the limit (it may
+/// be up to maximum_block_size - 256 bytes) is relayed from the peer that sent it, through the node, to a peer that
+/// asks the node for it, and is included in a block: neither the node nor its peers close a connection on their
+/// send queue's limit.
+BOOST_AUTO_TEST_CASE( transaction_over_the_send_queue_limit_is_relayed )
+{
+  try
+  {
+    run( {}, [&]( fc::thread&, test_peer& sender, test_peer& observer )
+    {
+      witness_set_properties_operation raise_block_size;
+      raise_block_size.owner = HIVE_INIT_MINER_NAME;
+      raise_block_size.props[ "key" ] = fc::raw::pack_to_vector( init_account_pub_key );
+      raise_block_size.props[ "maximum_block_size" ] = fc::raw::pack_to_vector( uint32_t( HIVE_MAX_BLOCK_SIZE ) );
+      schedule_transaction( raise_block_size );
+      // initminer is the only witness, so its vote is the median once the next schedules take it
+      BOOST_REQUIRE_MESSAGE( wait_until( [&]()
+      {
+        uint32_t maximum_block_size = 0;
+        db->with_read_lock( [&]() { maximum_block_size = db->get_dynamic_global_properties().get_maximum_block_size(); } );
+        return maximum_block_size == HIVE_MAX_BLOCK_SIZE;
+      }, fc::seconds( 3 * HIVE_BLOCK_INTERVAL * HIVE_MAX_WITNESSES ) ), "the voted maximum block size did not take effect" );
+
+      comment_operation post;
+      post.parent_permlink = "test";
+      post.author = HIVE_INIT_MINER_NAME;
+      post.permlink = "larger-than-the-send-queue";
+      post.title = "large";
+      post.body = std::string( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES * 3 / 2, 'x' );
+      const full_transaction_ptr large = build_transaction( post, get_default_expiration() );
+      BOOST_REQUIRE_GT( large->get_transaction_size(), size_t( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES ) );
+      BOOST_REQUIRE_LE( large->get_transaction_size(), size_t( HIVE_MAX_BLOCK_SIZE - 256 ) );
+
+      uint32_t checked_through = get_block_num();
+      sender.provide( { large } );
+      sender.advertise( hashes_of( { large } ) );
+      BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return all_advertised( observer, { large } ); }, fc::seconds( 30 ) ),
+                             "the large transaction was not accepted and relayed" );
+      observer.send( graphene::net::fetch_items_message( graphene::net::trx_message_type, hashes_of( { large } ) ) );
+      BOOST_CHECK_MESSAGE( observer.wait_for( graphene::net::trx_message_type, fc::seconds( 30 ) ),
+                           "the node did not send the large transaction to the peer that asked for it" );
+      BOOST_CHECK_MESSAGE( wait_until( [&]()
+      {
+        const uint32_t head = get_block_num();
+        for( ; checked_through < head; ++checked_through )
+        {
+          const std::shared_ptr< full_block_type > block = get_block_reader().get_block_by_number( checked_through + 1 );
+          BOOST_REQUIRE( block );
+          for( const full_transaction_ptr& transaction : block->get_full_transactions() )
+            if( transaction->get_transaction_id() == large->get_transaction_id() )
+              return true;
+        }
+        return false;
+      }, fc::seconds( 30 ) ), "the large transaction was not included in a block" );
+
+      BOOST_CHECK( !sender.closed() );
+      BOOST_CHECK( !observer.closed() );
+      BOOST_CHECK_EQUAL( observer.count( graphene::net::item_not_available_message_type ), 0u );
+      const std::vector< p2p_tests::received_message > received = observer.received( graphene::net::trx_message_type );
+      BOOST_REQUIRE_EQUAL( received.size(), 1u );
+      BOOST_CHECK( received.front().msg.id() == large->get_legacy_transaction_message_hash() );
+    } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 #endif
