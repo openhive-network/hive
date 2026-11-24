@@ -36,9 +36,10 @@ namespace chainbase {
         return a._size == b._size && a._type_name_hash == b._type_name_hash;
       }
 
-      std::string to_string() const
+      /// size_name labels the size: "size" for a container alone, a name saying it is a sum when Members are given.
+      std::string to_string( const std::string& size_name ) const
       {
-        return "{size: " + std::to_string( _size ) + ", type hash: " + std::to_string( _type_name_hash ) + "}";
+        return "{" + size_name + ": " + std::to_string( _size ) + ", type hash: " + std::to_string( _type_name_hash ) + "}";
       }
 
     private:
@@ -97,26 +98,28 @@ namespace chainbase {
   /**
     * Checks the layout recorded for the container stored under container_name, without looking up the container itself.
     * Returns true when the recorded layout is the one of the running build, so the container can be looked up as
-    * Container, and false when neither the container nor its layout is stored.
+    * Container, and false when the container is not stored, whether or not a layout is recorded for it (a first open
+    * interrupted before constructing the container leaves its layout alone; recording the container replaces it).
     * Throws container_layout_mismatch asking for a replay when the recorded layout differs from the running one, or
     * when the container is stored without a layout, as a build that did not record layouts leaves it.
     */
   template< typename Container, typename... Members >
   bool verify_container_layout( boost::interprocess::managed_mapped_file::segment_manager& segment_manager, const std::string& container_name )
   {
+    if( !detail::is_named_object_stored( segment_manager, container_name ) )
+      return false;
     const container_layout* stored = segment_manager.find< container_layout >( detail::container_layout_name( container_name ).c_str() ).first;
     if( stored == nullptr )
-    {
-      if( !detail::is_named_object_stored( segment_manager, container_name ) )
-        return false;
       BOOST_THROW_EXCEPTION( container_layout_mismatch( "The layout of " + container_name + " is not recorded in `shared_memory_file`: it was "
         "created by a build that does not record container layouts. A replay (or a snapshot load) is needed." ) );
-    }
     const container_layout running = container_layout::of< Container, Members... >();
     if( !( *stored == running ) )
-      BOOST_THROW_EXCEPTION( container_layout_mismatch( "The layout of " + container_name + " in `shared_memory_file` " + stored->to_string() +
-        " differs from the one of the running build " + running.to_string() + " (the container type or the Boost version changed). "
+    {
+      const std::string size_name = sizeof...( Members ) == 0 ? "size" : "sum of the sizes of the container and its members";
+      BOOST_THROW_EXCEPTION( container_layout_mismatch( "The layout of " + container_name + " in `shared_memory_file` " + stored->to_string( size_name ) +
+        " differs from the one of the running build " + running.to_string( size_name ) + " (the container type or the Boost version changed). "
         "A replay (or a snapshot load) is needed." ) );
+    }
     return true;
   }
 

@@ -166,6 +166,22 @@ using layout_item_index = bmi::multi_index_container<
   chainbase::multi_index_allocator< layout_item >
 >;
 
+class other_layout_item : public chainbase::object< 1, other_layout_item >
+{
+  CHAINBASE_OBJECT( other_layout_item );
+
+public:
+  CHAINBASE_DEFAULT_CONSTRUCTOR( other_layout_item )
+};
+
+using other_layout_item_index = bmi::multi_index_container<
+  other_layout_item,
+  bmi::indexed_by<
+    bmi::ordered_unique< bmi::tag< chainbase::by_id >, bmi::const_mem_fun< other_layout_item, other_layout_item::id_type, &other_layout_item::get_id > >
+  >,
+  chainbase::multi_index_allocator< other_layout_item >
+>;
+
 struct keyed_hash
 {
   size_t operator()( uint64_t key ) const { return std::hash< uint64_t >()( key ^ seed ); }
@@ -214,9 +230,29 @@ void create_state_with_index( const chainbase::bfs::path& state_dir )
   db.close();
 }
 
+/// What a first open leaves when it is interrupted after adding the index of layout_item and recording RecordedContainer
+/// as the layout of the index of other_layout_item, before constructing that index.
+template< typename RecordedContainer >
+void create_interrupted_state( const chainbase::bfs::path& state_dir )
+{
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  db.add_index< layout_item_index >();
+  chainbase::record_container_layout< RecordedContainer >( *db.get_segment_manager(), boost::core::demangle( typeid( other_layout_item ).name() ) );
+  db.close();
+}
+
+const auto other_index_is_missing = []( const std::logic_error& e )
+{
+  const std::string what = e.what();
+  return replay_needed( e ) && what.find( "The index " + boost::core::demangle( typeid( other_layout_item ).name() ) + " is not stored" ) != std::string::npos &&
+    what.find( "differs" ) == std::string::npos;
+};
+
 }
 
 FC_REFLECT( layout_item, (id)(key) )
+FC_REFLECT( other_layout_item, (id) )
 
 BOOST_AUTO_TEST_SUITE( chainbase_tests )
 
@@ -601,15 +637,19 @@ BOOST_AUTO_TEST_CASE( index_laid_out_differently_is_refused )
   fc::temp_directory dir( hive::utilities::temp_directory_path() );
   const auto state_dir = shared_memory_dir( dir );
   create_state_with_index< layout_item_index >( state_dir );
+  // The stored container really has another size, which Boost.Interprocess asserts against in a typed find (the stored
+  // bytes have to be a multiple of the type's size). With Boost asserts enabled (a Debug build), this aborts unless the
+  // recorded layout is read before the container is looked up as hashed_layout_item_index.
+  static_assert( sizeof( chainbase::generic_index< layout_item_index > ) % sizeof( chainbase::generic_index< hashed_layout_item_index > ) != 0 );
 
   chainbase::database db;
   db.open( state_dir, 0, STATE_FILE_SIZE );
-  BOOST_CHECK_EXCEPTION( db.add_index< hashed_layout_item_index >(), std::logic_error, replay_needed );
+  BOOST_CHECK_EXCEPTION( db.add_index< hashed_layout_item_index >(), chainbase::container_layout_mismatch, replay_needed );
   db.close();
 
   chainbase::database reader;
   reader.open( state_dir, chainbase::database::read_only_storage );
-  BOOST_CHECK_EXCEPTION( reader.add_index< hashed_layout_item_index >(), std::logic_error, replay_needed );
+  BOOST_CHECK_EXCEPTION( reader.add_index< hashed_layout_item_index >(), chainbase::container_layout_mismatch, replay_needed );
   reader.close();
 }
 
@@ -688,6 +728,33 @@ BOOST_AUTO_TEST_CASE( index_is_created_when_only_its_layout_is_recorded )
   reader.close();
 }
 
+BOOST_AUTO_TEST_CASE( interrupted_first_open_is_refused )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  create_interrupted_state< chainbase::generic_index< other_layout_item_index > >( state_dir );
+
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_REQUIRE_NO_THROW( db.add_index< layout_item_index >() );
+  BOOST_CHECK_EXCEPTION( db.add_index< other_layout_item_index >(), chainbase::index_set_mismatch, other_index_is_missing );
+  db.close();
+}
+
+BOOST_AUTO_TEST_CASE( layout_recorded_for_a_missing_index_is_reported_as_missing )
+{
+  fc::temp_directory dir( hive::utilities::temp_directory_path() );
+  const auto state_dir = shared_memory_dir( dir );
+  // the layout is not the one of the running build, but there is no container to read through it
+  create_interrupted_state< chainbase::generic_index< layout_item_index > >( state_dir );
+
+  chainbase::database db;
+  db.open( state_dir, 0, STATE_FILE_SIZE );
+  BOOST_REQUIRE_NO_THROW( db.add_index< layout_item_index >() );
+  BOOST_CHECK_EXCEPTION( db.add_index< other_layout_item_index >(), chainbase::index_set_mismatch, other_index_is_missing );
+  db.close();
+}
+
 BOOST_AUTO_TEST_CASE( named_container_layout_is_verified )
 {
   fc::temp_directory dir( hive::utilities::temp_directory_path() );
@@ -697,6 +764,11 @@ BOOST_AUTO_TEST_CASE( named_container_layout_is_verified )
 
   // neither the container nor its layout is stored yet
   BOOST_CHECK( !chainbase::verify_container_layout< archived_keys >( segment_manager, "archive" ) );
+
+  // a layout recorded without its container, even another one, does not stand for a stored container
+  chainbase::record_container_layout< hashed_archived_keys >( segment_manager, "archive" );
+  BOOST_CHECK( !chainbase::verify_container_layout< archived_keys >( segment_manager, "archive" ) );
+  BOOST_REQUIRE( segment_manager.destroy< chainbase::container_layout >( "archive::layout" ) );
 
   // a container stored without its layout, as a build that did not record layouts leaves it
   segment_manager.construct< archived_keys >( "archive" )( archived_keys::allocator_type( &segment_manager ) );

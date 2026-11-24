@@ -1083,6 +1083,75 @@ BOOST_AUTO_TEST_CASE( state_without_container_layouts_is_refused )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( state_with_an_index_of_another_size_is_refused )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: state_with_an_index_of_another_size_is_refused" );
+
+    postponed_init();
+    generate_blocks( 3 );
+    reset_fixture( false );
+
+    // What a build whose account index has other indexes leaves: the container really has another size. A typed find
+    // asserts that the stored bytes are a multiple of the type's size, so with Boost asserts enabled (a Debug build)
+    // this aborts unless the recorded layout is read before the index is looked up.
+    using other_account_multi_index = multi_index_container< account_object,
+      indexed_by< ordered_unique< tag< chainbase::by_id >, const_mem_fun< account_object, account_object::id_type, &account_object::get_id > > >,
+      multi_index_allocator< account_object > >;
+    using other_account_index = chainbase::generic_index< other_account_multi_index >;
+    using running_account_index = chainbase::generic_index< account_index >;
+    static_assert( sizeof( other_account_index ) % sizeof( running_account_index ) != 0 );
+    const std::string index_name = boost::core::demangle( typeid( account_object ).name() );
+    {
+      chainbase::database storage;
+      storage.open( state_dir() );
+      auto& segment_manager = *storage.get_segment_manager();
+      BOOST_REQUIRE( segment_manager.destroy< running_account_index >( index_name.c_str() ) );
+      chainbase::record_container_layout< other_account_index >( segment_manager, index_name );
+      segment_manager.construct< other_account_index >( index_name.c_str() )( other_account_multi_index::allocator_type( &segment_manager ) );
+      storage.close();
+    }
+
+    check_startup_refused( *this, [&]() { postponed_init(); },
+      { "The layout of " + index_name + " in `shared_memory_file` {size: " + std::to_string( sizeof( other_account_index ) ),
+        "differs from the one of the running build {size: " + std::to_string( sizeof( running_account_index ) ) } );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( interrupted_first_open_is_refused )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "--- Testing: interrupted_first_open_is_refused" );
+
+    postponed_init();
+    reset_fixture( false );
+
+    // What a first open interrupted after recording the layout of the account index, before constructing it, leaves.
+    // The indexes added after it are stored here, but the refusal comes before any of them is looked up.
+    const std::string index_name = boost::core::demangle( typeid( account_object ).name() );
+    {
+      chainbase::database storage;
+      storage.open( state_dir() );
+      BOOST_REQUIRE( storage.get_segment_manager()->destroy< chainbase::generic_index< account_index > >( index_name.c_str() ) );
+      storage.close();
+    }
+    const auto state_files_before = hash_state_files( state_dir() );
+
+    // refused on every start, without touching the state, until it is rebuilt
+    for( int i = 0; i < 2; ++i )
+    {
+      check_startup_refused( *this, [&]() { postponed_init(); },
+        { "The index " + index_name + " is not stored in `shared_memory_file`", "A replay (or a snapshot load) is needed" } );
+      reset_fixture( false );
+      BOOST_REQUIRE( state_files_before == hash_state_files( state_dir() ) );
+    }
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( read_only_storage_is_refused_in_use_and_leaves_state_untouched )
 {
   try
