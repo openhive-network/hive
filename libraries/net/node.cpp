@@ -3674,19 +3674,25 @@ namespace graphene { namespace net {
       }
       // the peer's remote address without a socket is none we could match a local address against
       const fc::optional<fc::ip::endpoint> relayed_from = originating_peer->get_remote_endpoint();
-      std::vector<graphene::net::address_info> updated_addresses;
-      for (const address_info& address : address_message_received.addresses)
-        if (relayed_from && accepts_exchanged_address(address.remote_endpoint.get_address(), relayed_from->get_address()))
-        {
-          updated_addresses.push_back(address);
-          updated_addresses.back().last_seen_time = fc::time_point_sec(fc::time_point::now());
-        }
-        else
-          dlog("not storing ${endpoint} from ${peer}: a local address from a peer outside its network",
-               ("endpoint", address.remote_endpoint)("peer", relayed_from));
-      bool new_information_received = merge_address_info_with_potential_peer_database(updated_addresses);
-      if (new_information_received)
-        trigger_p2p_network_connect_loop();
+      if (originating_peer->their_state != peer_connection::their_connection_state::connection_accepted)
+        // a connection that skipped its hello (or sent one we rejected) is no peer we trust to tell us whom to dial
+        dlog("not storing the addresses from ${peer}: we have not accepted its hello", ("peer", relayed_from));
+      else
+      {
+        std::vector<graphene::net::address_info> updated_addresses;
+        for (const address_info& address : address_message_received.addresses)
+          if (relayed_from && accepts_exchanged_address(address.remote_endpoint.get_address(), relayed_from->get_address()))
+          {
+            updated_addresses.push_back(address);
+            updated_addresses.back().last_seen_time = fc::time_point_sec(fc::time_point::now());
+          }
+          else
+            dlog("not storing ${endpoint} from ${peer}: a local address from a peer outside its network",
+                 ("endpoint", address.remote_endpoint)("peer", relayed_from));
+        bool new_information_received = merge_address_info_with_potential_peer_database(updated_addresses);
+        if (new_information_received)
+          trigger_p2p_network_connect_loop();
+      }
 
       if (_handshaking_connections.find(originating_peer->shared_from_this()) != _handshaking_connections.end())
       {
