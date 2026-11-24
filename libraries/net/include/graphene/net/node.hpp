@@ -100,31 +100,37 @@ namespace graphene { namespace net {
   /**
    * Called exactly once, from the thread that validated it, when a transaction handed over by
    * node_delegate::submit_transaction() has been validated.  @p error is null if the transaction was accepted.
+   * @p relay says whether an accepted transaction is to be advertised to the other peers: the client accepts some
+   * it would rather not spread, such as a fast-confirm it ignored or one its pending pool is about to drop.  Either
+   * way the node counts an accepted transaction as received, so it doesn't fetch it again.
    * It must not block.
    */
-  typedef std::function<void(const fc::exception_ptr& error)> transaction_validated_callback;
+  typedef std::function<void(const fc::exception_ptr& error, bool relay)> transaction_validated_callback;
 
-  /// The client's pending transaction pool: how many bytes of transactions it holds and the most it may hold
+  /// The client's pending transaction pool: how many bytes of transactions it holds and the transaction fetch gate's threshold
   struct pending_transaction_pool_size
   {
     uint64_t pending_bytes = 0;
-    uint64_t max_bytes = 0;     ///< max-mempool-size
+    uint64_t gate_threshold_bytes = 0; ///< no gate when 0, see default_transaction_fetch_gate_threshold()
   };
 
   /**
    * The pending pool size above which the node requests no more than GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH
-   * transactions per GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS: a third of @p max_bytes, which leaves the rest of the pool for API submissions, fork
-   * switches and replies already on their way, and at least 1.  0 when @p max_bytes is 0: the pool then keeps only
-   * what fits in the reapply window, so it needs no gate.
+   * transactions per GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS, unless configured otherwise: the larger of
+   * @p keep_limit_bytes, what the client's next reapply of pending is expected to keep (beyond that the client accepts
+   * transactions but doesn't relay them), and @p flood_pending_bytes, the pool at which the RC flood surcharge and
+   * the witnesses' privilege engage, times GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT, and at least 1.  So
+   * as the pool grows the surcharge and not relaying engage first, while the node still fetches, validates and relays
+   * what it keeps, and the gate only after them, as a backstop.
    *
    * The pool counts transactions from every source.  API submissions are not limited by max-mempool-size (only
    * the reapply after a block drops what exceeds it), so while API inflow keeps the pool above the threshold
    * after every block the node fetches, and so relays, only that minimum of transactions from its peers, for as
    * long as that inflow lasts.  Blocks are fetched as always, and the node's own transactions are still broadcast.
    */
-  uint64_t transaction_fetch_gate_threshold(uint64_t max_bytes);
+  uint64_t default_transaction_fetch_gate_threshold(uint64_t keep_limit_bytes, uint64_t flood_pending_bytes);
 
-  /// Whether @p pool holds more than transaction_fetch_gate_threshold(), so that the node requests only the minimum of transactions per pass
+  /// Whether @p pool holds more than its gate threshold, so that the node requests only the minimum of transactions per pass
   bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool);
 
   /**
@@ -1206,6 +1212,7 @@ namespace graphene { namespace net {
       uint64_t items_expired = 0;
       uint64_t transactions_gated = 0; ///< wakes in which the gate (transaction_fetch_gate::held_back()) kept transactions from being requested
       uint64_t transactions_bounded = 0; ///< wakes in which the gate's headroom (transaction_fetch_gate::bounded()) kept transactions from being requested
+      fc::microseconds gated_time; ///< how long the gate was closed (transaction_fetch_gate::closed()), see record_gate()
       fc::microseconds scheduling_time;
     };
 
@@ -1222,6 +1229,7 @@ namespace graphene { namespace net {
       std::array<uint64_t, completion_latency_bounds_us.size() + 1> completion_latency{}; ///< submit -> client result
       uint64_t limit_waits = 0;   ///< times the transactions in flight reached maximum_transactions_in_flight, so fetching stopped
       fc::microseconds limit_wait_time; ///< how long fetching stayed stopped so, all those times together
+      uint64_t not_relayed = 0;   ///< transactions the client accepted but said not to relay (transaction_validated_callback)
     };
 
     /// peer_connection socket writes
@@ -1257,6 +1265,10 @@ namespace graphene { namespace net {
     void record_submission(uint32_t in_flight);
     void record_limit_wait(fc::microseconds waited);
     void record_completion(fc::microseconds latency);
+    void record_not_relayed();
+    /// Records whether the transaction fetch gate of the pass that began at @p now was closed; the time from a pass
+    /// whose gate was closed until the next pass (or report) counts towards fetch_scheduling::gated_time
+    void record_gate(bool closed, fc::time_point now);
     void record_write(size_t messages, size_t bytes);
     /// @p max_transactions is the most the request could ask for: the per-peer limit, or less when the byte cap is lower
     void record_transaction_request(size_t transactions, size_t max_transactions);
@@ -1277,6 +1289,7 @@ namespace graphene { namespace net {
 
   private:
     fc::time_point _period_start = fc::time_point::now();
+    std::optional<fc::time_point> _gate_closed_since;
     transaction_handoff _handoff;
     send_batching _sending;
     request_sizing _requests;

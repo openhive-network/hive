@@ -65,6 +65,13 @@ class resource_credits
 
     // sets parameters that can temporarily increase RC cost for new transactions during flood
     static void set_flood_limiters( uint16_t flood_level, uint16_t flood_surcharge_factor );
+    // the smallest pending size at which new transactions pay the flood surcharge (and privileged ones go to the
+    // front of pending): more than flood level full blocks of given size
+    static uint64_t flood_pending_size( uint32_t maximum_block_size );
+
+    // checks if transaction is privileged: a top witness transaction containing only one witness related operation,
+    // which the flood surcharge is not applied to and which goes to the front of pending during flood
+    bool is_privileged_transaction( const full_transaction_type& full_tx ) const;
 
     // scans transaction for used resources
     static void count_resources(
@@ -141,6 +148,8 @@ class resource_credits
   private:
     // consumes RC mana from payer account (or throws exception if not enough), supplements tx_info with RC mana, returns true for high priority op
     bool use_account_rcs( int64_t rc );
+    // is_privileged_transaction() of transaction paid by given account, with given single operation (if just one)
+    bool is_privileged_operation( const hive::protocol::account_name_type& payer, const optional< uint8_t >& op ) const;
 
     // registers evaluator for custom rc operations
     void initialize_evaluators();

@@ -69,10 +69,10 @@ item_id transaction( uint8_t n )
   return item_id( graphene::net::trx_message_type, hash );
 }
 
-/// pool sizes against a max-mempool-size of 300 bytes, whose gate threshold is 100
-const pending_transaction_pool_size pool_below_threshold{ 0, 300 };
-const pending_transaction_pool_size pool_at_threshold{ 100, 300 };
-const pending_transaction_pool_size pool_over_threshold{ 200, 300 };
+/// pool sizes against a gate threshold of 100 bytes
+const pending_transaction_pool_size pool_below_threshold{ 0, 100 };
+const pending_transaction_pool_size pool_at_threshold{ 100, 100 };
+const pending_transaction_pool_size pool_over_threshold{ 200, 100 };
 
 } // namespace
 

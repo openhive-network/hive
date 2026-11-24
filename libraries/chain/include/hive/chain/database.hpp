@@ -372,8 +372,26 @@ namespace chain {
 
       bool is_fast_confirm_transaction( const std::shared_ptr<full_transaction_type>& full_transaction) ;
       using switch_forks_t = std::function< std::optional< uint32_t >( std::shared_ptr<full_block_type>, uint32_t ) >;
-      void process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, switch_forks_t sf);
+      /// Returns whether the fast-confirm was recorded; false when it was ignored (its witness is not on the schedule,
+      /// or the witness's last recorded one is for a block at least as new), so it is not to be relayed either
+      bool process_fast_confirm_transaction(const std::shared_ptr<full_transaction_type>& full_transaction, switch_forks_t sf);
       void process_non_fast_confirm_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = skip_nothing );
+
+      /**
+        * The bytes of pending transactions the next reapply of pending is expected to keep, counted from the front of
+        * pending: what it keeps after its reapplication window (the larger of @p max_mempool_size and
+        * @p reapply_window_bytes, see _reapply_window_bytes) plus one block of @p maximum_block_size, which the next
+        * block is expected to take from the front.
+        */
+      static uint64_t pending_keep_limit( uint64_t max_mempool_size, uint64_t reapply_window_bytes, uint32_t maximum_block_size );
+      /// pending_keep_limit() of this node's max-mempool-size, last reapplication window and current maximum block size
+      uint64_t get_pending_keep_limit() const;
+      /**
+        * Whether @p full_transaction, just accepted into pending, is expected to stay there after the next reapply, so
+        * it is worth relaying: a privileged transaction (resource_credits::is_privileged_transaction(), checked whatever
+        * the pending pool holds) always is, any other while pending holds no more than get_pending_keep_limit().
+        */
+      bool is_kept_by_next_reapply( const full_transaction_type& full_transaction ) const;
       void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
       void pop_block();
@@ -688,6 +706,10 @@ namespace chain {
       vector<std::shared_ptr<full_transaction_type>>           _pending_tx;
       size_t                                                   _pending_tx_size = 0;
       size_t                                                   _max_mempool_size = 0;
+      // bytes of transactions the last reapply of pending applied within its reapplication window when that window
+      // ran out (HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT), otherwise at least what it applied: no less than the
+      // estimate before; 0 until a reapply applied something
+      size_t                                                   _reapply_window_bytes = 0;
       // alternative for transaction_index holding ids of pending and popped transactions
       std::unordered_set<transaction_id_type>                  _pending_tx_index;
       // collection of custom operation impacted accounts (related to limit of 5 per user per block);

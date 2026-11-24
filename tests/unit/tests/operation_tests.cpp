@@ -10760,6 +10760,62 @@ BOOST_AUTO_TEST_CASE( account_witness_block_approve_authorities )
   FC_LOG_AND_RETHROW()
 }
 
+BOOST_AUTO_TEST_CASE( ignored_fast_confirms_are_not_to_be_relayed )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing: a fast-confirm the node ignores is accepted but not to be relayed" );
+
+    ACTORS( DEFAULT_VESTING, (alice) );
+    private_key_type alice_witness_key = generate_private_key( "alice_witness" );
+    witness_create( "alice", alice_private_key, "foo.bar", alice_witness_key.get_public_key(), HIVE_asset( 0 ) );
+
+    const auto relay = [&]( const account_name_type& witness, const block_id_type& block_id, const fc::ecc::private_key& key,
+                            uint32_t expiration_offset )
+    {
+      witness_block_approve_operation op;
+      op.witness = witness;
+      op.block_id = block_id;
+      signed_transaction tx;
+      // fast-confirms are not checked for duplicates, but each one here is a distinct transaction anyway
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION - expiration_offset );
+      tx.operations.push_back( op );
+      return get_chain_plugin().push_transaction( build_transaction( tx, { key }, hive::protocol::pack_type::hf26 ) );
+    };
+    const auto is_scheduled = [&]( const account_name_type& witness )
+    {
+      const witness_schedule_object& wso = db->get_witness_schedule_object_for_irreversibility();
+      const auto scheduled_end = wso.current_shuffled_witnesses.begin() + wso.num_scheduled_witnesses;
+      return std::find( wso.current_shuffled_witnesses.begin(), scheduled_end, witness ) != scheduled_end;
+    };
+
+    BOOST_TEST_MESSAGE( "--- a fast-confirm of a witness not on the schedule (yet) is ignored and not relayed" );
+    BOOST_REQUIRE( !is_scheduled( "alice" ) );
+    BOOST_CHECK( !relay( "alice", db->head_block_id(), alice_witness_key, 0 ) );
+
+    generate_block();
+    const block_id_type previous = db->head_block_id();
+    generate_block();
+    const block_id_type head = db->head_block_id();
+    generate_block();
+    const block_id_type new_head = db->head_block_id();
+    // one signing with the init key
+    const account_name_type scheduled = db->get_witness_schedule_object_for_irreversibility().current_shuffled_witnesses[ 0 ] != "alice"
+      ? db->get_witness_schedule_object_for_irreversibility().current_shuffled_witnesses[ 0 ]
+      : db->get_witness_schedule_object_for_irreversibility().current_shuffled_witnesses[ 1 ];
+    BOOST_REQUIRE( is_scheduled( scheduled ) );
+
+    BOOST_TEST_MESSAGE( "--- the first fast-confirm of a scheduled witness is recorded and relayed" );
+    BOOST_CHECK( relay( scheduled, head, init_account_priv_key, 1 ) );
+    BOOST_TEST_MESSAGE( "--- one for the same or an older block is ignored and not relayed" );
+    BOOST_CHECK( !relay( scheduled, head, init_account_priv_key, 2 ) );
+    BOOST_CHECK( !relay( scheduled, previous, init_account_priv_key, 3 ) );
+    BOOST_TEST_MESSAGE( "--- one for a newer block is relayed again" );
+    BOOST_CHECK( relay( scheduled, new_head, init_account_priv_key, 4 ) );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
 BOOST_AUTO_TEST_CASE( private_key_memo_test )
 {
   try
