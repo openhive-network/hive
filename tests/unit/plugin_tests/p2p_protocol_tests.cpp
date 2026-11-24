@@ -1044,6 +1044,47 @@ BOOST_AUTO_TEST_CASE( pre_hello_message_size_test )
   } );
 }
 
+/// A17: addresses from a connection whose hello the node has not accepted are not stored, so the node doesn't dial
+/// them: neither those sent unsolicited by a peer skipping its hello, nor those a peer skipping its hello sends in
+/// reply to the address request the node makes once that peer accepted the node's hello. The same address from an
+/// active peer is dialed, which the node, short of its desired connections, does at once.
+BOOST_AUTO_TEST_CASE( addresses_before_hello_test )
+{
+  start_node();
+  run( [&]()
+  {
+    auto offered = make_peer( "peer whose address is offered" );
+    const fc::ip::endpoint offered_endpoint = offered->listen();
+    address_message offer;
+    offer.addresses.emplace_back( offered_endpoint, fc::time_point::now(), fc::microseconds( 0 ), node_id_t(),
+                                  peer_connection_direction::inbound, firewalled_state::not_firewalled );
+
+    auto unsolicited = make_peer( "peer skipping its hello, offering addresses unasked" );
+    unsolicited->hello().count = 0;
+    unsolicited->ignore( hello_message_type );
+    unsolicited->ignore( legacy_hello_message_type );
+    unsolicited->connect( node_endpoint() );
+    unsolicited->send( offer );
+
+    auto answering = make_peer( "peer skipping its hello, answering the node's address request" );
+    answering->hello().count = 0;
+    answering->on( address_request_message_type, [offer]( test_peer& self, const message& ) { self.send( offer ); } );
+    answering->connect( node_endpoint() );
+    BOOST_REQUIRE_MESSAGE( answering->wait_for( address_request_message_type, reply_timeout ), "the node did not ask for addresses" );
+
+    fc::usleep( quiet_period );
+    BOOST_CHECK( !offered->connected() );
+    BOOST_CHECK( !node_lists( *unsolicited ) );
+    BOOST_CHECK( !node_lists( *answering ) );
+
+    auto relay = make_peer( "active peer offering the same address" );
+    connect_active( *relay );
+    relay->send( offer );
+    BOOST_CHECK_MESSAGE( offered->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ), "the node did not dial the address an active peer offered" );
+    BOOST_CHECK( node_lists( *offered ) );
+  } );
+}
+
 // ---------------------------------------------------------------------------------------------------------
 // B. Framing and decoding
 // ---------------------------------------------------------------------------------------------------------
