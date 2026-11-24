@@ -1,6 +1,5 @@
 #pragma once
 
-#include <boost/core/demangle.hpp>
 #include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/throw_exception.hpp>
 
@@ -26,8 +25,10 @@ namespace chainbase {
       template< typename Container, typename... Members >
       static container_layout of()
       {
-        std::string type_names = boost::core::demangle( typeid( Container ).name() );
-        ( ( type_names += ", " + boost::core::demangle( typeid( Members ).name() ) ), ... );
+        // Mangled names, fixed by the C++ ABI: what demangling gives depends on the libstdc++ the program runs with
+        // (hived links it statically, other programs may not), and some versions fail on the long names of indexes.
+        std::string type_names = typeid( Container ).name();
+        ( ( type_names += std::string( ", " ) + typeid( Members ).name() ), ... );
         return container_layout( ( sizeof( Container ) + ... + sizeof( Members ) ), type_name_hash( type_names ) );
       }
 

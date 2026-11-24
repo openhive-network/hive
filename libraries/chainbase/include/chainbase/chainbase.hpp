@@ -14,6 +14,7 @@
 #include <boost/any.hpp>
 #include <boost/chrono.hpp>
 #include <boost/config.hpp>
+#include <boost/core/demangle.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>

@@ -1135,7 +1135,13 @@ void chain_plugin_impl::open()
       block_storage->open_and_init( bl_open_args, true/*read_only*/, true/*allow_artifacts_regeneration*/, &db );
     });
     open_or_refuse( [&]() { db.open( db_open_args ); } );
-  } FC_LOG_AND_RETHROW()
+  }
+  catch( ... )
+  {
+    if( startup_refused )
+      throw; // hived reports a refused start once, as it exits
+    try { throw; } FC_LOG_AND_RETHROW()
+  }
 
   was_error = false;
 }
