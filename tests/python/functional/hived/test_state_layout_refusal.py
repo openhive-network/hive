@@ -32,6 +32,12 @@ INCOMPLETE_STATE_MESSAGES: Final[tuple[str, ...]] = (
 )
 
 
+def assert_logged_once(output: str, message: str) -> None:
+    """Checks that the refusal `message` is reported once: fc logs an exception's message, then its {"what": ...}."""
+    count = output.count(f'"what":"{message}')
+    assert count == 1, f"'{message}' reported {count} times in:\n{excerpt(output)}"
+
+
 def excerpt(output: str) -> str:
     """The lines worth seeing first when a check fails, followed by the end of the output."""
     keywords = ("layout", "refused", "error", "exception", "replay", "snapshot")
@@ -86,6 +92,28 @@ def enlarge_recorded_account_index_size(state_file: Path) -> int:
     return enlarged
 
 
+def shared_memory_file_util_path() -> Path:
+    hived: Path = tt.paths_to_executables.get_path_of("hived")
+    # beside hived where binaries are installed, in programs/util of a build directory
+    candidates = (hived.parent / "shared_memory_file_util", hived.parent.parent / "util" / "shared_memory_file_util")
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    pytest.fail(f"shared_memory_file_util not found at any of {[str(candidate) for candidate in candidates]}")
+
+
+def run_shared_memory_file_util(data_dir: Path, *args: str) -> tuple[int, str, str]:
+    util = subprocess.run(
+        [str(shared_memory_file_util_path()), "--input", str(data_dir / "blockchain"), *args],
+        capture_output=True,
+        text=True,
+        errors="replace",
+        timeout=120,
+        check=False,
+    )
+    return util.returncode, util.stdout, util.stderr
+
+
 def kill_hived_during_first_open(data_dir: Path, delay: float) -> None:
     """Starts hived on a fresh data directory and kills it with SIGKILL `delay` seconds after it creates its state."""
     state_file = data_dir / "blockchain" / "shared_memory.bin"
@@ -138,16 +166,41 @@ def test_hived_refuses_state_with_another_layout_with_exit_code_78() -> None:
             f"Exiting with code {STARTUP_REFUSED_EXIT_CODE}.",
         ):
             assert expected in output, f"'{expected}' not logged in:\n{excerpt(output)}"
+        assert_logged_once(output, "The layout of hive::chain::account_object in `shared_memory_file`")
         assert file_hash(state_file) == state_before
+
+
+@pytest.mark.testnet
+def test_shared_memory_file_util_reads_the_indexes_of_state_hived_created() -> None:
+    data_dir = tt.context.get_current_directory() / "state_read_by_util"
+    shutil.rmtree(data_dir, ignore_errors=True)
+    data_dir.mkdir(parents=True)
+
+    exit_code, output = run_hived(data_dir)
+    assert exit_code == 0, excerpt(output)
+
+    # the util checks the layout of each index hived recorded against its own, so both have to compute it alike
+    exit_code, stdout, stderr = run_shared_memory_file_util(data_dir, "--list-indices")
+    assert exit_code == 0, f"stdout:\n{stdout}\nstderr:\n{excerpt(stderr)}"
+    assert stdout.startswith("Detected "), stdout
+    assert "account_object" in stdout, stdout
+
+    dump_dir = data_dir / "dump"
+    exit_code, stdout, stderr = run_shared_memory_file_util(data_dir, "--dump-indices", "--output", str(dump_dir))
+    assert exit_code == 0, f"stdout:\n{stdout}\nstderr:\n{excerpt(stderr)}"
+    # the genesis accounts, initminer among them
+    account_dumps = list((dump_dir / "account_object").glob("*.log"))
+    assert account_dumps, f"no dump of account_object in {sorted(path.name for path in dump_dir.iterdir())}"
+    assert any("initminer" in dump.read_text(errors="replace") for dump in account_dumps), account_dumps
 
 
 def assert_refused_as_incomplete(exit_code: int, output: str, message: str | None = None) -> None:
     """Checks that hived refused the state with code 78 as one whose first open did not complete."""
     assert exit_code == STARTUP_REFUSED_EXIT_CODE, excerpt(output)
     expected_messages = (message,) if message is not None else INCOMPLETE_STATE_MESSAGES
-    assert any(expected in output for expected in expected_messages), (
-        f"none of {expected_messages} logged in:\n{excerpt(output)}"
-    )
+    logged = [expected for expected in expected_messages if expected in output]
+    assert logged, f"none of {expected_messages} logged in:\n{excerpt(output)}"
+    assert_logged_once(output, logged[0])
     for expected in (
         "or with --force-replay to rebuild it from the block log.",
         f"Exiting with code {STARTUP_REFUSED_EXIT_CODE}.",

@@ -176,6 +176,11 @@ void database::pre_open( const open_args& args )
     reset_singleton_cache();
     initialize_irreversible_storage();
   }
+  catch( const shm_state_definitions_mismatch_exception& )
+  {
+    // a state this build cannot use is refused by the caller, which reports it once (hived refuses to start)
+    throw;
+  }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
 
@@ -189,6 +194,14 @@ void database::open( const open_args& args )
     load_state_initial_data(args);
     verify_match_of_blockchain_configuration();
     complete_creation();
+  }
+  catch( const shm_state_definitions_mismatch_exception& )
+  {
+    throw; // refused by the caller, as in pre_open
+  }
+  catch( const blockchain_config_mismatch_exception& )
+  {
+    throw; // refused by the caller, as in pre_open
   }
   FC_CAPTURE_LOG_AND_RETHROW( (args.data_dir)(args.shared_mem_dir)(args.shared_file_size) )
 }
