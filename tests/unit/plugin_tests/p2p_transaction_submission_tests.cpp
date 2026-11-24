@@ -179,8 +179,9 @@ BOOST_AUTO_TEST_CASE( submitted_transactions_are_relayed_once_validated )
       leaving.advertise( hashes_of( left_behind ) );
       BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return leaving.closed(); }, fc::seconds( 10 ) ),
                              "the leaving peer was not asked for its transactions" );
-      // a new peer is first asked for only as many transactions as fit the request byte limit at the largest
-      // transaction size, so it delivers just those before it leaves
+      // a new peer is first asked for only as many transactions as fit the request byte limit at the starting guess
+      // of its transaction size (GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE), so it delivers just those before it
+      // leaves
       std::vector< full_transaction_ptr > delivered;
       std::copy_if( left_behind.begin(), left_behind.end(), std::back_inserter( delivered ), [&]( const full_transaction_ptr& transaction ) {
         return leaving.was_requested( transaction->get_legacy_transaction_message_hash() );
@@ -688,14 +689,14 @@ BOOST_AUTO_TEST_CASE( transactions_queued_before_a_trickler_is_asked_are_fetched
         return transactions;
       };
       // each peer is asked for its items in requests of a full window: 8, as each request ends in a transaction of
-      // about HIVE_MAX_TRANSACTION_SIZE that it delivers at once, so its estimate stays near the initial one.  The rest
-      // of each request are fillers it answers as not available @p pace later, which demotes it for
-      // GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC; the delivery before keeps that from counting toward a disconnect.
+      // about GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE that it delivers at once, so its estimate stays near the
+      // initial one.  The rest of each request are fillers it answers as not available @p pace later, which demotes it
+      // for GRAPHENE_NET_UNAVAILABLE_ITEM_DEMOTION_SEC; the delivery before keeps that from counting toward a disconnect.
       // So each request comes pace + demotion after the one before, and the batches before the withheld transactions
       // keep the trickler from them for about batches * (4 s + 10 s): past what the ceiling needs (lifetime - 18 s),
       // short of the lifetime
       const size_t batches = 4;
-      const size_t window = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / HIVE_MAX_TRANSACTION_SIZE;
+      const size_t window = GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE;
       const auto fillers = [&]( const std::string& name )
       {
         std::vector< graphene::net::item_hash_t > hashes;
@@ -725,7 +726,7 @@ BOOST_AUTO_TEST_CASE( transactions_queued_before_a_trickler_is_asked_are_fetched
             tx.operations.emplace_back( transfer );
           }
           transactions.push_back( build_transaction( tx ) );
-          BOOST_REQUIRE_LE( transactions.back()->get_transaction_size(), size_t( HIVE_MAX_TRANSACTION_SIZE ) );
+          BOOST_REQUIRE_LE( transactions.back()->get_transaction_size(), size_t( GRAPHENE_NET_INITIAL_TRANSACTION_SIZE_ESTIMATE ) );
           BOOST_REQUIRE_GT( transactions.back()->get_transaction_size(), size_t( GRAPHENE_NET_MAX_TRANSACTION_BYTES_PER_FETCH / ( window + 1 ) ) );
         }
         return transactions;

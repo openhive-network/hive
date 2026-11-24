@@ -745,8 +745,9 @@ namespace graphene { namespace net
 
     bool peer_connection::queue_deferred_transaction_replies()
     {
-      // a transaction is at most HIVE_MAX_TRANSACTION_SIZE, so one queued alone never reaches the queue's limit;
-      // queueing one into an empty queue keeps the send task running while any wait
+      // one is queued into an empty queue whatever its size, which keeps the send task running while any wait; a
+      // transaction may be as large as the head block allows (maximum_block_size - 256), so one larger than
+      // GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES still exceeds the queue's limit and closes the connection
       bool queued_any = false;
       while (!_deferred_transaction_replies.empty() && !_send_queue_limit_exceeded &&
              (_queued_messages.empty() ||
