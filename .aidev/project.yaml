@@ -99,12 +99,18 @@ verification:
       # otherwise; so is p2p-relay, the three-node large-transaction relay test
       # (~1 min), unless the diff reaches p2p, the network code or the transaction
       # size limits (.aidev/p2p-relay-select.sh, .aidev/README.md).
+      # 28g: warm runs peaked at 22-23.6 GB. Under a cap 1.25x above it (35 GiB),
+      # 2 GB a build job is 17 jobs and a cold build peaked at 29 GiB, over the 28g;
+      # 2.5 GB a job is 13 jobs, a cold build peaking at 23 GiB in ~580 s (steem-3,
+      # 2026-11-25), and fewer under a cap at the 28g itself. `baseline` keeps the
+      # same pair.
       - name: default
         adapter: command
         args: [".aidev/run-checks.sh", "full", "build", "chain-tests,plugin-tests,hiveio-api,p2p-relay"]
         artifacts: ["test-results/full/"]
+        env: {HIVE_BUILD_JOB_MEMORY_MB: "2560"}
         timeout: 1500
-        memory: 40g
+        memory: 28g
       # The tests/integration scripts the diff selects (.aidev/integration.sh),
       # beside `default`. Its select skips it, before AIDEV admits it into a
       # docker slot, when the diff selects no script it can run here; see
@@ -154,7 +160,8 @@ verification:
         adapter: command
         args: [".aidev/run-checks.sh", "baseline", "build", "chain-tests,plugin-tests,hiveio-api,p2p-relay"]
         artifacts: ["test-results/baseline/"]
-        memory: 40g
+        env: {HIVE_BUILD_JOB_MEMORY_MB: "2560"}
+        memory: 28g
   # The promote gate: the merged candidate builds and its quick tests pass;
   # every workflow's `full` already ran all of chain_test and plugin_test.
   canary:

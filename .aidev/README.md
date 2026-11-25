@@ -61,7 +61,7 @@ time after `build` (`build chain-smoke,plugin-api`).
 Each suite of `full` and `baseline` declares `memory:`, what AIDEV reserves on the
 host for one run until it has measured the suite's own runs (the suite's container
 is capped a headroom above it, 1.25× by default): `full`'s `default` and `baseline`
-40g, `full`'s `integration` 12g (52g together), `full`'s `wallet_patterns` 16g (after
+28g, `full`'s `integration` 12g (40g together), `full`'s `wallet_patterns` 16g (after
 `default`, never beside it). `quick`, `canary` and `coverage` declare 24g, 12
 build jobs: priced from their own runs instead, they were capped near what a build
 at one job peaks at (~2 GB, 2.5 GB with the headroom), which left the next build
@@ -70,7 +70,12 @@ for `full` and `baseline`: over 14 `run_full_tests` runs
 (2026-10-13/14, before the integration suite was on), the pull host's free memory
 fell by 6-14 GB on steem-11 (32 threads) and up to 35 GB on steem-3 and steem-5
 (48 threads), host-wide samples ~30 s apart. The peak is the build, `ninja -j nproc`
-uncapped, so it grows with the host's threads. `integration` was not measured: it
+uncapped, so it grows with the host's threads. Since the build's jobs follow its
+memory, `default` peaked at 22-23.6 GB (hive-simple workflows 1199-1227,
+2026-11-23/24), so it and `baseline` declare 28g and plan 2560 MB a build job
+(`HIVE_BUILD_JOB_MEMORY_MB`): under a 35 GiB cap (1.25x) that is 13 jobs, and a cold
+build (no compiler cache hits) peaked at 23 GiB in ~580 s, where 2048 MB a job
+would be 17 jobs peaking at 29 GiB in ~490 s (steem-3, 2026-11-25). `integration` was not measured: it
 is estimated as one hived build at a time (`hived-testnet`, `hived-mainnet`, mostly
 compiler-cache hits, then the hived link) and then the scripts' nodes (a 5.1M-block
 mainnet sync, testnet nodes at 128M `shared-file-size`). Its builds and nodes are
@@ -233,7 +238,8 @@ which run as root, get a copy of its tracked files at that path: a root-owned
 `autom4te.cache` there would fail `default`'s build.
 
 Each build's ninja runs `min(nproc, usable memory / HIVE_BUILD_JOB_MEMORY_MB)`
-jobs (at least 1; 2048 MB per job by default), the usable memory being the
+jobs (at least 1; 2048 MB per job by default, 2560 MB in `full`'s `default` and
+`baseline`), the usable memory being the
 container's cgroup limit less its usage, else the host's `MemAvailable`, and
 `-l nproc`; the step's log says `build: N jobs (...)`. `HIVE_BUILD_JOBS`
 overrides the count (`.aidev/build-jobs.sh`, tested by
