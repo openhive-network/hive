@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -9,6 +11,13 @@ TOPOLOGIES = ("mesh", "star", "strict", "chain", "diamond")
 MIXES = ("default", "large")
 # where a two-host run's nodes run: "local" with the witness and the run's command, "remote" on --remote-host
 PARTS = ("local", "remote")
+# what a hived option names besides a single role: the roles it covers, by prefix, and how specific it is (a role is
+# more specific than either); the most specific option for a key wins on a node
+OPTION_GROUPS = {"all": ("", 0), "colonies": ("colony", 1), "relays": ("relay", 1)}
+_ROLE_SPECIFICITY = 2
+_OPTION_KEY = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+# set by the harness itself: the p2p parameters through their own options, the endpoints and seeds by the topology
+_HARNESS_OPTIONS = {"p2p-parameters": "--p2p-parameter", "p2p-endpoint": "--topology", "p2p-seed-node": "--topology"}
 
 
 @dataclass
@@ -42,6 +51,8 @@ class RunSpec:
     remote_roles: list[str] = field(default_factory=list)
     # two-host runs: the address:port each listening node is dialed at, on its host's network address
     endpoints: dict[str, str] = field(default_factory=dict)
+    # [selector, key, value]: a hived config option for one role or a group of OPTION_GROUPS, in the given order
+    hived_options: list[list[str]] = field(default_factory=list)
 
     def roles(self) -> list[str]:
         return [
@@ -57,6 +68,29 @@ class RunSpec:
 
     def binary(self, role: str) -> str:
         return self.node_hived.get(role, self.hived)
+
+    @staticmethod
+    def _selects(selector: str, role: str) -> bool:
+        return role.startswith(OPTION_GROUPS[selector][0]) if selector in OPTION_GROUPS else selector == role
+
+    def hived_options_of(self, role: str) -> list[tuple[str, str]]:
+        """
+        The hived options of `role`'s node, as (key, value): for each key, and for each logger of `log-logger`, the
+        value of the most specific selector naming the node (the role, then its group, then `all`).
+
+        Raise ValueError when two options of one specificity set the same key (or logger) on the node.
+        """
+        chosen: dict[str, tuple[int, str, str, str]] = {}
+        for selector, key, value in self.hived_options:
+            if not self._selects(selector, role):
+                continue
+            rank = OPTION_GROUPS[selector][1] if selector in OPTION_GROUPS else _ROLE_SPECIFICITY
+            slot = f"log-logger {json.loads(value)['name']}" if key == "log-logger" else key
+            if slot in chosen and chosen[slot][0] == rank:
+                raise ValueError(f"{chosen[slot][1]} and {selector} both set {slot} on {role}")
+            if slot not in chosen or chosen[slot][0] < rank:
+                chosen[slot] = (rank, selector, key, value)
+        return [(key, value) for _, _, key, value in chosen.values()]
 
     def validate(self) -> None:
         """Raise ValueError for a spec the driver cannot build."""
@@ -79,6 +113,7 @@ class RunSpec:
             raise ValueError("the late observer must join before the last measured block")
         self._validate_colonies()
         self._validate_placement()
+        self._validate_hived_options()
 
     def _validate_colonies(self) -> None:
         for mix in [self.mix, *self.colony_mixes.values()]:
@@ -106,3 +141,32 @@ class RunSpec:
         missing = {role for role in self.roles() if role != "observer"} - set(self.endpoints)
         if missing:
             raise ValueError(f"no p2p endpoint for {sorted(missing)}")
+
+    def _validate_hived_options(self) -> None:
+        for selector, key, value in self.hived_options:
+            if selector not in OPTION_GROUPS and selector not in self.roles():
+                raise ValueError(
+                    f"hived option for {selector!r}: neither a role of this run nor {', '.join(OPTION_GROUPS)}"
+                )
+            if not any(self._selects(selector, role) for role in self.roles()):
+                raise ValueError(f"hived option for {selector}: this run has none")
+            _validate_hived_option(key, value)
+        for role in self.roles():
+            self.hived_options_of(role)
+
+
+def _validate_hived_option(key: str, value: str) -> None:
+    if not _OPTION_KEY.match(key):
+        raise ValueError(f"hived option {key!r} is not an option name")
+    if key in _HARNESS_OPTIONS:
+        raise ValueError(f"hived option {key} is the harness's: use {_HARNESS_OPTIONS[key]}")
+    # one config.ini line each: a line break would add options nobody checks
+    if not value or "\n" in value or "\r" in value:
+        raise ValueError(f"hived option {key}: the value must be one non-empty line")
+    if key == "log-logger":
+        try:
+            logger = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError(f"hived option log-logger: {value!r} is not JSON") from error
+        if not (isinstance(logger, dict) and isinstance(logger.get("name"), str)):
+            raise ValueError("hived option log-logger: the value must be one logger object with a name")

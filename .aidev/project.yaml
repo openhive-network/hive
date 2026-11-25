@@ -96,10 +96,12 @@ verification:
       # hiveio-api generates and tests the hiveio_api package (CI's
       # hiveio_api_package, ~30 s) from the build's operations_description.json when
       # the diff changes the openapi documentation or the generator, and is skipped
-      # otherwise (.aidev/README.md).
+      # otherwise; so is p2p-relay, the three-node large-transaction relay test
+      # (~1 min), unless the diff reaches p2p, the network code or the transaction
+      # size limits (.aidev/p2p-relay-select.sh, .aidev/README.md).
       - name: default
         adapter: command
-        args: [".aidev/run-checks.sh", "full", "build", "chain-tests,plugin-tests,hiveio-api"]
+        args: [".aidev/run-checks.sh", "full", "build", "chain-tests,plugin-tests,hiveio-api,p2p-relay"]
         artifacts: ["test-results/full/"]
         timeout: 1500
         memory: 40g
@@ -150,7 +152,7 @@ verification:
     suites:
       - name: default
         adapter: command
-        args: [".aidev/run-checks.sh", "baseline", "build", "chain-tests,plugin-tests,hiveio-api"]
+        args: [".aidev/run-checks.sh", "baseline", "build", "chain-tests,plugin-tests,hiveio-api,p2p-relay"]
         artifacts: ["test-results/baseline/"]
         memory: 40g
   # The promote gate: the merged candidate builds and its quick tests pass;

@@ -4,9 +4,11 @@ import contextlib
 import json
 import os
 import shutil
+import signal
 import socket
 import subprocess
 import sys
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -17,6 +19,7 @@ import test_tools as tt
 from python.functional.p2p_load import __main__ as cli
 from python.functional.p2p_load import (
     harness,
+    hived_options,
     node_logs,
     p2p_loggers,
     p2p_parameters,
@@ -28,7 +31,7 @@ from python.functional.p2p_load import (
 )
 from python.functional.p2p_load.analysis import STABLE_IDLE_BLOCKS, Run
 from python.functional.p2p_load.harness import TEMPLATE_ROOT
-from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
+from python.functional.p2p_load.host_lock import CONTAINER_PREFIX, HarnessBusyError, HostLock
 from python.functional.p2p_load.spec import RunSpec
 
 # `hived --help` as boost prints it: the default JSON is wrapped, without spaces, over indented lines
@@ -187,12 +190,136 @@ _ENDPOINTS = {"witness": "10.0.0.1:2001", "colony0": "10.0.0.2:2002"}
             },
             "late observer",
         ),
+        ({"hived_options": [["relay1", "max-mempool-size", "1G"]]}, "neither a role of this run"),
+        ({"hived_options": [["relays", "max-mempool-size", "1G"]]}, "this run has none"),
+        ({"hived_options": [["all", "Max_Mempool", "1G"]]}, "not an option name"),
+        ({"hived_options": [["all", "p2p-parameters", "{}"]]}, "use --p2p-parameter"),
+        ({"hived_options": [["all", "max-mempool-size", "1G\nplugin = debug_node"]]}, "one non-empty line"),
+        ({"hived_options": [["all", "log-logger", "debug"]]}, "not JSON"),
+        ({"hived_options": [["all", "log-logger", '{"level": "debug"}']]}, "logger object with a name"),
+        ({"hived_options": [["colonies", "max-mempool-size", "1G"], ["colonies", "max-mempool-size", "2G"]]}, "both"),
     ],
 )
 def test_spec_validation(changes: dict[str, Any], error: str) -> None:
     spec = _spec(**changes)
     with pytest.raises(ValueError, match=error):
         spec.validate()
+
+
+def test_the_most_specific_hived_option_wins_on_each_node() -> None:
+    p2p_debug, p2p_all = '{"name":"p2p","level":"debug"}', '{"name":"p2p","level":"all"}'
+    spec = _spec(
+        topology="chain",
+        colonies=2,
+        relays=1,
+        hived_options=[
+            ["colony1", "max-mempool-size", "2G"],
+            ["all", "max-mempool-size", "1G"],
+            ["colonies", "max-mempool-size", "0"],
+            ["all", "log-logger", p2p_debug],
+            ["relay1", "log-logger", p2p_all],
+            ["all", "log-logger", '{"name":"sync","level":"debug"}'],
+        ],
+    )
+    spec.validate()
+
+    assert spec.hived_options_of("witness") == [
+        ("max-mempool-size", "1G"),
+        ("log-logger", p2p_debug),
+        ("log-logger", '{"name":"sync","level":"debug"}'),
+    ]
+    assert spec.hived_options_of("colony0")[0] == ("max-mempool-size", "0")
+    assert spec.hived_options_of("colony1")[0] == ("max-mempool-size", "2G")
+    assert ("log-logger", p2p_all) in spec.hived_options_of("relay1")
+    assert ("log-logger", p2p_debug) not in spec.hived_options_of("relay1")
+
+
+# what hived writes as its default config.ini: commented options, some with defaults, and their descriptions
+_DEFAULT_CONFIG = f"""# Appender definition JSON. Obeys the format {"appender", "stream", "file"} ...
+# log-appender = {"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}
+
+# log-console-appender = {" "}
+# Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions ...
+# max-mempool-size = 100M
+
+# Pending transactions size (e.g. 300M) above which the node requests only 20 transactions per 100 ms ...
+# p2p-transaction-fetch-gate-threshold = {" "}
+"""
+
+
+def test_hived_options_are_known_from_the_default_config_hived_writes(tmp_path: Path) -> None:
+    known = hived_options.options_from_default_config(_DEFAULT_CONFIG)
+
+    assert known == {"log-appender", "log-console-appender", "max-mempool-size", "p2p-transaction-fetch-gate-threshold"}
+    hived = tmp_path / "hived"
+    hived_options.check_known(hived, [("max-mempool-size", "1G")], known)
+    with pytest.raises(hived_options.HivedOptionsError, match="has no config option max-mempol-size"):
+        hived_options.check_known(hived, [("max-mempol-size", "1G")], known)
+
+
+@dataclass(slots=True)  # as test-tools' config: no attribute but its fields
+class _NodeConfig:
+    log_logger: str | None = None
+    shared_file_size: str | None = None
+    plugin: list[str] = field(default_factory=list)
+
+
+def test_hived_options_go_into_the_config_and_a_logger_level_replaces_the_harness_one(tmp_path: Path) -> None:
+    config = _NodeConfig(
+        log_logger=p2p_loggers.with_loggers(p2p_loggers.with_debug_default(None), ["p2p_stats"]),
+        plugin=["witness"],
+    )
+    options = [
+        ("log-logger", '{"name":"p2p_stats","level":"debug","appender":"p2p"}'),
+        ("log-logger", '{"name":"p2p","level":"debug","appender":"p2p"}'),
+        ("max-mempool-size", "1G"),
+        ("shared-file-size", "8G"),
+        ("plugin", "account_by_key"),
+        ("p2p-transaction-fetch-gate-threshold", "0"),
+    ]
+
+    hived_options.apply(config, options)
+
+    assert config.shared_file_size == "8G"
+    assert config.plugin == ["witness", "account_by_key"]
+    logger_line, *extra = (config.log_logger or "").split("\n")
+    assert p2p_loggers.logger_entries(logger_line) == [
+        {"name": "default", "appender": "stderr", "level": "debug"},
+        {"name": "p2p_stats", "level": "debug", "appender": "p2p"},
+        {"name": "p2p", "level": "debug", "appender": "p2p"},
+    ]
+    assert extra == ["max-mempool-size = 1G", "p2p-transaction-fetch-gate-threshold = 0"]
+    config_ini = tmp_path / "config.ini"
+    config_ini.write_text(f"log-logger = {config.log_logger}\nplugin = witness\nplugin = account_by_key\n")
+    with pytest.raises(hived_options.HivedOptionsError, match="no shared-file-size = 8G"):
+        hived_options.verify_config(config_ini, options)
+    config_ini.write_text(f"{config_ini.read_text()}shared-file-size = 8G\n")
+    hived_options.verify_config(config_ini, options)
+    p2p_loggers.verify_config(config_ini, ["p2p_stats"])
+
+
+@pytest.mark.testnet
+def test_a_node_runs_with_its_hived_options_in_its_config() -> None:
+    hived = tt.paths_to_executables.get_path_of("hived")
+    known = hived_options.config_options(hived)
+    options = [
+        ("max-mempool-size", "1G"),
+        ("p2p-transaction-fetch-gate-threshold", "0"),
+        ("log-logger", '{"name":"p2p","level":"debug","appender":"p2p"}'),
+    ]
+    hived_options.check_known(hived, options, known)
+    with pytest.raises(hived_options.HivedOptionsError):
+        hived_options.check_known(hived, [("replay-blockchain", "1")], known)  # a command line option only
+    node = tt.InitNode()
+    node.config.log_logger = p2p_loggers.with_debug_default(node.config.log_logger)
+
+    hived_options.apply(node.config, options)
+    node.run()
+
+    hived_options.verify_config(node.config_file_path, options)
+    node.wait_number_of_blocks(1)
+    p2p_log = "".join(path.read_text() for path in (node.directory / "logs" / "p2p").glob("p2p*.log*"))
+    assert "p2p_network_connect_loop" in p2p_log  # a p2p debug line
 
 
 _T0 = 1_763_445_600  # 2025-11-18T06:00:00 UTC: when block 100 is logged; every block 3 s later
@@ -402,6 +529,15 @@ def test_a_report_names_the_colonies_with_their_own_mix_or_start(tmp_path: Path)
     header = report.format_summary(report.summarize(Run.load(run_dir))).splitlines()[0]
 
     assert header.endswith("mix=default colony1.mix=large colony1.late=15")
+
+
+def test_a_report_names_the_hived_options_of_the_run(tmp_path: Path) -> None:
+    run_dir = _make_run(tmp_path / "run")
+    _edit_meta(run_dir, hived_options=[["witness", "max-mempool-size", "1G"]])
+
+    text = report.format_summary(report.summarize(Run.load(run_dir)))
+
+    assert "\n   hived option witness: max-mempool-size = 1G\n" in text
 
 
 def test_an_empty_block_stats_line_is_skipped(tmp_path: Path) -> None:
@@ -892,6 +1028,46 @@ def test_runs_reuse_replay_templates_unless_asked_for_a_fresh_replay(
     assert specs[0].colony_start_delay == 12
 
 
+def test_a_preset_sets_the_flood_load_and_a_labelled_hived_option_only_its_builds_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    block_log = _fixture(tmp_path / "block_log")
+    hived = tmp_path / "hived"
+    hived.write_text("#!/bin/sh\n")
+    hived.chmod(0o755)
+    specs: list[RunSpec] = []
+
+    def execute_run(spec: RunSpec, *_: object) -> int:
+        specs.append(spec)
+        return 1
+
+    monkeypatch.setattr(cli, "execute_run", execute_run)
+    monkeypatch.setattr(cli, "find_tools", lambda *_: {})
+    monkeypatch.setattr(cli, "HostLock", contextlib.nullcontext)
+    common = ["--block-log", str(block_log), "--out-root", str(tmp_path / "runs"), "--image", "test-image"]
+    builds = ["--build", f"gate={hived}", "--build", f"nogate={hived}", "--reps", "1"]
+
+    cli.main([
+        *("ab", "flood", *common, *builds, "--preset", "flood-ch24", "--blocks", "20"),
+        *("--hived-option", "nogate:all=p2p-transaction-fetch-gate-threshold=0"),
+        *("--hived-option", 'relay1=log-logger={"name":"p2p","level":"debug","appender":"p2p"}'),
+    ])
+
+    assert [(s.label, s.topology, s.relays, s.colonies, s.tpb, s.blocks) for s in specs] == [
+        ("gate", "chain", 1, 24, 360000, 20),
+        ("nogate", "chain", 1, 24, 360000, 20),
+    ]
+    p2p_debug = ["relay1", "log-logger", '{"name":"p2p","level":"debug","appender":"p2p"}']
+    assert specs[0].hived_options == [p2p_debug]
+    assert specs[1].hived_options == [["all", "p2p-transaction-fetch-gate-threshold", "0"], p2p_debug]
+
+    exit_code = cli.main(["run", "r", *common, "--hived", str(hived), "--hived-option", "b:all=max-mempool-size=1G"])
+    assert exit_code == 1
+    assert "--hived-option for b: no build has that label" in capsys.readouterr().err
+    assert cli.main(["run", "r", *common, "--hived", str(hived)]) == 1
+    assert "--tpb or a --preset is required" in capsys.readouterr().err
+
+
 def _spec(**changes: Any) -> RunSpec:
     fields: dict[str, Any] = {
         "name": "r",
@@ -1158,7 +1334,7 @@ def test_a_two_host_run_reports_relay_latency_on_one_clock(tmp_path: Path) -> No
 # Stand-ins for the driver container, one per host: each writes its nodes' logs, says it is ready, waits for the
 # start signal and (the remote one) for the local part's end, then writes its out.json.
 _FAKE_DRIVER = """
-import json, os, sys, time
+import json, os, signal, sys, time
 from pathlib import Path
 out_dir, tmp_dir, part, roles = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], sys.argv[4:]
 if os.environ.get("P2P_LOAD_TEST_FAILING_PART") == part:
@@ -1170,6 +1346,15 @@ for role in roles:
 while not (out_dir / f"{part}.go").is_file():
     time.sleep(0.02)
 start = json.loads((out_dir / f"{part}.go").read_text())["t0"]
+after_go = os.environ.get(f"P2P_LOAD_TEST_{part.upper()}_AFTER_GO")
+if after_go == "fail":
+    sys.exit(3)
+if after_go in {"hang", "orphan"}:  # stuck, as a driver starting its nodes was: it misses the end of the run
+    (tmp_dir / "driver.pid").write_text(str(os.getpid()))
+    if after_go == "orphan":  # and the part that started it is gone
+        os.kill(os.getppid(), signal.SIGKILL)
+    while True:
+        time.sleep(1)
 while part == "remote" and not (out_dir / "remote.stop").is_file():
     time.sleep(0.02)
 out = {
@@ -1203,15 +1388,39 @@ def _fake_end_driver(spec: RunSpec, driver: subprocess.Popen[bytes]) -> None:
         driver.wait()
 
 
-# the remote host's `p2p-load part`, with the fake driver and its own tmpfs root
-_REMOTE_PART = """
+def _fake_driver_pids(tmp_root: Path) -> dict[str, int]:
+    """The fake drivers stuck in a run, by run name, which stand for the run's containers."""
+    return {path.parent.name: int(path.read_text()) for path in tmp_root.glob("*/driver.pid")}
+
+
+def _fake_running_containers(tmp_root: Path) -> list[str]:
+    alive = [name for name, pid in _fake_driver_pids(tmp_root).items() if _is_running(pid)]
+    return [CONTAINER_PREFIX + name for name in alive]
+
+
+def _fake_remove_container(tmp_root: Path, container: str) -> None:
+    os.kill(_fake_driver_pids(tmp_root)[container.removeprefix(CONTAINER_PREFIX)], signal.SIGKILL)
+
+
+def _is_running(pid: int) -> bool:
+    stat = Path(f"/proc/{pid}/stat")
+    # a killed orphan stays a zombie until whoever adopted it reaps it
+    return stat.is_file() and stat.read_text().rpartition(")")[2].split()[0] not in {"Z", "X"}
+
+
+# the remote host's `p2p-load` (part, clean-part), with the fake driver and its own tmpfs root
+_REMOTE_COMMAND = """
 import sys
+from functools import partial
 from pathlib import Path
 from python.functional.p2p_load import __main__ as cli, harness
-from python.functional.p2p_load.test_p2p_load_harness import _fake_end_driver, _fake_start_driver
+from python.functional.p2p_load import test_p2p_load_harness as t
 harness.TMPFS_ROOT = Path(sys.argv[1])
-harness._start_driver, harness._end_driver = _fake_start_driver, _fake_end_driver
-sys.exit(cli.main(["part"]))
+harness._start_driver, harness._end_driver = t._fake_start_driver, t._fake_end_driver
+harness.running_container_names = partial(t._fake_running_containers, harness.TMPFS_ROOT)
+harness._remove_container = partial(t._fake_remove_container, harness.TMPFS_ROOT)
+harness._STOPPED_PART_GRACE_S, harness._LEFTOVER_TMPFS_WAIT_S = 1, 0.2
+sys.exit(cli.main(sys.argv[2:]))
 """
 
 
@@ -1228,8 +1437,12 @@ class _OtherHost(remote.RemoteHost):
     def start_part(self, request: dict[str, Any], log: Path) -> remote.RemotePart:
         out_dir = self._root / "runs" / request["spec"]["name"]
         request = {**request, "spec": {**request["spec"], "out_dir": str(out_dir)}}
-        command = [sys.executable, "-c", _REMOTE_PART, str(self._root / "shm")]
+        command = [sys.executable, "-c", _REMOTE_COMMAND, str(self._root / "shm"), "part"]
         return remote.RemotePart(command, request, log)
+
+    def clean_part(self, name: str) -> list[str]:
+        command = [sys.executable, "-c", _REMOTE_COMMAND, str(self._root / "shm"), "clean-part", name]
+        return subprocess.run(command, capture_output=True, text=True, check=True).stdout.splitlines()
 
     def fetch(self, remote_dir: Path, local_dir: Path) -> None:
         shutil.copytree(self._root / "runs" / remote_dir.name, local_dir)
@@ -1296,3 +1509,59 @@ def test_a_remote_part_failing_before_the_start_fails_the_run(
     assert not (run_dir / "local.go").exists()  # neither host's nodes were started
     assert not (run_dir / "out.json").exists()
     assert "end split-1 exit=3" in (tmp_path / "runs" / "series.log").read_text()
+
+
+def test_a_local_part_failing_ends_a_hung_remote_part_and_releases_its_tmpfs(
+    tmp_path: Path,
+    two_hosts: tuple[RunSpec, _OtherHost],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    spec, other_host = two_hosts
+    monkeypatch.setenv("P2P_LOAD_TEST_REMOTE_AFTER_GO", "hang")
+    monkeypatch.setenv("P2P_LOAD_TEST_LOCAL_AFTER_GO", "fail")
+
+    exit_code = harness.execute_run(spec, tmp_path / "runs", "image", {}, remote=other_host)
+
+    assert exit_code == 3
+    assert "the local part failed (exit 3); ending the remote part" in capsys.readouterr().err
+    assert not (Path(spec.out_dir) / "remote" / "remote.stop").exists()  # it was not told to end on its own
+    assert not any((tmp_path / "shm").iterdir())
+    assert not any((tmp_path / "steem-2" / "shm").iterdir())
+    assert _fake_running_containers(tmp_path / "steem-2" / "shm") == []
+    assert "end split-1 part=remote" in (tmp_path / "steem-2" / "runs" / "series.log").read_text()
+
+
+def test_what_a_remote_part_that_died_left_behind_is_removed_and_reported(
+    tmp_path: Path,
+    two_hosts: tuple[RunSpec, _OtherHost],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    spec, other_host = two_hosts
+    monkeypatch.setenv("P2P_LOAD_TEST_REMOTE_AFTER_GO", "orphan")
+    remote_shm = tmp_path / "steem-2" / "shm"
+
+    exit_code = harness.execute_run(spec, tmp_path / "runs", "image", {}, remote=other_host)
+
+    assert exit_code == -signal.SIGKILL
+    left = f"left container {CONTAINER_PREFIX}split-1, tmpfs {remote_shm / 'split-1'}; removed"
+    assert left in capsys.readouterr().err
+    assert left in (tmp_path / "runs" / "series.log").read_text()
+    assert not any(remote_shm.iterdir())
+    assert not any((tmp_path / "shm").iterdir())
+    assert _fake_running_containers(remote_shm) == []
+
+
+def test_a_remote_driver_that_misses_the_end_is_ended_after_a_while(
+    tmp_path: Path, two_hosts: tuple[RunSpec, _OtherHost], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    spec, other_host = two_hosts
+    monkeypatch.setenv("P2P_LOAD_TEST_REMOTE_AFTER_GO", "hang")
+
+    exit_code = harness.execute_run(spec, tmp_path / "runs", "image", {}, remote=other_host)
+
+    assert exit_code != 0
+    assert (Path(spec.out_dir) / "remote" / "remote.stop").is_file()
+    assert not any((tmp_path / "steem-2" / "shm").iterdir())
+    assert _fake_running_containers(tmp_path / "steem-2" / "shm") == []

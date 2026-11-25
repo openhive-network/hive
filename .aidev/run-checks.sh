@@ -38,6 +38,10 @@
 #                     the generator tests and build the wheel, in the image's generator
 #                     environment; skipped unless the diff changes the openapi
 #                     documentation or the generator, or when an input is missing
+#   - p2p-relay       plugin_test's p2p_relay_tests (large transactions relayed across three
+#                     hived nodes in a line), disabled by default so plugin-tests leaves it
+#                     out; skipped unless the diff reaches p2p, the network code or the
+#                     transaction size limits (.aidev/p2p-relay-select.sh)
 #
 # The build's ninja runs as many jobs as the memory left to it allows, 2 GB each
 # (.aidev/build-jobs.sh); HIVE_BUILD_JOBS overrides that.
@@ -401,6 +405,12 @@ hiveio_api() (  # a subshell, as build's: it exports the generator environment
     python3 -m pip wheel --no-build-isolation --no-deps --no-index -w "$out/hiveio-api-dist" "$gen/python_api_package"
 )
 
+# The selection's output opens the log; a skip's reason stays its last line.
+p2p_relay() {
+    .aidev/p2p-relay-select.sh || return $?
+    boost_test p2p-relay plugin_test --run_test=p2p_relay_tests
+}
+
 bin() {  # NAME: the built test binary
     find "$bld/tests" -name "$1" -type f -perm -u+x -print -quit 2>/dev/null
 }
@@ -468,6 +478,7 @@ run() {  # STEP
         hived-mainnet) step hived-mainnet hived_binaries OFF ;;
         wallet-patterns) step wallet-patterns wallet_patterns ;;
         hiveio-api) step hiveio-api hiveio_api ;;
+        p2p-relay) step p2p-relay p2p_relay ;;
     esac
 }
 
@@ -521,7 +532,7 @@ for group in "$@"; do
     IFS=, read -ra group_steps <<< "$group"
     for s in "${group_steps[@]}"; do
         case "$s" in
-            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet|wallet-patterns|hiveio-api) ;;
+            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet|wallet-patterns|hiveio-api|p2p-relay) ;;
             *) echo "unknown step: $s" >&2; exit 2 ;;
         esac
     done
