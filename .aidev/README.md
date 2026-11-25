@@ -36,12 +36,13 @@ every step still running and the test processes under it.
 | `hived-testnet`, `hived-mainnet` | `hived`, `cli_wallet` and `shared_memory_file_util` with CI's arguments, into `<report dir>/bin` (what `integration` builds an image from) |
 | `wallet-patterns` | the cli_wallet Python pattern tests (CI's `python_pattern_testnet_tests`) against the testnet `hived`, `cli_wallet` and `get_dev_key` it builds as `hived-testnet` does (below) |
 | `hiveio-api` | when the diff changes the openapi documentation or the generator: generate the hiveio_api package, run the generator tests and build the wheel (CI's `hiveio_api_package`, offline; below) |
+| `p2p-relay` | when the diff reaches p2p, the network code or the transaction size limits: `plugin_test --run_test=p2p_relay_tests`, large transactions relayed across three hived nodes (below) |
 
 | Slot | Steps |
 |---|---|
 | quick | build, chain-smoke, plugin-api |
-| full | suite `default`: build, then chain-tests, plugin-tests and hiveio-api at the same time; suite `integration`: integration (off; below); suite `wallet_patterns`: wallet-patterns, when the diff reaches the wallet (below) |
-| baseline | build, then chain-tests, plugin-tests and hiveio-api at the same time |
+| full | suite `default`: build, then chain-tests, plugin-tests, hiveio-api and p2p-relay at the same time; suite `integration`: integration (off; below); suite `wallet_patterns`: wallet-patterns, when the diff reaches the wallet (below) |
+| baseline | build, then chain-tests, plugin-tests, hiveio-api and p2p-relay at the same time |
 | canary | build, chain-smoke, plugin-api |
 
 Each suite of `full` and `baseline` declares `memory:`, what AIDEV reserves on the
@@ -67,7 +68,8 @@ and this figure stays its price.
 when run without the suites before it (it passes in the full `!witness_tests` order, as in CI).
 `witness_tests` and `p2p_protocol_tests` cases are: each gets its own data directory
 (`HIVE_TEMPDIR`) and its p2p node listens on no fixed port. `p2p_protocol_tests` is disabled
-by default, so `!witness_tests` (and `plugin-api`) leaves it out.
+by default, so `!witness_tests` (and `plugin-api`) leaves it out; so is `p2p_relay_tests`, which
+only `p2p-relay` runs.
 
 ## Wallet pattern tests
 
@@ -151,6 +153,32 @@ and plugin-tests, sharing their test processes:
 
 To run it by hand, in the checks' image as in "The compiler cache" below, after a
 `build`: `.aidev/run-checks.sh full hiveio-api`.
+
+## The large-transaction relay test
+
+`plugin_test`'s `p2p_relay_tests/large_transactions_relayed_across_three_nodes` runs three
+hived nodes in one process, in a line A - B - C on loopback (peer advertising off, so C
+reaches A only through B), on a chain whose only witness, producing on C, votes blocks of
+`HIVE_MAX_BLOCK_SIZE`. It submits to A three transfers needing 4720 signatures each (the
+authority of `rc_tests`' `rc_multisig_recover_account`, over 300 kB a transaction, signed
+once) and a comment over the 1 MiB send queue limit, and checks that B and C each applied
+every one of them as a transaction from its peer (C before any block held it), that A
+received them back in blocks, and that no node logged a send queue overflow or lost a peer. It is
+what would have caught the oversized-reply disconnect of #1225 between real nodes.
+
+- **Change-scoped.** `full`'s `default` suite (and `baseline`) runs it in its `p2p-relay`
+  step, beside chain-tests and plugin-tests, from the build those already use, when
+  `.aidev/p2p-relay-select.sh` selects it: the diff (the same base as `hiveio-api`)
+  changes `libraries/net/`, `libraries/plugins/p2p/` or the test, or changes a size
+  limit (`HIVE_MAX_BLOCK_SIZE`, `HIVE_MAX_TRANSACTION_SIZE`, `HIVE_MIN_BLOCK_SIZE_LIMIT`
+  in `config.hpp`, the transaction size check in `database.cpp`). Otherwise the step is
+  skipped as `not_selected` in under a second. `.aidev/tests/p2p_relay_select_test.sh`
+  tests the selection in a scratch repository.
+- **Disabled by default** in `plugin_test`, so `plugin-tests`, `plugin-api` and CI's
+  plugin test jobs leave it out.
+
+To run it by hand, in the checks' image as in "The compiler cache" below, after a
+`build`: `.aidev/run-checks.sh full p2p-relay`.
 
 ## Integration scripts
 
