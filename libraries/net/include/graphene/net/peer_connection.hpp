@@ -143,8 +143,10 @@ namespace graphene { namespace net
         bool is_block_traffic = false;
         /// a request for blocks, whose write is recorded in items_requested_from_peer (see requested_items::record_block_requests_written())
         bool is_block_request = false;
-        /// larger than GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, so it was queued only because nothing else was
-        bool exceeds_queue_limit = false;
+        /// the queue's one message outside GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, which the rest of the queue is
+        /// held to without it: one larger than the limit, or a transaction reply larger than its budget, whose queuer
+        /// sets it to ask for that place (see send_queueable_message())
+        bool outside_queue_limit = false;
 
         queued_message(fc::time_point enqueue_time = fc::time_point::now()) :
           enqueue_time(enqueue_time)
@@ -232,15 +234,15 @@ namespace graphene { namespace net
 
 
       size_t _total_queued_messages_size = 0;
-      /// the part of _total_queued_messages_size taken by the one message, if any, queued past the queue's limit
-      /// because the queue was empty (queued_message::exceeds_queue_limit); the rest of the queue stays within the limit
-      size_t _queued_oversized_message_size = 0;
+      /// the part of _total_queued_messages_size taken by the one message, if any, queued or being written outside the
+      /// queue's limit (queued_message::outside_queue_limit); the rest of the queue stays within the limit
+      size_t _queued_outside_limit_size = 0;
       std::deque<std::unique_ptr<queued_message>> _queued_messages;
       /// queued messages that must not wait for a batch to grow (blocks, sync and control messages)
       size_t _queued_messages_not_waiting_for_batch = 0;
       /// the number of queued messages up to and including the last queued block traffic, where block traffic is queued next
       size_t _queued_block_traffic_end = 0;
-      bool _send_queue_limit_exceeded = false; // set once the queue, besides its one oversized message, would have grown over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES
+      bool _send_queue_limit_exceeded = false; // set once the queue, besides its one message outside the limit, would have grown over GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES
       /// transaction ids to advertise that started waiting together, for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES
       struct deferred_transaction_inventory
       {
@@ -255,7 +257,9 @@ namespace graphene { namespace net
       /// waiting transaction ids dropped as stale (see drop_stale_transaction_inventory()) since they were last logged
       size_t _stale_transaction_inventory_ids_since_report = 0;
       fc::time_point _last_dropped_transaction_inventory_report_time;
-      /// requested transactions waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES, or to empty, oldest first
+      /// requested transactions waiting for the queue to drain below GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES, or,
+      /// for one larger than that, for the queue's place outside its limit to be free; oldest first.  Transaction
+      /// inventory isn't queued while any wait
       std::deque<std::shared_ptr<full_transaction_type>> _deferred_transaction_replies;
       size_t _deferred_transaction_reply_bytes = 0;
       /// set while the send task writes a batch it took off the queue

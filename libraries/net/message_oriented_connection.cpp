@@ -33,6 +33,7 @@
 #include <graphene/net/config.hpp>
 #include <graphene/net/core_messages.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <cstring>
 #include <memory>
@@ -370,21 +371,41 @@ namespace graphene { namespace net {
              elog("Trying to send a message larger than MAX_MESSAGE_SIZE. This probably won't work...");
           total_size_with_padding += 16 * ((sizeof(message_header) + messages_to_send[i].header.size + 15) / 16);
         }
-        std::unique_ptr<char[]> padded_messages(new char[total_size_with_padding]);
-
-        char* next_message = padded_messages.get();
+        // the batch is staged through a buffer of at most one connection buffer, the most stcp_socket encrypts and
+        // writes at a time anyway, rather than copied whole: a message as large as MAX_MESSAGE_SIZE being written to a
+        // peer that reads slowly holds no private copy of itself.  Every write but the last takes a full staging
+        // buffer, and the batch is whole AES blocks, so each write is too
+        static_assert(GRAPHENE_NET_CONNECTION_BUFFER_SIZE % 16 == 0, "stcp_socket writes whole AES blocks");
+        const size_t staging_size = std::min<size_t>(total_size_with_padding, GRAPHENE_NET_CONNECTION_BUFFER_SIZE);
+        std::unique_ptr<char[]> staging(new char[staging_size]);
+        size_t staged = 0;
+        const auto stage = [&](const char* bytes, size_t byte_count) {
+          while (byte_count > 0)
+          {
+            const size_t taken = std::min(byte_count, staging_size - staged);
+            memcpy(staging.get() + staged, bytes, taken);
+            staged += taken;
+            bytes += taken;
+            byte_count -= taken;
+            if (staged == staging_size)
+            {
+              _sock.write(staging.get(), staged);
+              staged = 0;
+            }
+          }
+        };
+        static const char padding[16] = {};
         for (size_t i = 0; i < message_count; ++i)
         {
           const message_to_write& message_to_send = messages_to_send[i];
           size_t size_of_message_and_header = sizeof(message_header) + message_to_send.header.size;
           size_t size_with_padding = 16 * ((size_of_message_and_header + 15) / 16);
-          memcpy(next_message, (char*)&message_to_send.header, sizeof(message_header));
-          memcpy(next_message + sizeof(message_header), message_to_send.payload, message_to_send.header.size );
-          memset(next_message + size_of_message_and_header, 0, size_with_padding - size_of_message_and_header);
-          next_message += size_with_padding;
+          stage((const char*)&message_to_send.header, sizeof(message_header));
+          stage(message_to_send.payload, message_to_send.header.size);
+          stage(padding, size_with_padding - size_of_message_and_header);
         }
-
-        _sock.write(padded_messages.get(), total_size_with_padding);
+        if (staged > 0)
+          _sock.write(staging.get(), staged);
         _sock.flush();
         _bytes_sent += total_size_with_padding;
         _last_message_sent_time = fc::time_point::now();

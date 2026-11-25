@@ -19,7 +19,11 @@
 #include <fc/thread/thread.hpp>
 
 #include <algorithm>
+#include <functional>
 #include <map>
+#if defined( __GLIBC__ )
+#include <malloc.h>
+#endif
 #include <memory>
 #include <set>
 #include <string>
@@ -157,6 +161,34 @@ private:
   {
     while( blocked )
       fc::usleep( fc::milliseconds( 1 ) );
+  }
+};
+
+/// Writes as fc does, first calling `before_write` (when set), as when traffic for the peer arrives during every write.
+class traffic_during_writes_hooks : public fc::tcp_socket_io_hooks
+{
+public:
+  std::function<void()> before_write;
+
+  size_t readsome( boost::asio::ip::tcp::socket& socket, char* buffer, size_t length ) override
+  {
+    return fc::asio::read_some( socket, buffer, length ).wait();
+  }
+  size_t readsome( boost::asio::ip::tcp::socket& socket, const std::shared_ptr<char>& buffer, size_t length, size_t offset ) override
+  {
+    return fc::asio::read_some( socket, buffer, length, offset ).wait();
+  }
+  size_t writesome( boost::asio::ip::tcp::socket& socket, const char* buffer, size_t length ) override
+  {
+    if( before_write )
+      before_write();
+    return fc::asio::write_some( socket, buffer, length ).wait();
+  }
+  size_t writesome( boost::asio::ip::tcp::socket& socket, const std::shared_ptr<const char>& buffer, size_t length, size_t offset ) override
+  {
+    if( before_write )
+      before_write();
+    return fc::asio::write_some( socket, buffer, length, offset ).wait();
   }
 };
 
@@ -1071,14 +1103,14 @@ BOOST_AUTO_TEST_CASE( message_over_the_queue_limit_is_accepted_into_an_empty_que
   }
 }
 
-/// The limit still closes the connection when the queue holds something: a message over the limit queued behind
-/// another, or messages behind an oversized one that take the rest of the queue over the limit.
+/// The limit still closes the connection when the queue holds something: a second message over the limit while the
+/// first is queued, or messages behind an oversized one that take the rest of the queue over the limit.
 BOOST_AUTO_TEST_CASE( queue_holding_messages_still_closes_past_the_limit )
 {
   const message oversized = make_message( 5000, GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES * 3 / 2, 'o' );
   for( bool behind_oversized : { false, true } )
   {
-    BOOST_TEST_CONTEXT( ( behind_oversized ? "behind an oversized message" : "oversized behind another" ) )
+    BOOST_TEST_CONTEXT( ( behind_oversized ? "behind an oversized message" : "a second oversized message" ) )
     {
       connected_pair pair;
       blocking_write_hooks blocking;
@@ -1094,6 +1126,7 @@ BOOST_AUTO_TEST_CASE( queue_holding_messages_still_closes_past_the_limit )
       {
         pair.sender->send_message( make_message( 5001, 16, 'a' ) );
         pair.sender->send_message( oversized );
+        pair.sender->send_message( oversized );
       }
       blocking.blocked = false;
       const fc::time_point deadline = fc::time_point::now() + fc::seconds( 30 );
@@ -1104,9 +1137,10 @@ BOOST_AUTO_TEST_CASE( queue_holding_messages_still_closes_past_the_limit )
   }
 }
 
-/// A requested transaction larger than the send queue's limit waits for the queue to empty and then goes out alone:
-/// the replies around it, and a block queued while it is written, all arrive, with the replies in the order asked.
-BOOST_AUTO_TEST_CASE( transaction_reply_over_the_queue_limit_is_sent_alone )
+/// A requested transaction larger than the send queue's limit is queued beside the other replies, outside the limit,
+/// and the replies behind it fit the reply budget without it; a second one waits only for the first to be written.
+/// The replies around them, and a block queued while they are written, all arrive, with the replies in the order asked.
+BOOST_AUTO_TEST_CASE( transaction_reply_over_the_queue_limit_is_queued_beside_other_replies )
 {
   connected_pair pair;
   blocking_write_hooks blocking;
@@ -1121,14 +1155,14 @@ BOOST_AUTO_TEST_CASE( transaction_reply_over_the_queue_limit_is_sent_alone )
   BOOST_REQUIRE( pair.sender->send_transaction_reply( small ) );
   BOOST_REQUIRE( pair.sender->send_transaction_reply( large ) );
   BOOST_REQUIRE( pair.sender->send_transaction_reply( small ) );
-  // the send task is writing the first reply: the large one waits outside the queue
+  // the send task is writing the first reply, and the first large one and the small one behind it are queued: only
+  // the second large one, and the reply asked for after it, wait outside the queue
   fc::usleep( fc::milliseconds( 50 ) );
   BOOST_CHECK_EQUAL( pair.sender->get_deferred_transaction_reply_bytes(),
-                     2 * large->get_transaction_size() + 2 * small->get_transaction_size() );
+                     large->get_transaction_size() + small->get_transaction_size() );
   blocking.blocked = false;
   const fc::time_point large_written_deadline = fc::time_point::now() + fc::seconds( 30 );
-  while( pair.sender->get_deferred_transaction_reply_bytes() > large->get_transaction_size() + 2 * small->get_transaction_size() &&
-         fc::time_point::now() < large_written_deadline )
+  while( pair.sender->get_deferred_transaction_reply_bytes() > 0 && fc::time_point::now() < large_written_deadline )
     fc::usleep( fc::milliseconds( 1 ) );
   pair.send_block( make_small_block() );
   pair.wait_for_messages( 6 );
@@ -1147,5 +1181,109 @@ BOOST_AUTO_TEST_CASE( transaction_reply_over_the_queue_limit_is_sent_alone )
   for( size_t i = 0; i < replies.size(); ++i )
     BOOST_CHECK_MESSAGE( same_message( replies[i], i % 2 == 0 ? small_reply : large_reply ), "reply " << i << " differs" );
 }
+
+/// Under continuous small traffic the send queue is never empty when a write ends: here a control message and a
+/// transaction inventory are queued during every socket write.  Requested transactions larger than the queue's limit
+/// and larger than the reply budget still go out at once, well within the time the requester waits for them, and so
+/// do the small replies asked for behind them, in order; the connection stays open, and the small traffic flows on.
+BOOST_AUTO_TEST_CASE( large_transaction_replies_are_not_starved_by_continuous_small_traffic )
+{
+  connected_pair pair;
+  traffic_during_writes_hooks traffic;
+  size_t traffic_queued = 0;
+  traffic.before_write = [&]() {
+    pair.sender->send_message( make_message( 5000, 16, 'f' ) );
+    pair.sender->send_transaction_inventory( transaction_ids( "traffic " + std::to_string( traffic_queued ), 10 ) );
+    ++traffic_queued;
+  };
+  pair.sender->get_socket().set_io_hooks( &traffic );
+  pair.sender->send_message( make_message( 5000, 16, 'f' ) );
+  wait_for_advertised( pair, 50 );
+  BOOST_REQUIRE( !pair.receiver_delegate.closed );
+
+  const std::shared_ptr<hive::chain::full_transaction_type> small = make_full_transaction( 8000 );
+  const std::shared_ptr<hive::chain::full_transaction_type> over_limit = make_full_transaction( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES * 3 / 2 );
+  const std::shared_ptr<hive::chain::full_transaction_type> over_budget = make_full_transaction( GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES * 3 / 2 );
+  BOOST_REQUIRE_GT( over_limit->get_transaction_size(), size_t( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES ) );
+  BOOST_REQUIRE_GT( over_budget->get_transaction_size(), size_t( GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES ) );
+  BOOST_REQUIRE_LE( over_budget->get_transaction_size(), size_t( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES ) );
+  const std::vector<std::shared_ptr<hive::chain::full_transaction_type>> asked = { small, over_limit, small, over_budget, small };
+  const size_t traffic_before = traffic_queued;
+  const fc::time_point asked_at = fc::time_point::now();
+  for( const std::shared_ptr<hive::chain::full_transaction_type>& transaction : asked )
+    BOOST_REQUIRE( pair.sender->send_transaction_reply( transaction ) );
+
+  const auto replies_received = [&]() {
+    std::vector<message> replies;
+    for( const message& received : pair.receiver_delegate.received )
+      if( received.msg_type == graphene::net::trx_message_type )
+        replies.push_back( received );
+    return replies;
+  };
+  const fc::time_point deadline = asked_at + fc::seconds( 30 );
+  while( replies_received().size() < asked.size() && !pair.receiver_delegate.closed && fc::time_point::now() < deadline )
+    fc::usleep( fc::milliseconds( 1 ) );
+  const fc::microseconds took = fc::time_point::now() - asked_at;
+  const size_t traffic_meanwhile = traffic_queued - traffic_before;
+  // the traffic queued meanwhile still goes out once it stops
+  traffic.before_write = nullptr;
+  wait_for_advertised( pair, traffic_queued * 10 );
+
+  BOOST_CHECK( !pair.sender_delegate.closed );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
+  const std::vector<message> replies = replies_received();
+  BOOST_REQUIRE_EQUAL( replies.size(), asked.size() );
+  for( size_t i = 0; i < replies.size(); ++i )
+    BOOST_CHECK_MESSAGE( same_message( replies[i], message( graphene::net::trx_message( asked[i] ) ) ), "reply " << i << " differs" );
+  // every write of them had traffic queued behind it: at least one per 64 KiB written
+  BOOST_CHECK_GE( traffic_meanwhile, ( over_limit->get_transaction_size() + over_budget->get_transaction_size() ) / GRAPHENE_NET_CONNECTION_BUFFER_SIZE );
+  // a requester gives up on a reply after GRAPHENE_NET_ACTIVE_IGNORED_REQUEST_TIMEOUT_SECONDS
+  BOOST_CHECK_LT( took.count(), fc::seconds( GRAPHENE_NET_ACTIVE_IGNORED_REQUEST_TIMEOUT_SECONDS ).count() / 3 );
+}
+
+#if defined( __GLIBC__ )
+/// A message as large as a transaction may be, being written to a peer that takes no bytes, holds no private copy of
+/// itself: the connection allocates a staging buffer of at most GRAPHENE_NET_CONNECTION_BUFFER_SIZE beyond the
+/// transaction, which is written from its shared serialization.  A private copy of the batch would add the whole
+/// message, 1.5 MiB here.
+BOOST_AUTO_TEST_CASE( writing_a_large_message_holds_no_copy_of_it )
+{
+  connected_pair pair;
+  blocking_write_hooks blocking;
+  blocking.blocked = false;
+  pair.sender->get_socket().set_io_hooks( &blocking );
+  // a first write sets up what every write reuses (the socket's write buffer, the send task's stack)
+  pair.sender->send_message( make_message( 5000, 16, 'w' ) );
+  pair.wait_for_messages( 1 );
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 1u );
+  fc::usleep( fc::milliseconds( 50 ) );
+  blocking.blocked = true;
+  const std::shared_ptr<hive::chain::full_transaction_type> large = make_full_transaction( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES * 3 / 2 );
+  const size_t large_size = large->get_transaction_size();
+  BOOST_REQUIRE_GT( large_size, size_t( GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES ) );
+
+  // what malloc has handed out over all arenas: in use from the heap plus mmapped
+  const auto allocated = []() -> int64_t {
+#if __GLIBC_PREREQ( 2, 33 )
+    const struct mallinfo2 info = mallinfo2();
+#else
+    const struct mallinfo info = mallinfo();
+#endif
+    return int64_t( info.uordblks ) + int64_t( info.hblkhd );
+  };
+  const int64_t before = allocated();
+  BOOST_REQUIRE( pair.sender->send_transaction_reply( large ) );
+  fc::usleep( fc::milliseconds( 100 ) ); // the send task takes it off the queue and blocks writing it
+  const int64_t allocated_while_written = allocated() - before;
+  BOOST_TEST_MESSAGE( "allocated while a " << large_size << "-byte transaction is written: " << allocated_while_written << " bytes" );
+  BOOST_CHECK_LT( allocated_while_written, int64_t( 2 * GRAPHENE_NET_CONNECTION_BUFFER_SIZE ) );
+
+  blocking.blocked = false;
+  pair.wait_for_messages( 2 );
+  BOOST_CHECK( !pair.receiver_delegate.closed );
+  BOOST_REQUIRE_EQUAL( pair.receiver_delegate.received.size(), 2u );
+  BOOST_CHECK( same_message( pair.receiver_delegate.received[1], message( graphene::net::trx_message( large ) ) ) );
+}
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()
