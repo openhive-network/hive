@@ -1699,7 +1699,8 @@ BOOST_AUTO_TEST_CASE( current_connections_test )
 }
 
 /// C8: asked to check whether another node is reachable, the node dials the endpoint: connection_successful
-/// when a node with the given id answers there, unable_to_connect when nothing listens
+/// when a node with the given id answers there, unable_to_connect when nothing listens. The checked node does not
+/// become a peer to dial: the node closes the test connection without answering its hello, and keeps no record of it
 BOOST_AUTO_TEST_CASE( check_firewall_test )
 {
   start_node();
@@ -1716,6 +1717,11 @@ BOOST_AUTO_TEST_CASE( check_firewall_test )
     check_firewall_reply_message reply = request< check_firewall_reply_message >( *asking, check );
     BOOST_CHECK( reply.endpoint_checked == listening );
     BOOST_CHECK_EQUAL( static_cast< int >( reply.result.value ), static_cast< int >( firewall_check_result::connection_successful ) );
+    BOOST_REQUIRE( reachable->wait_closed( reply_timeout ) );
+    BOOST_CHECK( !reachable->accepted() );
+    const std::vector< potential_peer_record > known = p2p().get_potential_peers();
+    BOOST_CHECK( std::none_of( known.begin(), known.end(),
+                               [&]( const potential_peer_record& record ) { return record.endpoint == listening; } ) );
 
     fc::ip::endpoint unused;
     {

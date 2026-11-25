@@ -2975,6 +2975,17 @@ namespace graphene { namespace net {
 
       activity_tracer aTracer(__FUNCTION__, *this);
 
+      if (originating_peer->performing_firewall_check() &&
+          originating_peer->our_state == peer_connection::our_connection_state::just_connected)
+      {
+        // a connection we made only to test whether a node accepts connections (on_check_firewall_message()): we send
+        // no hello on it, and the test is over once it connected.  The node is no peer of ours; acting on its hello
+        // would put its endpoint in our database for the connect loop to dial
+        dlog("ignoring ${type} from ${endpoint}: we connected to it only for a firewall check",
+             ("type", graphene::net::core_message_type_enum(received_message.msg_type))
+             ("endpoint", originating_peer->get_remote_endpoint()));
+        return;
+      }
       if (originating_peer->their_state != peer_connection::their_connection_state::connection_accepted &&
           !is_handshake_message(received_message.msg_type))
       {
@@ -7491,12 +7502,17 @@ namespace graphene { namespace net {
         // we connected to the peer.  guess they're not firewalled....
         new_peer->is_firewalled = firewalled_state::not_firewalled;
 
-        // connection succeeded, we've started handshaking.  record that in our database
-        potential_peer_record updated_peer_record = _potential_peer_db.lookup_or_create_entry_for_endpoint(remote_endpoint);
-        updated_peer_record.last_connection_disposition = last_connection_handshaking_failed;
-        updated_peer_record.number_of_successful_connection_attempts++;
-        updated_peer_record.last_seen_time = fc::time_point::now();
-        _potential_peer_db.update_entry(updated_peer_record);
+        // connection succeeded, we've started handshaking.  record that in our database, unless this is a firewall
+        // check: as when one fails (below), the node tested is no peer we tried to take, and recorded (never dialed
+        // before, so due at once) it would be dialed next
+        if (!new_peer->performing_firewall_check())
+        {
+          potential_peer_record updated_peer_record = _potential_peer_db.lookup_or_create_entry_for_endpoint(remote_endpoint);
+          updated_peer_record.last_connection_disposition = last_connection_handshaking_failed;
+          updated_peer_record.number_of_successful_connection_attempts++;
+          updated_peer_record.last_seen_time = fc::time_point::now();
+          _potential_peer_db.update_entry(updated_peer_record);
+        }
       }
       catch (const fc::exception& except)
       {
