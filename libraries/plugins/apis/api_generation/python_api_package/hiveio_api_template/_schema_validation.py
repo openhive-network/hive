@@ -15,6 +15,9 @@ Validation models of an API are found:
 A validation module exposes `ENDPOINT_RESULTS: dict[str, tuple[type | None, bool]]` (method name -> result model,
 whether the result is an array).
 
+A validation mask of an endpoint (`set_validation_mask` of endpoints) limits the validation of its responses to the
+fields given by the mask - the generated model reduced to them, compiled when the mask is set (`HiveAsyncApi`).
+
 Hive types of validation models have a fixed JSON form (e.g. legacy assets of condenser_api are `LegacyAssetHive`),
 so the serialization of an API does not have to be known.
 """
@@ -25,18 +28,20 @@ import importlib
 import importlib.util
 import json
 import types
+from collections.abc import Mapping
 from threading import Lock
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, cast
 
 from hiveio_api._errors import UnknownEndpointError
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
+    from collections.abc import Callable
     from types import ModuleType
 
     from hiveio_api.validation import SchemaError
 
 __all__ = [
+    "compile_validation_mask",
     "register_validation_models",
     "validate_json",
     "validate_schema",
@@ -96,7 +101,9 @@ def validate_json(
         model: Type to validate against instead of the generated validation model (e.g. `list[MyAccount]`).
 
     Returns:
-        All found problems, empty list when the response matches the model.
+        All found problems, empty list when the response matches the model. Without `model` only the fields of the
+        validation mask of the endpoint are validated, if it has one - of the method given, of the request being sent
+        for `"api_name.method"` (validation of responses by callbacks of requests).
 
     Raises:
         hiveio_api.UnknownEndpointError: When `model` is not given and there is no validation model for the endpoint.
@@ -104,6 +111,27 @@ def validate_json(
     from hiveio_api.validation import validate
 
     return validate(data, _target_model(endpoint, model))
+
+
+def compile_validation_mask(api_class: type[object], endpoint_name: str, mask: Mapping[str, object]) -> object:
+    """
+    The validation model of the endpoint reduced to the fields given by the validation mask (`set_validation_mask`).
+
+    Called when the mask is set - a wrong mask raises at once, requests use the built model.
+
+    Args:
+        api_class: Class of the API (with `__validation_module__`).
+        endpoint_name: Name of the endpoint (the method), e.g. `get_block`.
+        mask: The validation mask - a key per field of the result model, `True` or the mask of the model of the field.
+
+    Raises:
+        hiveio_api.UnknownEndpointError: When there is no validation model for the endpoint.
+        ValueError: When the mask names a field the model does not have, or selects no fields.
+        TypeError: When a value of the mask is not `True` / a dict, or a dict is given for a field without a model.
+    """
+    from hiveio_api.validation._masks import masked_model  # msgspec - only when masks are set
+
+    return masked_model(_generated_model(_validation_module_of(api_class), endpoint_name), mask)
 
 
 def _response_to_builtins(response: object) -> object:
@@ -118,8 +146,36 @@ def _response_to_builtins(response: object) -> object:
 def _target_model(endpoint: str | Callable[..., object], model: object | None) -> object:
     if model is not None:
         return model
+    compiled = _compiled_validation_mask(endpoint)
+    if compiled is not None and not isinstance(compiled, Mapping):  # compiled by `HiveAsyncApi` - a reduced model
+        return compiled
     module_path, method = _resolve_endpoint(endpoint)
-    return _generated_model(module_path, method)
+    generated = _generated_model(module_path, method)
+    if compiled is None:
+        return generated
+
+    from hiveio_api.validation._masks import masked_model  # msgspec - only when validating
+
+    return masked_model(generated, cast("Mapping[str, object]", compiled))  # an API which does not compile masks
+
+
+def _compiled_validation_mask(endpoint: str | Callable[..., object]) -> object | None:
+    """
+    Compiled validation mask of the endpoint (`set_validation_mask` of endpoints) - of the endpoint given as a method,
+    of the request being sent for the endpoint given as `"api_name.method"` (validation of responses by callbacks).
+    """
+    if isinstance(endpoint, str):
+        from hiveio_api_client import compiled_validation_mask_of
+
+        return compiled_validation_mask_of(endpoint)
+    return getattr(endpoint, "compiled_validation_mask", None)
+
+
+def _validation_module_of(api_class: type[object]) -> str:
+    module_path = getattr(api_class, "__validation_module__", None)
+    if not isinstance(module_path, str):
+        raise UnknownEndpointError(f"API class `{api_class.__qualname__}` does not define `__validation_module__`.")
+    return module_path
 
 
 def _resolve_endpoint(endpoint: str | Callable[..., object]) -> tuple[str, str]:
@@ -133,11 +189,7 @@ def _resolve_endpoint(endpoint: str | Callable[..., object]) -> tuple[str, str]:
                 raise UnknownEndpointError(f"No validation models registered for API `{api_name}` (endpoint `{endpoint}`).")
         return module_path, method
 
-    owner = _owner_class(endpoint)
-    module_path = getattr(owner, "__validation_module__", None)
-    if not isinstance(module_path, str):
-        raise UnknownEndpointError(f"API class `{owner.__qualname__}` does not define `__validation_module__`.")
-    return module_path, endpoint.__name__
+    return _validation_module_of(_owner_class(endpoint)), endpoint.__name__
 
 
 def _owner_class(endpoint: Callable[..., object]) -> type[object]:
