@@ -50,6 +50,11 @@ issues:
     auto_todo: never
   # Reports about this project's work are filed against this project.
   watcher_reports: self
+  # Issues live in both GitLab and aidev's internal tracker; a new one still
+  # goes to GitLab unless `--tracker internal` is chosen.
+  tracker:
+    mode: both
+    default: gitlab
 
 # Every check compiles the candidate (hived is C++; nothing runs without a
 # build), so each slot starts with `build`, which shares CI's sccache Redis
