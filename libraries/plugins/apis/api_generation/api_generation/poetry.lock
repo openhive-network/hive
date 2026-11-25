@@ -152,13 +152,13 @@ files = [
 
 [[package]]
 name = "hiveio-api-client"
-version = "1.7.1.post20261105045512"
+version = "1.7.1.dev20261125144617+unstable"
 description = "Runtime of generated Hive API clients - base classes of APIs and an HTTP transport"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_api_client-1.7.1.post20261105045512-py3-none-any.whl", hash = "sha256:3b6e6cef38dc88287c22db80c253cafa0bbf0ef3b19ae4c237b2d35290d06414"},
+    {file = "hiveio_api_client-1.7.1.dev20261125144617+unstable-py3-none-any.whl", hash = "sha256:3d5a53666618f4c6a6e834f80181ab8b651a369c2233b345a7acd6d928643625"},
 ]
 
 [package.dependencies]
@@ -171,13 +171,13 @@ reference = "gitlab-hive"
 
 [[package]]
 name = "hiveio-api-client-generator"
-version = "1.7.1.post20261105045512"
+version = "1.7.1.dev20261125144617+unstable"
 description = ""
 optional = false
 python-versions = ">=3.14,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_api_client_generator-1.7.1.post20261105045512-py3-none-any.whl", hash = "sha256:862271f1fcc2db4fbc8ee98e8af2284c804710147a5dce37f67b692b8de1477e"},
+    {file = "hiveio_api_client_generator-1.7.1.dev20261125144617+unstable-py3-none-any.whl", hash = "sha256:84abefd4d04c01834d32addd7a8e49db189c95b803e9c35b51651731b0c20576"},
 ]
 
 [package.dependencies]
@@ -809,4 +809,4 @@ typing-extensions = ">=4.12.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4"
-content-hash = "c0c429606dc30bd530a27db1771f54f43ec7b49fa065c646e6dd2a3bbbb6d6b4"
+content-hash = "37b5514766196e04072bb187188c45d85b1583be7bed08cbff2a8c44bb3c245e"

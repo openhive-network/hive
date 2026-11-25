@@ -2,13 +2,13 @@
 
 [[package]]
 name = "hiveio-api-client"
-version = "1.7.1.post20261105045512"
+version = "1.7.1.dev20261125144617+unstable"
 description = "Runtime of generated Hive API clients - base classes of APIs and an HTTP transport"
 optional = false
 python-versions = ">=3.12,<4"
 groups = ["main"]
 files = [
-    {file = "hiveio_api_client-1.7.1.post20261105045512-py3-none-any.whl", hash = "sha256:3b6e6cef38dc88287c22db80c253cafa0bbf0ef3b19ae4c237b2d35290d06414"},
+    {file = "hiveio_api_client-1.7.1.dev20261125144617+unstable-py3-none-any.whl", hash = "sha256:3d5a53666618f4c6a6e834f80181ab8b651a369c2233b345a7acd6d928643625"},
 ]
 
 [package.dependencies]
@@ -93,4 +93,4 @@ yaml = ["pyyaml"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4"
-content-hash = "521eef34e852da1524ee3e95f9dc63b70d5dbb099b2033f6e49e3f54fd1273a5"
+content-hash = "daf51cfb4af5406ec0a24016cb9c83880b61790758ef272cf47747f7c9b288a1"
