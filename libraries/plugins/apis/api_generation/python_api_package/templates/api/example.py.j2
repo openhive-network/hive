@@ -10,6 +10,8 @@ Run this example with:
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 from wax import create_hive_chain
 
 from hiveio_api.{{ api_name_snake_case }} import {{ api_name_pascal_case }}
@@ -18,8 +20,10 @@ from hiveio_api.{{ api_name_snake_case }} import {{ api_name_pascal_case }}
 class MyApiCollection:
     """Custom API collection that includes {{ api_name_pascal_case }}."""
 
-    def __init__(self) -> None:
-        self.{{ api_name_snake_case }} = {{ api_name_pascal_case }}
+    {{ api_name_snake_case }}: {{ api_name_pascal_case }}
+    """The API - its instance is created by wax from the class in `_API_MAP`."""
+
+    _API_MAP: ClassVar[dict[str, type]] = {"{{ api_name_snake_case }}": {{ api_name_pascal_case }}}
 
 
 def main() -> None:
