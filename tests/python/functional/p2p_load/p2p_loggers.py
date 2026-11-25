@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import mmap
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -44,6 +44,11 @@ def with_loggers(log_logger: str | None, loggers: list[str]) -> str:
     return " ".join([*([log_logger] if log_logger else []), *entries])
 
 
+def logger_entries(log_logger: str | None) -> list[dict[str, Any]]:
+    """Return the logger objects of a `log-logger` value, in order."""
+    return [json.loads(entry) for entry in _LOGGER_ENTRY.findall(log_logger or "")]
+
+
 def with_debug_default(log_logger: str | None) -> str:
     """
     Return the `log-logger` value with the default logger at debug, writing to stderr unless it already names an
@@ -52,7 +57,7 @@ def with_debug_default(log_logger: str | None) -> str:
     hived logs each fast-confirm (witness_block_approve) it accepts only at debug, on the default logger; the other
     debug lines of that logger come at most once per block or on rare errors.
     """
-    entries = [json.loads(entry) for entry in _LOGGER_ENTRY.findall(log_logger or "")]
+    entries = logger_entries(log_logger)
     default = next((entry for entry in entries if entry.get("name") == "default"), None)
     if default is None:
         entries.insert(0, {"name": "default", "appender": "stderr"})

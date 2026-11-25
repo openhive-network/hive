@@ -71,11 +71,13 @@ Options:
 | `--topology strict` | star, but each colony and the observer keep only that one link (`p2p-max-connections = 1`) |
 | `--topology chain` | every colony -> relay1 -> ... -> relayN -> witness -> observer; connection limits leave peer exchange no shortcut |
 | `--topology diamond` | strict star into the witness, which reaches the observer only through each of `--relays` (at least 2) relays: every block reaches the observer from that many advertisers |
-| `--tpb N` | colony transactions per block, split evenly over the colonies |
+| `--tpb N` | colony transactions per block, split evenly over the colonies (required unless `--preset` sets it) |
+| `--preset flood-c48`, `--preset flood-ch24` | the flood scenarios' topology, colonies, relays, tpb and blocks (see "Floods" below); options given override them |
 | `--colonies N`, `--relays N` | relays exist only in `chain` (between the colonies and the witness) and `diamond` (between the witness and the observer) |
 | `--blocks N` | loaded blocks measured, counted from the colonies' start (default 30); `--colony-start-delay` blocks after the block log's head (default 12) come first: the nodes link up in about 4 of them, the rest are the idle blocks the skew needs |
 | `--fresh-replay` | replay the block log on every node (in parallel) instead of copying replay templates |
 | `--node-hived ROLE=PATH` | a different hived for one node (mixed versions); the others use `--hived` |
+| `--hived-option [LABEL:]ROLE=KEY=VALUE` | a hived config option for a role, `colonies`, `relays` or `all`, written into its `config.ini`; see below |
 | `--flush-us`, `--fetch-us`, `--inflight`, `--p2p-parameter KEY=JSON` | p2p parameters, see below |
 | `--late-observer K` | the observer starts K blocks after the colonies start, its faked clock at the others' current fake time |
 | `--netem-ms D --netem-colonies 0,2` | delay each packet of those colonies' links by D ms each way (RTT + 2D) |
@@ -105,6 +107,37 @@ entry and runs as before. `out.json` records the loggers each node got.
 Every node also runs its `default` logger at `debug`: hived logs each fast-confirm (`witness_block_approve`) it accepts
 only there. The logger's other debug lines come at most once per block or on rare errors.
 
+### hived options: per role, in the generated config
+
+`--hived-option ROLE=KEY=VALUE` (repeatable) writes `KEY = VALUE` into the `config.ini` of ROLE's node: one role
+(`witness`, `observer`, `colonyN`, `relayN`), `colonies`, `relays` or `all`. On a node the most specific option
+for a key wins (the role, then `colonies` / `relays`, then `all`); two options of one kind for the same key are
+refused. An A/B arm or a debug run so needs no wrapper script around hived:
+
+```
+# the A/B arms of hive#1231: one build with and without the fetch gate, and another with an out-of-reach one
+$P ab gate $COMMON --build gate=$CAND/hived --build nogate=$CAND/hived --build pre1g=$PRE/hived \
+    --hived-option nogate:all=p2p-transaction-fetch-gate-threshold=0 --hived-option pre1g:all=max-mempool-size=1G ...
+# the p2p logger at debug on the relay
+$P run dbg $COMMON --hived $HIVED --topology chain --relays 1 --tpb 6000 \
+    --hived-option 'relay1=log-logger={"name":"p2p","level":"debug","appender":"p2p"}'
+```
+
+- `LABEL:` limits an option to the runs of that build in `ab` (or to `run --label LABEL`); a label no build has is
+  refused. Builds may share a path, as above.
+- `log-logger` takes one logger object and replaces the entry of that logger's name in the harness's `log-logger`
+  (the default logger at debug, the p2p loggers at info), or adds it. On hived's command line a `log-logger` would
+  add to the config's entries instead of replacing them, so a level can only be changed here.
+- An option test-tools' config has a field for (`plugin`, `shared-file-size`, ...) is set there, added to a list
+  one; any other goes into `config.ini` as its own line. The plugins and shared file size are part of the replay
+  template key; other options are not, so a replay template is reused across them.
+- Before a node is set up, the option must be one its hived reads from a config file (from the default
+  `config.ini` hived writes with `--dump-config`): hived silently ignores any other `config.ini` line. After the
+  replay the driver checks each node's `config.ini` for its options. The topology's endpoints and seeds and
+  `p2p-parameters` (`--p2p-parameter`) are the harness's and refused here.
+- `out.json` records the options as given (`hived_options`) and per node (`node_hived_options`); the report lists
+  them under the p2p parameters.
+
 ## Two hosts
 
 `--remote-host HOST --remote-roles colony0,colony1,...` runs the named nodes on HOST and the others (always the
@@ -124,12 +157,17 @@ $P run chain3-split $COMMON --hived $HIVED --label split --topology chain --rela
     --remote-host steem-2 --remote-roles colony0,relay1
 ```
 
-What it needs: `ssh HOST` without a password from this host (an agent or a key), python3 3.11+, rsync and Docker on
+What it needs: `ssh HOST` without a password from this host (a key, or an agent), python3 3.11+, rsync and Docker on
 both hosts, the test-tools image on HOST under the same reference as here (`--image`; a local tag works), and
 the hosts able to reach each other's p2p ports (ephemeral ones).
 Every path is the same on both hosts: the series copies (rsync, only what changed) this harness, the builds, the
 tools and the block log to the same absolute paths on HOST before its first run, and the remote part writes its
 results under the same `--out-root`.
+
+Every step opens its own ssh connection, so a series whose access to HOST rests on an ssh agent ends when the agent
+goes (a dropped agent forward). Before copying anything the series checks that ssh reaches HOST and refuses with
+what is missing when it does not (no agent, an agent socket that is gone, no key HOST accepts); when only the agent
+gets in, it warns. A key of this host that HOST accepts makes the series independent of the agent.
 
 For each series and each run:
 
@@ -153,7 +191,14 @@ For each series and each run:
    log's head time, so the faked clocks of both hosts agree to within the clock offset's error. The seed redial and
    live wait follow on each host for its own nodes.
 5. **End.** The remote part samples its nodes' CPU and its host's busy ticks with the head of one of its nodes, and
-   ends when its nodes have the run's last block or the local part ends. Either part failing ends the other.
+   ends when its nodes have the run's last block or the local part ends. Either part failing ends the other: a
+   remote part that fails ends the run, which removes the local container; a local part that fails closes the
+   remote part's connection without telling it the run's end, and the remote part removes its container at once.
+   A remote driver that misses the end (stuck starting its nodes, as one was in hive#1231) is removed
+   4 minutes after it. Once the remote part has ended, `p2p-load clean-part NAME` on HOST, over another
+   connection, removes what is still there: the run's container, and its tmpfs directory once no part removes it
+   within a minute (the part itself gone). The run reports what it removed on stderr and in `series.log`, so no
+   container blocks the next series' host lock and no node state holds HOST's `/dev/shm`.
 6. **Logs.** Each host copies its nodes' logs and configs to its run directory and removes its tmpfs directory;
    the remote run directory is then copied back to `OUT_ROOT/NAME/remote/` (`generated/`, `driver.log`, its own
    `out.json`), and its nodes, samples (marked `"part": "remote"`) and parameters are merged into
@@ -190,6 +235,32 @@ $P run mixed $COMMON --hived $HIVED --node-hived witness=$OLD_HIVED --topology s
 # late joiner: the observer joins 10 loaded blocks late and catches up under load
 $P run late $COMMON --hived $HIVED --topology strict --colonies 8 --tpb 2500 --late-observer 10
 ```
+
+### Floods
+
+The flood mechanisms of a node (the RC flood surcharge above `rc-flood-level` full blocks of pending, not relaying
+what pending will drop past the keep limit, the fetch gate past either) engage only once pending outgrows them:
+on a default node 42 MiB (21 full 2 MiB blocks) for the surcharge and 102 MiB (`max-mempool-size` 100M plus a
+block) for not relaying. Colony keeps the offer below that unless it is far past what blocks take: it subtracts
+the pending transactions it reapplies after a block from what it produces next (#1076), so on current builds the
+flooded node's pending holds about one block's offer, the run's tpb transactions. The hive#1159 flood levels, tpb 120000 on 48
+colonies and 60000 on a 24-colony chain, so keep the flooded node's pending at about 30 MiB and 14 MiB: in
+hive#1231 neither engaged any flood mechanism on any arm (no `handoff.not_relayed`, no block over the flood level).
+Six times that does: at tpb 720000 on 48 colonies and 360000 on the 24-colony chain, pending passes the flood level
+within two loaded blocks and fills `max-mempool-size`, and a default cand node did not relay 380000-670000
+transactions a run.
+The presets are those loads, with 60 loaded blocks:
+
+```
+# 48 colonies on one link each to the witness (strict star), 720000 tx/block
+$P ab flood-c48 $COMMON --build cand=$CAND/hived --build base=$BASE/hived --preset flood-c48 --reps 2
+# 24 colonies -> relay1 -> witness -> observer, 360000 tx/block: relay1 is the flooded node
+$P ab flood-ch24 $COMMON --build cand=$CAND/hived --build base=$BASE/hived --preset flood-ch24 --reps 2
+```
+
+On two hosts add `--remote-host` and the remote roles (hive#1231: colonies 24-47 of `flood-c48`, colonies 0-23 of
+`flood-ch24` on steem-2). Read the flood response in the witness's (c48) or relay1's (ch24) p2p counters:
+`handoff.not_relayed` and `transaction_fetch_gate.gated_us`.
 
 ### A/B builds
 
