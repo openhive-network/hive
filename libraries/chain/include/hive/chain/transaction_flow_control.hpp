@@ -28,8 +28,8 @@ public:
   void on_failure( const fc::exception& ex ) { except = ex.dynamic_copy_exception(); }
   virtual void on_worker_done( appbase::application& app ) const;
 
-  // set by the writer thread for a transaction accepted but not worth relaying (it was ignored, or is not expected to
-  // stay in pending after the next reapply, see database::is_kept_by_next_reapply())
+  // set by the writer thread for a transaction accepted but not worth relaying (it was ignored, or landed too far back
+  // in pending, see database::is_worth_relaying())
   void set_relay( bool _relay ) { relay = _relay; }
 
   const std::shared_ptr<full_transaction_type>& get_full_transaction() const { return tx; }

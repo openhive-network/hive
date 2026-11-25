@@ -102,16 +102,12 @@ struct pending_transactions_restorer
     uint32_t failed_txs = 0;
     uint32_t dropped_txs = 0;
     bool stop = false;
-    std::optional<size_t> window_bytes; // what was applied when the reapplication window ran out, if it did
 
     auto handle_tx = [&](const std::shared_ptr<full_transaction_type>& full_transaction)
     {
 #if !defined IS_TEST_NET || defined NDEBUG //during debugging that limit is highly problematic
       if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT )
-      {
         apply_trxs = false;
-        window_bytes = _db._pending_tx_size;
-      }
 #endif
 
       if( apply_trxs )
@@ -215,8 +211,6 @@ struct pending_transactions_restorer
       dropped_txs = _db._popped_tx.size() + _pending_transactions.size() - ( known_txs + applied_txs + postponed_txs + expired_txs + failed_txs );
       _db._popped_tx.clear();
     } );
-    if( in_sync )
-      _db._reapply_window_bytes = window_bytes ? *window_bytes : std::max( _db._reapply_window_bytes, _db._pending_tx_size );
 
     _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs, dropped_txs, _db._pending_tx_size, _db.get_last_irreversible_block_num() );
     if( in_sync && ( postponed_txs || expired_txs ) )

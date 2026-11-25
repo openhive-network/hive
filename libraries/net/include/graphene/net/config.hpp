@@ -396,12 +396,13 @@
 
 /**
  * By default the transaction fetch gate (graphene::net::default_transaction_fetch_gate_threshold()) closes while the
- * pending pool holds more than this percentage of the larger of what the next reapply of pending is expected to keep
- * and the pool at which the RC flood surcharge engages (rc-flood-level full blocks), so that it engages only after
- * both, as a backstop for a node whose intake between two blocks outgrows what it keeps.
- * Basis: unvalidated (to be confirmed by the live A/B of the gate against not relaying).
+ * pending pool holds more than this percentage of the point beyond which the node doesn't relay transactions
+ * (rc-flood-relay-percent of rc-flood-level + 1 full blocks), capped at max-mempool-size so that it can engage, so
+ * that it engages only after the RC flood surcharge and not relaying, as a backstop for a node whose intake
+ * between two blocks outgrows that.
+ * Basis: unvalidated (a starting value for the live threshold sweep against the old 33 MiB gate and no gate).
  */
-#define GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT   150
+#define GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT   200
 
 /**
  * While the pending pool holds more than its gate threshold (graphene::net::is_transaction_fetching_gated())

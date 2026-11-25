@@ -394,7 +394,8 @@ bool p2p_plugin_impl::is_at_live_sync()
 graphene::net::pending_transaction_pool_size p2p_plugin_impl::get_pending_transaction_pool_size() const
 {
   const uint64_t threshold = transaction_fetch_gate_threshold ? *transaction_fetch_gate_threshold
-    : graphene::net::default_transaction_fetch_gate_threshold( chain.get_published_pending_keep_limit(), chain.get_published_flood_pending_size() );
+    : graphene::net::default_transaction_fetch_gate_threshold( chain.get_published_relay_limit(), chain.get_max_mempool_size(),
+                                                               chain.get_published_maximum_block_size() );
   return { chain.get_published_pending_transactions_size(), threshold };
 }
 
@@ -529,9 +530,9 @@ void p2p_plugin::set_program_options( bpo::options_description& cli, bpo::option
     ("p2p-transaction-fetch-gate-threshold", bpo::value<string>(), "Pending transactions size (e.g. 300M) above which the node requests only "
      BOOST_PP_STRINGIZE(GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH) " transactions per " BOOST_PP_STRINGIZE(GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS) " ms "
      "from its peers (blocks are fetched as always). 0 disables this fetch gate. By default it is "
-     BOOST_PP_STRINGIZE(GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT) "% of the larger of what the next reapplication of pending "
-     "is expected to keep (see max-mempool-size; transactions beyond that are not relayed) and rc-flood-level full blocks, "
-     "so that it engages only after the RC flood surcharge and not relaying.")
+     BOOST_PP_STRINGIZE(GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT) "% of the pending size beyond which transactions are not relayed "
+     "(see rc-flood-relay-percent), at most max-mempool-size but at least one block above that size, "
+     "so that it engages only after the RC flood surcharge and not relaying; with max-mempool-size 0 there is no gate by default.")
     ("p2p-max-connections-per-host", bpo::value<uint32_t>(), "Maximum number of connections held to one host, an IPv4 address or an IPv6 /64, inbound and outbound together. "
      "A hello beyond it is rejected, and the peer counts that as a failed attempt and backs off. Loopback addresses and p2p-host-limit-exempt "
      "ones are not limited, and neither are the seed nodes and add_node targets this node dials (they still count against their host's limit). "
@@ -588,6 +589,8 @@ void p2p_plugin::plugin_initialize(const boost::program_options::variables_map& 
 
   if( options.count( "p2p-transaction-fetch-gate-threshold" ) )
     my->transaction_fetch_gate_threshold = fc::parse_size( options.at( "p2p-transaction-fetch-gate-threshold" ).as< string >() );
+  else if( my->chain.get_max_mempool_size() == 0 )
+    ilog( "max-mempool-size is 0, so the p2p transaction fetch gate is disabled; p2p-transaction-fetch-gate-threshold can set one" );
 
   if( options.count( "p2p-max-connections-per-host" ) )
     my->max_connections_per_host = options.at( "p2p-max-connections-per-host" ).as< uint32_t >();

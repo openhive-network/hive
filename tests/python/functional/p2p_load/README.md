@@ -239,16 +239,18 @@ $P run late $COMMON --hived $HIVED --topology strict --colonies 8 --tpb 2500 --l
 ### Floods
 
 The flood mechanisms of a node (the RC flood surcharge above `rc-flood-level` full blocks of pending, not relaying
-what pending will drop past the keep limit, the fetch gate past either) engage only once pending outgrows them:
-on a default node 42 MiB (21 full 2 MiB blocks) for the surcharge and 102 MiB (`max-mempool-size` 100M plus a
-block) for not relaying. Colony keeps the offer below that unless it is far past what blocks take: it subtracts
+past `rc-flood-relay-percent` of that, the fetch gate past twice that, capped at `max-mempool-size`; see
+libraries/net/README.md) engage only once pending outgrows them: on a default node 42 MiB (21 full 2 MiB blocks) for
+the surcharge and not relaying, and 84 MiB for the gate. Colony keeps the offer below that unless it is far past what blocks take: it subtracts
 the pending transactions it reapplies after a block from what it produces next (#1076), so on current builds the
 flooded node's pending holds about one block's offer, the run's tpb transactions. The hive#1159 flood levels, tpb 120000 on 48
 colonies and 60000 on a 24-colony chain, so keep the flooded node's pending at about 30 MiB and 14 MiB: in
 hive#1231 neither engaged any flood mechanism on any arm (no `handoff.not_relayed`, no block over the flood level).
 Six times that does: at tpb 720000 on 48 colonies and 360000 on the 24-colony chain, pending passes the flood level
 within two loaded blocks and fills `max-mempool-size`, and a default cand node did not relay 380000-670000
-transactions a run.
+transactions a run. The threshold sweep's arms need no wrapper: `rc-flood-relay-percent=50` or `=200` moves not
+relaying (and the default gate with it), `p2p-transaction-fetch-gate-threshold=0` disables the gate and `=33M` sets
+the pre-hive#1227 one.
 The presets are those loads, with 60 loaded blocks:
 
 ```

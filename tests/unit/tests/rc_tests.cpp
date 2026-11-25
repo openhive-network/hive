@@ -32,6 +32,8 @@
 
 #include <fc/log/appender.hpp>
 
+#include <boost/scope_exit.hpp>
+
 #include <chrono>
 
 using namespace hive::chain;
@@ -1741,6 +1743,129 @@ BOOST_AUTO_TEST_CASE( rc_payer_cached_in_full_transaction )
     generate_block();
     push_transaction( transfer, bob_private_key );
     BOOST_REQUIRE_EQUAL( std::string( db->rc().get_tx_info().payer ), "bob" );
+    generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( rc_flood_surcharge_privilege_and_relay )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing the RC flood surcharge, witness privilege and relay decision against the pending ahead of a transaction" );
+
+    const uint16_t flood_level = 2;
+    resource_credits::set_flood_limiters( flood_level, HIVE_100_PERCENT );
+    const size_t max_mempool_size = db->_max_mempool_size;
+    BOOST_SCOPE_EXIT( this_, max_mempool_size )
+    {
+      resource_credits::set_flood_limiters( 20, HIVE_100_PERCENT );
+      this_->db->_max_mempool_size = max_mempool_size;
+    } BOOST_SCOPE_EXIT_END
+
+    ACTORS( DEFAULT_VESTING, (alice) );
+    vest( "alice", HIVE_asset( 1'000'000 ) );
+    fund( "alice", HIVE_asset( 1'000 ) );
+    // a witness's transactions are privileged only once a schedule update elected it
+    for( uint32_t i = 0; i < 2 * HIVE_MAX_WITNESSES && db->get_witness( HIVE_INIT_MINER_NAME ).schedule != witness_object::elected; ++i )
+      generate_block();
+    BOOST_REQUIRE( db->get_witness( HIVE_INIT_MINER_NAME ).schedule == witness_object::elected );
+
+    const uint32_t block_size = db->get_dynamic_global_properties().get_maximum_block_size();
+    const uint64_t flood = resource_credits::flood_pending_size( block_size );
+    BOOST_REQUIRE_EQUAL( flood, ( flood_level + 1 ) * uint64_t( block_size ) );
+    const uint64_t relay_limit = db->get_relay_limit();
+    BOOST_REQUIRE_EQUAL( relay_limit, flood );
+
+    struct outcome
+    {
+      int64_t charged = 0;
+      int64_t cost = 0;
+      bool privileged = false;
+      bool relay = false;
+    };
+    int transfers = 0;
+    int feeds = 0;
+    // pushes the transaction the way the writer thread does, as if pending held the given bytes ahead of it
+    const auto push = [&]( const account_name_type& payer, uint64_t ahead ) -> outcome
+    {
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      fc::ecc::private_key key;
+      if( payer == "alice" )
+      {
+        transfer_operation transfer;
+        transfer.from = "alice";
+        transfer.to = HIVE_INIT_MINER_NAME;
+        transfer.amount = asset( 1 + transfers++, HIVE_SYMBOL );
+        tx.operations.push_back( transfer );
+        key = alice_private_key;
+      }
+      else
+      {
+        feed_publish_operation feed;
+        feed.publisher = HIVE_INIT_MINER_NAME;
+        feed.exchange_rate = price( asset( 1'000, HBD_SYMBOL ), asset( 1'000 + feeds++, HIVE_SYMBOL ) );
+        tx.operations.push_back( feed );
+        key = init_account_priv_key;
+      }
+      const full_transaction_ptr full_tx = build_transaction( tx, { key }, pack_type::hf26 );
+      const int64_t mana_before = db->get_account( payer ).rc_manabar.current_mana;
+      const size_t pending_size = db->_pending_tx_size;
+      db->_pending_tx_size = ahead;
+      outcome result;
+      result.relay = get_chain_plugin().push_transaction( full_tx );
+      db->_pending_tx_size = pending_size + ( db->_pending_tx_size - ahead );
+      result.charged = mana_before - db->get_account( payer ).rc_manabar.current_mana;
+      result.cost = full_tx->get_rc_cost();
+      result.privileged = full_tx->check_privilege();
+      return result;
+    };
+    // the first push of each payer in this block regenerates its mana, the following ones charge only their cost
+    push( "alice", 0 );
+    push( HIVE_INIT_MINER_NAME, 0 );
+
+    BOOST_TEST_MESSAGE( "--- up to the flood level no surcharge, and the transaction is relayed" );
+    for( const uint64_t ahead : { uint64_t( 0 ), flood - 1 } )
+    {
+      const outcome transfer = push( "alice", ahead );
+      BOOST_CHECK_GT( transfer.cost, 0 );
+      BOOST_CHECK_EQUAL( transfer.charged, transfer.cost );
+      BOOST_CHECK( !transfer.privileged );
+      BOOST_CHECK( transfer.relay );
+      const outcome feed = push( HIVE_INIT_MINER_NAME, ahead );
+      BOOST_CHECK_EQUAL( feed.charged, feed.cost );
+      BOOST_CHECK( !feed.privileged );
+      BOOST_CHECK( feed.relay );
+    }
+
+    BOOST_TEST_MESSAGE( "--- above it a surcharge of the cost for every full block above the level, and beyond the relay limit no relay" );
+    for( const uint64_t blocks : { uint64_t( flood_level + 1 ), uint64_t( flood_level + 4 ) } )
+    {
+      const uint64_t ahead = blocks * block_size;
+      const outcome transfer = push( "alice", ahead );
+      BOOST_CHECK_EQUAL( transfer.charged, transfer.cost * int64_t( 1 + blocks - flood_level ) );
+      BOOST_CHECK( !transfer.privileged );
+      BOOST_CHECK_EQUAL( transfer.relay, ahead <= relay_limit );
+    }
+    const outcome past_the_limit = push( "alice", relay_limit + 1 );
+    BOOST_CHECK_GT( past_the_limit.charged, past_the_limit.cost );
+    BOOST_CHECK( !past_the_limit.relay );
+
+    BOOST_TEST_MESSAGE( "--- an elected witness's feed_publish is privileged there: no surcharge, put in front of pending, relayed" );
+    const outcome feed = push( HIVE_INIT_MINER_NAME, ( flood_level + 4 ) * uint64_t( block_size ) );
+    BOOST_CHECK_EQUAL( feed.charged, feed.cost );
+    BOOST_CHECK( feed.privileged );
+    BOOST_CHECK( feed.relay );
+    BOOST_REQUIRE( !db->_popped_tx.empty() );
+    BOOST_CHECK( db->_popped_tx.front()->check_privilege() );
+
+    BOOST_TEST_MESSAGE( "--- max-mempool-size 0 doesn't change what is relayed" );
+    db->_max_mempool_size = 0;
+    BOOST_CHECK( push( "alice", flood - 1 ).relay );
+    BOOST_CHECK( push( "alice", relay_limit ).relay );
+    BOOST_CHECK( !push( "alice", relay_limit + 1 ).relay );
+
     generate_block();
   }
   FC_LOG_AND_RETHROW()

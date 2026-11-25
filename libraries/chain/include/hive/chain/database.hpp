@@ -378,20 +378,20 @@ namespace chain {
       void process_non_fast_confirm_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip = skip_nothing );
 
       /**
-        * The bytes of pending transactions the next reapply of pending is expected to keep, counted from the front of
-        * pending: what it keeps after its reapplication window (the larger of @p max_mempool_size and
-        * @p reapply_window_bytes, see _reapply_window_bytes) plus one block of @p maximum_block_size, which the next
-        * block is expected to take from the front.
+        * The bytes of pending transactions ahead of a transaction beyond which it is not relayed unless privileged:
+        * @p flood_relay_percent of @p flood_pending_size (resource_credits::flood_pending_size(), where the RC flood
+        * surcharge engages), so that from 100 up every transaction not relayed for it has paid the surcharge.
         */
-      static uint64_t pending_keep_limit( uint64_t max_mempool_size, uint64_t reapply_window_bytes, uint32_t maximum_block_size );
-      /// pending_keep_limit() of this node's max-mempool-size, last reapplication window and current maximum block size
-      uint64_t get_pending_keep_limit() const;
+      static uint64_t relay_limit( uint64_t flood_pending_size, uint16_t flood_relay_percent );
+      /// relay_limit() of this node's rc-flood-level, rc-flood-relay-percent and current maximum block size
+      uint64_t get_relay_limit() const;
       /**
-        * Whether @p full_transaction, just accepted into pending, is expected to stay there after the next reapply, so
-        * it is worth relaying: a privileged transaction (resource_credits::is_privileged_transaction(), checked whatever
-        * the pending pool holds) always is, any other while pending holds no more than get_pending_keep_limit().
+        * Whether @p full_transaction, just accepted into pending, is worth relaying: a privileged transaction
+        * (resource_credits::is_privileged_transaction(), checked whatever the pending pool holds) always is, any other
+        * while pending ahead of it holds no more than get_relay_limit().  A transaction beyond that is less likely to
+        * make it into a block before it expires, and is kept locally only.
         */
-      bool is_kept_by_next_reapply( const full_transaction_type& full_transaction ) const;
+      bool is_worth_relaying( const full_transaction_type& full_transaction ) const;
       void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
       void pop_block();
@@ -706,10 +706,8 @@ namespace chain {
       vector<std::shared_ptr<full_transaction_type>>           _pending_tx;
       size_t                                                   _pending_tx_size = 0;
       size_t                                                   _max_mempool_size = 0;
-      // bytes of transactions the last reapply of pending applied within its reapplication window when that window
-      // ran out (HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT), otherwise at least what it applied: no less than the
-      // estimate before; 0 until a reapply applied something
-      size_t                                                   _reapply_window_bytes = 0;
+      // rc-flood-relay-percent, see relay_limit()
+      uint16_t                                                 _flood_relay_percent = 100;
       // alternative for transaction_index holding ids of pending and popped transactions
       std::unordered_set<transaction_id_type>                  _pending_tx_index;
       // collection of custom operation impacted accounts (related to limit of 5 per user per block);

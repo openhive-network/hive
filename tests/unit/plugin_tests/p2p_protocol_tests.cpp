@@ -2436,14 +2436,13 @@ BOOST_AUTO_TEST_CASE( fast_confirm_behind_a_backlog_test )
   } );
 }
 
-/// Not relaying: once the pending pool holds more than its next reapply is expected to keep (with max-mempool-size 1,
-/// what the reapplication window held plus a block), a transfer fetched from a peer is accepted into pending but not
-/// advertised to the peers in sync, nor fetched again from another peer that advertises it; a feed_publish of the
-/// elected witness in the same state is privileged (whatever the RC flood level), so it is advertised.  The pool is
-/// filled through the API, so the gate is disabled to keep it out of the way.
-BOOST_AUTO_TEST_CASE( transactions_past_the_keep_limit_not_relayed_test )
+/// Not relaying: once the pending pool holds more than the relay limit (with rc-flood-level 0, one full block), a
+/// transfer fetched from a peer is accepted into pending but not advertised to the peers in sync, nor fetched again
+/// from another peer that advertises it; a feed_publish of the elected witness in the same state is privileged, so it
+/// is advertised.  The pool is filled through the API, so the gate is disabled to keep it out of the way.
+BOOST_AUTO_TEST_CASE( transactions_past_the_relay_limit_not_relayed_test )
 {
-  start_node( "", true, { config_line_t( { "max-mempool-size", { "1" } } ),
+  start_node( "", true, { config_line_t( { "rc-flood-level", { "0" } } ),
                           config_line_t( { "p2p-transaction-fetch-gate-threshold", { "0" } } ) } );
   run( [&]()
   {
@@ -2471,9 +2470,9 @@ BOOST_AUTO_TEST_CASE( transactions_past_the_keep_limit_not_relayed_test )
     for( int attempt = 0; attempt < 3 && !checked_past_the_limit; ++attempt )
     {
       const uint32_t head = get_block_num();
-      const uint64_t keep_limit = get_chain_plugin().get_published_pending_keep_limit();
-      BOOST_TEST_MESSAGE( "keep limit " << keep_limit << " bytes" );
-      for( uint64_t filled = 0; filled <= keep_limit; )
+      const uint64_t relay_limit = get_chain_plugin().get_published_relay_limit();
+      BOOST_TEST_MESSAGE( "relay limit " << relay_limit << " bytes" );
+      for( uint64_t filled = 0; filled <= relay_limit; )
       {
         const full_transaction_ptr filler = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
                                                             padding + std::to_string( attempt ) + "/" + std::to_string( filled ),
@@ -2481,12 +2480,12 @@ BOOST_AUTO_TEST_CASE( transactions_past_the_keep_limit_not_relayed_test )
         schedule_transaction( filler );
         filled += filler->get_transaction_size();
       }
-      wait_for_pool_over( keep_limit, head );
+      wait_for_pool_over( relay_limit, head );
       if( get_block_num() != head )
         continue;
 
       const full_transaction_ptr transfer = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
-                                                            "past the keep limit " + std::to_string( attempt ), get_default_expiration() );
+                                                            "past the relay limit " + std::to_string( attempt ), get_default_expiration() );
       feed_publish_operation feed;
       feed.publisher = HIVE_INIT_MINER_NAME;
       feed.exchange_rate = price( ASSET( "1.000 TBD" ), ASSET( std::to_string( attempt + 2 ) + ".000 TESTS" ) );
@@ -2509,11 +2508,67 @@ BOOST_AUTO_TEST_CASE( transactions_past_the_keep_limit_not_relayed_test )
       bool pending = false;
       db->with_read_lock( [&]() { pending = db->is_known_transaction( transfer->get_transaction_id() ); } );
       BOOST_CHECK( pending );
-      BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), keep_limit );
+      BOOST_REQUIRE_GT( get_chain_plugin().get_published_pending_transactions_size(), relay_limit );
     }
     BOOST_REQUIRE_MESSAGE( checked_past_the_limit, "a block came before the checks of the full pool ended, every time" );
     require_kept( *source );
     require_kept( *other_source );
+  } );
+}
+
+/// With max-mempool-size 0 a quiet node still relays a burst of several blocks: a transfer fetched from a peer while
+/// pending holds three full blocks (below the relay limit of rc-flood-level + 1 of them) is advertised to the peers in
+/// sync.  The pool is filled through the API; with max-mempool-size 0 there is no fetch gate by default.
+BOOST_AUTO_TEST_CASE( burst_relayed_with_max_mempool_size_0_test )
+{
+  start_node( "", true, { config_line_t( { "max-mempool-size", { "0" } } ) } );
+  run( [&]()
+  {
+    fc::sleep_until( get_genesis_time() + HIVE_BLOCK_INTERVAL );
+    wait_for_block_num( 1 );
+
+    auto source = make_peer( "source" );
+    connect_in_sync( *source );
+    auto observer = make_peer( "observer" );
+    connect_in_sync( *observer );
+
+    // as in transaction_fetch_gate_test, the checks are made again after a block that was under way when production stopped
+    stop_block_production();
+    const std::string padding( HIVE_MAX_MEMO_SIZE - 64, 'x' );
+    bool checked_with_the_burst = false;
+    for( int attempt = 0; attempt < 3 && !checked_with_the_burst; ++attempt )
+    {
+      const uint32_t head = get_block_num();
+      const uint64_t burst = 3 * uint64_t( get_chain_plugin().get_published_maximum_block_size() );
+      BOOST_REQUIRE_LT( burst, get_chain_plugin().get_published_relay_limit() );
+      for( uint64_t filled = 0; filled <= burst; )
+      {
+        const full_transaction_ptr filler = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                            padding + std::to_string( attempt ) + "/" + std::to_string( filled ),
+                                                            get_default_expiration() );
+        schedule_transaction( filler );
+        filled += filler->get_transaction_size();
+      }
+      wait_for_pool_over( burst, head );
+      if( get_block_num() != head )
+        continue;
+
+      const full_transaction_ptr transfer = build_transfer( HIVE_INIT_MINER_NAME, HIVE_NULL_ACCOUNT, ASSET( "0.001 TESTS" ),
+                                                            "behind a burst " + std::to_string( attempt ), get_default_expiration() );
+      const item_hash_t transfer_hash = transfer->get_legacy_transaction_message_hash();
+      source->provide( { transfer } );
+      source->advertise( { transfer_hash } );
+      const bool advertised = wait_until( [&]() { return observer->was_advertised( transfer_hash ) || get_block_num() != head; }, reply_timeout );
+      if( get_block_num() != head )
+        continue;
+      checked_with_the_burst = true;
+
+      BOOST_CHECK( advertised );
+      BOOST_CHECK( observer->was_advertised( transfer_hash ) );
+      BOOST_CHECK_GT( get_chain_plugin().get_published_pending_transactions_size(), burst );
+    }
+    BOOST_REQUIRE_MESSAGE( checked_with_the_burst, "a block came before the checks of the burst ended, every time" );
+    require_kept( *source );
   } );
 }
 
