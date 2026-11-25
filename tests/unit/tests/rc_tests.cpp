@@ -30,6 +30,8 @@
 
 #include "../db_fixture/clean_database_fixture.hpp"
 
+#include <hive/chain/db_with.hpp>
+
 #include <fc/log/appender.hpp>
 
 #include <boost/scope_exit.hpp>
@@ -1757,10 +1759,13 @@ BOOST_AUTO_TEST_CASE( rc_flood_surcharge_privilege_and_relay )
     const uint16_t flood_level = 2;
     resource_credits::set_flood_limiters( flood_level, HIVE_100_PERCENT );
     const size_t max_mempool_size = db->_max_mempool_size;
-    BOOST_SCOPE_EXIT( this_, max_mempool_size )
+    const uint16_t flood_relay_percent = db->_flood_relay_percent;
+    db->_flood_relay_percent = 100;
+    BOOST_SCOPE_EXIT( this_, max_mempool_size, flood_relay_percent )
     {
       resource_credits::set_flood_limiters( 20, HIVE_100_PERCENT );
       this_->db->_max_mempool_size = max_mempool_size;
+      this_->db->_flood_relay_percent = flood_relay_percent;
     } BOOST_SCOPE_EXIT_END
 
     ACTORS( DEFAULT_VESTING, (alice) );
@@ -1786,7 +1791,7 @@ BOOST_AUTO_TEST_CASE( rc_flood_surcharge_privilege_and_relay )
     };
     int transfers = 0;
     int feeds = 0;
-    // pushes the transaction the way the writer thread does, as if pending held the given bytes ahead of it
+    // pushes the transaction the way the writer thread does, as if pending held the given bytes ahead of it, all relayed
     const auto push = [&]( const account_name_type& payer, uint64_t ahead ) -> outcome
     {
       signed_transaction tx;
@@ -1812,10 +1817,13 @@ BOOST_AUTO_TEST_CASE( rc_flood_surcharge_privilege_and_relay )
       const full_transaction_ptr full_tx = build_transaction( tx, { key }, pack_type::hf26 );
       const int64_t mana_before = db->get_account( payer ).rc_manabar.current_mana;
       const size_t pending_size = db->_pending_tx_size;
+      const size_t relayed_size = db->_pending_tx_relayed_size;
       db->_pending_tx_size = ahead;
+      db->_pending_tx_relayed_size = ahead;
       outcome result;
       result.relay = get_chain_plugin().push_transaction( full_tx );
       db->_pending_tx_size = pending_size + ( db->_pending_tx_size - ahead );
+      db->_pending_tx_relayed_size = relayed_size + ( db->_pending_tx_relayed_size - ahead );
       result.charged = mana_before - db->get_account( payer ).rc_manabar.current_mana;
       result.cost = full_tx->get_rc_cost();
       result.privileged = full_tx->check_privilege();
@@ -1867,6 +1875,130 @@ BOOST_AUTO_TEST_CASE( rc_flood_surcharge_privilege_and_relay )
     BOOST_CHECK( !push( "alice", relay_limit + 1 ).relay );
 
     generate_block();
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+BOOST_AUTO_TEST_CASE( held_transactions_released_as_relayed_pending_drains )
+{
+  try
+  {
+    BOOST_TEST_MESSAGE( "Testing that transactions not relayed are held out of the relayed pending and released, oldest first, as it drains" );
+
+    // the flood level is one block of pending, and the relay limit half of it
+    resource_credits::set_flood_limiters( 0, HIVE_100_PERCENT );
+    const uint16_t flood_relay_percent = db->_flood_relay_percent;
+    db->_flood_relay_percent = 50;
+    std::vector< full_transaction_ptr > released_since;
+    db->set_transaction_release_callback( [&]( const full_transaction_ptr& tx ) { released_since.push_back( tx ); } );
+    const auto take_released = [&]() { return std::exchange( released_since, {} ); };
+    BOOST_SCOPE_EXIT( this_, flood_relay_percent )
+    {
+      resource_credits::set_flood_limiters( 20, HIVE_100_PERCENT );
+      this_->db->_flood_relay_percent = flood_relay_percent;
+      this_->db->set_transaction_release_callback( {} );
+    } BOOST_SCOPE_EXIT_END
+    db_plugin->debug_update( [&]( database& db )
+    {
+      db.modify( db.get_dynamic_global_properties(), [&]( dynamic_global_property_object& dgpo )
+      {
+        dgpo.set_maximum_block_size( HIVE_MIN_BLOCK_SIZE_LIMIT );
+      } );
+    } );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_maximum_block_size(), uint32_t( HIVE_MIN_BLOCK_SIZE_LIMIT ) );
+    BOOST_REQUIRE( db->_pending_tx.empty() );
+    const uint64_t relay_limit = db->get_relay_limit();
+    BOOST_REQUIRE_EQUAL( relay_limit, uint64_t( HIVE_MIN_BLOCK_SIZE_LIMIT / 2 ) );
+
+    const auto size_of = []( const auto& transactions )
+    {
+      uint64_t size = 0;
+      for( const full_transaction_ptr& tx : transactions )
+        size += tx->get_transaction_size();
+      return size;
+    };
+    // the relayed pending is all pending but what is held, and what is held is in pending, in its order
+    const auto check_relayed_pending = [&]()
+    {
+      auto next_held = db->_held_tx.begin();
+      for( const full_transaction_ptr& tx : db->_pending_tx )
+        if( next_held != db->_held_tx.end() && *next_held == tx )
+          ++next_held;
+      BOOST_CHECK( next_held == db->_held_tx.end() );
+      BOOST_CHECK_EQUAL( db->_pending_tx_size, size_of( db->_pending_tx ) );
+      BOOST_CHECK_EQUAL( db->_pending_tx_relayed_size, db->_pending_tx_size - size_of( db->_held_tx ) );
+    };
+    const auto in_block = [&]( const full_transaction_ptr& tx ) { return db->is_known_transaction( tx->get_transaction_id(), true ); };
+
+    BOOST_TEST_MESSAGE( "--- transactions past the relay limit are held, and the ones after them are compared with the relayed pending only" );
+    const std::string padding( HIVE_MAX_MEMO_SIZE - 64, 'x' );
+    int transfers = 0;
+    const auto build_transfer = [&]()
+    {
+      transfer_operation transfer;
+      transfer.from = HIVE_INIT_MINER_NAME;
+      transfer.to = HIVE_NULL_ACCOUNT;
+      transfer.amount = ASSET( "0.001 TESTS" );
+      transfer.memo = padding + std::to_string( transfers++ );
+      signed_transaction tx;
+      tx.set_expiration( db->head_block_time() + HIVE_MAX_TIME_UNTIL_EXPIRATION );
+      tx.operations.push_back( transfer );
+      return build_transaction( tx, { init_account_priv_key }, pack_type::hf26 );
+    };
+    std::vector< full_transaction_ptr > relayed, held;
+    while( size_of( relayed ) + size_of( held ) < 3 * relay_limit )
+    {
+      const full_transaction_ptr full_tx = build_transfer();
+      const uint64_t relayed_ahead = size_of( relayed );
+      const bool relay = get_chain_plugin().push_transaction( full_tx, database::skip_nothing, true );
+      BOOST_CHECK_EQUAL( relay, relayed_ahead <= relay_limit );
+      ( relay ? relayed : held ).push_back( full_tx );
+    }
+    BOOST_REQUIRE_GT( held.size(), 1u );
+    BOOST_CHECK_GT( db->_pending_tx_size, 2 * relay_limit );
+    BOOST_CHECK_EQUAL( db->_pending_tx_relayed_size, size_of( relayed ) );
+    BOOST_CHECK( std::equal( db->_held_tx.begin(), db->_held_tx.end(), held.begin(), held.end() ) );
+    check_relayed_pending();
+    BOOST_CHECK( take_released().empty() );
+
+    BOOST_TEST_MESSAGE( "--- a transaction its caller broadcasts anyway is not held but counted as relayed" );
+    const full_transaction_ptr broadcast = build_transfer();
+    BOOST_CHECK( !get_chain_plugin().push_transaction( broadcast ) );
+    BOOST_CHECK_EQUAL( db->_pending_tx_relayed_size, size_of( relayed ) + broadcast->get_transaction_size() );
+    BOOST_CHECK( std::equal( db->_held_tx.begin(), db->_held_tx.end(), held.begin(), held.end() ) );
+    check_relayed_pending();
+
+    BOOST_TEST_MESSAGE( "--- a block includes the relayed transactions and some held ones; the ones still pending are released oldest first" );
+    generate_block();
+    BOOST_REQUIRE_EQUAL( db->get_dynamic_global_properties().get_maximum_block_size(), uint32_t( HIVE_MIN_BLOCK_SIZE_LIMIT ) );
+    BOOST_REQUIRE( std::all_of( relayed.begin(), relayed.end(), in_block ) );
+    BOOST_REQUIRE( !in_block( broadcast ) );
+    std::vector< full_transaction_ptr > still_held;
+    std::copy_if( held.begin(), held.end(), std::back_inserter( still_held ), [&]( const full_transaction_ptr& tx ) { return !in_block( tx ); } );
+    BOOST_REQUIRE_GT( still_held.size(), 1u );
+    BOOST_REQUIRE_LT( still_held.size(), held.size() );
+    const std::vector< full_transaction_ptr > released = take_released();
+    BOOST_REQUIRE( !released.empty() );
+    BOOST_REQUIRE_LT( released.size(), still_held.size() );
+    BOOST_CHECK( std::equal( released.begin(), released.end(), still_held.begin() ) );
+    BOOST_CHECK( std::equal( db->_held_tx.begin(), db->_held_tx.end(), still_held.begin() + released.size(), still_held.end() ) );
+    BOOST_CHECK_EQUAL( db->_pending_tx_relayed_size, broadcast->get_transaction_size() + size_of( released ) );
+    BOOST_CHECK_LE( db->_pending_tx_relayed_size - released.back()->get_transaction_size(), relay_limit );
+    BOOST_CHECK_GT( db->_pending_tx_relayed_size, relay_limit );
+    check_relayed_pending();
+    BOOST_CHECK( take_released().empty() );
+
+    BOOST_TEST_MESSAGE( "--- popping the block (as a fork switch does) brings its transactions back as relayed, and keeps holding the rest" );
+    const std::vector< full_transaction_ptr > held_before_pop( db->_held_tx.begin(), db->_held_tx.end() );
+    const std::shared_ptr< full_block_type > head = get_block_reader().get_block_by_number( db->head_block_num() );
+    hive::chain::detail::without_pending_transactions( *db, existing_block_flow_control( head ), [&]() { db->pop_block(); } );
+    BOOST_CHECK( std::all_of( relayed.begin(), relayed.end(), [&]( const full_transaction_ptr& tx ) { return db->is_known_transaction( tx->get_transaction_id() ); } ) );
+    BOOST_CHECK( std::equal( db->_held_tx.begin(), db->_held_tx.end(), held_before_pop.begin(), held_before_pop.end() ) );
+    BOOST_CHECK_EQUAL( db->_pending_tx_relayed_size,
+                       size_of( head->get_full_transactions() ) + broadcast->get_transaction_size() + size_of( released ) );
+    check_relayed_pending();
+    BOOST_CHECK( take_released().empty() );
   }
   FC_LOG_AND_RETHROW()
 }

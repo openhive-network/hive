@@ -31,6 +31,9 @@ public:
   // set by the writer thread for a transaction accepted but not worth relaying (it was ignored, or landed too far back
   // in pending, see database::is_worth_relaying())
   void set_relay( bool _relay ) { relay = _relay; }
+  // whether the transaction is relayed only when should_relay(), so that one not worth relaying yet is held in pending
+  // and released later (database::relay_or_hold()); one broadcast anyway is counted as relayed instead
+  virtual bool can_be_held() const { return false; }
 
   const std::shared_ptr<full_transaction_type>& get_full_transaction() const { return tx; }
   const fc::exception_ptr& get_exception() const { return except; }

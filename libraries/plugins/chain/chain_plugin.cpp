@@ -156,7 +156,7 @@ class chain_plugin_impl
     void setup_benchmark_dumper();
     void dump_benchmark_summary( summary_type summary );
 
-    bool push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip );
+    bool push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip, bool hold_unrelayed );
     bool push_block( const block_flow_control& block_ctrl, uint32_t skip );
 
     bool test_checkpoint( const std::shared_ptr<full_block_type>& block );
@@ -207,7 +207,7 @@ class chain_plugin_impl
     bool                             last_pushed_block_was_before_checkpoint = false;
     bool                             stop_at_block_interrupt_request = false;
     uint64_t                         max_mempool_size = 0;
-    uint16_t                         flood_relay_percent = 100;
+    uint16_t                         flood_relay_percent = 75;
     // db._pending_tx_size as of the end of the last write queue item, for readers that hold no lock; it is not
     // updated in the middle of an item, so the pool emptied while a block is applied is never seen
     std::atomic<uint64_t>            published_pending_tx_size{0};
@@ -417,7 +417,7 @@ struct chain_plugin_impl::write_request_visitor
       STATSD_START_TIMER( "chain", "write_time", "push_transaction", 1.0f, cp.theApp)
       fc::time_point time_before_pushing_transaction = fc::time_point::now();
       ++count_tx_pushed;
-      tx_ctrl->set_relay( cp.push_transaction( tx_ctrl->get_full_transaction(), database::skip_nothing ) );
+      tx_ctrl->set_relay( cp.push_transaction( tx_ctrl->get_full_transaction(), database::skip_nothing, tx_ctrl->can_be_held() ) );
       cp.cumulative_time_processing_transactions += fc::time_point::now() - time_before_pushing_transaction;
       STATSD_STOP_TIMER( "chain", "write_time", "push_transaction" )
 
@@ -1155,7 +1155,7 @@ void chain_plugin_impl::open()
   was_error = false;
 }
 
-bool chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
+bool chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip, bool hold_unrelayed )
 {
   const signed_transaction& trx = full_transaction->get_transaction(); // just for the rethrow
   try
@@ -1165,7 +1165,7 @@ bool chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
       // skip_transaction_dupe_check prevents populating of transaction_index - check is done anyway
       // but with dedicated in-memory index for pending transactions
       db.process_non_fast_confirm_transaction( full_transaction, skip | database::skip_transaction_dupe_check );
-      return db.is_worth_relaying( *full_transaction );
+      return hold_unrelayed ? db.relay_or_hold( full_transaction ) : db.is_worth_relaying( *full_transaction );
     }
 
     auto sf = [&]( std::shared_ptr<full_block_type> new_head_block, uint32_t old_last_irreversible )-> std::optional< uint32_t > {
@@ -1797,9 +1797,10 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("max-mempool-size", bpo::value<string>()->default_value( "100M" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool. "
        "Unless p2p-transaction-fetch-gate-threshold sets one, the p2p fetch gate closes at most at this size (see that option), and 0 disables it.")
       ("rc-flood-level", bpo::value<uint16_t>()->default_value( 20 ), "Number of full blocks that can be present in mempool before RC surcharge is applied. 0-65535. Default 20 (one minute of full blocks).")
-      ("rc-flood-relay-percent", bpo::value<uint16_t>()->default_value( 100 ), "Percentage of the RC flood level (rc-flood-level + 1 full blocks of pending) beyond which a transaction received from a p2p peer "
-       "is kept in pending but not relayed to other peers, unless it is a privileged witness transaction. 1-65535. Default 100: a transaction not relayed has paid the flood surcharge; "
-       "below 100 not relaying starts before the surcharge. The default p2p-transaction-fetch-gate-threshold follows it.")
+      ("rc-flood-relay-percent", bpo::value<uint16_t>()->default_value( 75 ), "Percentage of the RC flood level (rc-flood-level + 1 full blocks of pending) beyond which the pending this node relayed "
+       "keeps a transaction received from a p2p peer in pending without relaying it to other peers yet, unless it is a privileged witness transaction. Such held transactions are relayed, "
+       "oldest first, as blocks bring the relayed pending back under that level, unless they leave pending first. 1-65535. Default 75; from 100 up a transaction not relayed has paid the "
+       "flood surcharge. The default p2p-transaction-fetch-gate-threshold follows it.")
       ("rc-flood-surcharge", bpo::value<uint16_t>()->default_value( HIVE_100_PERCENT ), "Multiplication factor for temporary extra RC cost charged for each block above flood level before transaction is allowed to enter and remain in pending. 0-10000. Default 10000 (100%).")
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("comment-archive", bpo::value<string>()->default_value("ROCKSDB"), "Type of comment archive to use: NONE means comments won't be archived, MEMORY keeps archived comments in memory, ROCKSDB stores them in RocksDB. Default: ROCKSDB")
@@ -2450,9 +2451,9 @@ void chain_plugin::determine_encoding_and_accept_transaction( full_transaction_p
   }
 } FC_CAPTURE_AND_RETHROW() }
 
-bool chain_plugin::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip )
+bool chain_plugin::push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction, uint32_t skip, bool hold_unrelayed )
 {
-  return my->push_transaction( full_transaction, skip );
+  return my->push_transaction( full_transaction, skip, hold_unrelayed );
 }
 
 /**

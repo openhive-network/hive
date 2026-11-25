@@ -108,13 +108,22 @@ report counts the times the cap was reached and for how long (`handoff.limit_wai
 
 The client tells the node with each transaction it validated whether to relay it (`transaction_validated_callback`).
 It says no for a fast-confirm it ignored (its witness is not on the schedule, or one at least as new is recorded),
-and for a transaction that is not privileged (`resource_credits::is_privileged_transaction()`) and has more pending
-ahead of it than the relay limit (`database::relay_limit()`): `rc-flood-relay-percent` (default 100) of the pool at
-which the RC flood surcharge engages, `rc-flood-level` + 1 full blocks. The node still counts such a transaction as
-received, so it doesn't fetch it again; it only doesn't advertise it (`handoff.not_relayed` in the statistics
-report). A flooded node so keeps fetching and validating, and its RC flood surcharge and the witnesses' privilege
-keep working, but it stops fanning out the flood once it holds about `rc-flood-level` blocks of it. The relay limit
-doesn't depend on `max-mempool-size`, so a node with `max-mempool-size` 0 relays ordinary bursts too.
+and for a transaction that is not privileged (`resource_credits::is_privileged_transaction()`) and has more relayed
+pending ahead of it than the relay limit (`database::relay_limit()`): `rc-flood-relay-percent` (default 75) of the
+pool at which the RC flood surcharge engages, `rc-flood-level` + 1 full blocks. The node still counts such a
+transaction as received, so it doesn't fetch it again; it only doesn't advertise it yet (`handoff.not_relayed` in the
+statistics report). A flooded node so keeps fetching and validating, and its RC flood surcharge and the witnesses'
+privilege keep working, but it stops fanning out the flood once it relayed about the relay limit of it. The relay
+limit doesn't depend on `max-mempool-size`, so a node with `max-mempool-size` 0 relays ordinary bursts too.
+
+The client holds the transactions it said not to relay (`database::relay_or_hold()`): they stay in its pending but
+don't count towards the relayed pending, since only this node has them and no producer can include them. Each time a
+block makes it reapply pending, it releases held transactions, oldest first, while the relayed pending is within the
+relay limit, handing each to the node (`transaction_release_callback`), which advertises them (`handoff.released`)
+and refreshes them in its message cache so peers can still fetch them. A flooded node so forwards
+its backlog about as fast as blocks include what it relayed, and never stops relaying because of transactions only it
+has. Held transactions that leave pending first (included, expired, or dropped by the `max-mempool-size` trim of the
+reapply) are never released.
 
 The fetch gate is the backstop behind that. By default (`default_transaction_fetch_gate_threshold()`) it closes above
 `GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT` (200%) of the relay limit, capped at `max-mempool-size` (each
@@ -126,7 +135,7 @@ disabling the gate. The statistics report gives how long it was closed (`transac
 As the pool grows, the RC surcharge engages first, not relaying next, and the gate last, for every block size,
 `max-mempool-size` (including 0, where there is no gate) and `rc-flood-level`, with these exceptions:
 
-- `rc-flood-relay-percent` below 100 starts not relaying before the surcharge;
+- `rc-flood-relay-percent` below 100, as its default 75 is, starts not relaying before the surcharge;
 - a fixed `p2p-transaction-fetch-gate-threshold` below the relay limit closes the gate before both.
 
 When `max-mempool-size` is below the relay limit (a small `max-mempool-size`, or a high `rc-flood-level`), the
