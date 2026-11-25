@@ -323,27 +323,41 @@ duplicate_assertion_ids() {  # GENERATED_ASSERT_ID_DIR SINCE_FILE
 
 # The binaries the Dockerfile's build stage installs that an integration script
 # or the image's entrypoint runs, as the instance stage takes them, and any other
-# programs/util tools named: <report dir>/bin.
-hived_binaries() (  # TESTNET (ON|OFF) [UTIL...]
+# programs/util tools named: DEST.
+hived_binaries() (  # DEST TESTNET (ON|OFF) [UTIL...]
+    local dest="$1"; shift
     local utils=(shared_memory_file_util "${@:2}")
     sccache_backend
     configure "$1" || return 1
     sccache --zero-stats > /dev/null 2>&1 || true
     build_ninja hived cli_wallet "${utils[@]}" || { sccache_hits; return 1; }
     sccache_hits
-    mkdir -p "$out/bin" && cp programs/hived/hived programs/cli_wallet/cli_wallet \
-        "${utils[@]/#/programs/util/}" "$out/bin/"
+    mkdir -p "$dest" && cp programs/hived/hived programs/cli_wallet/cli_wallet \
+        "${utils[@]/#/programs/util/}" "$dest/"
 )
 
 # CI's python_pattern_testnet_tests over cli_wallet_tests, with its per-test and
 # overall timeouts. The tests run from a copy of what pytest reads of tests/python
 # (its pytest.ini and conftest.py), since test-tools writes each module's nodes and
-# wallets beside it, and importing it writes ./generated; the copy stays in the
-# report directory. The test-tools environment is the image's
-# (.aidev/runtime/Dockerfile), HIVE_TEST_TOOLS_VENV overriding it.
-wallet_patterns() (  # a subshell, as build's: it moves into the copy
-    local py="${HIVE_TEST_TOOLS_VENV:-/opt/test-tools-venv}/bin/python3" missing jobs
-    local dir=tests/python/api_tests/python_patterns_tests work="$out/wallet-patterns" tools="$PWD/tests/python/hive-local-tools"
+# wallets beside it, and importing it writes ./generated. The copy and the
+# binaries sit beside the report directory, not in it: every file in that is an
+# artefact, and the nodes leave hundreds (block_log parts, RocksDB files). Only
+# the failed tests' node logs are kept, bounded; the rest goes with the run. The
+# test-tools environment is the image's (.aidev/runtime/Dockerfile),
+# HIVE_TEST_TOOLS_VENV overriding it.
+wallet_patterns() {
+    local work="$out.work" rc=0
+    rm -rf "$work"
+    wallet_patterns_in "$work" || rc=$?
+    [ "$rc" -eq 0 ] || [ "$rc" -eq "$step_skipped" ] \
+        || keep_failed_node_logs "$out/wallet-patterns.xml" "$work" "$out/wallet-patterns-nodes"
+    rm -rf "$work"
+    return "$rc"
+}
+
+wallet_patterns_in() (  # WORK; a subshell, as build's: it moves into the copy
+    local work="$1" py="${HIVE_TEST_TOOLS_VENV:-/opt/test-tools-venv}/bin/python3" missing jobs
+    local dir=tests/python/api_tests/python_patterns_tests tools="$PWD/tests/python/hive-local-tools"
     export PYTHONDONTWRITEBYTECODE=1
     mkdir -p "$work" && cp -r --parents tests/python/__init__.py tests/python/conftest.py tests/python/pytest.ini \
         tests/python/api_tests/__init__.py "$dir" "$work/" || return 1
@@ -352,15 +366,53 @@ wallet_patterns() (  # a subshell, as build's: it moves into the copy
         echo "test_tools_unavailable: $py cannot import test-tools and its pytest plugins (.aidev/runtime/Dockerfile)"
         return "$step_skipped"
     fi
-    hived_binaries ON get_dev_key || return 1
+    hived_binaries "$work/bin" ON get_dev_key || return 1
     jobs="$test_slots"; [ -f "$jobs" ] && jobs="$(cat "$jobs")"
     cd "$work/$dir" || return 1
-    HIVED_PATH="$out/bin/hived" CLI_WALLET_PATH="$out/bin/cli_wallet" GET_DEV_KEY_PATH="$out/bin/get_dev_key" \
+    HIVED_PATH="$work/bin/hived" CLI_WALLET_PATH="$work/bin/cli_wallet" GET_DEV_KEY_PATH="$work/bin/get_dev_key" \
         TEST_TOOLS_NODE_DEFAULT_WAIT_FOR_LIVE_TIMEOUT=60 \
         PYTHONPATH="$tools:$tools/tests_api${PYTHONPATH:+:$PYTHONPATH}" \
         timeout 720 "$py" -m pytest --timeout=600 -n "$jobs" --junitxml="$out/wallet-patterns.xml" \
         -m "not testnet and not mainnet_5m and not live_mainnet" cli_wallet_tests
 )
+
+# The last 64 KiB of each *.log test-tools left for a test the junit report has
+# failed (its directory is named after the test, parameters and all), outside
+# the nodes' blockchain directories: at most 20 logs of 10 tests, under DEST.
+keep_failed_node_logs() {  # JUNIT WORK DEST
+    [ -f "$1" ] && [ -d "$2" ] || return 0
+    python3 - "$@" <<'PY' || echo "cannot keep the failed tests' node logs" >&2
+import os, sys
+import xml.etree.ElementTree as ET
+
+junit, work, dest = sys.argv[1:]
+failed = []
+for case in ET.parse(junit).iter("testcase"):
+    if case.find("failure") is not None or case.find("error") is not None:
+        name = case.get("name", "")
+        if name and name not in failed:
+            failed.append(name)
+failed = failed[:10]
+kept = 0
+for root, dirs, files in os.walk(work):
+    dirs[:] = sorted(d for d in dirs if d != "blockchain")
+    rel = os.path.relpath(root, work)
+    parts = rel.split(os.sep)
+    if not any(n in parts or n.split("[")[0] in parts for n in failed):
+        continue
+    for f in sorted(files):
+        if not f.endswith(".log") or kept >= 20:
+            continue
+        target = os.path.join(dest, rel, f)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(os.path.join(root, f), "rb") as src:
+            src.seek(max(0, os.fstat(src.fileno()).st_size - 65536))
+            data = src.read()
+        with open(target, "wb") as out:
+            out.write(data)
+        kept += 1
+PY
+}
 
 # CI's hiveio_api_package (scripts/ci-helpers/hiveio_api_package.sh) without the
 # network the suite lacks: generate the package, run the generator tests (CI's
@@ -474,8 +526,8 @@ run() {  # STEP
         plugin-api) step plugin-api boost_test plugin-api plugin_test '--run_test=!witness_tests' ;;
         plugin-tests) step plugin-tests plugin_tests ;;
         integration) integration ;;
-        hived-testnet) step hived-testnet hived_binaries ON ;;
-        hived-mainnet) step hived-mainnet hived_binaries OFF ;;
+        hived-testnet) step hived-testnet hived_binaries "$out/bin" ON ;;
+        hived-mainnet) step hived-mainnet hived_binaries "$out/bin" OFF ;;
         wallet-patterns) step wallet-patterns wallet_patterns ;;
         hiveio-api) step hiveio-api hiveio_api ;;
         p2p-relay) step p2p-relay p2p_relay ;;
