@@ -23,6 +23,26 @@ class Wiring:
         """(role, a seed of it), in wiring order."""
         return [(role, peer) for role, peers in self.seeds.items() for peer in peers]
 
+    def path(self, source: str, target: str) -> list[str]:
+        """The roles a message crosses from `source` to `target` over the fewest seed links, both ends included."""
+        previous: dict[str, str] = {source: source}
+        frontier = [source]
+        while frontier and target not in previous:
+            following = []
+            for role in frontier:
+                for a, b in self.links:
+                    peer = b if a == role else a if b == role else None
+                    if peer is not None and peer not in previous:
+                        previous[peer] = role
+                        following.append(peer)
+            frontier = following
+        if target not in previous:
+            raise ValueError(f"no seed links lead from {source} to {target}")
+        path = [target]
+        while path[-1] != source:
+            path.append(previous[path[-1]])
+        return path[::-1]
+
     def start_waves(self, roles: list[str]) -> list[list[str]]:
         """Group `roles` into start waves, each one wave after the latest of its seeds (the topologies have no cycle)."""
         wave: dict[str, int] = {}

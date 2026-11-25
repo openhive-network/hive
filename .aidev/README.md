@@ -46,11 +46,12 @@ is the same text.
 | `hived-testnet`, `hived-mainnet` | `hived`, `cli_wallet` and `shared_memory_file_util` with CI's arguments, into `<report dir>/bin` (what `integration` builds an image from; its `hived-*` suites' directories are not declared artefacts) |
 | `wallet-patterns` | the cli_wallet Python pattern tests (CI's `python_pattern_testnet_tests`) against the testnet `hived`, `cli_wallet` and `get_dev_key` it builds as `hived-testnet` does (below) |
 | `hiveio-api` | when the diff changes the openapi documentation or the generator: generate the hiveio_api package, run the generator tests and build the wheel (CI's `hiveio_api_package`, offline; below) |
+| `p2p-load` | when the diff changes the p2p load harness (`tests/python/functional/p2p_load`): its tests that need no hived (`-m "not testnet"`), in the image's test-tools environment |
 | `p2p-relay` | when the diff reaches p2p, the network code or the transaction size limits: `plugin_test --run_test=p2p_relay_tests`, large transactions relayed across three hived nodes (below) |
 
 | Slot | Steps |
 |---|---|
-| quick | build, chain-smoke, plugin-api |
+| quick | p2p-load, build, chain-smoke, plugin-api |
 | full | suite `default`: build, then chain-tests, plugin-tests, hiveio-api and p2p-relay at the same time; suite `integration`: integration (off; below); suite `wallet_patterns`: wallet-patterns, when the diff reaches the wallet (below) |
 | baseline | build, then chain-tests, plugin-tests, hiveio-api and p2p-relay at the same time |
 | canary | build, chain-smoke, plugin-api |

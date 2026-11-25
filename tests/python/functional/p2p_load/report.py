@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import statistics
 from collections import defaultdict
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from python.functional.p2p_load import analysis
@@ -26,6 +27,7 @@ def summarize(
     """
     meta = run.meta
     threshold = full_txs if full_txs is not None else meta["tpb"] * 9 // 10
+    trouble = analysis.peer_trouble(run)
     return {
         "run": run.name,
         "label": meta.get("label", ""),
@@ -38,6 +40,8 @@ def summarize(
             "colony_mixes": meta.get("colony_mixes", {}),
             "colony_late_blocks": meta.get("colony_late_blocks", {}),
             "hived_options": meta.get("hived_options", []),
+            "oversized_txs": meta.get("oversized_txs", 0),
+            "oversized_tx_bytes": meta.get("oversized_tx_bytes"),
         },
         "p2p_parameters": {
             "given": meta["p2p_parameters"]["given"],
@@ -59,6 +63,8 @@ def summarize(
         "p2p_counters": analysis.p2p_counters(run),
         "fast_confirms": analysis.fast_confirms(run),
         "irreversibility_lag": analysis.irreversibility_lag(run),
+        "peer_trouble": trouble,
+        "oversized": analysis.oversized_transactions(run, trouble),
         "late_observer": meta.get("late_observer"),
         "timings": meta.get("timings"),
         "replay": meta.get("replay"),
@@ -150,6 +156,48 @@ def _format_fast_confirms(summary: dict[str, Any]) -> list[str]:
     lines.extend(
         f"   head-LIB {role:10} median {lag['median']:g} max {lag['max']} over {lag['blocks']} blocks"
         for role, lag in summary["irreversibility_lag"].items()
+    )
+    return lines
+
+
+def _trouble_text(counts: dict[str, int] | None) -> str:
+    if counts is None:
+        return "- (no loaded window in its logs)"
+    return (
+        f"{counts['disconnects']} disconnects, {counts['request_timeouts']} request timeouts, "
+        f"{counts['items_expired']} expired fetches, {counts['send_queue_exceeded']} send queue overflows"
+    )
+
+
+def _format_peer_trouble(summary: dict[str, Any]) -> list[str]:
+    troubled = {role: counts for role, counts in summary["peer_trouble"].items() if counts and any(counts.values())}
+    if not troubled:
+        return ["   peer trouble: none over the loaded window"]
+    return [f"   peer trouble {role:10} {_trouble_text(counts)}" for role, counts in troubled.items()]
+
+
+def _format_oversized(oversized: dict[str, Any] | None) -> list[str]:
+    if oversized is None:
+        return []
+    lines = [
+        (
+            f"   oversized txs: {oversized['included']}/{len(oversized['transactions'])} included, from "
+            f"{' -> '.join(oversized['path'])} (maximum_block_size {oversized['maximum_block_size']})"
+        )
+    ]
+    for tx in oversized["transactions"]:
+        if tx["error"] is not None:
+            outcome = f"NOT BROADCAST: {tx['error']}"
+        elif tx["block"] is None:
+            outcome = "NOT INCLUDED by the run's end"
+        else:
+            outcome = f"in block {tx['block']}, {tx['included_after_s']:.1f} s after its broadcast"
+        lines.append(
+            f"   oversized tx {tx['index']} {_fmt(tx['bytes'])} B {tx['id'] or '-'} "
+            f"broadcast at block {_fmt(tx['broadcast_block'])}: {outcome}"
+        )
+    lines.extend(
+        f"   oversized path {role:10} {_trouble_text(counts)}" for role, counts in oversized["path_trouble"].items()
     )
     return lines
 
@@ -305,6 +353,8 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
         lines.append("   relay: no sampled transaction timestamps in the logs")
     lines.extend(_format_all_counters(summary))
     lines.extend(_format_fast_confirms(summary))
+    lines.extend(_format_peer_trouble(summary))
+    lines.extend(_format_oversized(summary["oversized"]))
     if summary["late_observer"]:
         lines.append(f"   late observer: {summary['late_observer']}")
     lines.extend(_format_timings(summary))
@@ -367,8 +417,22 @@ def _comparison_rows(summaries: list[dict[str, Any]]) -> dict[str, Callable[[dic
         (fc["median_ms"] for fc in s["fast_confirms"].values() if fc["median_ms"] is not None), default=None
     )
     rows["largest head-LIB"] = lambda s: max((lag["max"] for lag in s["irreversibility_lag"].values()), default=None)
+    for kind in ("disconnects", "request_timeouts", "send_queue_exceeded"):
+        rows[f"peer {kind.replace('_', ' ')} (all nodes)"] = partial(_total_trouble, kind=kind)
+    if any(s["oversized"] for s in summaries):
+        rows["oversized txs included"] = lambda s: (s["oversized"] or {}).get("included")
+        rows["slowest oversized tx inclusion s"] = _slowest_oversized
     rows["driver wall s"] = lambda s: (s["timings"] or {}).get("total_s")
     return rows
+
+
+def _total_trouble(summary: dict[str, Any], kind: str) -> int:
+    return sum(counts[kind] for counts in summary["peer_trouble"].values() if counts)
+
+
+def _slowest_oversized(summary: dict[str, Any]) -> float | None:
+    after = [tx["included_after_s"] for tx in (summary["oversized"] or {}).get("transactions", [])]
+    return max((s for s in after if s is not None), default=None)
 
 
 def _busy(summary: dict[str, Any]) -> bool:

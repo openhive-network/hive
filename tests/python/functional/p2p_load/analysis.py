@@ -500,3 +500,55 @@ def irreversibility_lag(run: Run) -> dict[str, dict[str, Any]]:
         if lags:
             out[role] = {"blocks": len(lags), "median": statistics.median(lags), "max": max(lags)}
     return out
+
+
+def peer_trouble(run: Run) -> dict[str, dict[str, int] | None]:
+    """
+    Per node, its peer trouble over the loaded window (see node_logs.peer_trouble): lost peers, request timeouts,
+    expired fetches and send queue overflows. None for a node whose logs do not locate the window on its clock.
+    """
+    out: dict[str, dict[str, int] | None] = {}
+    for role in run.roles:
+        period = _loaded_period(run, role)
+        if period is None:
+            out[role] = None
+            continue
+        counts = dict.fromkeys(node_logs.PEER_TROUBLE, 0)
+        for logged, kind, count in node_logs.peer_trouble(run.node_dir(role)):
+            if logged is not None and period[0] <= logged <= period[1]:
+                counts[kind] += count
+        out[role] = counts
+    return out
+
+
+def oversized_transactions(run: Run, trouble: dict[str, dict[str, int] | None]) -> dict[str, Any] | None:
+    """
+    The oversized transactions of the run, each with the block it reached (None: none) and the seconds from its
+    broadcast to that block's time, both on the chain's (faked) clock; with the nodes between their colony and the
+    witness and each one's peer trouble (`trouble`, from peer_trouble). None when the run sent none.
+    """
+    sent = run.meta.get("oversized")
+    if not sent:
+        return None
+    transactions = [
+        {
+            "index": tx["index"],
+            "id": tx.get("id"),
+            "bytes": tx.get("bytes"),
+            "broadcast_block": tx.get("broadcast_block"),
+            "block": tx.get("block"),
+            "included_after_s": (
+                tx["block_time"] - tx["broadcast_chain_time"] if tx.get("block") is not None else None
+            ),
+            "error": tx.get("error"),
+        }
+        for tx in sent["transactions"]
+    ]
+    return {
+        "colony": sent["colony"],
+        "path": sent["path"],
+        "maximum_block_size": sent["maximum_block_size"],
+        "transactions": transactions,
+        "included": sum(1 for tx in transactions if tx["block"] is not None),
+        "path_trouble": {role: trouble.get(role) for role in sent["path"]},
+    }

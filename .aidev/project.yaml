@@ -84,7 +84,7 @@ verification:
     suites:
       - name: default
         adapter: command
-        args: [".aidev/run-checks.sh", "quick", "build", "chain-smoke,plugin-api"]
+        args: [".aidev/run-checks.sh", "quick", "p2p-load", "build", "chain-smoke,plugin-api"]
         artifacts: ["test-results/quick/"]
         timeout: 900  # the quick cap; the slot takes ~3-5 min
         memory: 24g

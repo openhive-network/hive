@@ -28,7 +28,16 @@ from python.functional.p2p_load.harness import (
 )
 from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
 from python.functional.p2p_load.remote import HARNESS_PATHS, RemoteHost, RemoteHostError, local_address_towards
-from python.functional.p2p_load.spec import MIXES, OPTION_GROUPS, PARTS, TOPOLOGIES, RunSpec
+from python.functional.p2p_load.spec import (
+    MIXES,
+    OPTION_GROUPS,
+    OVERSIZED_TX_DEFAULT_BYTES,
+    OVERSIZED_TX_MAX_BYTES,
+    PARTS,
+    SEND_QUEUE_BYTES,
+    TOPOLOGIES,
+    RunSpec,
+)
 
 # shorthand flags for the p2p-parameters keys the #877 measurements vary; --p2p-parameter sets any other
 _P2P_FLAGS = {
@@ -61,6 +70,15 @@ def _hived_option(text: str) -> tuple[str, str, str, str]:
     if not (sep and key_sep and selector and key and value):
         raise argparse.ArgumentTypeError(f"expected [LABEL:]ROLE=KEY=VALUE, got {text!r}")
     return label, selector, key, value
+
+
+def _oversized_txs(text: str) -> tuple[int, int]:
+    """N[@SIZE] as (N, SIZE in bytes); SIZE defaults to OVERSIZED_TX_DEFAULT_BYTES."""
+    count, sep, size = text.partition("@")
+    try:
+        return int(count), int(size) if sep else OVERSIZED_TX_DEFAULT_BYTES
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"expected N[@SIZE] (SIZE in bytes), got {text!r}") from error
 
 
 def _count(text: str, flag: str) -> int:
@@ -174,6 +192,17 @@ def _add_run_options(parser: argparse.ArgumentParser) -> None:
         help="colony N starts K blocks after the other colonies (a size jump in one run: with --colony-mix)",
     )
     parser.add_argument(
+        "--oversized-txs",
+        type=_oversized_txs,
+        default=(0, OVERSIZED_TX_DEFAULT_BYTES),
+        metavar="N[@SIZE]",
+        help=(
+            f"broadcast N signed transactions of SIZE bytes (over {SEND_QUEUE_BYTES}, at most {OVERSIZED_TX_MAX_BYTES}; "
+            f"default {OVERSIZED_TX_DEFAULT_BYTES}) from a colony during the loaded window, once the chain's "
+            "maximum_block_size admits them, and report the block each reached"
+        ),
+    )
+    parser.add_argument(
         "--no-p2p-loggers",
         dest="p2p_loggers",
         action="store_false",
@@ -279,6 +308,8 @@ def _spec(args: argparse.Namespace, name: str, hived: Path, label: str, placemen
         remote_host=placement.remote.host if placement else "",
         remote_roles=placement.remote_roles if placement else [],
         hived_options=[[role, key, value] for given, role, key, value in args.hived_option if given in {"", label}],
+        oversized_txs=args.oversized_txs[0],
+        oversized_tx_bytes=args.oversized_txs[1],
     )
     if placement is not None:
         spec.endpoints = placement.endpoints(spec.roles())
