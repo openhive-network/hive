@@ -13,6 +13,7 @@
 #include <graphene/net/config.hpp>
 
 #include <fc/filesystem.hpp>
+#include <fc/network/tcp_socket.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -21,6 +22,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -118,6 +120,43 @@ struct relay_node : public witness_fixture
     }, fc::seconds( 30 ) ), "the vote for the maximum block size did not reach the observer" );
   }
 };
+
+/// For a failure message: where each node listens, the peers it is connected to, and every endpoint it knows of to
+/// dial, with its connection attempts there and the last error
+std::string describe_connections( const std::vector< std::pair< std::string, relay_node* > >& nodes )
+{
+  std::ostringstream description;
+  for( const auto& [ name, node ] : nodes )
+  {
+    description << "\n  " << name << " listens on " << std::string( node->endpoint() ) << ", connected to";
+    const std::vector< hive::plugins::p2p::api_peer_status > peers = node->p2p().get_connected_peers();
+    if( peers.empty() )
+      description << " none";
+    for( const hive::plugins::p2p::api_peer_status& peer : peers )
+      description << " " << std::string( peer.host ) << ( peer.info[ "inbound" ].as_bool() ? " (inbound)" : " (outbound)" );
+    for( const graphene::net::potential_peer_record& record : node->p2p().get_potential_peers() )
+    {
+      description << "\n    " << std::string( record.endpoint ) << ": " << record.number_of_successful_connection_attempts
+        << " successful and " << record.number_of_failed_connection_attempts << " failed connection attempts, "
+        << fc::reflector< graphene::net::potential_peer_last_connection_disposition >::to_string( record.last_connection_disposition );
+      if( record.last_error )
+        description << ": " << record.last_error->to_string();
+    }
+  }
+  return description.str();
+}
+
+/// Has @p b dial @p a and @p c and waits until the three are connected in a line, A - B - C, and in no other way
+void connect_in_a_line( relay_node& a, relay_node& b, relay_node& c )
+{
+  // once B holds both, it has the one of them that asks B whether it is firewalled tested by the other, which
+  // connects to it only for the test: that leaves the line as it is
+  b.p2p().add_node( a.endpoint() );
+  b.p2p().add_node( c.endpoint() );
+  // described after the wait: in BOOST_REQUIRE_MESSAGE the message's values may be taken before its condition
+  if( !wait_until( [&]() { return a.peer_count() == 1 && b.peer_count() == 2 && c.peer_count() == 1; }, fc::seconds( 30 ) ) )
+    BOOST_FAIL( "the nodes did not connect in a line, A - B - C:" << describe_connections( { { "A", &a }, { "B", &b }, { "C", &c } } ) );
+}
 
 /// The transactions a node applied on their own (from a peer: nothing calls its API) and the ones it applied in blocks,
 /// with the ones it had not applied on their own before.
@@ -269,13 +308,7 @@ BOOST_AUTO_TEST_CASE( large_transactions_relayed_across_three_nodes )
       BOOST_SCOPE_EXIT( catcher ) { fc::logger::get( "p2p" ).remove_appender( catcher ); } BOOST_SCOPE_EXIT_END
       try
       {
-        // B dials both: a node asks the first peer it dials whether it is firewalled, and that peer has another one
-        // dial it to find out, so had C dialed B, A would have dialed C
-        b.p2p().add_node( a.endpoint() );
-        b.p2p().add_node( c.endpoint() );
-        BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return a.peer_count() == 1 && b.peer_count() == 2 && c.peer_count() == 1; },
-          fc::seconds( 30 ) ), "the nodes did not connect in a line: A has " << a.peer_count() << " peers, B "
-          << b.peer_count() << ", C " << c.peer_count() );
+        connect_in_a_line( a, b, c );
 
         fc::sleep_until( c.get_genesis_time() + HIVE_BLOCK_INTERVAL );
         c.wait_for_block_num( 1 );
@@ -402,11 +435,7 @@ BOOST_AUTO_TEST_CASE( held_transactions_relayed_as_blocks_drain )
     {
       try
       {
-        b.p2p().add_node( a.endpoint() );
-        b.p2p().add_node( c.endpoint() );
-        BOOST_REQUIRE_MESSAGE( wait_until( [&]() { return a.peer_count() == 1 && b.peer_count() == 2 && c.peer_count() == 1; },
-          fc::seconds( 30 ) ), "the nodes did not connect in a line: A has " << a.peer_count() << " peers, B "
-          << b.peer_count() << ", C " << c.peer_count() );
+        connect_in_a_line( a, b, c );
 
         fc::sleep_until( c.get_genesis_time() + HIVE_BLOCK_INTERVAL );
         c.wait_for_block_num( 1 );
@@ -459,6 +488,68 @@ BOOST_AUTO_TEST_CASE( held_transactions_relayed_as_blocks_drain )
       CATCH( "API" )
     } );
     _future.wait();
+    BOOST_REQUIRE( test_passed );
+  }
+  FC_LOG_AND_RETHROW()
+}
+
+/// What a failed connect_in_a_line() reports of each node: A and B, connected, and an endpoint nothing listens on that
+/// B dialed too, with the connection attempt that failed there and its error
+BOOST_AUTO_TEST_CASE( connect_failure_described )
+{
+  try
+  {
+    fc::temp_directory dir_a( hive::utilities::temp_directory_path() );
+    fc::temp_directory dir_b( hive::utilities::temp_directory_path() );
+    relay_node a( dir_a.path() ), b( dir_b.path() );
+    BOOST_SCOPE_EXIT( &a, &b )
+    {
+      for( relay_node* node : { &a, &b } )
+        node->stop();
+    } BOOST_SCOPE_EXIT_END
+
+    a.start( {}, {} );
+    b.set_genesis_time( a.get_genesis_time() );
+    b.start( {}, a.get_logging_config() );
+    fc::ip::endpoint unreachable;
+    {
+      fc::tcp_server server;
+      server.listen( fc::ip::endpoint( fc::ip::address( "127.0.0.1" ), 0 ) );
+      unreachable = server.get_local_endpoint();
+    }
+
+    bool test_passed = false;
+    fc::thread api_thread;
+    api_thread.async( [&]()
+    {
+      try
+      {
+        b.p2p().add_node( a.endpoint() );
+        b.p2p().add_node( unreachable );
+        const auto failed_to_connect = [&]()
+        {
+          const std::vector< graphene::net::potential_peer_record > known = b.p2p().get_potential_peers();
+          return std::any_of( known.begin(), known.end(), [&]( const graphene::net::potential_peer_record& record )
+          {
+            return record.endpoint == unreachable && record.number_of_failed_connection_attempts > 0;
+          } );
+        };
+        BOOST_REQUIRE( wait_until( [&]() { return a.peer_count() == 1 && b.peer_count() == 1 && failed_to_connect(); },
+          fc::seconds( 30 ) ) );
+
+        const std::string description = describe_connections( { { "A", &a }, { "B", &b } } );
+        BOOST_TEST_MESSAGE( "the description:" << description );
+        BOOST_CHECK_NE( description.find( "A listens on " + std::string( a.endpoint() ) + ", connected to 127.0.0.1:" ),
+          std::string::npos );
+        BOOST_CHECK_NE( description.find( " (inbound)" ), std::string::npos );
+        BOOST_CHECK_NE( description.find( "B listens on " + std::string( b.endpoint() ) + ", connected to " +
+          std::string( a.endpoint() ) + " (outbound)" ), std::string::npos );
+        BOOST_CHECK_NE( description.find( std::string( unreachable ) +
+          ": 0 successful and 1 failed connection attempts, last_connection_failed: " ), std::string::npos );
+        test_passed = true;
+      }
+      CATCH( "API" )
+    } ).wait();
     BOOST_REQUIRE( test_passed );
   }
   FC_LOG_AND_RETHROW()

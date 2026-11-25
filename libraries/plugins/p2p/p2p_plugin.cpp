@@ -929,4 +929,12 @@ std::vector< api_peer_status > p2p_plugin::get_connected_peers()
   return api_connected_peers;
 }
 
+std::vector< graphene::net::potential_peer_record > p2p_plugin::get_potential_peers()
+{
+  if( !my->node )
+    return {};
+
+  return my->node->get_potential_peers();
+}
+
 } } } // namespace hive::plugins::p2p

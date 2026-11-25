@@ -4,6 +4,7 @@
 
 #include <graphene/net/core_messages.hpp>
 #include <graphene/net/node_configuration.hpp>
+#include <graphene/net/peer_database.hpp>
 
 #include <appbase/application.hpp>
 #include <fc/network/ip.hpp>
@@ -57,6 +58,8 @@ public:
   void add_node(const fc::ip::endpoint& endpoint);
   void set_allowed_peers(const std::vector<graphene::net::node_id_t>& allowed_peers);
   std::vector< api_peer_status > get_connected_peers();
+  /// the endpoints the node knows of to dial, with its connection attempts to each and the last error
+  std::vector< graphene::net::potential_peer_record > get_potential_peers();
 
 
 private:
