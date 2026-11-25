@@ -75,13 +75,16 @@ verification:
   # and a price learnt from the slot's own runs feeds on itself. A build capped
   # at 2.5 GB runs one job and peaks near 2 GB, which keeps the cap there: quick
   # built in ~580 s at a 99.8% cache hit rate (#998). 24 GB is ~12 jobs (76 s warm),
-  # and a cold build fits it too. A list of one suite, as `baseline`'s, because only a
-  # suite entry declares `memory`.
+  # and a cold build fits it too. After the build, chain-smoke and plugin-api run at
+  # the same time (one test process each), ~87 s rather than 19 + 86 s one after the
+  # other; the container's sampled peak stayed under 0.6 GB either way (steem-9,
+  # warm build, 2026-11-25), so the 24 GB stands. A list of one suite, as
+  # `baseline`'s, because only a suite entry declares `memory`.
   quick:
     suites:
       - name: default
         adapter: command
-        args: [".aidev/run-checks.sh", "quick", "build", "chain-smoke", "plugin-api"]
+        args: [".aidev/run-checks.sh", "quick", "build", "chain-smoke,plugin-api"]
         artifacts: ["test-results/quick/"]
         timeout: 900  # the quick cap; the slot takes ~3-5 min
         memory: 24g
@@ -156,7 +159,7 @@ verification:
     suites:
       - name: default
         adapter: command
-        args: [".aidev/run-checks.sh", "canary", "build", "chain-smoke", "plugin-api"]
+        args: [".aidev/run-checks.sh", "canary", "build", "chain-smoke,plugin-api"]
         artifacts: ["test-results/canary/"]
         timeout: 1500
         memory: 24g
@@ -166,7 +169,7 @@ verification:
     suites:
       - name: default
         adapter: command
-        args: [".aidev/run-checks.sh", "coverage", "build", "chain-smoke", "plugin-api"]
+        args: [".aidev/run-checks.sh", "coverage", "build", "chain-smoke,plugin-api"]
         artifacts: ["test-results/coverage/"]
         memory: 24g
 
