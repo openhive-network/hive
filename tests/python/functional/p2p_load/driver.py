@@ -25,7 +25,7 @@ from beekeepy.exceptions import CommunicationError
 from beekeepy.interfaces import P2PUrl
 
 import test_tools as tt
-from python.functional.p2p_load import p2p_loggers, p2p_parameters, procfs, replay_template, topology
+from python.functional.p2p_load import hived_options, p2p_loggers, p2p_parameters, procfs, replay_template, topology
 from python.functional.p2p_load.spec import RunSpec
 from test_tools import complex_networks as ttcn
 
@@ -229,6 +229,18 @@ def _enable_p2p_loggers(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, lis
     return enabled
 
 
+def _apply_hived_options(spec: RunSpec, nodes: dict[str, _Node]) -> dict[str, list[tuple[str, str]]]:
+    """Set every node's `--hived-option`s, after the harness's own loggers so that a logger level replaces theirs."""
+    options = {role: spec.hived_options_of(role) for role in nodes}
+    binaries = {spec.binary(role) for role, given in options.items() if given}
+    known = {path: hived_options.config_options(Path(path)) for path in binaries}
+    for role, node in nodes.items():
+        if options[role]:
+            hived_options.check_known(Path(spec.binary(role)), options[role], known[spec.binary(role)])
+            hived_options.apply(node.config, options[role])
+    return options
+
+
 def _write_json(path: Path, data: Any) -> None:
     tmp = path.with_suffix(".tmp")
     tmp.write_text(json.dumps(data))
@@ -417,6 +429,7 @@ def run(spec: RunSpec, part: str = "local") -> dict[str, Any]:
     wiring, endpoints = _wire(spec, nodes)
     parameters = _apply_p2p_parameters(spec, nodes)
     loggers = _enable_p2p_loggers(spec, nodes)
+    options = _apply_hived_options(spec, nodes)
     roles = {role: node.directory.name for role, node in nodes.items()}
     _write_json(
         out_dir / "roles.json", {"roles": roles, "directories": {r: str(n.directory) for r, n in nodes.items()}}
@@ -427,6 +440,7 @@ def run(spec: RunSpec, part: str = "local") -> dict[str, Any]:
     for role, node in nodes.items():
         p2p_parameters.verify_config(node.config_file_path, parameters["applied"][role])
         p2p_loggers.verify_config(node.config_file_path, loggers[role])
+        hived_options.verify_config(node.config_file_path, options[role])
 
     late = spec.late_observer_blocks > 0 and "observer" in nodes
     start_time = block_log.get_head_block_time()
@@ -514,6 +528,7 @@ def run(spec: RunSpec, part: str = "local") -> dict[str, Any]:
         "roles": roles,
         "p2p_parameters": parameters,
         "p2p_loggers": loggers,
+        "node_hived_options": options,
         "colony_start_block": colony_start_block,
         "seed_links_s": seed_links_s,
         "replay": state,

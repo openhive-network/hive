@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import re
 import shlex
 import socket
 import statistics
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -121,6 +123,10 @@ def merge_remote_part(out: dict[str, Any], remote_out: dict[str, Any], clock: di
             "unsupported": {**parameters["unsupported"], **remote_parameters["unsupported"]},
         },
         "p2p_loggers": {**out["p2p_loggers"], **remote_out["p2p_loggers"]},
+        "node_hived_options": {
+            **out.get("node_hived_options", {}),
+            **remote_out.get("node_hived_options", {}),
+        },
         "samples": [*out["samples"], *({**sample, "part": "remote"} for sample in remote_out["samples"])],
         "seed_links_s": max(out["seed_links_s"], remote_out["seed_links_s"]),
         "remote": {
@@ -149,6 +155,30 @@ class RemoteHost:
                 f"{self.host}: {shlex.join(argv)} exited {result.returncode}: {result.stderr.strip()[-1000:]}"
             )
         return result.stdout
+
+    def check_access(self) -> None:
+        """
+        Raise RemoteHostError unless ssh reaches the host without a password; say when only the ssh agent does.
+
+        Every step of a series opens its own ssh connection, so access that rests on an agent, a forwarded one most
+        of all, ends the series when the agent goes.
+        """
+        agent = os.environ.get("SSH_AUTH_SOCK", "")
+        if subprocess.run(self._command(["true"]), capture_output=True, check=False, timeout=120).returncode != 0:
+            if not agent:
+                how = "no ssh agent here (SSH_AUTH_SOCK is unset) and no key of this host is accepted there"
+            elif not Path(agent).is_socket():
+                how = f"the ssh agent socket SSH_AUTH_SOCK={agent} is gone (a dropped agent forward?)"
+            else:
+                how = f"neither the ssh agent at {agent} nor a key of this host is accepted there"
+            raise RemoteHostError(f"ssh {self.host} fails without a password: {how}; give this host a key it accepts")
+        keys_only = [*_SSH[:1], "-o", "IdentityAgent=none", *_SSH[1:], self.host, "true"]
+        if agent and subprocess.run(keys_only, capture_output=True, check=False, timeout=120).returncode != 0:
+            print(
+                f"warning: {self.host} accepts only the ssh agent at {agent}: the series ends if the agent goes",
+                file=sys.stderr,
+                flush=True,
+            )
 
     def address(self) -> str:
         """The host's IPv4 address, as this host resolves its name."""
@@ -250,6 +280,10 @@ class RemoteHost:
 
     def start_part(self, request: dict[str, Any], log: Path) -> RemotePart:
         return RemotePart(self._command([str(_P2P_LOAD), "part"]), request, log)
+
+    def clean_part(self, name: str) -> list[str]:
+        """Remove what run `name`'s part left on the host (its container, its tmpfs directory); return what it was."""
+        return self.run(str(_P2P_LOAD), "clean-part", name, timeout=_PART_EXIT_TIMEOUT_S).splitlines()
 
 
 class RemotePart:

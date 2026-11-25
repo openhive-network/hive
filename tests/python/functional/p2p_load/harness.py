@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from python.functional.p2p_load import node_logs, procfs
-from python.functional.p2p_load.host_lock import CONTAINER_PREFIX
+from python.functional.p2p_load.host_lock import CONTAINER_PREFIX, running_container_names
 from python.functional.p2p_load.netem import NetemDelay
 from python.functional.p2p_load.remote import merge_remote_part
 
@@ -44,6 +44,11 @@ _SENDS_AFTER_LOADED_BLOCKS = 6
 # a two-host run: how far ahead of the start signal both hosts start their nodes, and how often the run is checked
 _START_LEAD_S = 5
 _POLL_S = 0.5
+# how long the remote part's driver may take to close its nodes once the local part has ended and the connection
+# closed (below the run's host's wait for the part, remote.py's _PART_EXIT_TIMEOUT_S), and how long a part cleanup
+# leaves a still running part to keep its logs and remove its tmpfs directory itself
+_STOPPED_PART_GRACE_S = 240
+_LEFTOVER_TMPFS_WAIT_S = 60
 # a two-host run's p2p ports come from below the ephemeral port range: there, nothing (an outgoing connection, a
 # node's webserver on port 0) takes a port between its pick and the node's bind
 _P2P_PORT_BASE = 20000
@@ -218,10 +223,14 @@ def _start_driver(
         return subprocess.Popen(_docker_command(spec, image, tmp_dir, tools, part), stdout=log, stderr=log)
 
 
+def _remove_container(name: str) -> None:
+    subprocess.run(["docker", "rm", "-f", name], check=False)
+
+
 def _end_driver(spec: RunSpec, driver: subprocess.Popen[bytes]) -> None:
     """Remove the driver's container if it still runs (the run failed or was aborted), with its nodes."""
     if driver.poll() is None:
-        subprocess.run(["docker", "rm", "-f", CONTAINER_PREFIX + spec.name], check=False)
+        _remove_container(CONTAINER_PREFIX + spec.name)
         driver.wait()
 
 
@@ -237,7 +246,8 @@ def _start_together(out_dir: Path, driver: subprocess.Popen[bytes], part: Remote
     Start both hosts' nodes at one moment once both have replayed, then wait for the local part; the exit code.
 
     Non-zero when either part failed: one that ends before the start, or a remote part that fails while the local
-    one runs, ends the run (the caller removes what still runs).
+    one runs, ends the run (the caller removes what still runs). A local part that fails ends the remote one: it is
+    not told the local part's end, so it removes its nodes.
     """
     while not ((out_dir / "local.ready").is_file() and part.ready.is_set()):
         for name, exit_code in (("local", driver.poll()), ("remote", part.poll())):
@@ -254,9 +264,21 @@ def _start_together(out_dir: Path, driver: subprocess.Popen[bytes], part: Remote
             print(f"the remote part failed (exit {remote_exit}) while the local part ran", file=sys.stderr)
             return remote_exit
         time.sleep(_POLL_S)
+    if driver.returncode:
+        print(f"the local part failed (exit {driver.returncode}); ending the remote part", file=sys.stderr)
+        part.finish()
+        return driver.returncode
     part.stop()
-    remote_exit = part.finish()
-    return driver.returncode or remote_exit
+    return part.finish()
+
+
+def _clean_remote_part(remote: RemoteHost, spec: RunSpec, out_root: Path) -> None:
+    """Remove what the run's ended remote part left on its host, and say so."""
+    left = remote.clean_part(spec.name)
+    if left:
+        line = f"{remote.host}: the remote part of {spec.name} left {', '.join(left)}; removed"
+        print(line, file=sys.stderr, flush=True)
+        _append_series_log(out_root, line)
 
 
 def _collect_remote_part(remote: RemoteHost, out_dir: Path) -> None:
@@ -299,6 +321,9 @@ def execute_run(
                 (out_dir / "clock.json").write_text(json.dumps(clock, indent=1))
                 request = {"spec": asdict(spec), "image": image, "tools": {k: str(v) for k, v in tools.items()}}
                 part = remote.start_part(request, out_dir / "part.log")
+                # once the part has ended, whatever it left (a hung driver it could not end, or the part itself
+                # gone) is removed over another connection
+                stack.callback(_clean_remote_part, remote, spec, out_root)
                 # leaving early (a failure here, Ctrl-C) closes the part's stdin: it kills its nodes and ends
                 stack.callback(part.finish)
             if spec.netem_ms:
@@ -334,8 +359,33 @@ def _follow_commands(commands: Iterable[str], out_dir: Path, spec: RunSpec, driv
         elif word == "stop":
             (out_dir / "remote.stop").touch()
             stopped = True
-    if not stopped:  # the run's host gave up on the run, or its connection broke
-        _end_driver(spec, driver)
+    if stopped:  # the driver closes its nodes and ends; one that does not is ended after a while
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            driver.wait(timeout=_STOPPED_PART_GRACE_S)
+    # the run's host gave up on the run, or its connection broke, or the driver missed the end
+    _end_driver(spec, driver)
+
+
+def clean_part(name: str) -> list[str]:
+    """
+    Remove run `name`'s container and tmpfs directory from this host, if left; return what was removed.
+
+    The part of a run normally removes both itself. Its tmpfs directory gets a while to go once the container is
+    removed: a part still running keeps the nodes' logs from it first.
+    """
+    left: list[str] = []
+    container = CONTAINER_PREFIX + name
+    if container in running_container_names():
+        _remove_container(container)
+        left.append(f"container {container}")
+    tmp_dir = TMPFS_ROOT / name
+    deadline = time.time() + _LEFTOVER_TMPFS_WAIT_S
+    while tmp_dir.exists() and time.time() < deadline:
+        time.sleep(_POLL_S)
+    if tmp_dir.exists():
+        shutil.rmtree(tmp_dir)
+        left.append(f"tmpfs {tmp_dir}")
+    return left
 
 
 def execute_part(

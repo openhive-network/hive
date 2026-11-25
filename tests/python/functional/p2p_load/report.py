@@ -34,7 +34,11 @@ def summarize(
             key: meta.get(key)
             for key in ("topology", "tpb", "colonies", "relays", "netem_ms", "late_observer_blocks", "mix", "binaries")
         }
-        | {"colony_mixes": meta.get("colony_mixes", {}), "colony_late_blocks": meta.get("colony_late_blocks", {})},
+        | {
+            "colony_mixes": meta.get("colony_mixes", {}),
+            "colony_late_blocks": meta.get("colony_late_blocks", {}),
+            "hived_options": meta.get("hived_options", []),
+        },
         "p2p_parameters": {
             "given": meta["p2p_parameters"]["given"],
             "unsupported": meta["p2p_parameters"]["unsupported"],
@@ -246,7 +250,8 @@ def format_summary(summary: dict[str, Any], min_thread_pct: float = 2.0) -> str:
             f", left out (unknown to the binary) {summary['p2p_parameters']['unsupported']}"
             if summary["p2p_parameters"]["unsupported"]
             else ""
-        ),
+        )
+        + "".join(f"\n   hived option {role}: {key} = {value}" for role, key, value in setup["hived_options"]),
         (
             f"   blocks {rates['blocks']} loaded: included {rates['included_tx_s']:.0f} tx/s, "
             f"received {rates['received_tx_s']:.0f} tx/s, median {rates['txs_per_block_median']:.0f} tx/block"

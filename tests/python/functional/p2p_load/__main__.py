@@ -1,6 +1,6 @@
 """
-Command line of the p2p load harness: run, ab, report, compare (and drive, which the run's container calls; part and
-hold-lock, which a two-host run calls on its remote host).
+Command line of the p2p load harness: run, ab, report, compare (and drive, which the run's container calls; part,
+clean-part, free-ports and hold-lock, which a two-host run calls on its remote host).
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from python.functional.p2p_load import analysis, report
 from python.functional.p2p_load.harness import (
     TEMPLATE_ROOT,
     HarnessSetupError,
+    clean_part,
     default_image,
     execute_part,
     execute_run,
@@ -27,7 +28,7 @@ from python.functional.p2p_load.harness import (
 )
 from python.functional.p2p_load.host_lock import HarnessBusyError, HostLock
 from python.functional.p2p_load.remote import HARNESS_PATHS, RemoteHost, RemoteHostError, local_address_towards
-from python.functional.p2p_load.spec import MIXES, PARTS, TOPOLOGIES, RunSpec
+from python.functional.p2p_load.spec import MIXES, OPTION_GROUPS, PARTS, TOPOLOGIES, RunSpec
 
 # shorthand flags for the p2p-parameters keys the #877 measurements vary; --p2p-parameter sets any other
 _P2P_FLAGS = {
@@ -36,12 +37,30 @@ _P2P_FLAGS = {
     "inflight": "maximum_transactions_in_flight",
 }
 
+# what a run option left out is, unless a --preset sets it
+_RUN_DEFAULTS = {"topology": "strict", "blocks": 30, "colonies": 1, "relays": 0}
+# loads that engage the flood mechanisms (RC surcharge, not relaying) on current builds; see README.md, "Floods"
+_PRESETS = {
+    "flood-c48": {"topology": "strict", "colonies": 48, "tpb": 720000, "blocks": 60},
+    "flood-ch24": {"topology": "chain", "relays": 1, "colonies": 24, "tpb": 360000, "blocks": 60},
+}
+
 
 def _key_value(text: str) -> tuple[str, str]:
     key, sep, value = text.partition("=")
     if not sep or not key or not value:
         raise argparse.ArgumentTypeError(f"expected KEY=VALUE, got {text!r}")
     return key, value
+
+
+def _hived_option(text: str) -> tuple[str, str, str, str]:
+    """[LABEL:]ROLE=KEY=VALUE as (label, role, key, value); the label is "" when not given."""
+    target, sep, rest = text.partition("=")
+    key, key_sep, value = rest.partition("=")
+    label, _, selector = target.rpartition(":")
+    if not (sep and key_sep and selector and key and value):
+        raise argparse.ArgumentTypeError(f"expected [LABEL:]ROLE=KEY=VALUE, got {text!r}")
+    return label, selector, key, value
 
 
 def _count(text: str, flag: str) -> int:
@@ -62,14 +81,26 @@ def _add_run_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("name", help="run name (the A/B series appends -LABEL-REP); its directory must not exist yet")
     parser.add_argument("--block-log", type=Path, required=True, help="single_sign_universal_block_log directory")
     parser.add_argument("--out-root", type=Path, default=Path("p2p-load-runs"), help="where run directories go")
-    parser.add_argument("--topology", choices=TOPOLOGIES, default="strict")
-    parser.add_argument("--tpb", type=int, required=True, help="colony transactions per block, split over colonies")
-    parser.add_argument("--blocks", type=int, default=30, help="loaded blocks measured, from the colonies' start")
-    parser.add_argument("--colonies", type=int, default=1)
+    parser.add_argument(
+        "--preset",
+        choices=_PRESETS,
+        help="; ".join(
+            f"{name}: {' '.join(f'--{key} {value}' for key, value in preset.items())}"
+            for name, preset in _PRESETS.items()
+        )
+        + " (the options given override it)",
+    )
+    parser.add_argument("--topology", choices=TOPOLOGIES, help=f"default {_RUN_DEFAULTS['topology']}")
+    parser.add_argument("--tpb", type=int, help="colony transactions per block, split over colonies (or a --preset's)")
+    parser.add_argument(
+        "--blocks",
+        type=int,
+        help=f"loaded blocks measured, from the colonies' start (default {_RUN_DEFAULTS['blocks']})",
+    )
+    parser.add_argument("--colonies", type=int, help=f"default {_RUN_DEFAULTS['colonies']}")
     parser.add_argument(
         "--relays",
         type=int,
-        default=0,
         help="relays between the colonies and the witness (chain), or between the witness and the observer (diamond)",
     )
     parser.add_argument(
@@ -90,6 +121,18 @@ def _add_run_options(parser: argparse.ArgumentParser) -> None:
         default=[],
         metavar="KEY=JSON",
         help="sets any p2p-parameters key on every node whose binary has it",
+    )
+    parser.add_argument(
+        "--hived-option",
+        type=_hived_option,
+        action="append",
+        default=[],
+        metavar="[LABEL:]ROLE=KEY=VALUE",
+        help=(
+            f"a hived config option for one role or {', '.join(OPTION_GROUPS)} (the most specific wins), written "
+            "into its config.ini; log-logger takes one logger object and replaces that logger's entry; LABEL: only "
+            "for the runs of that build (ab) or --label (run)"
+        ),
     )
     parser.add_argument(
         "--late-observer",
@@ -152,6 +195,21 @@ def _add_run_options(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--remote-address", help="IPv4 address the nodes dial the remote host's at (default: DNS)")
     parser.add_argument("--local-address", help="IPv4 address the nodes dial this host's at (default: the route's)")
+
+
+def _apply_preset(args: argparse.Namespace) -> None:
+    """Fill the run options not given from the --preset, then from the defaults."""
+    for key, value in {**_RUN_DEFAULTS, **_PRESETS.get(args.preset or "", {})}.items():
+        if getattr(args, key) is None:
+            setattr(args, key, value)
+    if args.tpb is None:
+        raise HarnessSetupError("--tpb or a --preset is required")
+
+
+def _check_option_labels(args: argparse.Namespace, labels: list[str]) -> None:
+    unknown = sorted({label for label, *_ in args.hived_option if label and label not in labels})
+    if unknown:
+        raise HarnessSetupError(f"--hived-option for {', '.join(unknown)}: no build has that label")
 
 
 def _p2p_parameters(args: argparse.Namespace) -> dict[str, Any]:
@@ -220,6 +278,7 @@ def _spec(args: argparse.Namespace, name: str, hived: Path, label: str, placemen
         replay_templates="" if args.fresh_replay else str(TEMPLATE_ROOT),
         remote_host=placement.remote.host if placement else "",
         remote_roles=placement.remote_roles if placement else [],
+        hived_options=[[role, key, value] for given, role, key, value in args.hived_option if given in {"", label}],
     )
     if placement is not None:
         spec.endpoints = placement.endpoints(spec.roles())
@@ -235,6 +294,7 @@ def _prepare_remote(args: argparse.Namespace, builds: list[tuple[str, Path]], to
     if args.remote_host is None or not args.remote_roles:
         raise HarnessSetupError("--remote-host and --remote-roles go together")
     remote = RemoteHost(args.remote_host)
+    remote.check_access()
     binaries = {Path(path) for role, path in args.node_hived if role in args.remote_roles}
     remote.copy([*HARNESS_PATHS, *(hived for _, hived in builds), *binaries, *tools.values(), args.block_log.resolve()])
     return remote
@@ -293,6 +353,8 @@ def _series(args: argparse.Namespace, builds: list[tuple[str, Path]], reps: int)
 
 def _run(args: argparse.Namespace) -> int:
     hived = _executable(args.hived)
+    _apply_preset(args)
+    _check_option_labels(args, [args.label])
     return _series(args, [(args.label, hived)], args.reps)
 
 
@@ -302,6 +364,8 @@ def _ab(args: argparse.Namespace) -> int:
         raise HarnessSetupError("--build needs at least two distinct labels")
     if args.node_hived:
         raise HarnessSetupError("--node-hived and --build do not combine: each A/B run uses one build on every node")
+    _apply_preset(args)
+    _check_option_labels(args, [label for label, _ in builds])
     return _series(args, builds, args.reps)
 
 
@@ -344,6 +408,12 @@ def _part(args: argparse.Namespace) -> int:
         print(line, flush=True)
 
     return execute_part(spec, request["image"], tools, sys.stdin, say)
+
+
+def _clean_part(args: argparse.Namespace) -> int:
+    for left in clean_part(args.name):
+        print(left)
+    return 0
 
 
 def _free_ports(args: argparse.Namespace) -> int:
@@ -403,6 +473,11 @@ def _parser() -> argparse.ArgumentParser:
     part.set_defaults(handler=_part)
     hold_lock = commands.add_parser("hold-lock", help="(on a two-host run's remote host) hold the host lock")
     hold_lock.set_defaults(handler=_hold_lock)
+    clean = commands.add_parser(
+        "clean-part", help="(on a two-host run's remote host) remove what a run's part left; print what it was"
+    )
+    clean.add_argument("name")
+    clean.set_defaults(handler=_clean_part)
     ports = commands.add_parser("free-ports", help="(on a two-host run's remote host) print free p2p ports")
     ports.add_argument("count", type=int)
     ports.set_defaults(handler=_free_ports)
