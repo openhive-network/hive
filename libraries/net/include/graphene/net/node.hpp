@@ -107,6 +107,13 @@ namespace graphene { namespace net {
    */
   typedef std::function<void(const fc::exception_ptr& error, bool relay)> transaction_validated_callback;
 
+  /**
+   * Called by the client with a transaction it accepted earlier without relaying it (transaction_validated_callback),
+   * once it wants it relayed; the node then advertises it to its peers.  It may be called from any thread, also after
+   * the node closed, and does not block.
+   */
+  typedef std::function<void(const std::shared_ptr<full_transaction_type>& full_transaction)> transaction_release_callback;
+
   /// The client's pending transaction pool: how many bytes of transactions it holds and the transaction fetch gate's threshold
   struct pending_transaction_pool_size
   {
@@ -418,6 +425,10 @@ namespace graphene { namespace net {
          /** returns the size of the pending transaction pool. Called from the p2p thread often, so it must not block:
           * it returns the size as last published by the client, never a size from the middle of applying a block */
          virtual pending_transaction_pool_size get_pending_transaction_pool_size() const = 0;
+
+         /** called once the delegate is set, with the function through which the client releases the transactions it
+          * held (transaction_release_callback) */
+         virtual void set_transaction_release_callback(transaction_release_callback release) = 0;
 
          virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const = 0;
 
@@ -1231,6 +1242,7 @@ namespace graphene { namespace net {
       uint64_t limit_waits = 0;   ///< times the transactions in flight reached maximum_transactions_in_flight, so fetching stopped
       fc::microseconds limit_wait_time; ///< how long fetching stayed stopped so, all those times together
       uint64_t not_relayed = 0;   ///< transactions the client accepted but said not to relay (transaction_validated_callback)
+      uint64_t released = 0;      ///< transactions the client later released for relaying (transaction_release_callback)
     };
 
     /// peer_connection socket writes
@@ -1267,6 +1279,7 @@ namespace graphene { namespace net {
     void record_limit_wait(fc::microseconds waited);
     void record_completion(fc::microseconds latency);
     void record_not_relayed();
+    void record_released(size_t transactions);
     /// Records whether the transaction fetch gate of the pass that began at @p now was closed; the time from a pass
     /// whose gate was closed until the next pass (or report) counts towards fetch_scheduling::gated_time
     void record_gate(bool closed, fc::time_point now);

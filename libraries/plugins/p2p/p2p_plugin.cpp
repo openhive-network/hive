@@ -54,6 +54,8 @@ public:
     on_validated( get_exception(), should_relay() );
   }
 
+  virtual bool can_be_held() const override { return true; }
+
 private:
   const graphene::net::transaction_validated_callback on_validated;
 };
@@ -111,6 +113,7 @@ public:
   virtual uint32_t get_tail_block_num() const override;
   virtual bool is_at_live_sync() override;
   virtual graphene::net::pending_transaction_pool_size get_pending_transaction_pool_size() const override;
+  virtual void set_transaction_release_callback( graphene::net::transaction_release_callback release ) override;
   virtual uint32_t estimate_last_known_fork_from_git_revision_timestamp( uint32_t ) const override;
   virtual void error_encountered( const std::string& message, const fc::oexception& error ) override;
   virtual std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -390,6 +393,11 @@ bool p2p_plugin_impl::is_at_live_sync()
   fc::time_point_sec head_block_time = head_block ? head_block->get_block_header().timestamp : fc::time_point_sec::min();
   return chain.get_time_gap_to_live_sync( head_block_time ).count() < 0;
 } FC_CAPTURE_AND_RETHROW() }
+
+void p2p_plugin_impl::set_transaction_release_callback( graphene::net::transaction_release_callback release )
+{
+  chain.db().set_transaction_release_callback( std::move( release ) );
+}
 
 graphene::net::pending_transaction_pool_size p2p_plugin_impl::get_pending_transaction_pool_size() const
 {

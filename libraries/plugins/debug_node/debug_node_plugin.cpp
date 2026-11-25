@@ -200,6 +200,7 @@ void debug_node_plugin::debug_push_pending_transaction( const std::shared_ptr<hi
 
   db._pending_tx.push_back( tx );
   db._pending_tx_size += tx->get_transaction_size();
+  db._pending_tx_relayed_size += tx->get_transaction_size();
 }
 
 /*

@@ -109,6 +109,8 @@ namespace graphene { namespace net {
 
     void block_accepted();
     void cache_message(const smart_ptr_type& item, const message_propagation_data& propagation_data);
+    /// caches @p item as if received now, so it stays for another cache duration; one already cached keeps its propagation data
+    void refresh_message(const smart_ptr_type& item, const message_propagation_data& propagation_data);
     smart_ptr_type get_item(const message_hash_type& message_hash) const;
     bool contains_item(const message_hash_type& message_hash) const;
     smart_ptr_type get_item_by_contents_hash(const message_hash_type& message_hash) const;
@@ -132,6 +134,16 @@ namespace graphene { namespace net {
   void blockchain_tied_message_cache<smart_ptr_type>::cache_message(const smart_ptr_type& item, const message_propagation_data& propagation_data)
   {
     _message_cache.insert(message_info(item, block_clock, propagation_data));
+  }
+
+  template <typename smart_ptr_type>
+  void blockchain_tied_message_cache<smart_ptr_type>::refresh_message(const smart_ptr_type& item, const message_propagation_data& propagation_data)
+  {
+    auto& idx = _message_cache.template get<message_hash_index>();
+    if (const auto iter = idx.find(get_message_hash().get_message_hash_from_item(item)); iter != idx.end())
+      idx.modify(iter, [this](message_info& info) { info.block_clock_when_received = block_clock; });
+    else
+      _message_cache.insert(message_info(item, block_clock, propagation_data));
   }
 
   template <typename smart_ptr_type>

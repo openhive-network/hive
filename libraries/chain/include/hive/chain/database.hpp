@@ -35,6 +35,7 @@ namespace hive { namespace protocol {
 #include <atomic>
 #include <functional>
 #include <map>
+#include <mutex>
 
 namespace appbase {
   class application;
@@ -388,10 +389,26 @@ namespace chain {
       /**
         * Whether @p full_transaction, just accepted into pending, is worth relaying: a privileged transaction
         * (resource_credits::is_privileged_transaction(), checked whatever the pending pool holds) always is, any other
-        * while pending ahead of it holds no more than get_relay_limit().  A transaction beyond that is less likely to
-        * make it into a block before it expires, and is kept locally only.
+        * while the relayed pending ahead of it (_pending_tx_relayed_size) holds no more than get_relay_limit().  A
+        * transaction beyond that is less likely to make it into a block before it expires.  Transactions this node
+        * holds (relay_or_hold()) do not count: only this node has them, so no producer includes them.
         */
       bool is_worth_relaying( const full_transaction_type& full_transaction ) const;
+      /**
+        * is_worth_relaying() for @p full_transaction, just accepted into pending by a caller that relays it only when
+        * told to; one not worth relaying is held: kept in pending, left out of _pending_tx_relayed_size, and released
+        * (set_transaction_release_callback()) oldest first once the relayed pending falls back to get_relay_limit() as
+        * pending is reapplied.  Unless it leaves pending first (included, expired, failed or dropped by the
+        * max-mempool-size trim), then it is never released.
+        */
+      bool relay_or_hold( const std::shared_ptr<full_transaction_type>& full_transaction );
+      using transaction_release_callback = std::function< void( const std::shared_ptr<full_transaction_type>& ) >;
+      /// Sets what release_held_transactions() hands each released transaction to, oldest first, on the writer thread;
+      /// it must not block.  Without one, released transactions are only counted as relayed.  Thread safe
+      void set_transaction_release_callback( transaction_release_callback release );
+      /// Releases held transactions from the front of _held_tx while the relayed pending ahead of each holds no more
+      /// than get_relay_limit(); returns how many it released
+      size_t release_held_transactions();
       void _push_transaction( const std::shared_ptr<full_transaction_type>& full_transaction );
 
       void pop_block();
@@ -705,6 +722,12 @@ namespace chain {
       std::deque<std::shared_ptr<full_transaction_type>>       _popped_tx;
       vector<std::shared_ptr<full_transaction_type>>           _pending_tx;
       size_t                                                   _pending_tx_size = 0;
+      // the part of _pending_tx_size not in _held_tx: what this node relayed (or its caller broadcast anyway)
+      size_t                                                   _pending_tx_relayed_size = 0;
+      // transactions of _pending_tx held by relay_or_hold(), in their order in _pending_tx (which is the order they
+      // arrived in); rebuilt from the ones still pending each time pending is reapplied, see
+      // detail::pending_transactions_restorer
+      std::deque<std::shared_ptr<full_transaction_type>>       _held_tx;
       size_t                                                   _max_mempool_size = 0;
       // rc-flood-relay-percent, see relay_limit()
       uint16_t                                                 _flood_relay_percent = 100;
@@ -786,6 +809,9 @@ namespace chain {
 
     private:
       struct irreversible_block_data_type *last_irreversible_object = nullptr;
+      // set by set_transaction_release_callback() on any thread, called by release_held_transactions() on the writer thread
+      std::mutex                                               _transaction_release_mutex;
+      transaction_release_callback                             _transaction_release;
       // read without the state lock, e.g. by p2p and block_api through single_block_storage::head_block()
       std::atomic<std::shared_ptr<full_block_type>> cached_lib;
 

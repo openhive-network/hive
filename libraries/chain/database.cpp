@@ -699,9 +699,43 @@ bool database::is_worth_relaying( const full_transaction_type& full_transaction 
   // only above the flood level, and puts it at the front of pending instead of the back
   if( rc().is_privileged_transaction( full_transaction ) )
     return true;
-  // a transaction that is not privileged was put at the back, and the surcharge was decided by what was ahead of it
-  const uint64_t pending_ahead = _pending_tx_size - full_transaction.get_transaction_size();
-  return pending_ahead <= get_relay_limit();
+  // a transaction that is not privileged was put at the back, and counted as relayed until relay_or_hold() holds it
+  const uint64_t relayed_ahead = _pending_tx_relayed_size - full_transaction.get_transaction_size();
+  return relayed_ahead <= get_relay_limit();
+}
+
+bool database::relay_or_hold( const std::shared_ptr<full_transaction_type>& full_transaction )
+{
+  // one _push_transaction() put in front of pending (full_transaction_type::check_privilege()) is relayed as privileged,
+  // and is not in _pending_tx_relayed_size to be held out of it
+  if( _pending_tx.empty() || _pending_tx.back() != full_transaction || is_worth_relaying( *full_transaction ) )
+    return true;
+  _held_tx.push_back( full_transaction );
+  _pending_tx_relayed_size -= full_transaction->get_transaction_size();
+  return false;
+}
+
+size_t database::release_held_transactions()
+{
+  if( _held_tx.empty() )
+    return 0;
+  const uint64_t relay_limit = get_relay_limit();
+  size_t released = 0;
+  std::lock_guard<std::mutex> guard( _transaction_release_mutex );
+  for( ; !_held_tx.empty() && _pending_tx_relayed_size <= relay_limit; ++released )
+  {
+    _pending_tx_relayed_size += _held_tx.front()->get_transaction_size();
+    if( _transaction_release )
+      _transaction_release( _held_tx.front() );
+    _held_tx.pop_front();
+  }
+  return released;
+}
+
+void database::set_transaction_release_callback( transaction_release_callback release )
+{
+  std::lock_guard<std::mutex> guard( _transaction_release_mutex );
+  _transaction_release = std::move( release );
 }
 
 struct custom_op_visitor
@@ -779,6 +813,7 @@ void database::_push_transaction(const std::shared_ptr<full_transaction_type>& f
     {
       _pending_tx.push_back( full_transaction );
       _pending_tx_size += full_transaction->get_transaction_size();
+      _pending_tx_relayed_size += full_transaction->get_transaction_size();
     }
 
     _pending_tx_index.emplace( trx_id );
@@ -862,6 +897,8 @@ void database::clear_pending()
     assert( _pending_tx.empty() || _pending_tx_session.has_value() );
     _pending_tx.clear();
     _pending_tx_size = 0;
+    _pending_tx_relayed_size = 0;
+    _held_tx.clear();
     _pending_tx_session.reset();
     _pending_tx_index.clear();
     _pending_tx_custom_op_count.clear();

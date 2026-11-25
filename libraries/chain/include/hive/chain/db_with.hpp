@@ -65,7 +65,8 @@ void with_skip_flags(
 struct pending_transactions_restorer
 {
   pending_transactions_restorer( database& db, const block_flow_control& block_ctrl, std::vector<std::shared_ptr<full_transaction_type>>&& pending_transactions )
-    : _db(db), _block_ctrl( block_ctrl ), _pending_transactions( std::move(pending_transactions) )
+    : _db(db), _block_ctrl( block_ctrl ), _pending_transactions( std::move(pending_transactions) ),
+      _held_transactions( std::move( db._held_tx ) )
   {
     _db.clear_pending();
   }
@@ -83,6 +84,8 @@ struct pending_transactions_restorer
 #endif
       _db._pending_tx.clear();
       _db._pending_tx_size = 0;
+      _db._pending_tx_relayed_size = 0;
+      _db._held_tx.clear();
       _db._pending_tx_index.clear();
       _db._pending_tx_custom_op_count.clear();
     }
@@ -102,9 +105,23 @@ struct pending_transactions_restorer
     uint32_t failed_txs = 0;
     uint32_t dropped_txs = 0;
     bool stop = false;
+    // _held_transactions are in their order in _pending_transactions, so the next one is either the transaction at
+    // hand or still to come
+    auto next_held = _held_transactions.begin();
 
-    auto handle_tx = [&](const std::shared_ptr<full_transaction_type>& full_transaction)
+    auto handle_tx = [&](const std::shared_ptr<full_transaction_type>& full_transaction, bool was_pending)
     {
+      const bool held = was_pending && next_held != _held_transactions.end() && *next_held == full_transaction;
+      if( held )
+        ++next_held;
+      const auto keep_held = [&]()
+      {
+        if( held )
+        {
+          _db._held_tx.push_back( full_transaction );
+          _db._pending_tx_relayed_size -= full_transaction->get_transaction_size();
+        }
+      };
 #if !defined IS_TEST_NET || defined NDEBUG //during debugging that limit is highly problematic
       if( apply_trxs && fc::time_point::now() - start > HIVE_PENDING_TRANSACTION_EXECUTION_LIMIT )
         apply_trxs = false;
@@ -127,6 +144,7 @@ struct pending_transactions_restorer
             // since push_transaction() takes a signed_transaction,
             // the operation_results field will be ignored.
             _db._push_transaction( full_transaction );
+            keep_held();
             ++applied_txs;
           }
         }
@@ -163,6 +181,8 @@ struct pending_transactions_restorer
         {
           _db._pending_tx.emplace_back(full_transaction);
           _db._pending_tx_size += full_transaction->get_transaction_size();
+          _db._pending_tx_relayed_size += full_transaction->get_transaction_size();
+          keep_held();
           // NOTE: while recording all postponed in _pending_tx_index would slow us down in a minor
           // way (another 200-300ms per 1M transactions which would already likely exceed flood limits)
           // checking against known transactions from blocks could be too slow (because they can be
@@ -200,17 +220,18 @@ struct pending_transactions_restorer
       {
         if( stop )
           break;
-        handle_tx( tx );
+        handle_tx( tx, false );
       }
       for (auto& tx : _pending_transactions)
       {
         if( stop )
           break;
-        handle_tx(tx);
+        handle_tx( tx, true );
       }
       dropped_txs = _db._popped_tx.size() + _pending_transactions.size() - ( known_txs + applied_txs + postponed_txs + expired_txs + failed_txs );
       _db._popped_tx.clear();
     } );
+    const size_t released_txs = _db.release_held_transactions();
 
     _block_ctrl.on_end_of_processing( expired_txs, failed_txs, applied_txs, postponed_txs, dropped_txs, _db._pending_tx_size, _db.get_last_irreversible_block_num() );
     if( in_sync && ( postponed_txs || expired_txs ) )
@@ -218,11 +239,18 @@ struct pending_transactions_restorer
       wlog("Postponed ${postponed_txs} pending transactions. ${applied_txs} were applied. ${expired_txs} expired.",
            (postponed_txs)(applied_txs)(expired_txs));
     }
+    if( in_sync && ( released_txs || !_db._held_tx.empty() ) )
+    {
+      ilog("Released ${released_txs} held pending transactions, still holding ${held_txs} (${held_size} bytes) behind ${relayed_size} bytes relayed.",
+           (released_txs)("held_txs", _db._held_tx.size())("held_size", _db._pending_tx_size - _db._pending_tx_relayed_size)
+           ("relayed_size", _db._pending_tx_relayed_size));
+    }
   }
 
   database& _db;
   const block_flow_control& _block_ctrl;
   std::vector<std::shared_ptr<full_transaction_type>> _pending_transactions;
+  std::deque<std::shared_ptr<full_transaction_type>> _held_transactions;
 };
 
 /**

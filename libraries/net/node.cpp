@@ -300,6 +300,7 @@ namespace graphene { namespace net {
       uint32_t get_tail_block_num() const override;
       bool is_at_live_sync() override;
       pending_transaction_pool_size get_pending_transaction_pool_size() const override;
+      void set_transaction_release_callback(transaction_release_callback release) override;
       uint32_t estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const override;
       void error_encountered(const std::string& message, const fc::oexception& error) override;
       std::deque<block_id_type>::const_iterator find_first_item_not_in_blockchain(const std::deque<block_id_type>& item_hashes_received) override;
@@ -564,6 +565,8 @@ namespace graphene { namespace net {
       };
       /// filled by the delegate's validation callbacks on the chain's writer thread, applied on our thread
       std::shared_ptr<completion_queue<transaction_completion>> _transaction_completions;
+      /// filled through the delegate's transaction_release_callback, advertised on our thread
+      std::shared_ptr<completion_queue<std::shared_ptr<full_transaction_type>>> _released_transactions;
       in_flight_limit _transactions_in_flight;
       /// since when the transactions in flight have been at maximum_transactions_in_flight, while they are
       std::optional<fc::time_point> _in_flight_cap_reached_since;
@@ -915,6 +918,7 @@ namespace graphene { namespace net {
       void broadcast(const std::shared_ptr<full_block_type>& full_block, const message_propagation_data& propagation_data);
       void broadcast(const std::shared_ptr<full_transaction_type>& full_transaction, const message_propagation_data& propagation_data);
       void advertise_block(const std::shared_ptr<full_block_type>& full_block);
+      void advertise_released_transactions();
       void broadcast(const std::shared_ptr<full_block_type>& full_block);
       void broadcast(const std::shared_ptr<hive::chain::full_transaction_type>& full_transaction);
 
@@ -1066,6 +1070,12 @@ namespace graphene { namespace net {
           if (!completions->is_closed())
             apply_transaction_completions();
         }, "apply_transaction_completions");
+      });
+      _released_transactions = std::make_shared<completion_queue<std::shared_ptr<full_transaction_type>>>([this]() {
+        _thread->async([this, released = _released_transactions]() {
+          if (!released->is_closed())
+            advertise_released_transactions();
+        }, "advertise_released_transactions");
       });
     }
 
@@ -6935,6 +6945,7 @@ namespace graphene { namespace net {
 
       // transactions still being validated are discarded when their validation ends
       _transaction_completions->close();
+      _released_transactions->close();
       _transactions_in_flight.close();
 
       try
@@ -7576,7 +7587,12 @@ namespace graphene { namespace net {
       VERIFY_CORRECT_THREAD();
       _delegate.reset();
       if (del)
+      {
         _delegate.reset(new statistics_gathering_node_delegate_wrapper(del));
+        _delegate->set_transaction_release_callback([released = _released_transactions](const std::shared_ptr<full_transaction_type>& full_transaction) {
+          released->push(full_transaction);
+        });
+      }
     }
 
     void node_impl::load_configuration( const fc::path& configuration_directory )
@@ -8418,6 +8434,25 @@ namespace graphene { namespace net {
       _transaction_message_cache.block_accepted();
     }
 
+    // queue the transactions the client held when they were validated (apply_transaction_completion()) and has released
+    // since for advertisement, as broadcast() does.  They were cached then, so peers that advertised them are not asked
+    // for them again; the cache is refreshed so it still has them when peers ask us for them
+    void node_impl::advertise_released_transactions()
+    {
+      VERIFY_CORRECT_THREAD();
+      const std::deque<std::shared_ptr<full_transaction_type>> released = _released_transactions->take_all();
+      if (released.empty())
+        return;
+      const message_propagation_data propagation_data{fc::time_point::now(), fc::time_point::now(), _node_id};
+      for (const std::shared_ptr<full_transaction_type>& full_transaction : released)
+      {
+        _transaction_message_cache.refresh_message(full_transaction, propagation_data);
+        _new_transaction_inventory.insert(full_transaction);
+      }
+      _statistics.record_released(released.size());
+      trigger_advertise_inventory_loop();
+    }
+
     void node_impl::broadcast(const std::shared_ptr<full_transaction_type>& full_transaction, const message_propagation_data& propagation_data)
     {
       VERIFY_CORRECT_THREAD();
@@ -9040,6 +9075,11 @@ namespace graphene { namespace net {
       return _node_delegate->get_pending_transaction_pool_size();
     }
 
+    void statistics_gathering_node_delegate_wrapper::set_transaction_release_callback(transaction_release_callback release)
+    {
+      _node_delegate->set_transaction_release_callback(std::move(release));
+    }
+
     uint32_t statistics_gathering_node_delegate_wrapper::estimate_last_known_fork_from_git_revision_timestamp(uint32_t unix_timestamp) const
     {
       INVOKE_AND_COLLECT_STATISTICS(estimate_last_known_fork_from_git_revision_timestamp, unix_timestamp);
@@ -9540,6 +9580,11 @@ namespace graphene { namespace net {
     ++_handoff.not_relayed;
   }
 
+  void p2p_statistics::record_released(size_t transactions)
+  {
+    _handoff.released += transactions;
+  }
+
   void p2p_statistics::record_gate(bool closed, fc::time_point now)
   {
     if (_gate_closed_since)
@@ -9625,7 +9670,8 @@ namespace graphene { namespace net {
         ("completion_latency", std::move(latency))
         ("limit_waits", _handoff.limit_waits)
         ("limit_wait_us", _handoff.limit_wait_time.count())
-        ("not_relayed", _handoff.not_relayed))
+        ("not_relayed", _handoff.not_relayed)
+        ("released", _handoff.released))
       ("send", fc::mutable_variant_object()
         ("writes", _sending.writes)
         ("messages_per_write", mean(_sending.messages, _sending.writes))
