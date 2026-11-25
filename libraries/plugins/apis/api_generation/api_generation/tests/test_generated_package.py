@@ -100,6 +100,7 @@ def test_public_models_use_only_builtin_aliases(description: Path) -> None:
         "hiveio_api.operations.hf26",
         "hiveio_api.operations.legacy",
         "hiveio_api.fields.public",
+        "hiveio_api_client",  # `ClassFilterInterface` - base of models with schema filters (`schema_filters.py`)
     }, modules
 
 
