@@ -258,6 +258,38 @@ redis_answers() {  # redis://HOST:PORT: whether it answers PING within 3 s
         _ "${hp%:*}" "${hp##*:}" 2>/dev/null
 }
 
+# Whether the WebDAV cache at http://HOST[:PORT][/PATH] answers, and answers
+# sccache's reads: sccache before 0.10 (images on ci-base-image before
+# pypa_2_28-pg18-6, such as an older environment.image seed) stats a key with
+# PROPFIND before reading it, and reads nothing (a miss, counted as a cache
+# error) unless a missing key is a 404 and a stored one a non-collection with
+# its getcontentlength. The stored key probed is the one sccache writes when its
+# server starts; a cache that has not stored it yet is taken on the 404 alone.
+webdav_answers() {
+    local rest="${1#http://}" hp path reply
+    hp="${rest%%/*}" path="${rest#"$hp"}"; path="${path%/}"
+    [[ "$hp" == *:* ]] || hp="$hp:80"
+    local at=("${hp%:*}" "${hp##*:}")
+    reply="$(http_reply GET "${at[@]}" "$path/healthz")"
+    [[ "$reply" == "HTTP/"*" 200 "* ]] || return 1
+    reply="$(http_reply PROPFIND "${at[@]}" "$path/hive/.sccache-probe-missing")"
+    if [[ "$reply" != "HTTP/"*" 404 "* ]]; then
+        echo "sccache: the WebDAV cache at $1 does not answer PROPFIND of a missing key with 404 (${reply%%$'\r'*}), so sccache could not read from it; not used"
+        return 1
+    fi
+    reply="$(http_reply PROPFIND "${at[@]}" "$path/hive/.sccache_check")"
+    [[ "$reply" == "HTTP/"*" 404 "* ]] && return 0
+    if [[ "$reply" == *getcontentlength* && "$reply" != *collection* ]]; then return 0; fi
+    echo "sccache: the WebDAV cache at $1 answers PROPFIND of a stored key without its size (${reply%%$'\r'*}), so sccache could not read from it; not used"
+    return 1
+}
+
+http_reply() {  # METHOD HOST PORT PATH: the response's status line, headers and body (4 kB at most), within 3 s
+    timeout 3 bash -c 'exec 3<>"/dev/tcp/$2/$3" &&
+        printf "%s %s HTTP/1.0\r\nHost: %s\r\nDepth: 0\r\n\r\n" "$1" "$4" "$2" >&3 &&
+        head -c 4096 <&3' _ "$@" 2>/dev/null
+}
+
 # CI's own Redis (HIVE_SCCACHE_REDIS overrides it), which the stack's relay
 # forwards to; a host-side suite reaches it directly or not at all.
 ci_sccache_redis() {
@@ -265,8 +297,20 @@ ci_sccache_redis() {
     sed -n 's/^ *SCCACHE_REDIS: *"\(.*\)"$/\1/p' .gitlab-ci.yaml | head -1
 }
 
-compiler_cache() {  # warm when CI's Redis answers, else cold
-    redis_answers "$(ci_sccache_redis)" && echo warm || echo cold
+# The shared compiler cache the image build reaches on the host's network: the
+# site's WebDAV cache AIDEV hands the suite, as run-checks.sh prefers it, else
+# CI's Redis; nothing when neither answers. Why a WebDAV cache is not used goes
+# to stderr.
+compiler_cache_address() {
+    if [ -n "${AIDEV_SCCACHE_WEBDAV_ENDPOINT:-}" ] && webdav_answers "$AIDEV_SCCACHE_WEBDAV_ENDPOINT" >&2; then
+        echo "$AIDEV_SCCACHE_WEBDAV_ENDPOINT"
+    elif redis_answers "$(ci_sccache_redis)"; then
+        ci_sccache_redis
+    fi
+}
+
+compiler_cache() {  # warm when a shared compiler cache answers, else cold
+    [ -n "$(compiler_cache_address)" ] && echo warm || echo cold
 }
 
 compose_plugin() {
@@ -283,12 +327,13 @@ compose_plugin() {
 # Prints what it found and the plan (integration_plan), the skip reason last when
 # it cannot.
 integration_preconditions() {  # LEFT CACHE SCRIPT...
-    local left="$1" cache="$2" s net estimates=()
+    local left="$1" cache="$2" s net at estimates=()
     shift 2
     declare -A nets=()
     docker info > /dev/null 2>&1 || { echo "docker_capability_unavailable: no docker daemon reachable here"; return 1; }
     compose_plugin > /dev/null || { echo "docker_compose_unavailable: no docker compose plugin here"; return 1; }
-    echo "compiler cache: $cache ($(ci_sccache_redis))"
+    at="$(compiler_cache_address 2> /dev/null)"
+    echo "compiler cache: $cache (${at:-no shared cache answers})"
     for s; do
         read -r net _ <<< "$(integration_script_needs "$s")"; nets[$net]=1
     done
@@ -417,7 +462,8 @@ copy_tracked() {  # SUBMODULE DIR: DIR holds SUBMODULE's tracked files, nothing 
 
 # NETWORK's binaries built in the checks' own image, with CI's paths and
 # arguments and the checkout and its git directory at the paths they have here;
-# sccache there probes CI's Redis (HIVE_SCCACHE_REDIS) and else builds cold. Then
+# sccache there probes the site's WebDAV cache (AIDEV_SCCACHE_WEBDAV_ENDPOINT),
+# then CI's Redis (HIVE_SCCACHE_REDIS), and else builds cold. Then
 # the Dockerfile's instance stage, its build stage replaced by those binaries and
 # the checkout's scripts, as CI's image has them, on the registry's minimal-runtime
 # or, when the change touches the runtime stages (INLINE_BASE=1), on that stage
@@ -440,7 +486,7 @@ hived_image() {  # NETWORK RUNTIME_IMAGE TAG INLINE_BASE
     docker run --rm --name "$integration_prefix-build-$net" --network host --user 0 "${cap[@]}" \
         -v "$(on_host "$git_dir"):$git_dir" -v "$(on_host "$PWD"):$PWD" -w "$PWD" \
         -v "$(on_host "$secp"):$PWD/$secp256k1_source" \
-        -e HIVE_SCCACHE_REDIS="$(ci_sccache_redis)" \
+        -e HIVE_SCCACHE_REDIS="$(ci_sccache_redis)" -e AIDEV_SCCACHE_WEBDAV_ENDPOINT \
         -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0='*' \
         -e HIVE_BUILD_JOBS -e HIVE_BUILD_JOB_MEMORY_MB "$2" timeout -k 30 "$(remaining)" \
         .aidev/run-checks.sh "${built##*/}" "hived-$net" || rc=$?

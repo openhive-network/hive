@@ -293,7 +293,9 @@ so the run tries it and measures it, bounded by its deadline.
 For each network a selected script needs (testnet for the snapshot bootstrap,
 mainnet for the exchange node), the step builds the binaries in the checks'
 image with CI's paths and cmake arguments on the host's network, where sccache
-uses CI's Redis if it answers and a local cache otherwise; then the
+uses the site's WebDAV cache (`AIDEV_SCCACHE_WEBDAV_ENDPOINT`, passed through)
+if it answers, else CI's Redis if that does, else a local cache; the plan's
+compiler cache is warm when either answers. Then the
 `Dockerfile`'s `instance` stage around them (its `build` stage replaced through
 `--build-context`). Its base is the registry's `minimal-runtime:${CI_IMAGE_TAG}`,
 unless the diff changes a line above the `build` stage or a file the runtime
