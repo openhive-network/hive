@@ -116,19 +116,20 @@ namespace graphene { namespace net {
 
   /**
    * The pending pool size above which the node requests no more than GRAPHENE_NET_MIN_TRANSACTIONS_PER_GATED_FETCH
-   * transactions per GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS, unless configured otherwise: the larger of
-   * @p keep_limit_bytes, what the client's next reapply of pending is expected to keep (beyond that the client accepts
-   * transactions but doesn't relay them), and @p flood_pending_bytes, the pool at which the RC flood surcharge and
-   * the witnesses' privilege engage, times GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT, and at least 1.  So
-   * as the pool grows the surcharge and not relaying engage first, while the node still fetches, validates and relays
-   * what it keeps, and the gate only after them, as a backstop.
+   * transactions per GRAPHENE_NET_TRANSACTION_FETCH_GATE_RECHECK_MS, unless configured otherwise.  0 (no gate) when
+   * @p max_mempool_bytes is 0.  Otherwise GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT of @p relay_limit_bytes,
+   * the pending ahead of a transaction beyond which the client accepts it but doesn't relay it (at or above the pool
+   * at which the RC flood surcharge engages), capped at @p max_mempool_bytes, beyond which each reapply of pending
+   * drops postponed transactions, so that the gate can engage; but at least one block of @p maximum_block_size above
+   * the relay limit.  So as the pool grows the surcharge and not relaying engage first, while the node still fetches
+   * and validates, and the gate only after them, as a backstop.
    *
    * The pool counts transactions from every source.  API submissions are not limited by max-mempool-size (only
    * the reapply after a block drops what exceeds it), so while API inflow keeps the pool above the threshold
    * after every block the node fetches, and so relays, only that minimum of transactions from its peers, for as
    * long as that inflow lasts.  Blocks are fetched as always, and the node's own transactions are still broadcast.
    */
-  uint64_t default_transaction_fetch_gate_threshold(uint64_t keep_limit_bytes, uint64_t flood_pending_bytes);
+  uint64_t default_transaction_fetch_gate_threshold(uint64_t relay_limit_bytes, uint64_t max_mempool_bytes, uint32_t maximum_block_size);
 
   /// Whether @p pool holds more than its gate threshold, so that the node requests only the minimum of transactions per pass
   bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool);

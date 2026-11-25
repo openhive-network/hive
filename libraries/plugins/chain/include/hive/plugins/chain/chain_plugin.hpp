@@ -161,10 +161,12 @@ public:
 
   /// The bytes of transactions pending as of the end of the last write queue item; safe to call without a lock from any thread
   uint64_t get_published_pending_transactions_size() const;
-  /// hive::chain::database::get_pending_keep_limit() as of the end of the last write queue item; safe to call without a lock from any thread
-  uint64_t get_published_pending_keep_limit() const;
-  /// hive::chain::resource_credits::flood_pending_size() as of the end of the last write queue item; safe to call without a lock from any thread
-  uint64_t get_published_flood_pending_size() const;
+  /// hive::chain::database::get_relay_limit() as of the end of the last write queue item; safe to call without a lock from any thread
+  uint64_t get_published_relay_limit() const;
+  /// The maximum block size as of the end of the last write queue item; safe to call without a lock from any thread
+  uint32_t get_published_maximum_block_size() const;
+  /// max-mempool-size in bytes
+  uint64_t get_max_mempool_size() const;
 
 private:
   std::unique_ptr< detail::chain_plugin_impl, detail::chain_plugin_impl_deleter > my;

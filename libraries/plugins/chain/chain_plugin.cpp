@@ -207,12 +207,13 @@ class chain_plugin_impl
     bool                             last_pushed_block_was_before_checkpoint = false;
     bool                             stop_at_block_interrupt_request = false;
     uint64_t                         max_mempool_size = 0;
+    uint16_t                         flood_relay_percent = 100;
     // db._pending_tx_size as of the end of the last write queue item, for readers that hold no lock; it is not
     // updated in the middle of an item, so the pool emptied while a block is applied is never seen
     std::atomic<uint64_t>            published_pending_tx_size{0};
-    // db.get_pending_keep_limit() and resource_credits::flood_pending_size() as of the end of the last write queue item
-    std::atomic<uint64_t>            published_pending_keep_limit{0};
-    std::atomic<uint64_t>            published_flood_pending_size{0};
+    // db.get_relay_limit() and the maximum block size as of the end of the last write queue item
+    std::atomic<uint64_t>            published_relay_limit{0};
+    std::atomic<uint32_t>            published_maximum_block_size{0};
 
     enum class comment_archive_type
     {
@@ -666,9 +667,8 @@ void chain_plugin_impl::start_write_processing()
             req_visitor.cxt = cxt;
             last_block_number = cxt->req_ptr.visit( req_visitor );
             published_pending_tx_size.store( db._pending_tx_size, std::memory_order_relaxed );
-            published_pending_keep_limit.store( db.get_pending_keep_limit(), std::memory_order_relaxed );
-            published_flood_pending_size.store( resource_credits::flood_pending_size( db.get_dynamic_global_properties().get_maximum_block_size() ),
-                                                std::memory_order_relaxed );
+            published_relay_limit.store( db.get_relay_limit(), std::memory_order_relaxed );
+            published_maximum_block_size.store( db.get_dynamic_global_properties().get_maximum_block_size(), std::memory_order_relaxed );
 
             ++write_queue_items_processed;
 
@@ -914,6 +914,7 @@ void chain_plugin_impl::initial_settings()
   db.set_require_locking( check_locks );
 
   db._max_mempool_size = max_mempool_size;
+  db._flood_relay_percent = flood_relay_percent;
 
   get_stat_details = [ this ](index_memory_details_cntr_t& index_memory_details_cntr, comment_archive_details_t& comment_archive_stats, uint64_t& shm_free)
   {
@@ -1164,7 +1165,7 @@ bool chain_plugin_impl::push_transaction( const std::shared_ptr<full_transaction
       // skip_transaction_dupe_check prevents populating of transaction_index - check is done anyway
       // but with dedicated in-memory index for pending transactions
       db.process_non_fast_confirm_transaction( full_transaction, skip | database::skip_transaction_dupe_check );
-      return db.is_kept_by_next_reapply( *full_transaction );
+      return db.is_worth_relaying( *full_transaction );
     }
 
     auto sf = [&]( std::shared_ptr<full_block_type> new_head_block, uint32_t old_last_irreversible )-> std::optional< uint32_t > {
@@ -1793,8 +1794,12 @@ void chain_plugin::set_program_options(options_description& cli, options_descrip
       ("rc-stats-report-type", bpo::value<string>()->default_value( "REGULAR" ), "Level of detail of daily RC stat reports: NONE, MINIMAL, REGULAR, FULL. Default REGULAR." )
       ("rc-stats-report-output", bpo::value<string>()->default_value( "ILOG" ), "Where to put daily RC stat reports: DLOG, ILOG, NOTIFY, LOG_NOTIFY, JSONL. Default ILOG. JSONL puts output to rc_stats.jsonl" )
       ("block-log-split", bpo::value<int>()->default_value( 9999 ), "Whether the block log should be single file (-1), not used at all & keeping only head block in memory (0), or split into files each containing 1M blocks & keeping N full million latest blocks (N). Default 9999." )
-      ("max-mempool-size", bpo::value<string>()->default_value( "100M" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool. A transaction received from a p2p peer that lands in pending beyond what the next reapplication is expected to keep (the larger of this limit and what the last reapplication window held, plus one block) is kept but not relayed to other peers, unless it is a privileged witness transaction. See p2p-transaction-fetch-gate-threshold for when the node stops fetching transactions from its peers.")
+      ("max-mempool-size", bpo::value<string>()->default_value( "100M" ), "Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions that fit in reapplication window of 200ms will stay in mempool. "
+       "Unless p2p-transaction-fetch-gate-threshold sets one, the p2p fetch gate closes at most at this size (see that option), and 0 disables it.")
       ("rc-flood-level", bpo::value<uint16_t>()->default_value( 20 ), "Number of full blocks that can be present in mempool before RC surcharge is applied. 0-65535. Default 20 (one minute of full blocks).")
+      ("rc-flood-relay-percent", bpo::value<uint16_t>()->default_value( 100 ), "Percentage of the RC flood level (rc-flood-level + 1 full blocks of pending) beyond which a transaction received from a p2p peer "
+       "is kept in pending but not relayed to other peers, unless it is a privileged witness transaction. 1-65535. Default 100: a transaction not relayed has paid the flood surcharge; "
+       "below 100 not relaying starts before the surcharge. The default p2p-transaction-fetch-gate-threshold follows it.")
       ("rc-flood-surcharge", bpo::value<uint16_t>()->default_value( HIVE_100_PERCENT ), "Multiplication factor for temporary extra RC cost charged for each block above flood level before transaction is allowed to enter and remain in pending. 0-10000. Default 10000 (100%).")
 #ifdef USE_ALTERNATE_CHAIN_ID
       ("comment-archive", bpo::value<string>()->default_value("ROCKSDB"), "Type of comment archive to use: NONE means comments won't be archived, MEMORY keeps archived comments in memory, ROCKSDB stores them in RocksDB. Default: ROCKSDB")
@@ -2129,6 +2134,8 @@ void chain_plugin::plugin_initialize(const variables_map& options)
                                     options.at("rc-stats-report-output").as<std::string>());
   resource_credits::set_flood_limiters(options.at("rc-flood-level").as<uint16_t>(),
                                        options.at("rc-flood-surcharge").as<uint16_t>());
+  my->flood_relay_percent = options.at( "rc-flood-relay-percent" ).as<uint16_t>();
+  FC_ASSERT( my->flood_relay_percent > 0, "rc-flood-relay-percent has to be between 1 and 65535" );
 
   if(my->benchmark_interval > 0)
   {
@@ -2570,14 +2577,19 @@ uint64_t chain_plugin::get_published_pending_transactions_size() const
   return my->published_pending_tx_size.load( std::memory_order_relaxed );
 }
 
-uint64_t chain_plugin::get_published_pending_keep_limit() const
+uint64_t chain_plugin::get_published_relay_limit() const
 {
-  return my->published_pending_keep_limit.load( std::memory_order_relaxed );
+  return my->published_relay_limit.load( std::memory_order_relaxed );
 }
 
-uint64_t chain_plugin::get_published_flood_pending_size() const
+uint32_t chain_plugin::get_published_maximum_block_size() const
 {
-  return my->published_flood_pending_size.load( std::memory_order_relaxed );
+  return my->published_maximum_block_size.load( std::memory_order_relaxed );
+}
+
+uint64_t chain_plugin::get_max_mempool_size() const
+{
+  return my->max_mempool_size;
 }
 
 } } } // namespace hive::plugins::chain

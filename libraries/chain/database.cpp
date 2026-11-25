@@ -683,21 +683,25 @@ void database::process_non_fast_confirm_transaction( const std::shared_ptr<full_
   FC_CAPTURE_AND_RETHROW((trx))
 }
 
-uint64_t database::pending_keep_limit( uint64_t max_mempool_size, uint64_t reapply_window_bytes, uint32_t maximum_block_size )
+uint64_t database::relay_limit( uint64_t flood_pending_size, uint16_t flood_relay_percent )
 {
-  return std::max( max_mempool_size, reapply_window_bytes ) + maximum_block_size;
+  return flood_pending_size * flood_relay_percent / 100;
 }
 
-uint64_t database::get_pending_keep_limit() const
+uint64_t database::get_relay_limit() const
 {
-  return pending_keep_limit( _max_mempool_size, _reapply_window_bytes, get_dynamic_global_properties().get_maximum_block_size() );
+  return relay_limit( resource_credits::flood_pending_size( get_dynamic_global_properties().get_maximum_block_size() ), _flood_relay_percent );
 }
 
-bool database::is_kept_by_next_reapply( const full_transaction_type& full_transaction ) const
+bool database::is_worth_relaying( const full_transaction_type& full_transaction ) const
 {
   // checked whatever pending holds: the RC code marks a transaction privileged (full_transaction_type::check_privilege())
-  // only above the flood level, which may be above what the reapply keeps
-  return rc().is_privileged_transaction( full_transaction ) || _pending_tx_size <= get_pending_keep_limit();
+  // only above the flood level, and puts it at the front of pending instead of the back
+  if( rc().is_privileged_transaction( full_transaction ) )
+    return true;
+  // a transaction that is not privileged was put at the back, and the surcharge was decided by what was ahead of it
+  const uint64_t pending_ahead = _pending_tx_size - full_transaction.get_transaction_size();
+  return pending_ahead <= get_relay_limit();
 }
 
 struct custom_op_visitor

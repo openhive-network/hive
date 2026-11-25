@@ -9644,13 +9644,16 @@ namespace graphene { namespace net {
     return report;
   }
 
-  uint64_t default_transaction_fetch_gate_threshold(uint64_t keep_limit_bytes, uint64_t flood_pending_bytes)
+  uint64_t default_transaction_fetch_gate_threshold(uint64_t relay_limit_bytes, uint64_t max_mempool_bytes, uint32_t maximum_block_size)
   {
-    const uint64_t base = std::max(keep_limit_bytes, flood_pending_bytes);
-    const uint64_t threshold = base > std::numeric_limits<uint64_t>::max() / GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT
-                                 ? std::numeric_limits<uint64_t>::max()
-                                 : base * GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT / 100;
-    return std::max<uint64_t>(threshold, 1);
+    if (max_mempool_bytes == 0)
+      return 0;
+    constexpr uint64_t max = std::numeric_limits<uint64_t>::max();
+    const uint64_t scaled = relay_limit_bytes > max / GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT
+                              ? max
+                              : relay_limit_bytes * GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT / 100;
+    const uint64_t above_relay_limit = relay_limit_bytes > max - maximum_block_size ? max : relay_limit_bytes + maximum_block_size;
+    return std::max({std::min(scaled, max_mempool_bytes), above_relay_limit, uint64_t(1)});
   }
 
   bool is_transaction_fetching_gated(const pending_transaction_pool_size& pool)

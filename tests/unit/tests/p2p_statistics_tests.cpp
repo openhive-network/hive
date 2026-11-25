@@ -9,6 +9,8 @@
 
 #include <fc/crypto/ripemd160.hpp>
 
+#include <boost/scope_exit.hpp>
+
 #include <chrono>
 #include <cstdint>
 #include <cstdlib>
@@ -300,7 +302,9 @@ BOOST_AUTO_TEST_CASE( report_gives_the_spread_of_transaction_requests_over_peers
 }
 
 /// The node gates transaction fetching once its pending pool holds more than the gate threshold, however small that
-/// is, and never with a threshold of 0; the default threshold is at least 1 and saturates rather than overflows
+/// is, and never with a threshold of 0.  The default threshold is none with max-mempool-size 0, otherwise the margin
+/// of the relay limit, capped at max-mempool-size but at least a block above the relay limit, and saturates rather
+/// than overflows
 BOOST_AUTO_TEST_CASE( transaction_fetching_is_gated_above_its_threshold )
 {
   const uint64_t threshold = 30000;
@@ -311,42 +315,54 @@ BOOST_AUTO_TEST_CASE( transaction_fetching_is_gated_above_its_threshold )
   BOOST_CHECK( !is_transaction_fetching_gated( pending_transaction_pool_size{ 1, 1 } ) );
   BOOST_CHECK( is_transaction_fetching_gated( pending_transaction_pool_size{ 2, 1 } ) );
 
-  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( 1000, 2000 ), 2000u * GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT / 100 );
-  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( 2000, 1000 ), 2000u * GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT / 100 );
-  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( 0, 0 ), 1u );
-  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( std::numeric_limits<uint64_t>::max(), 0 ), std::numeric_limits<uint64_t>::max() );
+  const uint64_t max = std::numeric_limits<uint64_t>::max();
+  const uint64_t scaled = 1000u * GRAPHENE_NET_TRANSACTION_FETCH_GATE_MARGIN_PERCENT / 100;
+  BOOST_REQUIRE_GT( scaled, 1100u );
+  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( 1000, 1000000, 100 ), scaled );
+  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( 1000, scaled - 1, 100 ), scaled - 1 );
+  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( 1000, 1050, 100 ), 1100u );
+  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( 1000, 1, 100 ), 1100u );
+  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( 1000, 0, 100 ), 0u );
+  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( 0, 1000000, 0 ), 1u );
+  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( max, max, 100 ), max );
+  BOOST_CHECK_EQUAL( default_transaction_fetch_gate_threshold( max - 10, 1, 100 ), max );
 }
 
-/// With the default max-mempool-size (100M) and rc-flood-level (20), as the pending pool grows the RC flood surcharge
-/// engages first, then not relaying (beyond what the next reapply keeps) and the fetch gate last, for small (64 KiB)
-/// and large (2 MiB) blocks, whatever the last reapplication window applied.  With max-mempool-size 0 what the window
-/// applied is still kept, so relayed, and the gate still engages above both.
+/// As the pending pool grows, the RC flood surcharge engages first, then not relaying and the default fetch gate last,
+/// for small (64 KiB) and large (2 MiB) blocks, with max-mempool-size 100M, a small one (1M, below the relay limit)
+/// and 0 (no gate), and with the default and a high rc-flood-level
 BOOST_AUTO_TEST_CASE( the_default_gate_engages_after_the_flood_surcharge_and_not_relaying )
 {
-  const uint64_t default_max_mempool_size = 100 * 1024 * 1024;
-  for( const uint32_t block_size : { uint32_t( 64 * 1024 ), uint32_t( 2 * 1024 * 1024 ) } )
+  BOOST_SCOPE_EXIT( void ) { resource_credits::set_flood_limiters( 20, HIVE_100_PERCENT ); } BOOST_SCOPE_EXIT_END
+  for( const uint16_t flood_level : { uint16_t( 20 ), uint16_t( 2000 ) } )
   {
-    BOOST_TEST_CONTEXT( "block size " << block_size )
+    resource_credits::set_flood_limiters( flood_level, HIVE_100_PERCENT );
+    for( const uint32_t block_size : { uint32_t( 64 * 1024 ), uint32_t( 2 * 1024 * 1024 ) } )
     {
+      // the surcharge engages for a transaction with more than flood_level full blocks ahead of it
       const uint64_t flood = resource_credits::flood_pending_size( block_size );
-      BOOST_REQUIRE_EQUAL( flood, 21 * uint64_t( block_size ) );
-      for( const uint64_t window : { uint64_t( 0 ), uint64_t( 5 * 1024 * 1024 ), uint64_t( 200 * 1024 * 1024 ) } )
+      BOOST_REQUIRE_EQUAL( flood, ( flood_level + 1 ) * uint64_t( block_size ) );
+      // not relayed with more than the relay limit ahead, so only transactions the surcharge was applied to
+      const uint64_t relay_limit = database::relay_limit( flood, 100 );
+      BOOST_CHECK_EQUAL( relay_limit, flood );
+      for( const uint64_t max_mempool_size : { uint64_t( 100 * 1024 * 1024 ), uint64_t( 1024 * 1024 ), uint64_t( 0 ) } )
       {
-        BOOST_TEST_CONTEXT( "reapplication window " << window )
+        BOOST_TEST_CONTEXT( "rc-flood-level " << flood_level << ", block size " << block_size << ", max-mempool-size " << max_mempool_size )
         {
-          const uint64_t keep = database::pending_keep_limit( default_max_mempool_size, window, block_size );
-          const uint64_t gate = default_transaction_fetch_gate_threshold( keep, flood );
-          BOOST_CHECK_LT( flood, keep );
-          BOOST_CHECK_GT( gate, keep );
-          // a pool just past what is kept is no longer relayed but still fetched
-          BOOST_CHECK( !is_transaction_fetching_gated( pending_transaction_pool_size{ keep + 1, gate } ) );
+          const uint64_t gate = default_transaction_fetch_gate_threshold( relay_limit, max_mempool_size, block_size );
+          if( max_mempool_size == 0 )
+          {
+            BOOST_CHECK_EQUAL( gate, 0u );
+            BOOST_CHECK( !is_transaction_fetching_gated( pending_transaction_pool_size{ 1000 * relay_limit, gate } ) );
+            continue;
+          }
+          BOOST_CHECK_GE( gate, relay_limit + block_size );
+          // a pool just past the relay limit is no longer relayed but still fetched
+          BOOST_CHECK( !is_transaction_fetching_gated( pending_transaction_pool_size{ relay_limit + 1, gate } ) );
           BOOST_CHECK( is_transaction_fetching_gated( pending_transaction_pool_size{ gate + 1, gate } ) );
-
-          const uint64_t keep_without_mempool = database::pending_keep_limit( 0, window, block_size );
-          BOOST_CHECK_GE( keep_without_mempool, window + block_size );
-          const uint64_t gate_without_mempool = default_transaction_fetch_gate_threshold( keep_without_mempool, flood );
-          BOOST_CHECK_GT( gate_without_mempool, keep_without_mempool );
-          BOOST_CHECK_GT( gate_without_mempool, flood );
+          // below max-mempool-size, to which the reapply of pending trims the pool, when the relay limit leaves room
+          if( relay_limit + block_size <= max_mempool_size )
+            BOOST_CHECK_LE( gate, max_mempool_size );
         }
       }
     }
