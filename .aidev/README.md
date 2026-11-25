@@ -25,6 +25,16 @@ parallelism from a file GNU parallel re-reads as each unit ends), and the log sa
 `== <step>: now N test processes`. On INT or TERM (the slot wall) the script stops
 every step still running and the test processes under it.
 
+A failing step's junit case carries its cause first (`.aidev/junit_cases.py`,
+tested by `.aidev/tests/junit_cases_test.sh`): each of ninja's `FAILED:` lines with
+the failed command's output (the compiler error) and the command itself, shortened,
+then the last 80 lines of the step's log; the first `FAILED:` line is also appended
+to the failure message. A step with no `FAILED:` line (a test step) carries the tail
+alone, as before, and the test binary's own junit report names its failing cases.
+The cause comes first so that a reader keeping only the start of the text (AIDEV
+stores the start of a failure's text) still sees it; the step's output on failure
+is the same text.
+
 | Step | What |
 |---|---|
 | `build` | configure and build the testnet `chain_test` and `plugin_test` with CI's cmake arguments, and `operations_description.json` (`<build>/bin`, as CI's `testnet_node_build` exports it) |
@@ -44,6 +54,9 @@ every step still running and the test processes under it.
 | full | suite `default`: build, then chain-tests, plugin-tests, hiveio-api and p2p-relay at the same time; suite `integration`: integration (off; below); suite `wallet_patterns`: wallet-patterns, when the diff reaches the wallet (below) |
 | baseline | build, then chain-tests, plugin-tests, hiveio-api and p2p-relay at the same time |
 | canary | build, chain-smoke, plugin-api |
+
+In `quick`, `canary` and `coverage`, `chain-smoke` and `plugin-api` run at the same
+time after `build` (`build chain-smoke,plugin-api`).
 
 Each suite of `full` and `baseline` declares `memory:`, what AIDEV reserves on the
 host for one run until it has measured the suite's own runs (the suite's container
@@ -436,7 +449,7 @@ docker run -d --rm --name hive-sccache --network hive-checks --network-alias scc
     alpine/socat:1.8.0.3 TCP-LISTEN:6379,fork,reuseaddr TCP:192.168.50.109:6379
 docker run --rm --network hive-checks --user "$(id -u):$(id -g)" -v "$PWD:/work" -w /work \
     "$(grep -o 'registry[^"]*aidev-tests@sha256:[0-9a-f]*' .aidev/project.yaml)" \
-    .aidev/run-checks.sh quick build chain-smoke plugin-api
+    .aidev/run-checks.sh quick build chain-smoke,plugin-api
 ```
 
 ## The test runtime image (`runtime/`)

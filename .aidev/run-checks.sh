@@ -2,7 +2,8 @@
 # The step functions are called indirectly, through `step`.
 # shellcheck disable=SC2317,SC2329
 # The checks AIDEV's verification slots run (.aidev/project.yaml), as one junit
-# report per suite: each named step is a test case, its log the failure body.
+# report per suite: each named step is a test case, its log the failure body
+# (ninja's FAILED: blocks first, then the log's tail; .aidev/junit_cases.py).
 #
 #   .aidev/run-checks.sh <suite> <step>[,<step>...]...
 #
@@ -176,7 +177,7 @@ step() {
     echo "== $name" >&2
     "$@" > "$log" 2>&1 < /dev/null || rc=$?
     took=$((SECONDS - t0))
-    [ "$rc" -eq 0 ] || tail -40 "$log" >&2
+    [ "$rc" -eq 0 ] || python3 .aidev/junit_cases.py --cause "$log" >&2 || tail -40 "$log" >&2
     echo "== $name: exit $rc after ${took}s" >&2
     record "$cases" "$name" "$rc" "$took" "$log"
     printf '%s\t%s\t%s\n' "$name" "$took" "$rc" >> "$timings"
@@ -414,10 +415,16 @@ bin() {  # NAME: the built test binary
     find "$bld/tests" -name "$1" -type f -perm -u+x -print -quit 2>/dev/null
 }
 
+# Each in a HIVE_TEMPDIR of its own: without one every test binary keeps its
+# chain in /tmp/hive-tmp, and two run at the same time take each other's
+# RocksDB locks.
 boost_test() {  # NAME BINARY [--run_test=...]
-    local name="$1" exe; exe="$(bin "$2")"; shift 2
+    local name="$1" exe tmp rc=0; exe="$(bin "$2")"; shift 2
     [ -n "$exe" ] || { echo "no built $name binary under $bld/tests (did the build step run?)"; return 1; }
-    "$exe" "$@" --log_format=JUNIT --log_sink="$out/$name.xml" --log_level=error --report_level=short
+    tmp="$(mktemp -d -t "$name.XXXXXX")" || return 1
+    HIVE_TEMPDIR="$tmp" "$exe" "$@" --log_format=JUNIT --log_sink="$out/$name.xml" --log_level=error --report_level=short || rc=$?
+    rm -rf "$tmp"
+    return "$rc"
 }
 
 chain_tests() {
