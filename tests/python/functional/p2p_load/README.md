@@ -85,7 +85,38 @@ Options:
 | `--no-p2p-loggers` | leave the p2p_stats and p2p_relay_sample loggers off (see below), e.g. to measure what they cost |
 | `--mix large` | colony replies and articles only, 4000..12000 byte bodies (about 255 transactions fill a 2 MiB block) |
 | `--colony-mix N=MIX`, `--colony-late N=K` | colony N runs MIX instead of `--mix`, and starts K loaded blocks after the others: a size jump on one link in one run when its transactions share a relay with the others (`chain`) |
+| `--oversized-txs N[@SIZE]` | broadcast N signed transactions of SIZE bytes (over 1 MiB) from a colony during the loaded window: see "Oversized transactions" below |
 | `--remote-host H --remote-roles R,...` | run those nodes on host H, the rest here: see "Two hosts" below |
+
+### Oversized transactions
+
+`--oversized-txs N[@SIZE]` relays N transactions larger than a peer's send queue holds
+(`GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES`, 1 MiB) through the loaded network: SIZE bytes each, over 1048576
+and at most 2096896 (`HIVE_MAX_BLOCK_SIZE` - 256), 1400000 by default. Once the nodes are live the driver reads
+the chain's `maximum_block_size` from the first colony on the witness's host and fails the run unless it admits
+SIZE (it must be at least SIZE + 256; the fixture's witnesses vote 2 MiB). That colony then broadcasts the first
+transaction 5 loaded blocks after the colonies start, when the flood has filled pending, and each next one 3 blocks
+later; a run needs 10 more blocks after the last one (`--blocks`, which `flood-c48`'s 60 leave room for).
+
+Each is an `initminer` account metadata update of exactly SIZE serialized bytes, signed by test-tools' wallet (in
+the fixture only initminer has the resource credits: a 1.3 MB transaction cost 2.3e11 of its 2.5e15). A post would
+not do: hived reapplies a pending post after every block, which renews its author's last post time, so while one waits
+for a block the next one is refused; a metadata update has no interval. The colony's `transaction_status_api` gives
+the block each reached. `out.json`'s `oversized` holds per transaction its id, size, the head at its broadcast, any
+error of the broadcast and its block, with the nodes it crosses to the witness (`path`, over the fewest seed links).
+
+The report gives each transaction's block, or that it reached none by the run's end, and the seconds from its
+broadcast to that block's time on the nodes' faked clock (to about a second: the faked clocks start on whole
+seconds), then the peer trouble of every node on its path over the loaded window: lost peers (an established
+connection closing, not a refused handshake), request timeouts (a peer closed for not answering an item or sync
+request, or for reading nothing, in time), expired fetches and "send queue exceeded" closes. The same counts are
+in every run's report for the nodes that had any (`peer trouble`), and `compare` sums them over the nodes.
+
+```
+# hive#1229's live check: three 1.4 MB transactions through the 48-colony flood, colonies 24-47 on steem-2
+$P run c48-big $COMMON --hived $HIVED --preset flood-c48 --oversized-txs 3 \
+    --remote-host steem-2 --remote-roles "$(seq -s, -f colony%g 24 47)"
+```
 
 ### p2p parameters: only what is given, only where the binary has it
 

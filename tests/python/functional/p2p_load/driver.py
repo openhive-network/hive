@@ -13,10 +13,9 @@ import shutil
 import socket
 import threading
 import time
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
-from datetime import timedelta
+from datetime import UTC, timedelta
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeAlias
@@ -25,7 +24,16 @@ from beekeepy.exceptions import CommunicationError
 from beekeepy.interfaces import P2PUrl
 
 import test_tools as tt
-from python.functional.p2p_load import hived_options, p2p_loggers, p2p_parameters, procfs, replay_template, topology
+from python.functional.p2p_load import (
+    hived_options,
+    json_rpc,
+    oversized_txs,
+    p2p_loggers,
+    p2p_parameters,
+    procfs,
+    replay_template,
+    topology,
+)
 from python.functional.p2p_load.spec import RunSpec
 from test_tools import complex_networks as ttcn
 
@@ -137,24 +145,8 @@ def _peer_hosts(node: _Node) -> set[str]:
 
 
 def _add_node(node: _Node, endpoint: str) -> None:
-    """
-    Have `node` dial `endpoint` now, resetting its p2p retry backoff for it.
-
-    Sent as plain JSON-RPC: the image's test-tools expects an `endpoint` field in network_node_api.add_node's
-    result, which hived returns empty, and fails on every call.
-    """
-    request = {"jsonrpc": "2.0", "id": 1, "method": "network_node_api.add_node", "params": {"endpoint": endpoint}}
-    with urllib.request.urlopen(
-        urllib.request.Request(
-            str(node.http_endpoint),
-            data=json.dumps(request).encode(),
-            headers={"Content-Type": "application/json"},
-        ),
-        timeout=10,
-    ) as response:
-        result = json.loads(response.read())
-    if "error" in result:
-        raise RuntimeError(f"{node}: network_node_api.add_node({endpoint}) failed: {result['error']}")
+    """Have `node` dial `endpoint` now, resetting its p2p retry backoff for it."""
+    json_rpc.call(str(node.http_endpoint), "network_node_api.add_node", {"endpoint": endpoint})
 
 
 def _wait_for_seed_links(
@@ -479,6 +471,15 @@ def run(spec: RunSpec, part: str = "local") -> dict[str, Any]:
     sampler = _Sampler(head_node, pids)
     sampler.start()
 
+    end_block = colony_start_block + spec.blocks
+    oversized = None
+    if spec.oversized_txs and part == "local":
+        start_epoch = start_time.replace(tzinfo=UTC).timestamp()
+        # every node's faked clock read start_time at `started` (each start wave started its clock as much later)
+        oversized = oversized_txs.OversizedTransactions(
+            spec, nodes[spec.oversized_tx_colony()], colony_start_block, end_block, lambda t: start_epoch + t - started
+        )
+        oversized.start()
     late_observer: dict[str, Any] | None = None
     if late:
         witness = nodes["witness"]
@@ -501,13 +502,22 @@ def run(spec: RunSpec, part: str = "local") -> dict[str, Any]:
             "observer_head_when_live": nodes["observer"].get_last_block_number(),
         }
 
-    end_block = colony_start_block + spec.blocks
     if part == "local":
         head_node.wait_for_block_with_number(
             end_block, timeout=(end_block - head_node.get_last_block_number()) * 3 * 4 + 120
         )
     else:
         _wait_for_end(head_node, end_block, out_dir / f"{part}.stop")
+    oversized_result = (
+        None
+        if oversized is None
+        else {
+            "colony": spec.oversized_tx_colony(),
+            "path": wiring.path(spec.oversized_tx_colony(), "witness"),
+            "maximum_block_size": oversized.maximum_block_size,
+            "transactions": oversized.finish(),
+        }
+    )
     sampler.stop()
     last = head_node.get_last_block_number()
     closing = time.time()
@@ -539,6 +549,7 @@ def run(spec: RunSpec, part: str = "local") -> dict[str, Any]:
         "late_start": first >= colony_start_block,
         "last": last,
         "late_observer": late_observer,
+        "oversized": oversized_result,
         "pids": pids,
         "tck": os.sysconf("SC_CLK_TCK"),
         "nproc": procfs.cpu_count(),

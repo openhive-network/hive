@@ -18,6 +18,16 @@ _ROLE_SPECIFICITY = 2
 _OPTION_KEY = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 # set by the harness itself: the p2p parameters through their own options, the endpoints and seeds by the topology
 _HARNESS_OPTIONS = {"p2p-parameters": "--p2p-parameter", "p2p-endpoint": "--topology", "p2p-seed-node": "--topology"}
+# oversized transactions: larger than a peer's send queue holds (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES) and at
+# most what a block of the largest maximum_block_size (HIVE_MAX_BLOCK_SIZE) admits, which is 256 bytes less
+SEND_QUEUE_BYTES = 1024 * 1024
+OVERSIZED_TX_MAX_BYTES = 2 * 1024 * 1024 - 256
+OVERSIZED_TX_DEFAULT_BYTES = 1_400_000
+# the first goes out this many loaded blocks after the colonies start, once the flooded pending has built up, the next
+# ones as many blocks apart; each gets as many blocks again before the run's end to reach one
+OVERSIZED_TX_FIRST_BLOCK = 5
+OVERSIZED_TX_EVERY_BLOCKS = 3
+OVERSIZED_TX_INCLUSION_BLOCKS = 10
 
 
 @dataclass
@@ -53,6 +63,9 @@ class RunSpec:
     endpoints: dict[str, str] = field(default_factory=dict)
     # [selector, key, value]: a hived config option for one role or a group of OPTION_GROUPS, in the given order
     hived_options: list[list[str]] = field(default_factory=list)
+    # signed transactions over SEND_QUEUE_BYTES a local colony broadcasts during the loaded window, and their size
+    oversized_txs: int = 0
+    oversized_tx_bytes: int = OVERSIZED_TX_DEFAULT_BYTES
 
     def roles(self) -> list[str]:
         return [
@@ -65,6 +78,14 @@ class RunSpec:
     def roles_on(self, part: str) -> list[str]:
         """The roles whose nodes run on `part`'s host ("local" or "remote")."""
         return [role for role in self.roles() if (role in self.remote_roles) == (part == "remote")]
+
+    def oversized_tx_blocks(self) -> list[int]:
+        """The loaded blocks, counted from the colonies' start, at which each oversized transaction is broadcast."""
+        return [OVERSIZED_TX_FIRST_BLOCK + i * OVERSIZED_TX_EVERY_BLOCKS for i in range(self.oversized_txs)]
+
+    def oversized_tx_colony(self) -> str:
+        """The colony that broadcasts the oversized transactions: the first on the witness's host."""
+        return next(role for role in self.roles_on("local") if role.startswith("colony"))
 
     def binary(self, role: str) -> str:
         return self.node_hived.get(role, self.hived)
@@ -114,6 +135,7 @@ class RunSpec:
         self._validate_colonies()
         self._validate_placement()
         self._validate_hived_options()
+        self._validate_oversized_txs()
 
     def _validate_colonies(self) -> None:
         for mix in [self.mix, *self.colony_mixes.values()]:
@@ -141,6 +163,24 @@ class RunSpec:
         missing = {role for role in self.roles() if role != "observer"} - set(self.endpoints)
         if missing:
             raise ValueError(f"no p2p endpoint for {sorted(missing)}")
+
+    def _validate_oversized_txs(self) -> None:
+        if self.oversized_txs < 0:
+            raise ValueError("the number of oversized transactions must not be negative")
+        if not self.oversized_txs:
+            return
+        if not SEND_QUEUE_BYTES < self.oversized_tx_bytes <= OVERSIZED_TX_MAX_BYTES:
+            raise ValueError(
+                f"an oversized transaction takes more than {SEND_QUEUE_BYTES} and at most {OVERSIZED_TX_MAX_BYTES} "
+                f"bytes, not {self.oversized_tx_bytes}"
+            )
+        last = self.oversized_tx_blocks()[-1] + OVERSIZED_TX_INCLUSION_BLOCKS
+        if last > self.blocks:
+            raise ValueError(
+                f"{self.oversized_txs} oversized transactions need {last} loaded blocks, the run has {self.blocks}"
+            )
+        if not any(role.startswith("colony") for role in self.roles_on("local")):
+            raise ValueError("oversized transactions go out from a colony on the local host; this run has none there")
 
     def _validate_hived_options(self) -> None:
         for selector, key, value in self.hived_options:

@@ -1,6 +1,7 @@
 """
 The lines the harness reads from a node's logs: Block stats, p2p block arrival offsets, sampled relay timestamps, the
-periodic p2p statistics and the fast-confirms the node accepted.
+periodic p2p statistics, the fast-confirms the node accepted and its peer trouble (lost peers, request timeouts,
+expired fetches, send queue overflows).
 """
 
 from __future__ import annotations
@@ -24,6 +25,17 @@ _RELAY_SAMPLE = re.compile(r"relay sample (received|broadcast) (\w+) \w+ at (\d+
 _RELAY_SAMPLE_KINDS = {"received": "RCV", "broadcast": "BRD"}
 _P2P_STATISTICS = re.compile(r"p2p statistics: (\{.*\})\s*$")
 _FAST_CONFIRM = re.compile(r"Accepted fast-confirm from witness (\S+) for block #(\d+) ")
+# an established connection (the sync logger's lines, which the harness's nodes write to the p2p log) and its end
+_PEER_CONNECTED = re.compile(r"New peer is connected \((\S+)\)")
+_PEER_CLOSING = re.compile(r"Peer connection closing \((\S+)\)|Remote peer (\S+) closed their connection to us")
+_SEND_QUEUE_EXCEEDED = re.compile(r"send queue exceeded maximum size")
+# a peer closed for not answering a request in time; hived logs each to both the p2p and the sync logger
+_REQUEST_TIMEOUT = re.compile(
+    r"[Dd]isconnecting peer (\S+) because (they didn't respond to my request|they haven't made any progress on my "
+    r"remaining|nothing we had for it has been written to its socket)"
+)
+_ITEMS_EXPIRED = re.compile(r"Removed (\d+) items from the list to fetch due to expiration time")
+PEER_TROUBLE = ("disconnects", "request_timeouts", "items_expired", "send_queue_exceeded")
 # what every appender line starts with (after a console color code, if any): the node's (faked) clock, in ms or us
 _LOG_TIME = re.compile(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d+))?")
 
@@ -153,3 +165,44 @@ def fast_confirms(node_dir: Path) -> dict[tuple[str, int], float]:
             if logged is not None:
                 accepted.setdefault((match.group(1), int(match.group(2))), logged)
     return accepted
+
+
+def peer_trouble(node_dir: Path) -> list[tuple[float | None, str, int]]:
+    """
+    Return the node's peer trouble in log order, as (log time, kind of PEER_TROUBLE, how many).
+
+    `disconnects`: an established connection (one the node logged as connected) closing, by either side; a connection
+    refused while handshaking, as the topologies' connection limits refuse peer exchange, is none. `request_timeouts`:
+    a peer closed for not answering a request (an item, sync items) or reading nothing in time, once although hived
+    logs it twice. `items_expired`: fetches given up. `send_queue_exceeded`: a connection closed because a message
+    would take the peer's send queue over its limit.
+    """
+    events: list[tuple[float | None, str, int]] = []
+    connected: set[str] = set()
+    last_timeout: tuple[str, str, float | None] | None = None
+    for line in _lines(node_dir):
+        if (match := _PEER_CONNECTED.search(line)) is not None:
+            connected.add(match.group(1))
+        elif (match := _PEER_CLOSING.search(line)) is not None:
+            peer = match.group(1) or match.group(2)
+            if peer in connected:
+                connected.discard(peer)
+                events.append((_log_time(line), "disconnects", 1))
+        elif (match := _REQUEST_TIMEOUT.search(line)) is not None:
+            logged = _log_time(line)
+            timeout = (match.group(1), match.group(2), logged)
+            if not _same_timeout(last_timeout, timeout):
+                events.append((logged, "request_timeouts", 1))
+            last_timeout = timeout
+        elif (match := _ITEMS_EXPIRED.search(line)) is not None:
+            events.append((_log_time(line), "items_expired", int(match.group(1))))
+        elif _SEND_QUEUE_EXCEEDED.search(line) is not None:
+            events.append((_log_time(line), "send_queue_exceeded", 1))
+    return events
+
+
+def _same_timeout(previous: tuple[str, str, float | None] | None, current: tuple[str, str, float | None]) -> bool:
+    """Whether two request timeout lines are hived's two logs of one: the same peer and reason, within a second."""
+    if previous is None or previous[:2] != current[:2]:
+        return False
+    return previous[2] is None or current[2] is None or abs(current[2] - previous[2]) <= 1.0

@@ -38,6 +38,9 @@
 #                     the generator tests and build the wheel, in the image's generator
 #                     environment; skipped unless the diff changes the openapi
 #                     documentation or the generator, or when an input is missing
+#   - p2p-load        the p2p load harness's own tests (tests/python/functional/p2p_load)
+#                     that need no hived, in the image's test-tools environment;
+#                     skipped unless the diff changes the harness
 #   - p2p-relay       plugin_test's p2p_relay_tests (large transactions relayed across three
 #                     hived nodes in a line), disabled by default so plugin-tests leaves it
 #                     out; skipped unless the diff reaches p2p, the network code or the
@@ -457,6 +460,39 @@ hiveio_api() (  # a subshell, as build's: it exports the generator environment
     python3 -m pip wheel --no-build-isolation --no-deps --no-index -w "$out/hiveio-api-dist" "$gen/python_api_package"
 )
 
+# The p2p load harness's tests that need no hived (not `testnet`), when the diff
+# changes the harness. They run from a copy of the harness and what the test
+# runner reads of tests/python, as wallet-patterns' do (importing test-tools
+# writes ./generated), in the image's test-tools environment, HIVE_TEST_TOOLS_VENV
+# overriding it.
+p2p_load() (  # a subshell, as build's: it moves into the copy
+    local py="${HIVE_TEST_TOOLS_VENV:-/opt/test-tools-venv}/bin/python3" dir=tests/python/functional/p2p_load
+    local work="$out.p2p-load.work" base changed missing rc=0
+    if ! base="$(diff_base)"; then
+        echo "no_diff_base: none of AIDEV_BASE_REF, AIDEV_IMPLEMENT_BASE_SHA or a merge base with the integration branch resolves"
+        return "$step_skipped"
+    fi
+    changed="$({ git diff --name-only "${base#*=}" -- "$dir"; git ls-files --others --exclude-standard -- "$dir"; } | sort -u)"
+    if [ -z "$changed" ]; then
+        echo "not_selected: the diff from $base changes nothing under $dir/"
+        return "$step_skipped"
+    fi
+    echo "selected by: ${changed//$'\n'/ }"
+    if ! missing="$("$py" -c 'import test_tools, pytest' 2>&1)"; then
+        echo "$missing"
+        echo "test_tools_unavailable: $py cannot import test-tools and pytest (.aidev/runtime/Dockerfile)"
+        return "$step_skipped"
+    fi
+    export PYTHONDONTWRITEBYTECODE=1
+    rm -rf "$work"
+    mkdir -p "$work" && cp -r --parents tests/python/__init__.py tests/python/conftest.py tests/python/pytest.ini \
+        tests/python/functional/__init__.py "$dir" "$work/" || return 1
+    (cd "$work/tests/python" && timeout 300 "$py" -m pytest -p no:cacheprovider --junitxml="$out/p2p-load.xml" \
+        -m "not testnet" functional/p2p_load) || rc=$?
+    rm -rf "$work"
+    return "$rc"
+)
+
 # The selection's output opens the log; a skip's reason stays its last line.
 p2p_relay() {
     .aidev/p2p-relay-select.sh || return $?
@@ -530,6 +566,7 @@ run() {  # STEP
         hived-mainnet) step hived-mainnet hived_binaries "$out/bin" OFF ;;
         wallet-patterns) step wallet-patterns wallet_patterns ;;
         hiveio-api) step hiveio-api hiveio_api ;;
+        p2p-load) step p2p-load p2p_load ;;
         p2p-relay) step p2p-relay p2p_relay ;;
     esac
 }
@@ -584,7 +621,7 @@ for group in "$@"; do
     IFS=, read -ra group_steps <<< "$group"
     for s in "${group_steps[@]}"; do
         case "$s" in
-            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet|wallet-patterns|hiveio-api|p2p-relay) ;;
+            build|chain-smoke|chain-tests|plugin-api|plugin-tests|integration|hived-testnet|hived-mainnet|wallet-patterns|hiveio-api|p2p-load|p2p-relay) ;;
             *) echo "unknown step: $s" >&2; exit 2 ;;
         esac
     done

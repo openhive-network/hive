@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import itertools
 import json
 import os
 import shutil
@@ -198,6 +199,20 @@ _ENDPOINTS = {"witness": "10.0.0.1:2001", "colony0": "10.0.0.2:2002"}
         ({"hived_options": [["all", "log-logger", "debug"]]}, "not JSON"),
         ({"hived_options": [["all", "log-logger", '{"level": "debug"}']]}, "logger object with a name"),
         ({"hived_options": [["colonies", "max-mempool-size", "1G"], ["colonies", "max-mempool-size", "2G"]]}, "both"),
+        ({"oversized_txs": -1}, "must not be negative"),
+        ({"oversized_txs": 1, "blocks": 30, "oversized_tx_bytes": 1024 * 1024}, "more than 1048576 and at most"),
+        ({"oversized_txs": 1, "blocks": 30, "oversized_tx_bytes": 2 * 1024 * 1024}, "at most 2096896 bytes"),
+        ({"oversized_txs": 3, "blocks": 20}, "3 oversized transactions need 21 loaded blocks"),
+        (
+            {
+                "oversized_txs": 1,
+                "blocks": 30,
+                "remote_host": "steem-2",
+                "remote_roles": ["colony0"],
+                "endpoints": _ENDPOINTS,
+            },
+            "colony on the local host",
+        ),
     ],
 )
 def test_spec_validation(changes: dict[str, Any], error: str) -> None:
@@ -235,8 +250,8 @@ def test_the_most_specific_hived_option_wins_on_each_node() -> None:
 
 
 # what hived writes as its default config.ini: commented options, some with defaults, and their descriptions
-_DEFAULT_CONFIG = f"""# Appender definition JSON. Obeys the format {"appender", "stream", "file"} ...
-# log-appender = {"appender":"stderr","stream":"std_error"} {"appender":"p2p","file":"logs/p2p/p2p.log"}
+_DEFAULT_CONFIG = f"""# Appender definition JSON. Obeys the format {{"appender", "stream", "file"}} ...
+# log-appender = {{"appender":"stderr","stream":"std_error"}} {{"appender":"p2p","file":"logs/p2p/p2p.log"}}
 
 # log-console-appender = {" "}
 # Postponed transactions that exceed limit are dropped from pending. Setting 0 means only pending transactions ...
@@ -563,6 +578,140 @@ def test_relay_samples_of_the_p2p_relay_sample_logger_match_across_nodes(tmp_pat
     assert summary["relay"]["witness"]["n"] == 25
     assert summary["relay_coverage"] == {"nodes": 3, "sampled": 25, "on_every_node": 25}
     assert "25 on every one of them" in report.format_summary(summary)
+
+
+def _p2p_line(seconds: float, text: str) -> str:
+    return f"{_log_time(seconds, 3)} node.cpp:4919 on_connection_closed ] {text}\n"
+
+
+def _with_oversized_txs(run_dir: Path) -> Path:
+    """
+    `_make_run`'s run with three oversized transactions from colony0 (one in block 118 4.5 s after its broadcast, one
+    in no block, one the node refused) and peer trouble on the witness, inside the loaded window (logged at 33-120 s)
+    and outside it.
+    """
+    p2p_log = run_dir / "generated" / "WitnessNode0" / "logs" / "p2p" / "p2p.log"
+    timeout = "Disconnecting peer 10.0.0.2:2002 because they didn't respond to my request for item 00ab"
+    p2p_log.write_text(
+        p2p_log.read_text()
+        + "".join(
+            itertools.starmap(
+                _p2p_line,
+                (
+                    (10, "New peer is connected (10.0.0.2:2002), now 1 active peers on 1 hosts (1 IPv4, 0 IPv6)"),
+                    (12, "New peer is connected (10.0.0.3:2003), now 2 active peers on 1 hosts (1 IPv4, 0 IPv6)"),
+                    (
+                        20,
+                        "send queue exceeded maximum size of 1048576 bytes (current size 2000000 bytes, 0 of them ...)",
+                    ),
+                    (
+                        50,
+                        "send queue exceeded maximum size of 1048576 bytes (current size 1500000 bytes, 0 of them ...)",
+                    ),
+                    (60.0, timeout),  # hived logs it to the p2p logger and to the sync logger
+                    (60.2, timeout),
+                    (70, "Removed 4 items from the list to fetch due to expiration time."),
+                    (75, "Removed 2 items from the list to fetch due to expiration time."),
+                    (80, "Peer connection closing (10.0.0.2:2002), now 1 active peers on 1 hosts (1 IPv4, 0 IPv6)"),
+                    (80.1, "Remote peer 10.0.0.2:2002 closed their connection to us"),
+                    (85, "Peer connection closing (10.0.0.9:41000), now 1 active peers on 1 hosts (1 IPv4, 0 IPv6)"),
+                    (85.1, "Remote peer 10.0.0.9:41000 closed their connection to us"),
+                    (130, "Remote peer 10.0.0.3:2003 closed their connection to us"),  # the run's end closing it
+                ),
+            )
+        )
+    )
+    broadcast = {"account": "initminer", "broadcast_s": 0.05}
+    _edit_meta(
+        run_dir,
+        oversized_txs=3,
+        oversized_tx_bytes=1_400_000,
+        oversized={
+            "colony": "colony0",
+            "path": ["colony0", "relay1", "witness"],
+            "maximum_block_size": 2097152,
+            "transactions": [
+                {
+                    **broadcast,
+                    "index": 0,
+                    "id": "aa" * 20,
+                    "bytes": 1_400_000,
+                    "broadcast_block": 115,
+                    "broadcast_chain_time": 1000.0,
+                    "error": None,
+                    "block": 118,
+                    "block_time": 1004.5,
+                },
+                {
+                    **broadcast,
+                    "index": 1,
+                    "id": "bb" * 20,
+                    "bytes": 1_400_000,
+                    "broadcast_block": 118,
+                    "broadcast_chain_time": 1009.0,
+                    "error": None,
+                    "block": None,
+                },
+                {
+                    **broadcast,
+                    "index": 2,
+                    "id": "cc" * 20,
+                    "bytes": 1_400_000,
+                    "broadcast_block": 121,
+                    "broadcast_chain_time": 1018.0,
+                    "error": "network_broadcast_api.broadcast_transaction on http://127.0.0.1:8090 failed: not enough RC",
+                    "block": None,
+                },
+            ],
+        },
+    )
+    return run_dir
+
+
+def test_a_report_gives_each_oversized_transactions_block_and_the_peer_trouble_on_its_way(tmp_path: Path) -> None:
+    summary = report.summarize(Run.load(_with_oversized_txs(_make_run(tmp_path / "run"))))
+
+    oversized = summary["oversized"]
+    assert [(tx["index"], tx["block"], tx["included_after_s"]) for tx in oversized["transactions"]] == [
+        (0, 118, pytest.approx(4.5)),
+        (1, None, None),
+        (2, None, None),
+    ]
+    assert oversized["included"] == 1
+    assert oversized["transactions"][2]["error"].endswith("not enough RC")
+    witness = {"disconnects": 1, "request_timeouts": 1, "items_expired": 6, "send_queue_exceeded": 1}
+    assert summary["peer_trouble"]["witness"] == witness
+    assert summary["peer_trouble"]["observer"] == dict.fromkeys(witness, 0)
+    assert summary["peer_trouble"]["relay1"] is None  # no Block stats to place the loaded window on its clock
+    assert oversized["path_trouble"] == {"colony0": None, "relay1": None, "witness": witness}
+
+    text = report.format_summary(summary)
+    assert "   oversized txs: 1/3 included, from colony0 -> relay1 -> witness (maximum_block_size 2097152)" in text
+    assert f"oversized tx 0 1400000 B {'aa' * 20} broadcast at block 115: in block 118, 4.5 s after" in text
+    assert f"oversized tx 1 1400000 B {'bb' * 20} broadcast at block 118: NOT INCLUDED by the run's end" in text
+    assert (
+        "broadcast at block 121: NOT BROADCAST: network_broadcast_api.broadcast_transaction on http://127.0.0.1:8090 failed"
+        in text
+    )
+    expected = "1 disconnects, 1 request timeouts, 6 expired fetches, 1 send queue overflows"
+    assert f"   oversized path witness    {expected}" in text
+    assert f"   peer trouble witness    {expected}" in text
+    assert "peer trouble observer" not in text
+
+    rows = {line[:40].strip(): line[40:].split() for line in report.format_comparison([summary]).splitlines()}
+    assert rows["oversized txs included"] == ["1.0", "(1)"]
+    assert rows["slowest oversized tx inclusion s"] == ["4.5", "(4)"]
+    assert rows["peer send queue exceeded (all nodes)"] == ["1.0", "(1)"]
+
+
+def test_a_run_without_oversized_transactions_or_peer_trouble_says_so(tmp_path: Path) -> None:
+    summary = report.summarize(Run.load(_make_run(tmp_path / "run")))
+
+    assert summary["oversized"] is None
+    text = report.format_summary(summary)
+    assert "   peer trouble: none over the loaded window" in text
+    assert "oversized" not in text
+    assert not any(row.startswith("oversized") for row in report.format_comparison([summary]).splitlines())
 
 
 def _fast_confirm_line(seconds: float, witness: str, num: int) -> str:
@@ -1061,11 +1210,76 @@ def test_a_preset_sets_the_flood_load_and_a_labelled_hived_option_only_its_build
     assert specs[0].hived_options == [p2p_debug]
     assert specs[1].hived_options == [["all", "p2p-transaction-fetch-gate-threshold", "0"], p2p_debug]
 
-    exit_code = cli.main(["run", "r", *common, "--hived", str(hived), "--hived-option", "b:all=max-mempool-size=1G"])
+    exit_code = cli.main([
+        *("run", "r", *common, "--hived", str(hived), "--tpb", "10", "--hived-option", "b:all=max-mempool-size=1G")
+    ])
     assert exit_code == 1
     assert "--hived-option for b: no build has that label" in capsys.readouterr().err
     assert cli.main(["run", "r", *common, "--hived", str(hived)]) == 1
     assert "--tpb or a --preset is required" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("flags", "expected"),
+    [
+        ([], (0, 1_400_000)),
+        (["--oversized-txs", "3"], (3, 1_400_000)),
+        (["--oversized-txs", "2@2000000"], (2, 2_000_000)),
+    ],
+)
+def test_oversized_transactions_are_a_count_and_a_size_of_the_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flags: list[str], expected: tuple[int, int]
+) -> None:
+    block_log = _fixture(tmp_path / "block_log")
+    hived = tmp_path / "hived"
+    hived.write_text("#!/bin/sh\n")
+    hived.chmod(0o755)
+    specs: list[RunSpec] = []
+
+    def execute_run(spec: RunSpec, *_: object) -> int:
+        specs.append(spec)
+        return 1
+
+    monkeypatch.setattr(cli, "execute_run", execute_run)
+    monkeypatch.setattr(cli, "find_tools", lambda *_: {})
+    monkeypatch.setattr(cli, "HostLock", contextlib.nullcontext)
+
+    cli.main([
+        *("run", "r", "--block-log", str(block_log), "--out-root", str(tmp_path / "runs"), "--preset", "flood-c48"),
+        *("--hived", str(hived), "--image", "test-image", *flags),
+    ])
+
+    assert [(spec.oversized_txs, spec.oversized_tx_bytes) for spec in specs] == [expected]
+    assert specs[0].oversized_tx_blocks() == [5 + 3 * i for i in range(expected[0])]
+    assert not expected[0] or specs[0].oversized_tx_colony() == "colony0"
+
+
+@pytest.mark.parametrize("value", ["3@1.5M", "many"])
+def test_an_oversized_transaction_option_out_of_shape_is_refused(
+    capsys: pytest.CaptureFixture[str], value: str
+) -> None:
+    with pytest.raises(SystemExit):
+        cli.main(["run", "r", "--block-log", "/b", "--hived", "/h", "--tpb", "10", "--oversized-txs", value])
+
+    assert f"expected N[@SIZE] (SIZE in bytes), got {value!r}" in capsys.readouterr().err
+
+
+def test_an_oversized_transaction_a_send_queue_holds_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    hived = tmp_path / "hived"
+    hived.write_text("#!/bin/sh\n")
+    hived.chmod(0o755)
+    monkeypatch.setattr(cli, "find_tools", lambda *_: {})
+    monkeypatch.setattr(cli, "HostLock", contextlib.nullcontext)
+
+    exit_code = cli.main([
+        *("run", "r", "--block-log", str(_fixture(tmp_path / "block_log")), "--out-root", str(tmp_path / "runs")),
+        *("--hived", str(hived), "--image", "test-image", "--tpb", "10", "--oversized-txs", "1@1048576"),
+    ])
+
+    assert exit_code == 1
+    assert "an oversized transaction takes more than 1048576 and at most 2096896 bytes" in capsys.readouterr().err
 
 
 def _spec(**changes: Any) -> RunSpec:
@@ -1116,6 +1330,24 @@ def test_a_chain_takes_every_colony_into_its_first_hop() -> None:
         ("observer", "witness"),
     ]
     assert direct.max_connections["witness"] == 4
+
+
+def test_a_transaction_crosses_the_fewest_seed_links_from_its_colony_to_the_witness() -> None:
+    assert topology.wire(_spec(topology="chain", relays=2)).path("colony0", "witness") == [
+        "colony0",
+        "relay1",
+        "relay2",
+        "witness",
+    ]
+    assert topology.wire(_spec(topology="strict", colonies=3)).path("colony2", "witness") == ["colony2", "witness"]
+    assert topology.wire(_spec(topology="diamond", relays=2)).path("colony0", "observer") == [
+        "colony0",
+        "witness",
+        "relay1",
+        "observer",
+    ]
+    with pytest.raises(ValueError, match="no seed links lead from colony0 to relay9"):
+        topology.wire(_spec(topology="mesh")).path("colony0", "relay9")
 
 
 def test_a_diamond_reaches_the_observer_through_every_relay() -> None:
@@ -1225,6 +1457,8 @@ Root distance: 41.022ms (max: 5s)
         ("sh: chronyc: not found\n" + _TIMESYNC_STATUS, "timesyncd", 0.000094),
         ("506 Cannot talk to daemon\nSystem has not been booted with systemd\n", None, None),
     ],
+    # test-tools names a directory after each test and its parameters: the status texts would make it too long
+    ids=["chrony-slow", "chrony-fast", "timesyncd", "none"],
 )
 def test_ntp_status_tells_how_far_the_clock_is_from_ntp_time(
     text: str, source: str | None, ahead: float | None
