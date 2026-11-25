@@ -14,6 +14,7 @@ from api_generation.generate_client import generate_client
 from api_generation.generate_description import generate_descriptions
 from api_generation.model_methods import add_model_methods
 from api_generation.model_variants import PUBLIC, VALIDATION, VARIANTS
+from api_generation.schema_filters import add_schema_filters
 from api_generation.undeclared_dates import check_no_undeclared_dates
 from jinja2 import Environment, FileSystemLoader
 
@@ -177,6 +178,8 @@ def generate_models(apis: list[str], base_directory: Path) -> None:
                 append_endpoint_results(validation_file, f"{api}_description")
         tidy_with_ruff(*description_files, common_package)
     tidy_with_ruff(VALIDATION.package_directory(base_directory) / "__init__.py")
+    # filters of public models reachable from results of endpoints - also of models of operations (generated before)
+    tidy_with_ruff(*add_schema_filters(base_directory, apis))
 
 
 def generate_package(api: str, base_directory: Path) -> None:

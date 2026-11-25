@@ -131,6 +131,22 @@ hiveio-schemas):
 all problems with their paths); `PreconfiguredBaseModel` (`hiveio_api.validation.model`) is the base class of such
 models.
 
+### Validation masks
+
+Validation of responses (e.g. `SchemaValidationRules` of beekeepy, `validate_schema`) can be limited to the fields an
+application uses - by the validation mask of an endpoint:
+
+```python
+api.block_api.get_block.set_validation_mask({"block": {"transactions": {"signatures": True}, "block_id": True}})
+```
+
+A key per field: `True` validates the whole field, a dict the given fields of its model (of items of a list); fields not
+given are not validated. Editors complete the names of fields and type checkers report wrong ones - masks are typed by
+schema filters of models (`TypedDict`s of `hiveio_api._schema_filters`, stubs seen only by type checkers, not a part of
+the public interface). The mask is compiled when it is set - to the validation model reduced to the given fields - so
+a wrong mask raises at once. Unions of several models (operations) take only `True`; `set_validation_mask(None)`
+removes the mask. A mask does not turn validation on.
+
 ### Infrastructure of clients
 
 Base classes of APIs, their owners (`AsyncSendable`, `SyncSendable`), callbacks, JSON-RPC and URLs come from the

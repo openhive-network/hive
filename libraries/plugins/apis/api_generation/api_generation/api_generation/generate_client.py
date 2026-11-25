@@ -8,8 +8,9 @@ from api_client_generator.json_rpc import generate_api_client
 from api_generation.common import APIS_WITH_LEGACY_ARGS_SERIALIZATION
 from api_generation.model_variants import VALIDATION
 
-CLIENT_BASE_CLASS: Final[str] = "AbstractAsyncApi"
-CLIENT_BASE_CLASS_SOURCE: Final[str] = "hiveio_api_client"
+CLIENT_BASE_CLASS: Final[str] = "HiveAsyncApi"
+CLIENT_BASE_CLASS_SOURCE: Final[str] = "hiveio_api._hive_api"
+"""`AbstractAsyncApi` compiling validation masks of endpoints to reduced validation models (`set_validation_mask`)."""
 
 if TYPE_CHECKING:
     from types import ModuleType
