@@ -221,16 +221,19 @@
 // send_transaction_inventory(), send_queued_messages_task())
 //
 // A peer's send queue holds at most GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES; a message that would take it over
-// closes the connection.  The one exception is a single message larger than the limit, queued while nothing is queued
-// or being written: a transaction may be as large as the head block allows (maximum_block_size - 256), and the
-// witnesses may vote blocks up to HIVE_MAX_BLOCK_SIZE, over the limit.  It is accepted alone, and what is queued while
-// it waits or is written is held to the limit without it.  A queued block counts only the few bytes of its placeholder
+// closes the connection.  The one exception is a single message outside the limit, one at a time, whatever else is
+// queued: one larger than the limit, or a transaction reply larger than the transaction budget.  A transaction may be
+// as large as the head block allows (maximum_block_size - 256), and the witnesses may vote blocks up to
+// HIVE_MAX_BLOCK_SIZE, over the limit.  What is queued with it, while it waits or is written, is held to the limit
+// without it, and a second such message while it is queued or written closes the connection.  So a peer holds at most
+// the limit plus that one message; a transaction is written from its shared serialization, and the socket write
+// stages any batch through one GRAPHENE_NET_CONNECTION_BUFFER_SIZE buffer rather than a private copy of it.  A queued block counts only the few bytes of its placeholder
 // (peer_connection::virtual_queued_block_message): it is looked up and built only when it nears the front of the queue
 // (GRAPHENE_NET_BLOCK_MESSAGES_PREPARED_AHEAD), so blocks never use the queue's bytes, and need no share of them.  What
 // does count is transaction traffic and the other messages built when queued (sync item id inventories, address
 // lists, requests).  Transaction traffic is kept to GRAPHENE_NET_TRANSACTION_BUDGET_BYTES of the queue: what goes past
-// it waits outside the queue and is queued as the queue drains, a reply larger than the budget once the queue is
-// empty.  The other half is headroom for the other messages, for the one transaction a reply or inventory may queue
+// it waits outside the queue and is queued as the queue drains, a reply larger than the budget once the place outside
+// the limit is free; inventory waits while any reply does.  The other half is headroom for the other messages, for the one transaction a reply or inventory may queue
 // past the budget, and for an older peer that queues its whole reply at once.
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -251,11 +254,11 @@
 #define GRAPHENE_NET_TRANSACTION_BUDGET_BYTES                (GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2)
 
 /**
- * The transactions a peer asks for are queued for it only while its send queue holds at most this many bytes with
- * them, or, one at a time, while it is empty (nothing queued or being written); the rest of the reply waits outside
- * the queue and is queued, in order, as the queue drains.  So a reply never takes the queue over
- * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, except for a single transaction larger than that, which is queued
- * alone (a transaction may be up to maximum_block_size - 256 bytes, not HIVE_MAX_TRANSACTION_SIZE).
+ * The transactions a peer asks for are queued for it only while its send queue, not counting its one message outside
+ * GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES, holds at most this many bytes with them; one larger than this takes
+ * that place outside the limit once it is free (a transaction may be up to maximum_block_size - 256 bytes, not
+ * HIVE_MAX_TRANSACTION_SIZE).  The rest of the reply waits outside the queue and is queued, in order, as the queue
+ * drains, and transaction inventory isn't queued while any of it waits.
  * Basis: derived (GRAPHENE_NET_TRANSACTION_BUDGET_BYTES).
  */
 #define GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES  GRAPHENE_NET_TRANSACTION_BUDGET_BYTES

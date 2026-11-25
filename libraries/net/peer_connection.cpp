@@ -457,8 +457,8 @@ namespace graphene { namespace net
           for (const std::unique_ptr<queued_message>& popped_message : batch)
           {
             this_->_total_queued_messages_size -= popped_message->get_size_in_queue();
-            if (popped_message->exceeds_queue_limit)
-              this_->_queued_oversized_message_size = 0;
+            if (popped_message->outside_queue_limit)
+              this_->_queued_outside_limit_size = 0;
           }
         } BOOST_SCOPE_EXIT_END
         size_t batch_size = 0;
@@ -610,19 +610,21 @@ namespace graphene { namespace net
         return;
       const size_t message_size = message_to_send->get_size_in_queue();
       // a transaction may be as large as the head block allows (maximum_block_size - 256), which may be more than the
-      // limit, so one message is accepted alone whatever its size; what is queued with it is held to the limit
-      // without it, so it doesn't close the connection for the block traffic and control messages queued behind it
-      if (_total_queued_messages_size == 0 && message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
-      {
-        message_to_send->exceeds_queue_limit = true;
-        _queued_oversized_message_size = message_size;
-      }
-      else if (_total_queued_messages_size - _queued_oversized_message_size + message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
+      // limit, so one message at a time is queued outside it, whatever its size and whatever is queued with it: one
+      // larger than the limit, or one its queuer asks that place for.  The rest of the queue is held to the limit
+      // without it, so the block traffic and control messages queued with it don't close the connection, and a
+      // second such message while one is queued or being written does
+      const bool outside_queue_limit = _queued_outside_limit_size == 0 &&
+        (message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES || message_to_send->outside_queue_limit);
+      message_to_send->outside_queue_limit = outside_queue_limit;
+      if (outside_queue_limit)
+        _queued_outside_limit_size = message_size;
+      else if (_total_queued_messages_size - _queued_outside_limit_size + message_size > GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)
       {
         _send_queue_limit_exceeded = true;
-        elog("send queue exceeded maximum size of ${max} bytes (current size ${current} bytes, ${oversized} of them one oversized message)",
+        elog("send queue exceeded maximum size of ${max} bytes (current size ${current} bytes, ${outside} of them one message outside the limit)",
              ("max", GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES)("current", _total_queued_messages_size + message_size)
-             ("oversized", _queued_oversized_message_size));
+             ("outside", _queued_outside_limit_size));
         try
         {
           close_connection();
@@ -758,20 +760,26 @@ namespace graphene { namespace net
 
     bool peer_connection::queue_deferred_transaction_replies()
     {
-      // the oldest is queued into an empty queue (nothing queued or being written) whatever its size, which keeps the
-      // send task running while any wait; a transaction may be as large as the head block allows
-      // (maximum_block_size - 256), and send_queueable_message() accepts one larger than
-      // GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES only into an empty queue, so it waits for the queue to empty
+      // replies are queued in the order asked for.  One that fits the budget beside what is queued (not counting the
+      // message outside the queue's limit, so the replies behind a large one aren't held up by it) is queued.  One
+      // larger than the budget, as a transaction may be as large as the head block allows (maximum_block_size - 256),
+      // takes the queue's one place outside its limit once that is free: it waits for at most the large message
+      // before it, not for the queue to empty.  While any wait the queue holds something, so the send task runs, and
+      // transaction inventory isn't queued, so the transaction traffic ahead of them drains
       bool queued_any = false;
-      while (!_deferred_transaction_replies.empty() && !_send_queue_limit_exceeded &&
-             (_total_queued_messages_size == 0 ||
-              _total_queued_messages_size + _deferred_transaction_replies.front()->get_transaction_size() <=
-                GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES))
+      while (!_deferred_transaction_replies.empty() && !_send_queue_limit_exceeded)
       {
-        std::shared_ptr<full_transaction_type> reply = std::move(_deferred_transaction_replies.front());
+        const size_t reply_size = _deferred_transaction_replies.front()->get_transaction_size();
+        const bool larger_than_budget = reply_size > GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES;
+        if (larger_than_budget ? _queued_outside_limit_size != 0
+                               : _total_queued_messages_size - _queued_outside_limit_size + reply_size >
+                                   GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES)
+          break;
+        std::unique_ptr<queued_message> reply = std::make_unique<queued_transaction_message>(_deferred_transaction_replies.front());
         _deferred_transaction_replies.pop_front();
-        _deferred_transaction_reply_bytes -= reply->get_transaction_size();
-        send_transaction_message(reply);
+        _deferred_transaction_reply_bytes -= reply_size;
+        reply->outside_queue_limit = larger_than_budget;
+        send_queueable_message(std::move(reply));
         queued_any = true;
       }
       return queued_any;
@@ -781,7 +789,8 @@ namespace graphene { namespace net
     {
       drop_stale_transaction_inventory(fc::time_point::now() - fc::milliseconds(GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_AGE_MS));
       bool queued_any = false;
-      while (!_deferred_transaction_inventory.empty() && !_send_queue_limit_exceeded &&
+      // the message outside the queue's limit counts here: inventory waits while one is queued or being written
+      while (!_deferred_transaction_inventory.empty() && _deferred_transaction_replies.empty() && !_send_queue_limit_exceeded &&
              _total_queued_messages_size < GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES)
       {
         // as many as the room left in the budget takes, so the next ids don't wait for room for a whole message

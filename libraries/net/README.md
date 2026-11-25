@@ -85,9 +85,13 @@ built when it nears the front, so block bytes never use the queue's limit and ne
 the queue is headroom for the messages built when queued (sync item id inventories, address lists, requests), for
 the one transaction a reply may queue past the budget, and for older peers that queue a whole reply at once.
 A transaction may be as large as the head block allows (`maximum_block_size - 256`, up to 2 MiB), not
-`HIVE_MAX_TRANSACTION_SIZE`: a reply larger than the budget waits for the queue to empty and is then queued alone, and
-one larger than the 1 MiB limit is accepted into the empty queue; what is queued behind it is held to the limit
-without it.
+`HIVE_MAX_TRANSACTION_SIZE`: a reply larger than the budget takes the queue's one place outside its limit, whatever
+else is queued, once the large message before it is written; what is queued with it is held to the limit without it,
+and the replies behind it to the budget without it. While any reply waits, transaction inventory is not queued, so
+the transaction traffic ahead of it drains: a large reply waits for at most the queue and one large message, and no
+flood of small traffic holds it back. The socket write stages each batch through one 64 KiB buffer instead of a
+private copy of it, so a slow reader holds at most the 1 MiB queue, that one message (a transaction's shared
+serialization) and the buffer.
 
 ## Transactions in flight
 
@@ -157,7 +161,7 @@ order still holds, but the reapply trims the pool below all three, so they engag
    kept. A replaced silent peer may not take a slot again for one window, inbound or outbound.
 
 Other disconnects happen where the cause is seen, not in this loop: the send queue passing its 1 MiB limit (besides
-the one oversized message it may hold alone) closes the connection at once; withholding strikes (`MAX_UNAVAILABLE_ITEM_STRIKES` item_not_available answers for advertised
+the one message it may hold outside the limit) closes the connection at once; withholding strikes (`MAX_UNAVAILABLE_ITEM_STRIKES` item_not_available answers for advertised
 items; late or slow block copies are no strike), invalid blocks and blocks whose body
 doesn't match their header (each behind its breaker), unrequested items, oversized inventory or requests, and the
 per-host limit at hello.
@@ -327,9 +331,9 @@ without the `GRAPHENE_NET_` prefix inside expressions. The unvalidated values ar
 
 | Name | Value | Unit | Purpose | Basis |
 |---|---|---|---|---|
-| `GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES` | `(1024 * 1024)` | bytes | send queue limit; past it the connection closes, except for one larger message queued alone | reasoned: inherited from graphene |
+| `GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES` | `(1024 * 1024)` | bytes | send queue limit; past it the connection closes, besides one message at a time held outside it | reasoned: inherited from graphene |
 | `GRAPHENE_NET_TRANSACTION_BUDGET_BYTES` | `(MAXIMUM_QUEUED_MESSAGES_IN_BYTES / 2)` | bytes | the one transaction budget | derived: half of GRAPHENE_NET_MAXIMUM_QUEUED_MESSAGES_IN_BYTES |
-| `GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES` | `TRANSACTION_BUDGET_BYTES` | bytes | replies queued only below it, or one at a time into an empty queue | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
+| `GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_REPLY_BYTES` | `TRANSACTION_BUDGET_BYTES` | bytes | replies queued only below it, a larger one in the queue's one place outside its limit | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
 | `GRAPHENE_NET_MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES` | `TRANSACTION_BUDGET_BYTES` | bytes | inventory queued only below it | derived: GRAPHENE_NET_TRANSACTION_BUDGET_BYTES |
 | `GRAPHENE_NET_MAX_TRANSACTION_INVENTORY_IDS_PER_MESSAGE` | `(MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 4 / 20)` | ids | ids per inventory we send | derived: 20 bytes an id |
 | `GRAPHENE_NET_MAX_DEFERRED_TRANSACTION_INVENTORY_IDS_PER_PEER` | `(MAXIMUM_QUEUED_TRANSACTION_INVENTORY_BYTES / 20)` | ids | held-back inventory per peer | derived: 20 bytes an id |
