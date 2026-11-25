@@ -43,7 +43,7 @@ is the same text.
 | `plugin-api` | `plugin_test` without `witness_tests` (CI's `plugin_test_api`) |
 | `plugin-tests` | all of `plugin_test` (CI's `plugin_test_api` + `plugin_test_witness` + `plugin_test_p2p_protocol`) in parallel: the suites other than `witness_tests` and `p2p_protocol_tests` as one process, each case of those two as its own |
 | `integration` | off unless `HIVE_AIDEV_INTEGRATION=1`; the `tests/integration` scripts the diff selects, each against a hived image built from the checkout (below) |
-| `hived-testnet`, `hived-mainnet` | `hived`, `cli_wallet` and `shared_memory_file_util` with CI's arguments, into `<report dir>/bin` (what `integration` builds an image from) |
+| `hived-testnet`, `hived-mainnet` | `hived`, `cli_wallet` and `shared_memory_file_util` with CI's arguments, into `<report dir>/bin` (what `integration` builds an image from; its `hived-*` suites' directories are not declared artefacts) |
 | `wallet-patterns` | the cli_wallet Python pattern tests (CI's `python_pattern_testnet_tests`) against the testnet `hived`, `cli_wallet` and `get_dev_key` it builds as `hived-testnet` does (below) |
 | `hiveio-api` | when the diff changes the openapi documentation or the generator: generate the hiveio_api package, run the generator tests and build the wheel (CI's `hiveio_api_package`, offline; below) |
 | `p2p-relay` | when the diff reaches p2p, the network code or the transaction size limits: `plugin_test --run_test=p2p_relay_tests`, large transactions relayed across three hived nodes (below) |
@@ -126,8 +126,14 @@ worker per `HIVE_TEST_JOBS`, junit in
 - **Out of the checkout.** test-tools writes each module's nodes and wallets in a
   `generated_during_*` directory beside it, so the step copies the tests (with
   `tests/python`'s `pytest.ini` and `conftest.py`) to
-  `test-results/full-wallet-patterns/wallet-patterns/` and runs them there; the
-  nodes' logs stay in that copy.
+  `test-results/full-wallet-patterns.work/`, beside the declared report directory
+  rather than in it, builds the binaries into it and runs the tests there. Every
+  file in the report directory is an artefact, and the nodes leave hundreds
+  (block_log parts, RocksDB files), so the copy goes when the step ends; when
+  tests fail, the last 64 KiB of the failed tests' node logs (at most 20 logs of
+  10 tests, none from `blockchain/`) are kept in
+  `test-results/full-wallet-patterns/wallet-patterns-nodes/`, beside the junit
+  report and the step's log.
 
 To run it by hand, in the checks' image as in "The compiler cache" below:
 `.aidev/run-checks.sh full-wallet-patterns wallet-patterns`.
