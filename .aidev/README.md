@@ -49,10 +49,13 @@ is the same text.
 
 | Slot | Steps |
 |---|---|
-| quick | build, then chain-smoke and plugin-api at the same time |
+| quick | build, chain-smoke, plugin-api |
 | full | suite `default`: build, then chain-tests, plugin-tests and hiveio-api at the same time; suite `integration`: integration (off; below); suite `wallet_patterns`: wallet-patterns, when the diff reaches the wallet (below) |
 | baseline | build, then chain-tests, plugin-tests and hiveio-api at the same time |
-| canary | build, then chain-smoke and plugin-api at the same time |
+| canary | build, chain-smoke, plugin-api |
+
+In `quick`, `canary` and `coverage`, `chain-smoke` and `plugin-api` run at the same
+time after `build` (`build chain-smoke,plugin-api`).
 
 Each suite of `full` and `baseline` declares `memory:`, what AIDEV reserves on the
 host for one run until it has measured the suite's own runs (the suite's container
