@@ -88,7 +88,7 @@ def main(junit: str, suite: str, cases_file: str) -> None:
             cases.append((name, status, float(seconds or 0), message, log))
     body = []
     for name, status, seconds, message, log in cases:
-        head = f"<testcase classname={quoteattr(suite)} name={quoteattr(name)} time=\"{seconds}\">"
+        head = f'<testcase classname={quoteattr(suite)} name={quoteattr(name)} time="{seconds}">'
         if status == "fail":
             lines = log_lines(log)
             body.append(
@@ -106,8 +106,8 @@ def main(junit: str, suite: str, cases_file: str) -> None:
     with open(junit, "w", encoding="utf-8") as handle:
         handle.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         handle.write(
-            f"<testsuite name={quoteattr(suite)} tests=\"{len(cases)}\" failures=\"{failures}\" "
-            f"errors=\"0\" skipped=\"{skipped}\" time=\"{total}\">\n"
+            f'<testsuite name={quoteattr(suite)} tests="{len(cases)}" failures="{failures}" '
+            f'errors="0" skipped="{skipped}" time="{total}">\n'
         )
         handle.write("\n".join(body) + "\n</testsuite>\n")
 
