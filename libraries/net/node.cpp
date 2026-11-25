@@ -3676,9 +3676,16 @@ namespace graphene { namespace net {
       }
       // the peer's remote address without a socket is none we could match a local address against
       const fc::optional<fc::ip::endpoint> relayed_from = originating_peer->get_remote_endpoint();
-      if (originating_peer->their_state != peer_connection::their_connection_state::connection_accepted)
-        // a connection that skipped its hello (or sent one we rejected) is no peer we trust to tell us whom to dial
-        dlog("not storing the addresses from ${peer}: we have not accepted its hello", ("peer", relayed_from));
+      // a connection that skipped its hello, or sent one we found invalid (those we disconnect at once), is no peer we
+      // trust to tell us whom to dial.  One whose valid hello we turned down for reasons of our own (we are full, already
+      // connected to it, ...) is: exchanging addresses is what such a rejection leaves the connection open for, and two
+      // full nodes rejecting each other is how a node learns of peers beyond its own connections
+      const bool sent_valid_hello =
+        originating_peer->their_state == peer_connection::their_connection_state::connection_accepted ||
+        (originating_peer->their_state == peer_connection::their_connection_state::connection_rejected &&
+         !originating_peer->we_have_requested_close);
+      if (!sent_valid_hello)
+        dlog("not storing the addresses from ${peer}: it has sent no hello we found valid", ("peer", relayed_from));
       else
       {
         std::vector<graphene::net::address_info> updated_addresses;

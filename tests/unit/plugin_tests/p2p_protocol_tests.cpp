@@ -1044,7 +1044,7 @@ BOOST_AUTO_TEST_CASE( pre_hello_message_size_test )
   } );
 }
 
-/// A17: addresses from a connection whose hello the node has not accepted are not stored, so the node doesn't dial
+/// A17: addresses from a connection that has sent the node no hello are not stored, so the node doesn't dial
 /// them: neither those sent unsolicited by a peer skipping its hello, nor those a peer skipping its hello sends in
 /// reply to the address request the node makes once that peer accepted the node's hello. The same address from an
 /// active peer is dialed, which the node, short of its desired connections, does at once.
@@ -1082,6 +1082,65 @@ BOOST_AUTO_TEST_CASE( addresses_before_hello_test )
     relay->send( offer );
     BOOST_CHECK_MESSAGE( offered->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ), "the node did not dial the address an active peer offered" );
     BOOST_CHECK( node_lists( *offered ) );
+  } );
+}
+
+/// A18: addresses from a peer whose valid hello the node rejected for a reason of its own, here a second connection
+/// from a node id it is connected to, are stored and dialed: that exchange is what such a rejection keeps the
+/// connection open for. Those from a peer whose hello it rejected as invalid are not, whether sent right behind the
+/// hello or in reply to the node's address request.
+BOOST_AUTO_TEST_CASE( addresses_after_rejected_hello_test )
+{
+  start_node();
+  run( [&]()
+  {
+    const auto offer_of = []( const fc::ip::endpoint& endpoint )
+    {
+      address_message offer;
+      offer.addresses.emplace_back( endpoint, fc::time_point::now(), fc::microseconds( 0 ), node_id_t(),
+                                    peer_connection_direction::inbound, firewalled_state::not_firewalled );
+      return offer;
+    };
+
+    auto offered_by_forger = make_peer( "peer whose address a forging peer offers" );
+    const address_message forged_offer = offer_of( offered_by_forger->listen() );
+    auto forging = make_peer( "forging peer offering addresses" );
+    forging->hello().signing_key = fc::ecc::private_key::generate();
+    forging->on( address_request_message_type, [forged_offer]( test_peer& self, const message& ) { self.send( forged_offer ); } );
+    forging->connect( node_endpoint() );
+    forging->send( forged_offer );
+    require_rejected( *forging, rejection_reason_code::invalid_hello_message );
+    fc::usleep( quiet_period );
+    BOOST_CHECK( !offered_by_forger->connected() );
+
+    node_id_t duplicate_id;
+    {
+      auto probe = make_peer( "probe" );
+      connect_active( *probe );
+      duplicate_id = probe->node_hello()->user_data[ "node_id" ].as< node_id_t >();
+    }
+    BOOST_REQUIRE( wait_until( [&]() { return number_of_connections() == 0; }, reply_timeout ) );
+    // ordering after the node's id, so the node is the one that rejects the second connection (see A8)
+    const node_id_t node_id = duplicate_id;
+    for( size_t i = sizeof( duplicate_id.data ); i-- > 0 && ++reinterpret_cast< unsigned char& >( duplicate_id.data[ i ] ) == 0; )
+      ;
+    BOOST_REQUIRE( node_id < duplicate_id );
+
+    auto first = make_peer( "first connection" );
+    first->hello().node_id = duplicate_id;
+    connect_active( *first );
+
+    auto offered = make_peer( "peer whose address a rejected peer offers" );
+    const address_message offer = offer_of( offered->listen() );
+    auto second = make_peer( "second connection, offering addresses" );
+    second->hello().node_id = duplicate_id;
+    second->on( address_request_message_type, [offer]( test_peer& self, const message& ) { self.send( offer ); } );
+    second->connect( node_endpoint() );
+    require_rejected( *second, rejection_reason_code::already_connected );
+    BOOST_CHECK_MESSAGE( offered->wait_for( fetch_blockchain_item_ids_message_type, reply_timeout ),
+                         "the node did not dial the address a peer it rejected offered" );
+    BOOST_CHECK( node_lists( *offered ) );
+    BOOST_CHECK( !offered_by_forger->connected() );
   } );
 }
 
